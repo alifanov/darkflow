@@ -4,6 +4,7 @@
 # Interactive:   bash install.sh
 # All modules:   bash install.sh --all
 # Pick modules:  bash install.sh --with-analytics --with-gsc --with-coolify
+# Set language:  bash install.sh --lang Russian
 # One-liner:     bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh)
 # Silent:        bash install.sh --yes  (core only, no prompts)
 
@@ -14,6 +15,7 @@ set -euo pipefail
 DARKFLOW_REPO="https://raw.githubusercontent.com/alifanov/darkflow/main"
 TARGET_DIR="${PWD}"
 PROJECT_NAME=""
+LANGUAGE=""           # Language for agent outputs and GitHub issues (default: English)
 SKIP_LABELS=false
 SKIP_CLAUDE_SNIPPET=false
 FORCE=false
@@ -47,6 +49,7 @@ header()  { echo -e "\n${BOLD}$*${RESET}"; }
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --name)               PROJECT_NAME="$2"; shift 2 ;;
+    --lang)               LANGUAGE="$2"; shift 2 ;;
     --no-labels)          SKIP_LABELS=true; shift ;;
     --no-claude)          SKIP_CLAUDE_SNIPPET=true; shift ;;
     --force)              FORCE=true; shift ;;
@@ -73,6 +76,8 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "Options:"
       echo "  --name NAME           Project name (default: directory name)"
+      echo "  --lang LANGUAGE       Language for agent outputs and issues (default: English)"
+      echo "                        Examples: --lang Russian  --lang Spanish  --lang \"Brazilian Portuguese\""
       echo "  --all                 Enable all optional modules non-interactively"
       echo "  -y, --yes             Accept defaults non-interactively (no optional modules)"
       echo "  --with-analytics      Include analytics module (PostHog/Mixpanel)"
@@ -119,6 +124,37 @@ if [[ -z "$PROJECT_NAME" ]]; then
 fi
 
 header "Installing Dark Flow for \"${PROJECT_NAME}\""
+
+# ── Language selection ────────────────────────────────────────────────────────
+
+if [[ -z "$LANGUAGE" ]]; then
+  if [[ "$NON_INTERACTIVE" == true ]] || [[ ! -t 0 ]]; then
+    LANGUAGE="English"
+  else
+    echo ""
+    echo -e "${BOLD}Language${RESET} — used in GitHub issues, agent outputs, and CLAUDE.md"
+    echo ""
+    echo "  1) English (default)"
+    echo "  2) Russian"
+    echo "  3) Spanish"
+    echo "  4) German"
+    echo "  5) Other"
+    echo ""
+    read -rp "  Choice [1]: " lang_choice
+    case "${lang_choice:-1}" in
+      1|"")    LANGUAGE="English" ;;
+      2)       LANGUAGE="Russian" ;;
+      3)       LANGUAGE="Spanish" ;;
+      4)       LANGUAGE="German" ;;
+      5)       read -rp "  Language name: " LANGUAGE
+               [[ -z "$LANGUAGE" ]] && LANGUAGE="English" ;;
+      *)       LANGUAGE="$lang_choice" ;;  # allow typing a name directly
+    esac
+    echo ""
+  fi
+fi
+
+info "Language: ${LANGUAGE}"
 
 # ── Module selection ──────────────────────────────────────────────────────────
 
@@ -261,6 +297,12 @@ generate_claude_md_section() {
 @docs/agent-workflow.md
 @docs/github-issues.md
 
+HEREDOC
+
+  echo "**Language:** ${LANGUAGE} — use this language for GitHub issues, comments, commit messages, and all agent-facing text."
+  echo ""
+
+  cat << 'HEREDOC'
 ### Before each session
 
 Check approved task queue:
@@ -397,6 +439,9 @@ if [[ "$HAS_ROUTINES" == true ]]; then
 fi
 
 echo -e "  ${DIM}⚠ Set 'Always allowed: Act without asking' on every routine.${RESET}"
+if [[ "$LANGUAGE" != "English" ]]; then
+  echo -e "  ${DIM}⚠ Each routine prompt ends with \"Language in GitHub issues: English\" — change to: ${LANGUAGE}${RESET}"
+fi
 echo ""
 
 # Summary of what was installed
