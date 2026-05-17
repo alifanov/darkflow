@@ -76,6 +76,28 @@ Agent starts next session
   → closes via PR with "Closes #N"
 ```
 
+The loop runs automatically via **Claude Code Routines** — see [routines/README.md](./routines/README.md).
+
+---
+
+## Routines (automated agents)
+
+The real power comes from scheduling Claude Code agents that run the loop without manual triggering:
+
+| Routine | Schedule | What it does |
+|---|---|---|
+| Analytics review | Daily 8:00 | Checks PostHog + recent commits → creates `status:proposed` issues |
+| Observability check | Daily 8:30 | Checks SigNoz/errors/slow URLs → creates issues |
+| GSC check | Weekly Mon 8:00 | Checks Google Search Console → creates issues |
+| **Fix issues** | **Hourly** | Picks up `status:approved` issues → PR → merge |
+| Coolify logs | Daily 9:00 | Checks deployment logs → fixes errors |
+| CLAUDE.md update | Weekdays 9:00 | Re-generates CLAUDE.md from current codebase |
+
+**Set up in:** Claude Code → Routines → New routine  
+**Important:** set "Always allowed: Act without asking" on every routine.
+
+Full instructions and prompt templates for each routine: [routines/README.md](./routines/README.md)
+
 ---
 
 ## Customization
