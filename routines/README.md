@@ -16,8 +16,9 @@ Scheduled Claude Code agents that automate the triage loop. Set them up in **Cla
 | [**Fix Issues**](fix-issues.md) | **Hourly** | Picks up `status:approved` → PR → merge to main |
 | [Coolify Logs](coolify-logs.md) | Daily 9:00 | Deployment log monitoring → fixes errors → verifies deploy |
 | [CLAUDE.md Update](claude-md-update.md) | Weekdays 9:00 | Re-generates CLAUDE.md from current codebase |
-| [Security Code Audit](security-code-audit.md) | Weekly Sun 3:00 | Static analysis: secrets, injections, insecure deps → issues |
-| [Security Runtime Audit](security-runtime-audit.md) | Weekly Sun 4:00 | Live app: headers, TLS, DNS, exposed paths → issues |
+| [Security Code Audit](security-code-audit.md) | Weekly Sun 3:00 | `/security-review` on codebase → issues |
+| [Security Runtime Audit](security-runtime-audit.md) | Weekly Sun 4:00 | `/security-review` on live app → issues |
+| [Architecture Review](architecture-review.md) | Weekly Sun 2:00 | `/improve-codebase-architecture` → issues |
 
 ---
 
@@ -31,8 +32,9 @@ Daily
   9:00  CLAUDE.md update    → keeps agent context in sync
 
 Weekly
-  Mon 8:00  GSC check             → status:proposed issues
-  Sun 3:00  Security code audit   → status:proposed issues (Opus)
+  Mon 8:00  GSC check              → status:proposed issues
+  Sun 2:00  Architecture review    → status:proposed issues (Opus)
+  Sun 3:00  Security code audit    → status:proposed issues (Opus)
   Sun 4:00  Security runtime audit → status:proposed issues
 
 Continuous

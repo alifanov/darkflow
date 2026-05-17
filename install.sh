@@ -28,6 +28,7 @@ MOD_GSC=""            # Google Search Console
 MOD_ADS=""            # Google Ads, Meta Ads, etc.
 MOD_COOLIFY=""        # Coolify deployment monitoring
 MOD_CLAUDE_UPDATE=""  # Auto-regenerate CLAUDE.md
+MOD_ARCH_REVIEW=""    # Architecture review skill (improve-codebase-architecture)
 
 # ── Colours ───────────────────────────────────────────────────────────────────
 
@@ -57,6 +58,7 @@ while [[ $# -gt 0 ]]; do
     --all)                NON_INTERACTIVE=true
                           MOD_ANALYTICS=true MOD_OBSERVABILITY=true MOD_GSC=true
                           MOD_ADS=true MOD_COOLIFY=true MOD_CLAUDE_UPDATE=true
+                          MOD_ARCH_REVIEW=true
                           shift ;;
     --with-analytics)     MOD_ANALYTICS=true; shift ;;
     --with-observability) MOD_OBSERVABILITY=true; shift ;;
@@ -70,6 +72,8 @@ while [[ $# -gt 0 ]]; do
     --no-ads)             MOD_ADS=false; shift ;;
     --no-coolify)         MOD_COOLIFY=false; shift ;;
     --no-claude-update)   MOD_CLAUDE_UPDATE=false; shift ;;
+    --with-arch-review)   MOD_ARCH_REVIEW=true; shift ;;
+    --no-arch-review)     MOD_ARCH_REVIEW=false; shift ;;
     -y|--yes)             NON_INTERACTIVE=true; shift ;;
     -h|--help)
       echo "Usage: install.sh [OPTIONS]"
@@ -86,6 +90,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --with-ads            Include paid ads module (Google Ads/Meta)"
       echo "  --with-coolify        Include Coolify deployment monitoring"
       echo "  --with-claude-update  Include auto CLAUDE.md regeneration routine"
+      echo "  --with-arch-review    Install improve-codebase-architecture skill + weekly routine"
       echo "  --no-labels           Skip GitHub label setup"
       echo "  --no-claude           Skip CLAUDE.md creation"
       echo "  --force               Overwrite existing files"
@@ -183,18 +188,19 @@ ask_module() {
 }
 
 if [[ "$NON_INTERACTIVE" == false ]] && \
-   [[ -z "$MOD_ANALYTICS$MOD_OBSERVABILITY$MOD_GSC$MOD_ADS$MOD_COOLIFY$MOD_CLAUDE_UPDATE" ]]; then
+   [[ -z "$MOD_ANALYTICS$MOD_OBSERVABILITY$MOD_GSC$MOD_ADS$MOD_COOLIFY$MOD_CLAUDE_UPDATE$MOD_ARCH_REVIEW" ]]; then
   echo ""
   echo -e "${BOLD}Optional modules${RESET} — select what applies to your project:"
   echo ""
 fi
 
-ask_module MOD_ANALYTICS     "Analytics"       "(PostHog, Mixpanel, Amplitude…) — daily review routine + insights/analytics/"
-ask_module MOD_OBSERVABILITY  "Observability"   "(SigNoz, Datadog, Grafana…) — daily error/latency monitoring routine"
-ask_module MOD_GSC            "Search Console"  "(Google Search Console) — weekly GSC check routine + insights/search-console/"
-ask_module MOD_ADS            "Paid Ads"        "(Google Ads, Meta…) — insights/ads/ folder"              false
-ask_module MOD_COOLIFY        "Coolify"         "deployment log monitoring — daily logs check routine"
-ask_module MOD_CLAUDE_UPDATE  "CLAUDE.md update" "weekday routine that re-generates CLAUDE.md from codebase" false
+ask_module MOD_ANALYTICS     "Analytics"         "(PostHog, Mixpanel, Amplitude…) — daily review routine + insights/analytics/"
+ask_module MOD_OBSERVABILITY  "Observability"     "(SigNoz, Datadog, Grafana…) — daily error/latency monitoring routine"
+ask_module MOD_GSC            "Search Console"    "(Google Search Console) — weekly GSC check routine + insights/search-console/"
+ask_module MOD_ADS            "Paid Ads"          "(Google Ads, Meta…) — insights/ads/ folder"              false
+ask_module MOD_COOLIFY        "Coolify"           "deployment log monitoring — daily logs check routine"
+ask_module MOD_CLAUDE_UPDATE  "CLAUDE.md update"  "weekday routine that re-generates CLAUDE.md from codebase" false
+ask_module MOD_ARCH_REVIEW    "Architecture review" "installs improve-codebase-architecture skill + weekly routine (Matt Pocock)" false
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -355,6 +361,7 @@ HEREDOC
   [[ "$MOD_GSC"           == true ]] && echo "- **GSC check** (Weekly Mon 8:00) — Google Search Console → GitHub issues"
   [[ "$MOD_COOLIFY"       == true ]] && echo "- **Coolify logs** (Daily 9:00) — deployment monitoring → fix errors"
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- **CLAUDE.md update** (Weekdays 9:00) — re-generates this file from codebase"
+  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Architecture review** (Weekly Sun 2:00) — \`/improve-codebase-architecture\` → GitHub issues"
   echo ""
   echo "Set up via: Claude Code → Routines → New routine"
   echo "Prompts: https://github.com/alifanov/darkflow/blob/main/routines/README.md"
@@ -403,6 +410,25 @@ fi
 
 success "Installed /darkflow command — use it inside Claude Code to check workflow health"
 
+# ── Architecture review skill ─────────────────────────────────────────────────
+
+if [[ "$MOD_ARCH_REVIEW" == true ]]; then
+  header "5/5  Architecture review skill"
+
+  if ! command -v npx &>/dev/null; then
+    warn "npx not found — skipping skill install. Run manually:"
+    warn "  npx skills add https://github.com/mattpocock/skills --skill improve-codebase-architecture"
+  else
+    info "Installing improve-codebase-architecture skill..."
+    if npx skills add https://github.com/mattpocock/skills --skill improve-codebase-architecture 2>&1; then
+      success "Skill installed — use /improve-codebase-architecture inside Claude Code"
+    else
+      warn "Skill install failed. Run manually:"
+      warn "  npx skills add https://github.com/mattpocock/skills --skill improve-codebase-architecture"
+    fi
+  fi
+fi
+
 # ── Done ──────────────────────────────────────────────────────────────────────
 
 echo ""
@@ -417,7 +443,7 @@ echo ""
 
 # Show only the routines relevant to chosen modules
 HAS_ROUTINES=false
-for m in "$MOD_ANALYTICS" "$MOD_OBSERVABILITY" "$MOD_GSC" "$MOD_COOLIFY" "$MOD_CLAUDE_UPDATE"; do
+for m in "$MOD_ANALYTICS" "$MOD_OBSERVABILITY" "$MOD_GSC" "$MOD_COOLIFY" "$MOD_CLAUDE_UPDATE" "$MOD_ARCH_REVIEW"; do
   [[ "$m" == true ]] && HAS_ROUTINES=true && break
 done
 
@@ -435,6 +461,7 @@ if [[ "$HAS_ROUTINES" == true ]]; then
   [[ "$MOD_GSC"          == true ]] && echo "  GSC check            Weekly Mon 8:00  Google Search Console → GitHub issues"
   [[ "$MOD_COOLIFY"      == true ]] && echo "  Coolify logs         Daily 9:00      Deployment logs → fix errors → verify"
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "  CLAUDE.md update     Weekdays 9:00   Re-generates CLAUDE.md from codebase"
+  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "  Architecture review  Weekly Sun 2:00  /improve-codebase-architecture → GitHub issues"
   echo ""
 fi
 
@@ -453,4 +480,5 @@ echo -e "  ${GREEN}✓${RESET} Core workflow (docs/, labels, CLAUDE.md, GitHub i
 [[ "$MOD_OBSERVABILITY" == true ]] && echo -e "  ${GREEN}✓${RESET} Observability    (routine only)"
 [[ "$MOD_COOLIFY"       == true ]] && echo -e "  ${GREEN}✓${RESET} Coolify          (routine only)"
 [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo -e "  ${GREEN}✓${RESET} CLAUDE.md update (routine only)"
+[[ "$MOD_ARCH_REVIEW"   == true ]] && echo -e "  ${GREEN}✓${RESET} Architecture review (skill installed + routine)"
 echo ""
