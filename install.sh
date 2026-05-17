@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # Dark Flow installer
-# Usage: bash install.sh [--name "Project Name"] [--no-labels] [--no-claude]
-# Or pipe: bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/master/install.sh)
+#
+# Interactive:   bash install.sh
+# All modules:   bash install.sh --all
+# Pick modules:  bash install.sh --with-analytics --with-gsc --with-coolify
+# One-liner:     bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh)
+# Silent:        bash install.sh --yes  (core only, no prompts)
 
 set -euo pipefail
 
@@ -13,6 +17,15 @@ PROJECT_NAME=""
 SKIP_LABELS=false
 SKIP_CLAUDE_SNIPPET=false
 FORCE=false
+NON_INTERACTIVE=false
+
+# Optional modules (set via flags or interactive prompts)
+MOD_ANALYTICS=""      # PostHog, Mixpanel, etc.
+MOD_OBSERVABILITY=""  # SigNoz, Datadog, etc.
+MOD_GSC=""            # Google Search Console
+MOD_ADS=""            # Google Ads, Meta Ads, etc.
+MOD_COOLIFY=""        # Coolify deployment monitoring
+MOD_CLAUDE_UPDATE=""  # Auto-regenerate CLAUDE.md
 
 # ── Colours ───────────────────────────────────────────────────────────────────
 
@@ -20,26 +33,58 @@ BOLD="\033[1m"
 GREEN="\033[0;32m"
 YELLOW="\033[0;33m"
 CYAN="\033[0;36m"
-RED="\033[0;31m"
+DIM="\033[2m"
 RESET="\033[0m"
 
 info()    { echo -e "${CYAN}▸ $*${RESET}"; }
 success() { echo -e "${GREEN}✓ $*${RESET}"; }
 warn()    { echo -e "${YELLOW}⚠ $*${RESET}"; }
-error()   { echo -e "${RED}✗ $*${RESET}" >&2; exit 1; }
+dim()     { echo -e "${DIM}  $*${RESET}"; }
 header()  { echo -e "\n${BOLD}$*${RESET}"; }
 
 # ── Argument parsing ──────────────────────────────────────────────────────────
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --name)        PROJECT_NAME="$2"; shift 2 ;;
-    --no-labels)   SKIP_LABELS=true; shift ;;
-    --no-claude)   SKIP_CLAUDE_SNIPPET=true; shift ;;
-    --force)       FORCE=true; shift ;;
-    --target)      TARGET_DIR="$2"; shift 2 ;;
+    --name)               PROJECT_NAME="$2"; shift 2 ;;
+    --no-labels)          SKIP_LABELS=true; shift ;;
+    --no-claude)          SKIP_CLAUDE_SNIPPET=true; shift ;;
+    --force)              FORCE=true; shift ;;
+    --target)             TARGET_DIR="$2"; shift 2 ;;
+    --all)                NON_INTERACTIVE=true
+                          MOD_ANALYTICS=true MOD_OBSERVABILITY=true MOD_GSC=true
+                          MOD_ADS=true MOD_COOLIFY=true MOD_CLAUDE_UPDATE=true
+                          shift ;;
+    --with-analytics)     MOD_ANALYTICS=true; shift ;;
+    --with-observability) MOD_OBSERVABILITY=true; shift ;;
+    --with-gsc)           MOD_GSC=true; shift ;;
+    --with-ads)           MOD_ADS=true; shift ;;
+    --with-coolify)       MOD_COOLIFY=true; shift ;;
+    --with-claude-update) MOD_CLAUDE_UPDATE=true; shift ;;
+    --no-analytics)       MOD_ANALYTICS=false; shift ;;
+    --no-observability)   MOD_OBSERVABILITY=false; shift ;;
+    --no-gsc)             MOD_GSC=false; shift ;;
+    --no-ads)             MOD_ADS=false; shift ;;
+    --no-coolify)         MOD_COOLIFY=false; shift ;;
+    --no-claude-update)   MOD_CLAUDE_UPDATE=false; shift ;;
+    -y|--yes)             NON_INTERACTIVE=true; shift ;;
     -h|--help)
-      echo "Usage: install.sh [--name \"Project Name\"] [--no-labels] [--no-claude] [--force] [--target DIR]"
+      echo "Usage: install.sh [OPTIONS]"
+      echo ""
+      echo "Options:"
+      echo "  --name NAME           Project name (default: directory name)"
+      echo "  --all                 Enable all optional modules non-interactively"
+      echo "  -y, --yes             Accept defaults non-interactively (no optional modules)"
+      echo "  --with-analytics      Include analytics module (PostHog/Mixpanel)"
+      echo "  --with-observability  Include observability module (SigNoz/Datadog)"
+      echo "  --with-gsc            Include Google Search Console module"
+      echo "  --with-ads            Include paid ads module (Google Ads/Meta)"
+      echo "  --with-coolify        Include Coolify deployment monitoring"
+      echo "  --with-claude-update  Include auto CLAUDE.md regeneration routine"
+      echo "  --no-labels           Skip GitHub label setup"
+      echo "  --no-claude           Skip CLAUDE.md creation"
+      echo "  --force               Overwrite existing files"
+      echo "  --target DIR          Install into DIR instead of current directory"
       exit 0
       ;;
     *) warn "Unknown argument: $1"; shift ;;
@@ -61,26 +106,64 @@ fi
 # ── Project name ──────────────────────────────────────────────────────────────
 
 if [[ -z "$PROJECT_NAME" ]]; then
-  # Try to infer from directory or package.json
   if [[ -f "$TARGET_DIR/package.json" ]]; then
     inferred=$(node -p "require('./package.json').name" 2>/dev/null || true)
     [[ -n "$inferred" ]] && PROJECT_NAME="$inferred"
   fi
-  if [[ -z "$PROJECT_NAME" ]]; then
-    PROJECT_NAME="$(basename "$TARGET_DIR")"
+  [[ -z "$PROJECT_NAME" ]] && PROJECT_NAME="$(basename "$TARGET_DIR")"
+
+  if [[ "$NON_INTERACTIVE" == false ]]; then
+    read -rp "Project name [${PROJECT_NAME}]: " input
+    [[ -n "$input" ]] && PROJECT_NAME="$input"
   fi
-  read -rp "Project name [${PROJECT_NAME}]: " input
-  [[ -n "$input" ]] && PROJECT_NAME="$input"
 fi
 
 header "Installing Dark Flow for \"${PROJECT_NAME}\""
 
+# ── Module selection ──────────────────────────────────────────────────────────
+
+ask_module() {
+  local var="$1" label="$2" hint="$3" default="${4:-true}"
+
+  # Already set via flag — skip prompt
+  [[ -n "${!var}" ]] && return
+
+  # No TTY or explicitly non-interactive — use default (false = skip)
+  if [[ "$NON_INTERACTIVE" == true ]] || [[ ! -t 0 ]]; then
+    eval "$var=false"
+    return
+  fi
+
+  local default_label
+  [[ "$default" == true ]] && default_label="Y/n" || default_label="y/N"
+
+  echo -e "  ${BOLD}${label}${RESET} ${DIM}${hint}${RESET}"
+  read -rp "  Include? [${default_label}]: " yn
+  case "${yn:-$default}" in
+    [Yy1tT]*|true) eval "$var=true" ;;
+    *)              eval "$var=false" ;;
+  esac
+  echo ""
+}
+
+if [[ "$NON_INTERACTIVE" == false ]] && \
+   [[ -z "$MOD_ANALYTICS$MOD_OBSERVABILITY$MOD_GSC$MOD_ADS$MOD_COOLIFY$MOD_CLAUDE_UPDATE" ]]; then
+  echo ""
+  echo -e "${BOLD}Optional modules${RESET} — select what applies to your project:"
+  echo ""
+fi
+
+ask_module MOD_ANALYTICS     "Analytics"       "(PostHog, Mixpanel, Amplitude…) — daily review routine + insights/analytics/"
+ask_module MOD_OBSERVABILITY  "Observability"   "(SigNoz, Datadog, Grafana…) — daily error/latency monitoring routine"
+ask_module MOD_GSC            "Search Console"  "(Google Search Console) — weekly GSC check routine + insights/search-console/"
+ask_module MOD_ADS            "Paid Ads"        "(Google Ads, Meta…) — insights/ads/ folder"              false
+ask_module MOD_COOLIFY        "Coolify"         "deployment log monitoring — daily logs check routine"
+ask_module MOD_CLAUDE_UPDATE  "CLAUDE.md update" "weekday routine that re-generates CLAUDE.md from codebase" false
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-# Fetch file from remote or copy from local
 fetch_file() {
-  local rel_path="$1"
-  local dest="$2"
+  local rel_path="$1" dest="$2"
   mkdir -p "$(dirname "$dest")"
   if [[ "$USE_LOCAL" == true ]]; then
     cp "$SOURCE_DIR/$rel_path" "$dest"
@@ -89,10 +172,8 @@ fetch_file() {
   fi
 }
 
-# Create file only if it doesn't exist (or --force)
 safe_fetch() {
-  local rel_path="$1"
-  local dest="$2"
+  local rel_path="$1" dest="$2"
   if [[ -f "$dest" && "$FORCE" != true ]]; then
     warn "Skipping (exists): $dest  — use --force to overwrite"
   else
@@ -101,7 +182,17 @@ safe_fetch() {
   fi
 }
 
-# Replace {{PROJECT_NAME}} in a file
+make_dir() {
+  local d="$1"
+  if [[ ! -d "$d" ]]; then
+    mkdir -p "$d"
+    touch "$d/.gitkeep"
+    success "mkdir $d"
+  else
+    info "Exists: $d"
+  fi
+}
+
 inject_name() {
   local file="$1"
   if [[ "$(uname)" == "Darwin" ]]; then
@@ -117,28 +208,19 @@ header "1/3  Creating docs/ structure"
 
 cd "$TARGET_DIR"
 
-dirs=(
-  "docs/product"
-  "docs/spec/flows"
-  "docs/spec/screens"
-  "docs/design/assets"
-  "docs/insights/analytics"
-  "docs/insights/search-console"
-  "docs/insights/ads"
-  "docs/insights/qualitative"
-  "docs/decisions"
-  ".github/ISSUE_TEMPLATE"
-)
-for d in "${dirs[@]}"; do
-  if [[ ! -d "$d" ]]; then
-    mkdir -p "$d"
-    # keep empty dirs in git
-    touch "$d/.gitkeep"
-    success "mkdir $d"
-  else
-    info "Exists: $d"
-  fi
-done
+# Core dirs — always
+make_dir "docs/product"
+make_dir "docs/spec/flows"
+make_dir "docs/spec/screens"
+make_dir "docs/design/assets"
+make_dir "docs/insights/qualitative"
+make_dir "docs/decisions"
+make_dir ".github/ISSUE_TEMPLATE"
+
+# Optional dirs
+[[ "$MOD_ANALYTICS"    == true ]] && make_dir "docs/insights/analytics"
+[[ "$MOD_GSC"          == true ]] && make_dir "docs/insights/search-console"
+[[ "$MOD_ADS"          == true ]] && make_dir "docs/insights/ads"
 
 # ── Copy template files ───────────────────────────────────────────────────────
 
@@ -148,7 +230,6 @@ safe_fetch "docs/github-issues.md"       "docs/github-issues.md"
 safe_fetch "docs/decisions/TEMPLATE.md"  "docs/decisions/TEMPLATE.md"
 safe_fetch ".github/ISSUE_TEMPLATE/recommendation.yml" ".github/ISSUE_TEMPLATE/recommendation.yml"
 
-# Inject project name into the docs README
 inject_name "docs/README.md"
 
 # ── GitHub labels ─────────────────────────────────────────────────────────────
@@ -158,7 +239,7 @@ if [[ "$SKIP_LABELS" == false ]]; then
   if ! command -v gh &>/dev/null; then
     warn "gh not found — skipping label setup. Install: https://cli.github.com/"
   elif ! gh auth status &>/dev/null 2>&1; then
-    warn "gh not authenticated — run 'gh auth login' then re-run: bash install.sh --no-claude"
+    warn "gh not authenticated — run 'gh auth login' then re-run with --no-claude"
   else
     if [[ "$USE_LOCAL" == true ]]; then
       bash "$SCRIPT_DIR/setup-labels.sh"
@@ -197,7 +278,6 @@ gh issue list --label "status:approved" --state open --json number,title,labels,
       echo ""
     fi
   else
-    # Create minimal CLAUDE.md
     cat > CLAUDE.md << EOF
 # CLAUDE.md
 
@@ -214,21 +294,44 @@ echo -e "${GREEN}${BOLD}Dark Flow installed in ${TARGET_DIR}${RESET}"
 echo ""
 echo "Next steps:"
 echo "  1. Fill in docs/product/ — what are you building and for whom"
-echo "  2. Fill in docs/spec/   — user flows, screens, data model"
-echo "  3. Fill in docs/design/ — tokens, components, voice and tone"
+echo "  2. Fill in docs/spec/    — user flows, screens, data model"
+echo "  3. Fill in docs/design/  — tokens, components, voice and tone"
 echo "  4. Commit: git add docs/ .github/ISSUE_TEMPLATE/ CLAUDE.md && git commit -m 'chore: install dark-flow workflow'"
 echo ""
-echo -e "${BOLD}Then set up Claude Code Routines (Claude Code → Routines → New routine):${RESET}"
-echo "  Full prompts and schedules: https://github.com/alifanov/darkflow/blob/main/routines/README.md"
+
+# Show only the routines relevant to chosen modules
+HAS_ROUTINES=false
+for m in "$MOD_ANALYTICS" "$MOD_OBSERVABILITY" "$MOD_GSC" "$MOD_COOLIFY" "$MOD_CLAUDE_UPDATE"; do
+  [[ "$m" == true ]] && HAS_ROUTINES=true && break
+done
+
+echo -e "${BOLD}Set up Claude Code Routines${RESET} (Claude Code → Routines → New routine)"
+echo "  Full prompts: https://github.com/alifanov/darkflow/blob/main/routines/README.md"
 echo ""
-echo "  Routine              Schedule        What it does"
-echo "  ─────────────────────────────────────────────────────────────────────"
-echo "  Analytics review     Daily 8:00      PostHog + commits → GitHub issues"
-echo "  Observability check  Daily 8:30      SigNoz/errors/slow URLs → issues"
-echo "  GSC check            Weekly Mon      Google Search Console → issues"
-echo "  Fix issues           Hourly          Picks up status:approved → PR → merge"
-echo "  Coolify logs         Daily 9:00      Deployment logs → fix errors"
-echo "  CLAUDE.md update     Weekdays 9:00   Re-generates CLAUDE.md from codebase"
+echo -e "  ${BOLD}Core routines (always recommended):${RESET}"
+echo "  Fix issues       Hourly          Picks up status:approved → PR → merge"
 echo ""
-echo "  ⚠  Set 'Always allowed: Act without asking' on every routine."
+
+if [[ "$HAS_ROUTINES" == true ]]; then
+  echo -e "  ${BOLD}Routines for your selected modules:${RESET}"
+  [[ "$MOD_ANALYTICS"    == true ]] && echo "  Analytics review     Daily 8:00      PostHog/analytics + commits → GitHub issues"
+  [[ "$MOD_OBSERVABILITY" == true ]] && echo "  Observability check  Daily 8:30      SigNoz/errors/slow URLs → GitHub issues"
+  [[ "$MOD_GSC"          == true ]] && echo "  GSC check            Weekly Mon 8:00  Google Search Console → GitHub issues"
+  [[ "$MOD_COOLIFY"      == true ]] && echo "  Coolify logs         Daily 9:00      Deployment logs → fix errors → verify"
+  [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "  CLAUDE.md update     Weekdays 9:00   Re-generates CLAUDE.md from codebase"
+  echo ""
+fi
+
+echo -e "  ${DIM}⚠ Set 'Always allowed: Act without asking' on every routine.${RESET}"
+echo ""
+
+# Summary of what was installed
+echo -e "${DIM}Installed modules:${RESET}"
+echo -e "  ${GREEN}✓${RESET} Core workflow (docs/, labels, CLAUDE.md, GitHub issue template)"
+[[ "$MOD_ANALYTICS"     == true ]] && echo -e "  ${GREEN}✓${RESET} Analytics        (docs/insights/analytics/)"
+[[ "$MOD_GSC"           == true ]] && echo -e "  ${GREEN}✓${RESET} Search Console   (docs/insights/search-console/)"
+[[ "$MOD_ADS"           == true ]] && echo -e "  ${GREEN}✓${RESET} Ads              (docs/insights/ads/)"
+[[ "$MOD_OBSERVABILITY" == true ]] && echo -e "  ${GREEN}✓${RESET} Observability    (routine only)"
+[[ "$MOD_COOLIFY"       == true ]] && echo -e "  ${GREEN}✓${RESET} Coolify          (routine only)"
+[[ "$MOD_CLAUDE_UPDATE" == true ]] && echo -e "  ${GREEN}✓${RESET} CLAUDE.md update (routine only)"
 echo ""
