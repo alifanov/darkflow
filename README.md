@@ -123,6 +123,41 @@ Each routine page has: full instructions, schedule, model recommendation, worktr
 
 ---
 
+## Updating Dark Flow
+
+When a new version of Dark Flow is released, run the updater in any project that has it installed:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/update.sh)
+```
+
+Or via Claude Code:
+```
+/darkflow update
+```
+
+The updater:
+1. Compares your installed version (from `.darkflow`) against the latest
+2. Shows changelog entries since your version
+3. Re-runs label setup (additive — never removes existing labels)
+4. Smart-updates template files: skips unchanged, warns + shows diff if locally modified
+5. Regenerates the Dark Flow section in `CLAUDE.md` between `<!-- darkflow:start/end -->` markers
+6. Bumps the version in `.darkflow`
+
+**Flags:**
+- `--dry-run` — preview what would change without writing anything
+- `--force` — overwrite locally modified template files with upstream versions
+
+**If your template files have local customizations**, the updater will warn you with a diff. Review, then either merge manually or use `--force` to accept the upstream version.
+
+After updating, commit the changes:
+```bash
+git add .darkflow docs/agent-workflow.md docs/github-issues.md CLAUDE.md
+git commit -m "chore: update dark-flow to X.Y.Z"
+```
+
+---
+
 ## Customization
 
 After install, edit:
