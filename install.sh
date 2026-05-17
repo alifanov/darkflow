@@ -7,7 +7,7 @@ set -euo pipefail
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-DARKFLOW_REPO="https://raw.githubusercontent.com/alifanov/darkflow/master"
+DARKFLOW_REPO="https://raw.githubusercontent.com/alifanov/darkflow/main"
 TARGET_DIR="${PWD}"
 PROJECT_NAME=""
 SKIP_LABELS=false

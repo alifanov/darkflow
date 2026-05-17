@@ -21,7 +21,7 @@ Dark Flow installs:
 ### One-liner (run inside your project directory)
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/master/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh)
 ```
 
 ### From source
