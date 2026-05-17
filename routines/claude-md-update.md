@@ -7,7 +7,14 @@ Weekday routine that scans the current state of the codebase and regenerates `CL
 ## Instructions
 
 ```
-Study the current state of the code and generate a new CLAUDE.md file that reflects what is currently in the code. So that it is up to date. Then commit and push the changes.
+Study the current state of the code and update CLAUDE.md to reflect what is currently in the code.
+
+Rules:
+- Keep everything between <!-- darkflow:start --> and <!-- darkflow:end --> exactly as-is — do not touch it
+- Only update the project-specific sections outside those markers (commands, architecture, env vars, patterns)
+- Commit and push the changes only if something actually changed
+
+If CLAUDE.md has no <!-- darkflow:start --> marker, skip the run without committing — leave no comment.
 ```
 
 ---

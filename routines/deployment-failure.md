@@ -20,7 +20,7 @@ If the root cause is unclear or the fix requires more than a small targeted chan
 do NOT guess — open a GitHub issue with label priority:p0, source:signoz, area:infra
 and leave a comment describing what you found. Then stop.
 
-Language: English
+Language: [LANGUAGE]
 ```
 
 ---

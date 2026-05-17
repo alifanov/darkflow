@@ -222,7 +222,7 @@ elif ! grep -q "darkflow:start" CLAUDE.md; then
   echo -e "  ${DIM}Add the markers manually around the Dark Flow section, then re-run update.${RESET}"
 else
   # Regenerate the section between markers
-  # Build the new section inline (mirrors generate_claude_md_section from install.sh)
+  # Build the new section inline — KEEP IN SYNC with generate_claude_md_section() in install.sh
   new_section="<!-- darkflow:start -->
 ## Documentation & Agent Workflow
 

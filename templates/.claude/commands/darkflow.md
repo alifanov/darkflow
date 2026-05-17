@@ -10,7 +10,7 @@ Check the Dark Flow workflow status for this project and help the user manage it
    ```bash
    gh issue list --label "status:approved" --state open --json number,title,labels,body --limit 20
    ```
-   If there are approved issues, summarize them by priority and ask if the user wants to start working on one.
+   Summarize them by priority. Do not offer to start working — the fix-issues routine handles that.
 
 4. **Check for proposed issues** — run:
    ```bash
@@ -53,35 +53,32 @@ Options:
 
 Help the user create a GitHub issue for a manually identified task (bug, feature, or improvement).
 
-Walk through these questions one by one — ask them conversationally, not as a form:
+**Before asking anything**, read `docs/github-issues.md` to get the list of `area:*` labels defined for this project. Use those — not a hardcoded list.
 
-1. **What is it?** — bug, feature, or improvement?
+If `$ARGUMENTS` contains text beyond "new" (e.g. `/darkflow new fix login button on mobile`), use that text as the **title** — do not ask for a title again. Infer the type from the title if obvious ("fix"/"bug" → `bug`, "add"/"implement" → `enhancement`).
+
+Walk through **only the missing fields** conversationally — skip any field already clear from the title:
+
+1. **What is it?** (if not already clear) — bug, feature, or improvement?
    - bug → label `bug`
-   - feature → label `enhancement`
-   - improvement → label `enhancement`
+   - feature / improvement → label `enhancement`
 
-2. **One-line title** — ask for a short action-oriented title ("Fix X", "Add Y", "Improve Z")
+2. **Title** (if not provided in $ARGUMENTS) — short action-oriented ("Fix X", "Add Y")
 
-3. **What area of the codebase?** — show available areas and ask to pick one or more:
-   `worker` · `api` · `landing` · `checkout` · `auth` · `dashboard` · `email` · `checks` · `docs` · `infra`
+3. **Area** — pick one or more from the project's `area:*` labels (read from `docs/github-issues.md`)
 
-4. **Priority?** — ask, give brief context:
+4. **Priority:**
    - p0 — breaks revenue or a key feature right now
-   - p1 — needs to happen this week
+   - p1 — this week
    - p2 — this month
    - p3 — someday / nice-to-have
 
-5. **Effort?** — ask for a rough estimate:
-   - xs — ≤ 30 min
-   - s — ~2 hours
-   - m — half a day
-   - l — more than a day (will need to be split into sub-issues)
+5. **Effort:**
+   - xs — ≤ 30 min · s — ~2 hours · m — half a day · l — more than a day
 
-6. **Description** — ask: "Briefly describe the problem and what done looks like." Use the answer to write:
-   - a short context paragraph
-   - 1–3 acceptance criteria checkboxes
+6. **Description** — "Briefly describe the problem and what done looks like." Use the answer to write a context paragraph and 1–3 acceptance criteria checkboxes.
 
-Then construct and run the `gh issue create` command:
+Then construct and run:
 
 ```bash
 gh issue create \
@@ -101,6 +98,6 @@ EOF
 ```
 
 **Important rules:**
-- Always use `status:approved` for manually created issues — the user already decided to do it
-- If effort is `l`, warn: "This looks like more than a day of work — it's better to split into 2–4 smaller issues. Want me to help break it down first?"
-- After creating the issue, just show the URL and the issue number. The fix-issues routine will pick it up automatically.
+- Always use `status:approved` — the user already decided to do it
+- If effort is `l`: warn "This looks like more than a day — better to split into 2–4 sub-issues. Want me to help break it down first?"
+- After creating, show the URL and issue number. The fix-issues routine will pick it up automatically.

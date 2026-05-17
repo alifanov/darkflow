@@ -26,7 +26,7 @@ After the review is complete, create a GitHub issue for each significant finding
 - Focus on actionable improvements, not style preferences
 - Do not create issues for findings already tracked in open GitHub issues
 
-Language in GitHub issues: English
+Language in GitHub issues: [LANGUAGE]
 ```
 
 ---

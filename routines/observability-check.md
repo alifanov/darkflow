@@ -21,7 +21,7 @@ For each finding:
 - Suggest a concrete fix (add index, cache result, paginate query, etc.)
 
 Create a GitHub issue for each significant finding.
-Language in GitHub issues: English
+Language in GitHub issues: [LANGUAGE]
 ```
 
 Adapt `p95 latency > 1s` and `slow queries > 100ms` thresholds to your stack.

@@ -389,14 +389,7 @@ DARKFLOW_VERSION=$(curl -fsSL "${DARKFLOW_REPO}/VERSION" 2>/dev/null | tr -d '[:
 } > .darkflow
 
 success "Created .darkflow config (version ${DARKFLOW_VERSION})"
-
-# Add .darkflow to .gitignore if it contains obs credentials, otherwise it's safe to commit
-if grep -q "obs_url=" .darkflow 2>/dev/null; then
-  if ! grep -q "^\.darkflow$" .gitignore 2>/dev/null; then
-    echo ".darkflow" >> .gitignore
-    info ".darkflow added to .gitignore (contains integration URLs)"
-  fi
-fi
+# .darkflow is safe to commit — credentials go into .env.darkflow (see below)
 
 # ── Write integration credentials ─────────────────────────────────────────────
 
@@ -444,6 +437,7 @@ fi
 
 generate_claude_md_section() {
   # Outputs the Dark Flow section for CLAUDE.md to stdout (between markers)
+  # KEEP IN SYNC with the new_section block in update.sh — they must produce identical output
   cat << 'HEREDOC'
 <!-- darkflow:start -->
 ## Documentation & Agent Workflow

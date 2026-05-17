@@ -19,7 +19,7 @@ Open a pull request targeting [MAIN_BRANCH] with "Closes #N" in the description.
 Merge the pull request.
 Leave a comment on the issue confirming completion.
 
-Language in GitHub issues: English
+Language in GitHub issues: [LANGUAGE]
 ```
 
 ### Variant B — Direct commit
@@ -33,7 +33,7 @@ Commit and push directly to [MAIN_BRANCH].
 Leave a comment on the issue confirming completion.
 Close the issue.
 
-Language in GitHub issues: English
+Language in GitHub issues: [LANGUAGE]
 ```
 
 Replace `[MAIN_BRANCH]` with your actual branch name (`main`, `master`, `develop`, etc.).  

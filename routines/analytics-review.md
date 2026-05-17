@@ -17,10 +17,10 @@ Add all recommendations as GitHub Issues to the remote GitHub repository of this
 
 Do NOT create recommendations about paid ads — that is handled in a separate routine.
 
-Language in GitHub issues: Russian
+Language in GitHub issues: [LANGUAGE]
 ```
 
-Adapt the language instruction and "do not create" exclusions to your project.
+Replace `[LANGUAGE]` with your project language (e.g. English, Russian). Adapt the "do not create" exclusions to your project.
 
 ---
 

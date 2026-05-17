@@ -8,7 +8,7 @@ Weekly review of Google Search Console data — positions, CTR, impressions, ind
 
 ```
 Check Google Search Console data for the last week. Suggest what to do to improve it.
-Output language: Russian. Add all recommendations as GitHub Issues.
+Output language: [LANGUAGE]. Add all recommendations as GitHub Issues.
 ```
 
 ---
