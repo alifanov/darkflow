@@ -111,6 +111,8 @@ The real power comes from scheduling Claude Code agents that run the loop withou
 | [**Fix issues**](routines/fix-issues.md) | **Hourly** | Picks up `status:approved` → PR → merge |
 | [Coolify logs](routines/coolify-logs.md) | Daily 9:00 | Deployment logs → fixes errors → verifies |
 | [CLAUDE.md update](routines/claude-md-update.md) | Weekdays 9:00 | Re-generates CLAUDE.md from codebase |
+| [Security code audit](routines/security-code-audit.md) | Weekly Sun 3:00 | Secrets, injections, insecure deps → issues |
+| [Security runtime audit](routines/security-runtime-audit.md) | Weekly Sun 4:00 | Headers, TLS, DNS, exposed paths → issues |
 
 **Set up in:** Claude Code → Routines → New routine  
 **Important:** set "Always allowed: Act without asking" on every routine.
