@@ -362,6 +362,42 @@ safe_fetch ".github/ISSUE_TEMPLATE/recommendation.yml" ".github/ISSUE_TEMPLATE/r
 
 inject_name "docs/README.md"
 
+# ── Write .darkflow config ────────────────────────────────────────────────────
+
+DARKFLOW_VERSION=$(curl -fsSL "${DARKFLOW_REPO}/VERSION" 2>/dev/null | tr -d '[:space:]' || echo "1.0.0")
+[[ "$USE_LOCAL" == true ]] && DARKFLOW_VERSION=$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null | tr -d '[:space:]' || echo "1.0.0")
+
+{
+  echo "# Dark Flow project config — do not edit manually, use update.sh to upgrade"
+  echo "version=${DARKFLOW_VERSION}"
+  echo "installed=$(date -u +%Y-%m-%d)"
+  echo "language=${LANGUAGE}"
+  echo "branch=${MAIN_BRANCH}"
+  echo "merge_strategy=${MERGE_STRATEGY}"
+  # modules
+  local_mods=""
+  [[ "$MOD_ANALYTICS"     == true ]] && local_mods="${local_mods}analytics,"
+  [[ "$MOD_OBSERVABILITY" == true ]] && local_mods="${local_mods}observability,"
+  [[ "$MOD_GSC"           == true ]] && local_mods="${local_mods}gsc,"
+  [[ "$MOD_ADS"           == true ]] && local_mods="${local_mods}ads,"
+  [[ "$MOD_COOLIFY"       == true ]] && local_mods="${local_mods}coolify,"
+  [[ "$MOD_CLAUDE_UPDATE" == true ]] && local_mods="${local_mods}claude-update,"
+  [[ "$MOD_ARCH_REVIEW"   == true ]] && local_mods="${local_mods}arch-review,"
+  echo "modules=${local_mods%,}"
+  [[ -n "$OBS_TOOL" ]] && echo "obs_tool=${OBS_TOOL}"
+  [[ -n "$OBS_URL"  ]] && echo "obs_url=${OBS_URL}"
+} > .darkflow
+
+success "Created .darkflow config (version ${DARKFLOW_VERSION})"
+
+# Add .darkflow to .gitignore if it contains obs credentials, otherwise it's safe to commit
+if grep -q "obs_url=" .darkflow 2>/dev/null; then
+  if ! grep -q "^\.darkflow$" .gitignore 2>/dev/null; then
+    echo ".darkflow" >> .gitignore
+    info ".darkflow added to .gitignore (contains integration URLs)"
+  fi
+fi
+
 # ── Write integration credentials ─────────────────────────────────────────────
 
 if [[ -n "$OBS_URL" ]] || [[ -n "$OBS_API_KEY" ]]; then
@@ -407,8 +443,9 @@ fi
 # ── CLAUDE.md ─────────────────────────────────────────────────────────────────
 
 generate_claude_md_section() {
-  # Outputs the Dark Flow section for CLAUDE.md to stdout
+  # Outputs the Dark Flow section for CLAUDE.md to stdout (between markers)
   cat << 'HEREDOC'
+<!-- darkflow:start -->
 ## Documentation & Agent Workflow
 
 @docs/agent-workflow.md
@@ -490,6 +527,8 @@ HEREDOC
   echo ""
   echo "Use \`/darkflow\` inside Claude Code to check workflow health, review the approved queue,"
   echo "or re-run the installer (\`/darkflow install\`)."
+  echo ""
+  echo "<!-- darkflow:end -->"
 }
 
 if [[ "$SKIP_CLAUDE_SNIPPET" == false ]]; then
