@@ -16,6 +16,8 @@ DARKFLOW_REPO="https://raw.githubusercontent.com/alifanov/darkflow/main"
 TARGET_DIR="${PWD}"
 PROJECT_NAME=""
 LANGUAGE=""           # Language for agent outputs and GitHub issues (default: English)
+MAIN_BRANCH=""        # Main branch name (default: main)
+MERGE_STRATEGY=""     # "pr" = create PR then merge | "direct" = commit directly to main
 SKIP_LABELS=false
 SKIP_CLAUDE_SNIPPET=false
 FORCE=false
@@ -82,6 +84,9 @@ while [[ $# -gt 0 ]]; do
     --obs-tool)           OBS_TOOL="$2"; shift 2 ;;
     --obs-url)            OBS_URL="$2"; shift 2 ;;
     --obs-api-key)        OBS_API_KEY="$2"; shift 2 ;;
+    --branch)             MAIN_BRANCH="$2"; shift 2 ;;
+    --merge-pr)           MERGE_STRATEGY="pr"; shift ;;
+    --merge-direct)       MERGE_STRATEGY="direct"; shift ;;
     -y|--yes)             NON_INTERACTIVE=true; shift ;;
     -h|--help)
       echo "Usage: install.sh [OPTIONS]"
@@ -99,6 +104,9 @@ while [[ $# -gt 0 ]]; do
       echo "  --with-coolify        Include Coolify deployment monitoring"
       echo "  --with-claude-update  Include auto CLAUDE.md regeneration routine"
       echo "  --with-arch-review    Install improve-codebase-architecture skill + weekly routine"
+      echo "  --branch NAME         Main branch name (default: main)"
+      echo "  --merge-pr            Fix issues via pull requests (default)"
+      echo "  --merge-direct        Fix issues by committing directly to main branch"
       echo "  --no-labels           Skip GitHub label setup"
       echo "  --no-claude           Skip CLAUDE.md creation"
       echo "  --force               Overwrite existing files"
@@ -168,6 +176,43 @@ if [[ -z "$LANGUAGE" ]]; then
 fi
 
 info "Language: ${LANGUAGE}"
+
+# ── Branch & merge strategy ───────────────────────────────────────────────────
+
+if [[ -z "$MAIN_BRANCH" ]]; then
+  if [[ "$NON_INTERACTIVE" == true ]] || [[ ! -t 0 ]]; then
+    # Auto-detect from git, fall back to "main"
+    MAIN_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+    [[ "$MAIN_BRANCH" == "HEAD" ]] && MAIN_BRANCH="main"
+  else
+    detected=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+    [[ "$detected" == "HEAD" ]] && detected="main"
+    echo ""
+    read -rp "Main branch name [${detected}]: " branch_input
+    MAIN_BRANCH="${branch_input:-$detected}"
+  fi
+fi
+
+if [[ -z "$MERGE_STRATEGY" ]]; then
+  if [[ "$NON_INTERACTIVE" == true ]] || [[ ! -t 0 ]]; then
+    MERGE_STRATEGY="pr"
+  else
+    echo ""
+    echo -e "${BOLD}Fix Issues merge strategy${RESET} — how should the agent close approved issues?"
+    echo ""
+    echo "  1) Pull request — agent opens a PR, then merges it (default, safer, auditable)"
+    echo "  2) Direct commit — agent commits and pushes directly to ${MAIN_BRANCH} (faster)"
+    echo ""
+    read -rp "  Choice [1]: " merge_choice
+    case "${merge_choice:-1}" in
+      2) MERGE_STRATEGY="direct" ;;
+      *) MERGE_STRATEGY="pr" ;;
+    esac
+    echo ""
+  fi
+fi
+
+info "Branch: ${MAIN_BRANCH} | Merge: ${MERGE_STRATEGY}"
 
 # ── Module selection ──────────────────────────────────────────────────────────
 
@@ -372,6 +417,12 @@ generate_claude_md_section() {
 HEREDOC
 
   echo "**Language:** ${LANGUAGE} — use this language for GitHub issues, comments, commit messages, and all agent-facing text."
+  echo "**Main branch:** \`${MAIN_BRANCH}\`"
+  if [[ "$MERGE_STRATEGY" == "direct" ]]; then
+    echo "**Fix Issues strategy:** commit and push directly to \`${MAIN_BRANCH}\` — no pull requests."
+  else
+    echo "**Fix Issues strategy:** open a pull request, then merge into \`${MAIN_BRANCH}\` with \`Closes #N\`."
+  fi
   echo ""
 
   cat << 'HEREDOC'
@@ -520,7 +571,22 @@ echo -e "${BOLD}Set up Claude Code Routines${RESET} (Claude Code → Routines �
 echo "  Full prompts: https://github.com/alifanov/darkflow/blob/main/routines/README.md"
 echo ""
 echo -e "  ${BOLD}Core routines (always recommended):${RESET}"
-echo "  Fix issues       Hourly          Picks up status:approved → PR → merge"
+if [[ "$MERGE_STRATEGY" == "direct" ]]; then
+  echo "  Fix issues       Hourly          Picks up status:approved → commit → push to ${MAIN_BRANCH}"
+else
+  echo "  Fix issues       Hourly          Picks up status:approved → PR → merge into ${MAIN_BRANCH}"
+fi
+echo ""
+echo -e "  ${DIM}Fix Issues instruction for your setup:${RESET}"
+if [[ "$MERGE_STRATEGY" == "direct" ]]; then
+  echo -e "  ${DIM}  Take one GitHub issue (status:approved, highest priority), implement the fix,${RESET}"
+  echo -e "  ${DIM}  commit and push directly to ${MAIN_BRANCH}. Leave a comment on the issue.${RESET}"
+  echo -e "  ${DIM}  Close the issue. Language: ${LANGUAGE}.${RESET}"
+else
+  echo -e "  ${DIM}  Take one GitHub issue (status:approved, highest priority), implement the fix,${RESET}"
+  echo -e "  ${DIM}  open a PR targeting ${MAIN_BRANCH} with 'Closes #N', merge it.${RESET}"
+  echo -e "  ${DIM}  Language in GitHub issues: ${LANGUAGE}.${RESET}"
+fi
 echo ""
 
 if [[ "$HAS_ROUTINES" == true ]]; then
