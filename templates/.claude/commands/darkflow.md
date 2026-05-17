@@ -103,4 +103,4 @@ EOF
 **Important rules:**
 - Always use `status:approved` for manually created issues — the user already decided to do it
 - If effort is `l`, warn: "This looks like more than a day of work — it's better to split into 2–4 smaller issues. Want me to help break it down first?"
-- After creating the issue, show the URL and ask: "Want me to start working on it now?"
+- After creating the issue, just show the URL and the issue number. The fix-issues routine will pick it up automatically.
