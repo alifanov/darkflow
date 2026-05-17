@@ -204,7 +204,7 @@ inject_name() {
 
 # ── Create directory structure ────────────────────────────────────────────────
 
-header "1/3  Creating docs/ structure"
+header "1/4  Creating docs/ structure"
 
 cd "$TARGET_DIR"
 
@@ -235,7 +235,7 @@ inject_name "docs/README.md"
 # ── GitHub labels ─────────────────────────────────────────────────────────────
 
 if [[ "$SKIP_LABELS" == false ]]; then
-  header "2/3  Setting up GitHub labels"
+  header "2/4  Setting up GitHub labels"
   if ! command -v gh &>/dev/null; then
     warn "gh not found — skipping label setup. Install: https://cli.github.com/"
   elif ! gh auth status &>/dev/null 2>&1; then
@@ -251,41 +251,115 @@ else
   info "Skipping labels (--no-labels)"
 fi
 
-# ── CLAUDE.md snippet ─────────────────────────────────────────────────────────
+# ── CLAUDE.md ─────────────────────────────────────────────────────────────────
 
-if [[ "$SKIP_CLAUDE_SNIPPET" == false ]]; then
-  header "3/3  CLAUDE.md"
-
-  SNIPPET='## Docs & Agent Workflow
+generate_claude_md_section() {
+  # Outputs the Dark Flow section for CLAUDE.md to stdout
+  cat << 'HEREDOC'
+## Documentation & Agent Workflow
 
 @docs/agent-workflow.md
 @docs/github-issues.md
 
-**Before each session** — check the approved task queue:
+### Before each session
+
+Check approved task queue:
 ```bash
 gh issue list --label "status:approved" --state open --json number,title,labels,body --limit 20
-```'
+```
+If there are approved issues with `area:*` matching the current context — pick them first.
+Before starting: set `status:in-progress`, leave a comment with the branch name.
+
+### When to read docs
+
+HEREDOC
+
+  echo "- **Any UI/UX task** → \`docs/design/voice-and-tone.md\` + \`docs/design/tokens.md\` + \`docs/design/patterns.md\` + \`docs/design/components.md\`"
+  echo "- **Changing a user flow** → \`docs/spec/flows/\`"
+  echo "- **Product / marketing decisions** → \`docs/product/positioning.md\` + \`docs/product/audience.md\` + \`docs/product/pricing.md\`"
+  [[ "$MOD_ANALYTICS" == true ]] && echo "- **Working with analytics events** → \`docs/product/metrics.md\` (not guessing event names)"
+  [[ "$MOD_ANALYTICS" == true ]] && echo "- **Context on what's working now** → last 2–3 files from \`docs/insights/analytics/\`"
+  [[ "$MOD_GSC"       == true ]] && echo "- **SEO decisions** → last 2–3 files from \`docs/insights/search-console/\`"
+  [[ "$MOD_ADS"       == true ]] && echo "- **Ads campaigns** → last 2–3 files from \`docs/insights/ads/\`"
+  echo "- **Before architectural changes** → \`docs/decisions/\` (check for existing ADRs)"
+
+  echo ""
+  echo "### When to write docs"
+  echo ""
+  echo "- **Changed a user flow** → update \`docs/spec/flows/*.md\`"
+  echo "- **Added / removed a screen** → update \`docs/spec/screens/inventory.md\`"
+  echo "- **Changed data model** → update \`docs/spec/data-model.md\`"
+  echo "- **Changed pricing / billing** → update \`docs/product/pricing.md\`"
+  echo "- **Added UI component or pattern** → update \`docs/design/components.md\` / \`docs/design/patterns.md\`"
+  echo "- **Made an architectural decision** → add ADR to \`docs/decisions/\` (context → decision → how to verify)"
+  [[ "$MOD_ANALYTICS" == true ]] && echo "- **After analyzing analytics** → write snapshot to \`docs/insights/analytics/YYYY-MM-DD.md\`"
+  [[ "$MOD_GSC"       == true ]] && echo "- **After checking GSC** → write snapshot to \`docs/insights/search-console/YYYY-MM-DD.md\`"
+  [[ "$MOD_ADS"       == true ]] && echo "- **After checking ads** → write snapshot to \`docs/insights/ads/YYYY-MM-DD.md\`"
+
+  # Routines section — only if any optional module selected
+  local has_routines=false
+  for m in "$MOD_ANALYTICS" "$MOD_OBSERVABILITY" "$MOD_GSC" "$MOD_COOLIFY" "$MOD_CLAUDE_UPDATE"; do
+    [[ "$m" == true ]] && has_routines=true && break
+  done
+
+  echo ""
+  echo "### Active Routines"
+  echo ""
+  echo "Scheduled Claude Code agents that run this workflow automatically:"
+  echo ""
+  echo "- **Fix issues** (Hourly) — picks up \`status:approved\` issues → PR → merge to main"
+  [[ "$MOD_ANALYTICS"     == true ]] && echo "- **Analytics review** (Daily 8:00) — PostHog + recent commits → GitHub issues"
+  [[ "$MOD_OBSERVABILITY" == true ]] && echo "- **Observability check** (Daily 8:30) — errors / slow URLs → GitHub issues"
+  [[ "$MOD_GSC"           == true ]] && echo "- **GSC check** (Weekly Mon 8:00) — Google Search Console → GitHub issues"
+  [[ "$MOD_COOLIFY"       == true ]] && echo "- **Coolify logs** (Daily 9:00) — deployment monitoring → fix errors"
+  [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- **CLAUDE.md update** (Weekdays 9:00) — re-generates this file from codebase"
+  echo ""
+  echo "Set up via: Claude Code → Routines → New routine"
+  echo "Prompts: https://github.com/alifanov/darkflow/blob/main/routines/README.md"
+  echo ""
+  echo "### Dark Flow command"
+  echo ""
+  echo "Use \`/darkflow\` inside Claude Code to check workflow health, review the approved queue,"
+  echo "or re-run the installer (\`/darkflow install\`)."
+}
+
+if [[ "$SKIP_CLAUDE_SNIPPET" == false ]]; then
+  header "3/4  CLAUDE.md"
 
   if [[ -f "CLAUDE.md" ]]; then
     if grep -q "agent-workflow.md" CLAUDE.md; then
-      info "CLAUDE.md already references agent-workflow.md — nothing to add"
+      info "CLAUDE.md already references agent-workflow.md — skipping (use --force to regenerate)"
     else
       warn "CLAUDE.md exists but does not reference workflow docs."
       echo ""
-      echo -e "${BOLD}Add this to your CLAUDE.md:${RESET}"
-      echo ""
-      echo "$SNIPPET"
-      echo ""
+      echo -e "${BOLD}Add this section to your CLAUDE.md:${RESET}"
+      echo "──────────────────────────────────────────"
+      generate_claude_md_section
+      echo "──────────────────────────────────────────"
     fi
   else
-    cat > CLAUDE.md << EOF
-# CLAUDE.md
-
-$SNIPPET
-EOF
+    {
+      echo "# CLAUDE.md"
+      echo ""
+      generate_claude_md_section
+    } > CLAUDE.md
     success "Created CLAUDE.md"
   fi
 fi
+
+# ── Claude Code command ───────────────────────────────────────────────────────
+
+header "4/4  Claude Code command"
+
+make_dir ".claude/commands"
+
+if [[ "$USE_LOCAL" == true ]]; then
+  safe_fetch ".claude/commands/darkflow.md" ".claude/commands/darkflow.md"
+else
+  safe_fetch ".claude/commands/darkflow.md" ".claude/commands/darkflow.md"
+fi
+
+success "Installed /darkflow command — use it inside Claude Code to check workflow health"
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 
