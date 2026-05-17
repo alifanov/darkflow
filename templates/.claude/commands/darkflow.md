@@ -48,3 +48,59 @@ bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/updat
 Options:
 - `--dry-run` — show what would change without applying anything
 - `--force` — overwrite template files even if locally modified
+
+## If $ARGUMENTS contains "new"
+
+Help the user create a GitHub issue for a manually identified task (bug, feature, or improvement).
+
+Walk through these questions one by one — ask them conversationally, not as a form:
+
+1. **What is it?** — bug, feature, or improvement?
+   - bug → label `bug`
+   - feature → label `enhancement`
+   - improvement → label `enhancement`
+
+2. **One-line title** — ask for a short action-oriented title ("Fix X", "Add Y", "Improve Z")
+
+3. **What area of the codebase?** — show available areas and ask to pick one or more:
+   `worker` · `api` · `landing` · `checkout` · `auth` · `dashboard` · `email` · `checks` · `docs` · `infra`
+
+4. **Priority?** — ask, give brief context:
+   - p0 — breaks revenue or a key feature right now
+   - p1 — needs to happen this week
+   - p2 — this month
+   - p3 — someday / nice-to-have
+
+5. **Effort?** — ask for a rough estimate:
+   - xs — ≤ 30 min
+   - s — ~2 hours
+   - m — half a day
+   - l — more than a day (will need to be split into sub-issues)
+
+6. **Description** — ask: "Briefly describe the problem and what done looks like." Use the answer to write:
+   - a short context paragraph
+   - 1–3 acceptance criteria checkboxes
+
+Then construct and run the `gh issue create` command:
+
+```bash
+gh issue create \
+  --title "<title>" \
+  --label "status:approved,source:manual,area:<area>,priority:<p>,effort:<e>,<type>" \
+  --body "$(cat <<'EOF'
+## Context
+
+<description>
+
+## Acceptance criteria
+
+- [ ] <criterion 1>
+- [ ] <criterion 2 if needed>
+EOF
+)"
+```
+
+**Important rules:**
+- Always use `status:approved` for manually created issues — the user already decided to do it
+- If effort is `l`, warn: "This looks like more than a day of work — it's better to split into 2–4 smaller issues. Want me to help break it down first?"
+- After creating the issue, show the URL and ask: "Want me to start working on it now?"

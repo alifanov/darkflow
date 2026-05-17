@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [1.1.0] — 2026-05-17
+
+### Installer
+- **Updated command** `/darkflow new` — interactive issue creator for manually identified bugs and features
+
+---
+
 ## [1.0.0] — 2026-05-17
 
 Initial release.
