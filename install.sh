@@ -30,6 +30,11 @@ MOD_COOLIFY=""        # Coolify deployment monitoring
 MOD_CLAUDE_UPDATE=""  # Auto-regenerate CLAUDE.md
 MOD_ARCH_REVIEW=""    # Architecture review skill (improve-codebase-architecture)
 
+# Integration credentials (collected interactively or via flags)
+OBS_TOOL=""           # Observability tool name (SigNoz / Datadog / Grafana / Other)
+OBS_URL=""            # Observability tool base URL
+OBS_API_KEY=""        # Observability API key
+
 # ── Colours ───────────────────────────────────────────────────────────────────
 
 BOLD="\033[1m"
@@ -74,6 +79,9 @@ while [[ $# -gt 0 ]]; do
     --no-claude-update)   MOD_CLAUDE_UPDATE=false; shift ;;
     --with-arch-review)   MOD_ARCH_REVIEW=true; shift ;;
     --no-arch-review)     MOD_ARCH_REVIEW=false; shift ;;
+    --obs-tool)           OBS_TOOL="$2"; shift 2 ;;
+    --obs-url)            OBS_URL="$2"; shift 2 ;;
+    --obs-api-key)        OBS_API_KEY="$2"; shift 2 ;;
     -y|--yes)             NON_INTERACTIVE=true; shift ;;
     -h|--help)
       echo "Usage: install.sh [OPTIONS]"
@@ -202,6 +210,41 @@ ask_module MOD_COOLIFY        "Coolify"           "deployment log monitoring —
 ask_module MOD_CLAUDE_UPDATE  "CLAUDE.md update"  "weekday routine that re-generates CLAUDE.md from codebase" false
 ask_module MOD_ARCH_REVIEW    "Architecture review" "installs improve-codebase-architecture skill + weekly routine (Matt Pocock)" false
 
+# ── Integrations ──────────────────────────────────────────────────────────────
+
+if [[ "$MOD_OBSERVABILITY" == true ]] && [[ -z "$OBS_URL" ]] && \
+   [[ "$NON_INTERACTIVE" == false ]] && [[ -t 0 ]]; then
+  echo ""
+  echo -e "${BOLD}Observability integration${RESET}"
+  echo ""
+  read -rp "  Connect your observability tool now? [Y/n]: " want_obs
+  case "${want_obs:-Y}" in
+    [Yy]*|"")
+      echo ""
+      echo "  Tool:"
+      echo "    1) SigNoz"
+      echo "    2) Datadog"
+      echo "    3) Grafana"
+      echo "    4) Other"
+      read -rp "  Choice [1]: " obs_choice
+      case "${obs_choice:-1}" in
+        1|"") OBS_TOOL="SigNoz" ;;
+        2)    OBS_TOOL="Datadog" ;;
+        3)    OBS_TOOL="Grafana" ;;
+        4)    read -rp "  Tool name: " OBS_TOOL; [[ -z "$OBS_TOOL" ]] && OBS_TOOL="Observability" ;;
+        *)    OBS_TOOL="$obs_choice" ;;
+      esac
+      echo ""
+      read -rp "  ${OBS_TOOL} URL (e.g. https://signoz.example.com): " OBS_URL
+      read -rsp "  ${OBS_TOOL} API key: " OBS_API_KEY; echo ""
+      echo ""
+      ;;
+    *)
+      info "Skipping observability integration setup"
+      ;;
+  esac
+fi
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 fetch_file() {
@@ -273,6 +316,29 @@ safe_fetch "docs/decisions/TEMPLATE.md"  "docs/decisions/TEMPLATE.md"
 safe_fetch ".github/ISSUE_TEMPLATE/recommendation.yml" ".github/ISSUE_TEMPLATE/recommendation.yml"
 
 inject_name "docs/README.md"
+
+# ── Write integration credentials ─────────────────────────────────────────────
+
+if [[ -n "$OBS_URL" ]] || [[ -n "$OBS_API_KEY" ]]; then
+  CREDS_FILE=".env.darkflow"
+  {
+    echo "# Dark Flow — integration credentials"
+    echo "# Add these to your project .env (do NOT commit .env.darkflow if it contains real keys)"
+    echo ""
+    [[ -n "$OBS_TOOL"    ]] && echo "# ${OBS_TOOL}"
+    [[ -n "$OBS_URL"     ]] && echo "OBSERVABILITY_URL=${OBS_URL}"
+    [[ -n "$OBS_API_KEY" ]] && echo "OBSERVABILITY_API_KEY=${OBS_API_KEY}"
+  } > "$CREDS_FILE"
+
+  # Append to .gitignore so keys aren't committed
+  if ! grep -q ".env.darkflow" .gitignore 2>/dev/null; then
+    echo ".env.darkflow" >> .gitignore
+    success "Added .env.darkflow to .gitignore"
+  fi
+
+  success "Credentials saved to .env.darkflow (git-ignored)"
+  info "Copy them to your main .env and configure your observability MCP accordingly"
+fi
 
 # ── GitHub labels ─────────────────────────────────────────────────────────────
 
@@ -357,7 +423,10 @@ HEREDOC
   echo ""
   echo "- **Fix issues** (Hourly) — picks up \`status:approved\` issues → PR → merge to main"
   [[ "$MOD_ANALYTICS"     == true ]] && echo "- **Analytics review** (Daily 8:00) — PostHog + recent commits → GitHub issues"
-  [[ "$MOD_OBSERVABILITY" == true ]] && echo "- **Observability check** (Daily 8:30) — errors / slow URLs → GitHub issues"
+  if [[ "$MOD_OBSERVABILITY" == true ]]; then
+    local obs_label="${OBS_TOOL:-Observability tool}"
+    echo "- **Observability check** (Daily 8:30) — ${obs_label}: errors / slow queries / latency → GitHub issues"
+  fi
   [[ "$MOD_GSC"           == true ]] && echo "- **GSC check** (Weekly Mon 8:00) — Google Search Console → GitHub issues"
   [[ "$MOD_COOLIFY"       == true ]] && echo "- **Coolify logs** (Daily 9:00) — deployment monitoring → fix errors"
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- **CLAUDE.md update** (Weekdays 9:00) — re-generates this file from codebase"
