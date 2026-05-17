@@ -86,17 +86,17 @@ The real power comes from scheduling Claude Code agents that run the loop withou
 
 | Routine | Schedule | What it does |
 |---|---|---|
-| Analytics review | Daily 8:00 | Checks PostHog + recent commits → creates `status:proposed` issues |
-| Observability check | Daily 8:30 | Checks SigNoz/errors/slow URLs → creates issues |
-| GSC check | Weekly Mon 8:00 | Checks Google Search Console → creates issues |
-| **Fix issues** | **Hourly** | Picks up `status:approved` issues → PR → merge |
-| Coolify logs | Daily 9:00 | Checks deployment logs → fixes errors |
-| CLAUDE.md update | Weekdays 9:00 | Re-generates CLAUDE.md from current codebase |
+| [Analytics review](routines/analytics-review.md) | Daily 8:00 | PostHog + commits → `status:proposed` issues |
+| [Observability check](routines/observability-check.md) | Daily 8:30 | SigNoz/errors/slow URLs → issues |
+| [GSC check](routines/gsc-check.md) | Weekly Mon 8:00 | Google Search Console → issues |
+| [**Fix issues**](routines/fix-issues.md) | **Hourly** | Picks up `status:approved` → PR → merge |
+| [Coolify logs](routines/coolify-logs.md) | Daily 9:00 | Deployment logs → fixes errors → verifies |
+| [CLAUDE.md update](routines/claude-md-update.md) | Weekdays 9:00 | Re-generates CLAUDE.md from codebase |
 
 **Set up in:** Claude Code → Routines → New routine  
 **Important:** set "Always allowed: Act without asking" on every routine.
 
-Full instructions and prompt templates for each routine: [routines/README.md](./routines/README.md)
+Each routine page has: full instructions, schedule, model recommendation, worktree setting, and required integrations.
 
 ---
 
