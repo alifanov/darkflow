@@ -207,6 +207,23 @@
 
   .empty { color: var(--muted); font-size: 13px; text-align: center; padding: 24px 0; }
 
+  a { color: inherit; text-decoration: none; }
+
+  a.issue-row:hover, a.approval-issue-row:hover {
+    border-color: var(--border);
+    background: #252525;
+  }
+
+  a.priority-cell:hover { background: #2a2a2a; }
+
+  a.stat-card:hover { background: #1c1c1c; }
+
+  .card-title a {
+    color: var(--muted);
+    border-bottom: 1px solid transparent;
+  }
+  .card-title a:hover { border-bottom-color: var(--muted); }
+
   /* ── Awaiting approval ─────────────────────────────────────────── */
   .approval-card {
     background: var(--surface);
@@ -266,6 +283,7 @@
     "currency": "USD"
   },
   "github": {
+    "repo_url": null,
     "open_total": null,
     "by_priority": { "p0": 0, "p1": 0, "p2": 0, "p3": 0 },
     "by_area": {},
@@ -341,6 +359,16 @@
   var sec  = d.security     || {};
   var arch = d.architecture || {};
   var prio = gh.by_priority || {};
+  var repo = gh.repo_url    || null;
+
+  function issueHref(n)    { return repo ? repo + '/issues/' + n : null; }
+  function filterHref(lbl) { return repo ? repo + '/issues?q=' + encodeURIComponent('is:open label:' + lbl) : null; }
+  function allHref()       { return repo ? repo + '/issues' : null; }
+
+  function row(cls, href, inner) {
+    if (href) return '<a class="' + cls + '" href="' + href + '" target="_blank" rel="noopener">' + inner + '</a>';
+    return '<div class="' + cls + '">' + inner + '</div>';
+  }
 
   var secStatus  = sec.status  !== 'unknown' ? sec.status  : deriveSecStatus(sec);
   var archStatus = arch.status !== 'unknown' ? arch.status : deriveArchStatus(arch);
@@ -381,10 +409,10 @@
     + fmt(an.revenue_7d, an.revenue_7d !== null ? moneyPrefix : '') + '</div>'
     + '<div class="stat-sub">last 7 days</div></div>'
 
-    + '<div class="stat-card"><div class="stat-label">Open Issues</div>'
-    + '<div class="stat-value' + issueColor + '">' + fmt(gh.open_total) + '</div>'
-    + '<div class="stat-sub">'
-    + ((prio.p0 || 0) > 0 ? prio.p0 + ' critical' : 'github') + '</div></div>'
+    + row('stat-card', allHref(), '<div class="stat-label">Open Issues</div>'
+        + '<div class="stat-value' + issueColor + '">' + fmt(gh.open_total) + '</div>'
+        + '<div class="stat-sub">'
+        + ((prio.p0 || 0) > 0 ? prio.p0 + ' critical' : 'github') + '</div>')
     + '</div>'
 
     + '<div class="status-row">'
@@ -403,39 +431,44 @@
 
     + (pending.length
       ? '<div class="approval-card has-items">'
-        + '<div class="card-title">Awaiting Approval'
+        + '<div class="card-title">'
+        + (filterHref('status:proposed')
+            ? '<a href="' + filterHref('status:proposed') + '" target="_blank" rel="noopener">Awaiting Approval</a>'
+            : 'Awaiting Approval')
         + '<span class="approval-count">' + pending.length + '</span></div>'
         + '<div class="issue-list">'
         + pending.map(function(i) {
-            return '<div class="approval-issue-row">'
-              + '<span class="issue-num">#' + esc(i.number) + '</span>'
+            return row('approval-issue-row', issueHref(i.number),
+              '<span class="issue-num">#' + esc(i.number) + '</span>'
               + '<span class="issue-title">' + esc(i.title) + '</span>'
-              + (i.area ? '<span class="approval-area">' + esc(i.area) + '</span>' : '')
-              + '</div>';
+              + (i.area ? '<span class="approval-area">' + esc(i.area) + '</span>' : ''));
           }).join('')
         + '</div></div>'
       : '')
 
     + '<div class="main-grid">'
 
-    + '<div class="card"><div class="card-title">Critical Issues — P0 &amp; P1</div>'
+    + '<div class="card"><div class="card-title">'
+    + (filterHref('priority:p0,priority:p1')
+        ? '<a href="' + filterHref('priority:p0,priority:p1') + '" target="_blank" rel="noopener">Critical Issues — P0 &amp; P1</a>'
+        : 'Critical Issues — P0 &amp; P1')
+    + '</div>'
     + (critical.length
       ? '<div class="issue-list">'
         + critical.map(function(i) {
-            return '<div class="issue-row">'
-              + '<span class="issue-num">#' + i.number + '</span>'
+            return row('issue-row', issueHref(i.number),
+              '<span class="issue-num">#' + i.number + '</span>'
               + '<span class="badge badge-' + esc(i.priority) + '">' + esc((i.priority||'').toUpperCase()) + '</span>'
               + '<span class="issue-title">' + esc(i.title) + '</span>'
-              + (i.area ? '<span class="issue-area">' + esc(i.area) + '</span>' : '')
-              + '</div>';
+              + (i.area ? '<span class="issue-area">' + esc(i.area) + '</span>' : ''));
           }).join('')
         + '</div>'
       : '<div class="empty">No critical issues open</div>')
     + '<div class="priority-grid">'
-    + '<div class="priority-cell"><div class="num" style="color:var(--red)">' + (prio.p0||0) + '</div><div class="lbl">P0 critical</div></div>'
-    + '<div class="priority-cell"><div class="num" style="color:var(--yellow)">' + (prio.p1||0) + '</div><div class="lbl">P1 high</div></div>'
-    + '<div class="priority-cell"><div class="num" style="color:var(--blue)">' + (prio.p2||0) + '</div><div class="lbl">P2 medium</div></div>'
-    + '<div class="priority-cell"><div class="num" style="color:var(--muted)">' + (prio.p3||0) + '</div><div class="lbl">P3 low</div></div>'
+    + row('priority-cell', filterHref('priority:p0'), '<div class="num" style="color:var(--red)">' + (prio.p0||0) + '</div><div class="lbl">P0 critical</div>')
+    + row('priority-cell', filterHref('priority:p1'), '<div class="num" style="color:var(--yellow)">' + (prio.p1||0) + '</div><div class="lbl">P1 high</div>')
+    + row('priority-cell', filterHref('priority:p2'), '<div class="num" style="color:var(--blue)">' + (prio.p2||0) + '</div><div class="lbl">P2 medium</div>')
+    + row('priority-cell', filterHref('priority:p3'), '<div class="num" style="color:var(--muted)">' + (prio.p3||0) + '</div><div class="lbl">P3 low</div>')
     + '</div></div>'
 
     + '<div class="card"><div class="card-title">Issues by Area</div>'

@@ -57,7 +57,7 @@ Update `docs/overview.html` — the project status dashboard. Read the file, rep
 
 **Data to collect:**
 
-1. **GitHub** — run `gh issue list --state open --json number,title,labels --limit 200`:
+1. **GitHub** — run `gh repo view --json url -q .url` to get `github.repo_url`. Then run `gh issue list --state open --json number,title,labels --limit 200`:
    - `github.open_total` — total count
    - `github.by_priority` — count per `priority:p0/p1/p2/p3` label
    - `github.by_area` — count per `area:*` label (strip the `area:` prefix)
@@ -80,6 +80,7 @@ Update `docs/overview.html` — the project status dashboard. Read the file, rep
   "last_updated": "2025-01-15T08:05:00Z",
   "analytics": { "users_total": N, "visitors_7d": N, "revenue_7d": N, "currency": "USD" },
   "github": {
+    "repo_url": "https://github.com/owner/repo",
     "open_total": N,
     "by_priority": { "p0": N, "p1": N, "p2": N, "p3": N },
     "by_area": { "api": N, "ui": N, ... },
