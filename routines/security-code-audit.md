@@ -44,6 +44,23 @@ Critical findings (`priority:p0`) should be reviewed immediately.
 
 ---
 
+## After completing
+
+Update `docs/overview.html` with the fresh security status:
+
+1. Read `docs/overview.html`
+2. Run `gh issue list --state open --json number,title,labels --limit 200`
+3. Count issues with label `source:security-review` or `area:security` → `security.open_issues`
+4. Count those with `priority:p0` or `priority:p1` → `security.critical_open`
+5. Set `security.last_audit` to today's date (YYYY-MM-DD)
+6. Derive `security.status`: `"critical"` if critical_open > 0, `"warning"` if open > 5, `"ok"` otherwise
+7. Also recalculate `github.*` from the full issue list
+8. Write `docs/overview.html`
+
+Preserve `analytics.*` and `architecture.*` from the existing JSON — only update `security.*` and `github.*`.
+
+---
+
 ## Notes
 
 - Use **Opus** — `/security-review` reads the full codebase; Sonnet may miss subtle vulnerabilities

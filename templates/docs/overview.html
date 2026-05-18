@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{PROJECT_NAME}} — Overview</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --border: #2a2a2a;
+    --text: #e8e8e8;
+    --muted: #6b6b6b;
+    --green: #4ade80;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --blue: #60a5fa;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 28px 32px;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 28px;
+  }
+
+  .project-name { font-size: 20px; font-weight: 600; }
+  .subtitle     { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .updated      { font-size: 12px; color: var(--muted); text-align: right; margin-top: 4px; }
+
+  /* ── Stats row ─────────────────────────────────────────────────── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .stat-value {
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .stat-value.red    { color: var(--red); }
+  .stat-value.yellow { color: var(--yellow); }
+  .stat-value.muted  { color: var(--muted); }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  /* ── Status mini-cards ─────────────────────────────────────────── */
+  .status-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .status-mini {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+  }
+
+  .status-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .status-indicator { display: flex; align-items: center; gap: 8px; }
+
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .dot-green  { background: var(--green);  box-shadow: 0 0 6px var(--green); }
+  .dot-yellow { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+  .dot-red    { background: var(--red);    box-shadow: 0 0 6px var(--red); }
+  .dot-gray   { background: var(--muted); }
+
+  .status-text   { font-size: 13px; font-weight: 500; }
+  .status-detail { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  /* ── Main two-column layout ────────────────────────────────────── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 16px;
+  }
+
+  @media (max-width: 860px) { .main-grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+
+  .card-title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  /* ── Issue rows ────────────────────────────────────────────────── */
+  .issue-list { display: flex; flex-direction: column; gap: 6px; }
+
+  .issue-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: var(--surface2);
+    border-radius: 6px;
+    border: 1px solid transparent;
+  }
+
+  .issue-num   { font-size: 11px; color: var(--muted); min-width: 32px; }
+
+  .badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    min-width: 28px;
+    text-align: center;
+  }
+  .badge-p0 { background: rgba(248,113,113,.15); color: var(--red); }
+  .badge-p1 { background: rgba(251,191,36,.15);  color: var(--yellow); }
+  .badge-p2 { background: rgba(96,165,250,.12);  color: var(--blue); }
+  .badge-p3 { background: rgba(107,107,107,.15); color: var(--muted); }
+
+  .issue-title {
+    flex: 1; font-size: 13px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .issue-area {
+    font-size: 10px; color: var(--muted);
+    background: var(--surface); padding: 2px 6px; border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  /* ── Priority summary strip ────────────────────────────────────── */
+  .priority-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 8px; margin-top: 14px;
+  }
+
+  .priority-cell {
+    text-align: center; padding: 10px 6px;
+    border-radius: 6px; background: var(--surface2);
+  }
+
+  .priority-cell .num { font-size: 20px; font-weight: 600; line-height: 1; }
+  .priority-cell .lbl { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+  /* ── Area bars ─────────────────────────────────────────────────── */
+  .area-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .area-row { display: flex; align-items: center; gap: 10px; }
+
+  .area-name { font-size: 12px; color: var(--muted); min-width: 72px; }
+
+  .bar-track {
+    flex: 1; height: 4px; background: var(--surface2);
+    border-radius: 2px; overflow: hidden;
+  }
+
+  .bar-fill { height: 100%; background: var(--blue); border-radius: 2px; }
+
+  .area-count { font-size: 12px; color: var(--text); min-width: 20px; text-align: right; }
+
+  .empty { color: var(--muted); font-size: 13px; text-align: center; padding: 24px 0; }
+</style>
+</head>
+<body>
+
+<!-- ===== DATA BLOCK — updated automatically by the overview-update routine ===== -->
+<script id="overview-data" type="application/json">
+{
+  "project": "{{PROJECT_NAME}}",
+  "last_updated": null,
+  "analytics": {
+    "users_total": null,
+    "visitors_7d": null,
+    "revenue_7d": null,
+    "currency": "USD"
+  },
+  "github": {
+    "open_total": null,
+    "by_priority": { "p0": 0, "p1": 0, "p2": 0, "p3": 0 },
+    "by_area": {},
+    "critical_issues": []
+  },
+  "security": {
+    "open_issues": null,
+    "critical_open": 0,
+    "last_audit": null,
+    "status": "unknown"
+  },
+  "architecture": {
+    "open_issues": null,
+    "last_review": null,
+    "status": "unknown"
+  }
+}
+</script>
+<!-- ===== END DATA BLOCK ===== -->
+
+<div id="app"></div>
+
+<script>
+(function () {
+  function esc(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function fmt(n, prefix) {
+    if (n === null || n === undefined) return '—';
+    prefix = prefix || '';
+    if (n >= 1e6) return prefix + (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return prefix + (n / 1e3).toFixed(1) + 'K';
+    return prefix + Number(n).toLocaleString();
+  }
+
+  function dotClass(status) {
+    if (status === 'ok' || status === 'healthy') return 'dot-green';
+    if (status === 'warning')                   return 'dot-yellow';
+    if (status === 'critical' || status === 'danger') return 'dot-red';
+    return 'dot-gray';
+  }
+
+  function deriveSecStatus(sec) {
+    if (sec.open_issues === null) return 'unknown';
+    if ((sec.critical_open || 0) > 0) return 'critical';
+    if (sec.open_issues > 5)          return 'warning';
+    return 'ok';
+  }
+
+  function deriveArchStatus(arch) {
+    if (arch.open_issues === null) return 'unknown';
+    if (arch.open_issues > 10) return 'warning';
+    return 'ok';
+  }
+
+  function statusSummary(obj) {
+    const n = obj.open_issues;
+    const c = obj.critical_open || 0;
+    if (n === null) return 'Not yet audited';
+    if (c > 0)     return c + ' critical open';
+    if (n === 0)   return 'No open issues';
+    return n + ' open issue' + (n !== 1 ? 's' : '');
+  }
+
+  var raw  = document.getElementById('overview-data').textContent;
+  var d    = JSON.parse(raw);
+  var gh   = d.github       || {};
+  var an   = d.analytics    || {};
+  var sec  = d.security     || {};
+  var arch = d.architecture || {};
+  var prio = gh.by_priority || {};
+
+  var secStatus  = sec.status  !== 'unknown' ? sec.status  : deriveSecStatus(sec);
+  var archStatus = arch.status !== 'unknown' ? arch.status : deriveArchStatus(arch);
+
+  var areas = Object.entries(gh.by_area || {})
+    .sort(function(a,b){ return b[1]-a[1]; }).slice(0, 8);
+  var maxArea = areas.length ? Math.max.apply(null, areas.map(function(a){return a[1];})) : 1;
+
+  var critical = (gh.critical_issues || []).slice(0, 10);
+
+  var updatedStr = d.last_updated
+    ? 'Updated ' + new Date(d.last_updated).toLocaleString('en-US',
+        { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })
+    : 'Not yet updated';
+
+  var moneyPrefix = an.currency === 'EUR' ? '€' : '$';
+
+  var issueColor = (prio.p0 || 0) > 0 ? ' red' : (prio.p1 || 0) > 0 ? ' yellow' : '';
+
+  var html = '<header>'
+    + '<div><div class="project-name">' + esc(d.project || 'Project') + '</div>'
+    + '<div class="subtitle">Project Overview</div></div>'
+    + '<div class="updated">' + esc(updatedStr) + '</div>'
+    + '</header>'
+
+    + '<div class="stats-grid">'
+    + '<div class="stat-card"><div class="stat-label">Total Users</div>'
+    + '<div class="stat-value">' + fmt(an.users_total) + '</div>'
+    + '<div class="stat-sub">registered</div></div>'
+
+    + '<div class="stat-card"><div class="stat-label">Visitors (7d)</div>'
+    + '<div class="stat-value">' + fmt(an.visitors_7d) + '</div>'
+    + '<div class="stat-sub">unique</div></div>'
+
+    + '<div class="stat-card"><div class="stat-label">Revenue (7d)</div>'
+    + '<div class="stat-value' + (an.revenue_7d === null ? ' muted' : '') + '">'
+    + fmt(an.revenue_7d, an.revenue_7d !== null ? moneyPrefix : '') + '</div>'
+    + '<div class="stat-sub">last 7 days</div></div>'
+
+    + '<div class="stat-card"><div class="stat-label">Open Issues</div>'
+    + '<div class="stat-value' + issueColor + '">' + fmt(gh.open_total) + '</div>'
+    + '<div class="stat-sub">'
+    + ((prio.p0 || 0) > 0 ? prio.p0 + ' critical' : 'github') + '</div></div>'
+    + '</div>'
+
+    + '<div class="status-row">'
+    + '<div class="status-mini"><div class="status-label">Security</div>'
+    + '<div class="status-indicator"><div class="dot ' + dotClass(secStatus) + '"></div>'
+    + '<div class="status-text">' + esc(statusSummary(sec)) + '</div></div>'
+    + '<div class="status-detail">' + (sec.last_audit ? 'Last audit: ' + esc(sec.last_audit) : 'No audit recorded') + '</div>'
+    + '</div>'
+
+    + '<div class="status-mini"><div class="status-label">Architecture</div>'
+    + '<div class="status-indicator"><div class="dot ' + dotClass(archStatus) + '"></div>'
+    + '<div class="status-text">' + esc(statusSummary(arch)) + '</div></div>'
+    + '<div class="status-detail">' + (arch.last_review ? 'Last review: ' + esc(arch.last_review) : 'No review recorded') + '</div>'
+    + '</div>'
+    + '</div>'
+
+    + '<div class="main-grid">'
+
+    + '<div class="card"><div class="card-title">Critical Issues — P0 &amp; P1</div>'
+    + (critical.length
+      ? '<div class="issue-list">'
+        + critical.map(function(i) {
+            return '<div class="issue-row">'
+              + '<span class="issue-num">#' + i.number + '</span>'
+              + '<span class="badge badge-' + esc(i.priority) + '">' + esc((i.priority||'').toUpperCase()) + '</span>'
+              + '<span class="issue-title">' + esc(i.title) + '</span>'
+              + (i.area ? '<span class="issue-area">' + esc(i.area) + '</span>' : '')
+              + '</div>';
+          }).join('')
+        + '</div>'
+      : '<div class="empty">No critical issues open</div>')
+    + '<div class="priority-grid">'
+    + '<div class="priority-cell"><div class="num" style="color:var(--red)">' + (prio.p0||0) + '</div><div class="lbl">P0 critical</div></div>'
+    + '<div class="priority-cell"><div class="num" style="color:var(--yellow)">' + (prio.p1||0) + '</div><div class="lbl">P1 high</div></div>'
+    + '<div class="priority-cell"><div class="num" style="color:var(--blue)">' + (prio.p2||0) + '</div><div class="lbl">P2 medium</div></div>'
+    + '<div class="priority-cell"><div class="num" style="color:var(--muted)">' + (prio.p3||0) + '</div><div class="lbl">P3 low</div></div>'
+    + '</div></div>'
+
+    + '<div class="card"><div class="card-title">Issues by Area</div>'
+    + (areas.length
+      ? '<div class="area-list">'
+        + areas.map(function(entry) {
+            var pct = Math.round(entry[1] / maxArea * 100);
+            return '<div class="area-row">'
+              + '<div class="area-name">' + esc(entry[0]) + '</div>'
+              + '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>'
+              + '<div class="area-count">' + entry[1] + '</div>'
+              + '</div>';
+          }).join('')
+        + '</div>'
+      : '<div class="empty">No issues found</div>')
+    + '</div>'
+
+    + '</div>';
+
+  document.getElementById('app').innerHTML = html;
+})();
+</script>
+</body>
+</html>

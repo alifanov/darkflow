@@ -70,6 +70,22 @@ All three run on Sunday with 1-hour gaps so they don't overlap.
 
 ---
 
+## After completing
+
+Update `docs/overview.html` with the fresh architecture status:
+
+1. Read `docs/overview.html`
+2. Run `gh issue list --state open --json number,title,labels --limit 200`
+3. Count issues with label `area:architecture` → `architecture.open_issues`
+4. Set `architecture.last_review` to today's date (YYYY-MM-DD)
+5. Derive `architecture.status`: `"warning"` if > 10 open, `"ok"` otherwise
+6. Also recalculate `github.*` from the full issue list
+7. Write `docs/overview.html`
+
+Preserve `analytics.*` and `security.*` from the existing JSON — only update `architecture.*` and `github.*`.
+
+---
+
 ## Notes
 
 - Use **Opus** — this skill reads the entire codebase; Sonnet misses inter-module patterns
