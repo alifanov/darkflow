@@ -209,7 +209,7 @@ smart_update_template "docs/decisions/TEMPLATE.md" "docs/decisions/TEMPLATE.md"
 smart_update_template ".github/ISSUE_TEMPLATE/recommendation.yml" \
                       ".github/ISSUE_TEMPLATE/recommendation.yml"
 smart_update_template ".claude/commands/darkflow.md"         ".claude/commands/darkflow.md"
-smart_update_template ".claude/commands/darkflow/new.md"     ".claude/commands/darkflow/new.md"
+smart_update_template ".claude/commands/darkflow/add-issue.md"     ".claude/commands/darkflow/add-issue.md"
 smart_update_template ".claude/commands/darkflow/install.md" ".claude/commands/darkflow/install.md"
 smart_update_template ".claude/commands/darkflow/update.md"  ".claude/commands/darkflow/update.md"
 
@@ -316,7 +316,7 @@ Prompts: https://github.com/alifanov/darkflow/blob/main/routines/README.md
 ### Dark Flow commands
 
 Use \`/darkflow\` inside Claude Code to check workflow health and review the approved queue.
-Subcommands: \`/darkflow:new\`, \`/darkflow:update\`, \`/darkflow:install\`.
+Subcommands: \`/darkflow:add-issue\`, \`/darkflow:update\`, \`/darkflow:install\`.
 
 <!-- darkflow:end -->"
 

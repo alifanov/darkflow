@@ -522,7 +522,7 @@ HEREDOC
   echo "### Dark Flow commands"
   echo ""
   echo "Use \`/darkflow\` inside Claude Code to check workflow health and review the approved queue."
-  echo "Subcommands: \`/darkflow:new\`, \`/darkflow:update\`, \`/darkflow:install\`."
+  echo "Subcommands: \`/darkflow:add-issue\`, \`/darkflow:update\`, \`/darkflow:install\`."
   echo ""
   echo "<!-- darkflow:end -->"
 }
@@ -559,11 +559,11 @@ make_dir ".claude/commands"
 make_dir ".claude/commands/darkflow"
 
 safe_fetch ".claude/commands/darkflow.md"          ".claude/commands/darkflow.md"
-safe_fetch ".claude/commands/darkflow/new.md"      ".claude/commands/darkflow/new.md"
+safe_fetch ".claude/commands/darkflow/add-issue.md"      ".claude/commands/darkflow/add-issue.md"
 safe_fetch ".claude/commands/darkflow/install.md"  ".claude/commands/darkflow/install.md"
 safe_fetch ".claude/commands/darkflow/update.md"   ".claude/commands/darkflow/update.md"
 
-success "Installed /darkflow commands — /darkflow, /darkflow:new, /darkflow:update, /darkflow:install"
+success "Installed /darkflow commands — /darkflow, /darkflow:add-issue, /darkflow:update, /darkflow:install"
 
 # ── Architecture review skill ─────────────────────────────────────────────────
 

@@ -2,7 +2,7 @@ Help the user create a GitHub issue for a manually identified task (bug, feature
 
 **Before asking anything**, read `docs/github-issues.md` to get the list of `area:*` labels defined for this project. Use those — not a hardcoded list.
 
-If `$ARGUMENTS` contains text (e.g. `/darkflow:new fix login button on mobile`), use that text as the **title** — do not ask for a title again. Infer the type from the title if obvious ("fix"/"bug" → `bug`, "add"/"implement" → `enhancement`).
+If `$ARGUMENTS` contains text (e.g. `/darkflow:add-issue fix login button on mobile`), use that text as the **title** — do not ask for a title again. Infer the type from the title if obvious ("fix"/"bug" → `bug`, "add"/"implement" → `enhancement`).
 
 Walk through **only the missing fields** conversationally — skip any field already clear from the title:
 

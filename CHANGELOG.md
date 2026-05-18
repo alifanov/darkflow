@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [1.2.2] — 2026-05-18
+
+### Installer
+- **Renamed command** `/darkflow:new` → `/darkflow:add-issue` — clearer intent
+
+---
+
 ## [1.2.1] — 2026-05-18
 
 ### Installer
