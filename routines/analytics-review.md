@@ -51,6 +51,20 @@ The routine writes an analytics snapshot to `docs/insights/analytics/YYYY-MM-DD.
 
 ---
 
+## After completing
+
+Update `docs/overview.html` with fresh analytics and GitHub data:
+
+1. Read `docs/overview.html`
+2. Run `gh issue list --state open --json number,title,labels --limit 200`
+3. Query the analytics tool for current user count, 7-day visitors, and 7-day revenue
+4. Rebuild the JSON data block (between the `DATA BLOCK` markers) with updated values
+5. Write `docs/overview.html`
+
+See [overview-update.md](overview-update.md) for the full data schema.
+
+---
+
 ## Notes
 
 - If no analytics MCP is available, simplify the instructions to commit review only

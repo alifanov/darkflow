@@ -358,9 +358,11 @@ safe_fetch "docs/README.md"              "docs/README.md"
 safe_fetch "docs/agent-workflow.md"      "docs/agent-workflow.md"
 safe_fetch "docs/github-issues.md"       "docs/github-issues.md"
 safe_fetch "docs/decisions/TEMPLATE.md"  "docs/decisions/TEMPLATE.md"
+safe_fetch "docs/overview.html"          "docs/overview.html"
 safe_fetch ".github/ISSUE_TEMPLATE/recommendation.yml" ".github/ISSUE_TEMPLATE/recommendation.yml"
 
 inject_name "docs/README.md"
+inject_name "docs/overview.html"
 
 # ── Write .darkflow config ────────────────────────────────────────────────────
 
@@ -593,6 +595,7 @@ echo "  1. Fill in docs/product/ — what are you building and for whom"
 echo "  2. Fill in docs/spec/    — user flows, screens, data model"
 echo "  3. Fill in docs/design/  — tokens, components, voice and tone"
 echo "  4. Commit: git add docs/ .github/ISSUE_TEMPLATE/ CLAUDE.md && git commit -m 'chore: install dark-flow workflow'"
+echo "  5. Open docs/overview.html in a browser — it updates daily via the Overview Update routine"
 echo ""
 
 # Show only the routines relevant to chosen modules
