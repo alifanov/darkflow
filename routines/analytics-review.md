@@ -62,6 +62,7 @@ Update `docs/overview.html` — the project status dashboard. Read the file, rep
    - `github.by_priority` — count per `priority:p0/p1/p2/p3` label
    - `github.by_area` — count per `area:*` label (strip the `area:` prefix)
    - `github.critical_issues` — all P0+P1 issues as `{ number, title, priority, area }`
+   - `github.awaiting_approval` — all issues with label `status:proposed` as `{ number, title, area }` (strip `area:` prefix)
 
 2. **Analytics** — from the analytics tool already queried above:
    - `analytics.users_total` — total registered users
@@ -82,7 +83,8 @@ Update `docs/overview.html` — the project status dashboard. Read the file, rep
     "open_total": N,
     "by_priority": { "p0": N, "p1": N, "p2": N, "p3": N },
     "by_area": { "api": N, "ui": N, ... },
-    "critical_issues": [ { "number": N, "title": "...", "priority": "p0", "area": "api" } ]
+    "critical_issues": [ { "number": N, "title": "...", "priority": "p0", "area": "api" } ],
+    "awaiting_approval": [ { "number": N, "title": "...", "area": "api" } ]
   },
   "security":     { "<keep existing values>" },
   "architecture": { "<keep existing values>" }

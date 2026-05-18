@@ -206,6 +206,50 @@
   .area-count { font-size: 12px; color: var(--text); min-width: 20px; text-align: right; }
 
   .empty { color: var(--muted); font-size: 13px; text-align: center; padding: 24px 0; }
+
+  /* ── Awaiting approval ─────────────────────────────────────────── */
+  .approval-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .approval-card.has-items {
+    border-color: rgba(251,191,36,.35);
+  }
+
+  .approval-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(251,191,36,.15);
+    color: var(--yellow);
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 12px;
+    padding: 1px 8px;
+    margin-left: 8px;
+  }
+
+  .approval-issue-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: var(--surface2);
+    border-radius: 6px;
+    border: 1px solid rgba(251,191,36,.12);
+  }
+
+  .approval-issue-row + .approval-issue-row { margin-top: 6px; }
+
+  .approval-area {
+    font-size: 10px; color: var(--yellow);
+    background: rgba(251,191,36,.1); padding: 2px 6px; border-radius: 4px;
+    white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -225,7 +269,8 @@
     "open_total": null,
     "by_priority": { "p0": 0, "p1": 0, "p2": 0, "p3": 0 },
     "by_area": {},
-    "critical_issues": []
+    "critical_issues": [],
+    "awaiting_approval": []
   },
   "security": {
     "open_issues": null,
@@ -304,7 +349,8 @@
     .sort(function(a,b){ return b[1]-a[1]; }).slice(0, 8);
   var maxArea = areas.length ? Math.max.apply(null, areas.map(function(a){return a[1];})) : 1;
 
-  var critical = (gh.critical_issues || []).slice(0, 10);
+  var critical  = (gh.critical_issues    || []).slice(0, 10);
+  var pending   = (gh.awaiting_approval  || []).slice(0, 15);
 
   var updatedStr = d.last_updated
     ? 'Updated ' + new Date(d.last_updated).toLocaleString('en-US',
@@ -354,6 +400,21 @@
     + '<div class="status-detail">' + (arch.last_review ? 'Last review: ' + esc(arch.last_review) : 'No review recorded') + '</div>'
     + '</div>'
     + '</div>'
+
+    + (pending.length
+      ? '<div class="approval-card has-items">'
+        + '<div class="card-title">Awaiting Approval'
+        + '<span class="approval-count">' + pending.length + '</span></div>'
+        + '<div class="issue-list">'
+        + pending.map(function(i) {
+            return '<div class="approval-issue-row">'
+              + '<span class="issue-num">#' + esc(i.number) + '</span>'
+              + '<span class="issue-title">' + esc(i.title) + '</span>'
+              + (i.area ? '<span class="approval-area">' + esc(i.area) + '</span>' : '')
+              + '</div>';
+          }).join('')
+        + '</div></div>'
+      : '')
 
     + '<div class="main-grid">'
 
