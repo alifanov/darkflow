@@ -4,7 +4,7 @@
 # Usage (inside a project that has Dark Flow installed):
 #   bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/update.sh)
 #
-# Or via /darkflow update in Claude Code.
+# Or via /darkflow:update in Claude Code.
 
 set -euo pipefail
 
@@ -208,7 +208,11 @@ smart_update_template "docs/github-issues.md"      "docs/github-issues.md"
 smart_update_template "docs/decisions/TEMPLATE.md" "docs/decisions/TEMPLATE.md"
 smart_update_template ".github/ISSUE_TEMPLATE/recommendation.yml" \
                       ".github/ISSUE_TEMPLATE/recommendation.yml"
-smart_update_template ".claude/commands/darkflow.md" ".claude/commands/darkflow.md"
+smart_update_template ".claude/commands/darkflow.md"         ".claude/commands/darkflow.md"
+smart_update_template ".claude/commands/darkflow/new.md"     ".claude/commands/darkflow/new.md"
+smart_update_template ".claude/commands/darkflow/install.md" ".claude/commands/darkflow/install.md"
+smart_update_template ".claude/commands/darkflow/labels.md"  ".claude/commands/darkflow/labels.md"
+smart_update_template ".claude/commands/darkflow/update.md"  ".claude/commands/darkflow/update.md"
 
 # ── 3. CLAUDE.md — update only the Dark Flow section ────────────────────────
 
@@ -310,10 +314,10 @@ Scheduled Claude Code agents that run this workflow automatically:
 Set up via: Claude Code → Routines → New routine
 Prompts: https://github.com/alifanov/darkflow/blob/main/routines/README.md
 
-### Dark Flow command
+### Dark Flow commands
 
-Use \`/darkflow\` inside Claude Code to check workflow health, review the approved queue,
-or re-run the installer (\`/darkflow install\`).
+Use \`/darkflow\` inside Claude Code to check workflow health and review the approved queue.
+Subcommands: \`/darkflow:new\`, \`/darkflow:update\`, \`/darkflow:install\`, \`/darkflow:labels\`.
 
 <!-- darkflow:end -->"
 

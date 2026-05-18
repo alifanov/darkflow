@@ -56,7 +56,7 @@ bash /tmp/darkflow/install.sh
 3. Creates `.github/ISSUE_TEMPLATE/recommendation.yml`
 4. Sets up GitHub issue labels via `gh` (if authenticated)
 5. Generates a comprehensive `CLAUDE.md` tailored to your modules
-6. Installs `/darkflow` slash command for Claude Code
+6. Installs `/darkflow` and `/darkflow:*` slash commands for Claude Code
 
 ---
 
@@ -133,7 +133,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/updat
 
 Or via Claude Code:
 ```
-/darkflow update
+/darkflow:update
 ```
 
 The updater:

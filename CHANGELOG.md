@@ -14,10 +14,17 @@ Categories:
 
 ---
 
+## [1.2.0] — 2026-05-18
+
+### Installer
+- **Refactored commands** — `/darkflow <cmd>` split into namespaced subcommands: `/darkflow:new`, `/darkflow:install`, `/darkflow:labels`, `/darkflow:update`; `/darkflow` now shows status only
+
+---
+
 ## [1.1.0] — 2026-05-17
 
 ### Installer
-- **Updated command** `/darkflow new` — interactive issue creator for manually identified bugs and features
+- **Updated command** `/darkflow:new` — interactive issue creator for manually identified bugs and features
 
 ---
 

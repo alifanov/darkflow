@@ -517,10 +517,10 @@ HEREDOC
   echo "Set up via: Claude Code → Routines → New routine"
   echo "Prompts: https://github.com/alifanov/darkflow/blob/main/routines/README.md"
   echo ""
-  echo "### Dark Flow command"
+  echo "### Dark Flow commands"
   echo ""
-  echo "Use \`/darkflow\` inside Claude Code to check workflow health, review the approved queue,"
-  echo "or re-run the installer (\`/darkflow install\`)."
+  echo "Use \`/darkflow\` inside Claude Code to check workflow health and review the approved queue."
+  echo "Subcommands: \`/darkflow:new\`, \`/darkflow:update\`, \`/darkflow:install\`, \`/darkflow:labels\`."
   echo ""
   echo "<!-- darkflow:end -->"
 }
@@ -551,17 +551,18 @@ fi
 
 # ── Claude Code command ───────────────────────────────────────────────────────
 
-header "4/4  Claude Code command"
+header "4/4  Claude Code commands"
 
 make_dir ".claude/commands"
+make_dir ".claude/commands/darkflow"
 
-if [[ "$USE_LOCAL" == true ]]; then
-  safe_fetch ".claude/commands/darkflow.md" ".claude/commands/darkflow.md"
-else
-  safe_fetch ".claude/commands/darkflow.md" ".claude/commands/darkflow.md"
-fi
+safe_fetch ".claude/commands/darkflow.md"          ".claude/commands/darkflow.md"
+safe_fetch ".claude/commands/darkflow/new.md"      ".claude/commands/darkflow/new.md"
+safe_fetch ".claude/commands/darkflow/install.md"  ".claude/commands/darkflow/install.md"
+safe_fetch ".claude/commands/darkflow/labels.md"   ".claude/commands/darkflow/labels.md"
+safe_fetch ".claude/commands/darkflow/update.md"   ".claude/commands/darkflow/update.md"
 
-success "Installed /darkflow command — use it inside Claude Code to check workflow health"
+success "Installed /darkflow commands — /darkflow, /darkflow:new, /darkflow:update, /darkflow:install, /darkflow:labels"
 
 # ── Architecture review skill ─────────────────────────────────────────────────
 
