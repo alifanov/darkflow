@@ -14,10 +14,17 @@ Categories:
 
 ---
 
+## [1.2.1] — 2026-05-18
+
+### Installer
+- **Removed command** `/darkflow:labels` — redundant; `/darkflow:update` already re-runs label setup as its first step
+
+---
+
 ## [1.2.0] — 2026-05-18
 
 ### Installer
-- **Refactored commands** — `/darkflow <cmd>` split into namespaced subcommands: `/darkflow:new`, `/darkflow:install`, `/darkflow:labels`, `/darkflow:update`; `/darkflow` now shows status only
+- **Refactored commands** — `/darkflow <cmd>` split into namespaced subcommands: `/darkflow:new`, `/darkflow:install`, `/darkflow:update`; `/darkflow` now shows status only
 
 ---
 
