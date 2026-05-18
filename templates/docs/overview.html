@@ -338,11 +338,6 @@
     + '<div class="updated">' + esc(updatedStr) + '</div>'
     + '</header>'
 
-    + '<div class="main-grid">'
-    + issueCard('Awaiting Approval', 'status:proposed',    pending,    'count-badge-yellow', 'card-approval',   'Nothing to approve')
-    + issueCard('In Progress',       'status:in-progress', inprogress, 'count-badge-blue',   'card-inprogress', 'No work in progress')
-    + '</div>'
-
     + '<div class="stats-grid">'
     + '<div class="stat-card"><div class="stat-label">Total Users</div>'
     + '<div class="stat-value">' + fmt(an.users_total) + '</div>'
@@ -360,6 +355,11 @@
     + row('stat-card', allHref(), '<div class="stat-label">Open Issues</div>'
         + '<div class="stat-value">' + fmt(gh.open_total) + '</div>'
         + '<div class="stat-sub">github</div>')
+    + '</div>'
+
+    + '<div class="main-grid">'
+    + issueCard('Awaiting Approval', 'status:proposed',    pending,    'count-badge-yellow', 'card-approval',   'Nothing to approve')
+    + issueCard('In Progress',       'status:in-progress', inprogress, 'count-badge-blue',   'card-inprogress', 'No work in progress')
     + '</div>'
 
     + '<div class="status-row">'
