@@ -211,6 +211,7 @@
     "users_total": null,
     "visitors_7d": null,
     "revenue_7d": null,
+    "ads_spend_7d": null,
     "currency": "USD"
   },
   "github": {
@@ -356,6 +357,12 @@
     + row('stat-card', allHref(), '<div class="stat-label">Open Issues</div>'
         + '<div class="stat-value">' + fmt(gh.open_total) + '</div>'
         + '<div class="stat-sub">github</div>')
+
+    + (an.ads_spend_7d !== null
+      ? '<div class="stat-card"><div class="stat-label">Ad Spend (7d)</div>'
+        + '<div class="stat-value">' + fmt(an.ads_spend_7d, moneyPrefix) + '</div>'
+        + '<div class="stat-sub">google ads</div></div>'
+      : '')
     + '</div>'
 
     + '<div class="main-grid">'

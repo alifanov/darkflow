@@ -66,6 +66,7 @@ Update `docs/overview.html` — the project status dashboard. Read the file, rep
    - `analytics.users_total` — total registered users
    - `analytics.visitors_7d` — unique visitors last 7 days
    - `analytics.revenue_7d` — revenue last 7 days (null if not applicable)
+   - `analytics.ads_spend_7d` — Google Ads spend last 7 days (null if Google Ads MCP is not connected)
 
 3. **Security and Architecture** — preserve the existing values from the current JSON. These sections are updated by the security and architecture audit routines.
 
@@ -76,7 +77,7 @@ Update `docs/overview.html` — the project status dashboard. Read the file, rep
 {
   "project": "<keep existing>",
   "last_updated": "2025-01-15T08:05:00Z",
-  "analytics": { "users_total": N, "visitors_7d": N, "revenue_7d": N, "currency": "USD" },
+  "analytics": { "users_total": N, "visitors_7d": N, "revenue_7d": N, "ads_spend_7d": N_or_null, "currency": "USD" },
   "github": {
     "repo_url": "https://github.com/owner/repo",
     "open_total": N,
