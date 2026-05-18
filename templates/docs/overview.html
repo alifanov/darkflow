@@ -54,6 +54,7 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 16px 18px;
+    display: block;
   }
 
   .stat-label {
@@ -64,15 +65,8 @@
     margin-bottom: 6px;
   }
 
-  .stat-value {
-    font-size: 26px;
-    font-weight: 600;
-    line-height: 1;
-  }
-
-  .stat-value.red    { color: var(--red); }
-  .stat-value.yellow { color: var(--yellow); }
-  .stat-value.muted  { color: var(--muted); }
+  .stat-value { font-size: 26px; font-weight: 600; line-height: 1; }
+  .stat-value.muted { color: var(--muted); }
   .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
 
   /* ── Status mini-cards ─────────────────────────────────────────── */
@@ -100,9 +94,7 @@
 
   .status-indicator { display: flex; align-items: center; gap: 8px; }
 
-  .dot {
-    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
   .dot-green  { background: var(--green);  box-shadow: 0 0 6px var(--green); }
   .dot-yellow { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
   .dot-red    { background: var(--red);    box-shadow: 0 0 6px var(--red); }
@@ -114,11 +106,11 @@
   /* ── Main two-column layout ────────────────────────────────────── */
   .main-grid {
     display: grid;
-    grid-template-columns: 1fr 300px;
+    grid-template-columns: 1fr 1fr;
     gap: 16px;
   }
 
-  @media (max-width: 860px) { .main-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 700px) { .main-grid { grid-template-columns: 1fr; } }
 
   .card {
     background: var(--surface);
@@ -127,6 +119,9 @@
     padding: 20px;
   }
 
+  .card-approval   { border-color: rgba(251,191,36,.3); }
+  .card-inprogress { border-color: rgba(96,165,250,.25); }
+
   .card-title {
     font-size: 10px;
     font-weight: 600;
@@ -134,7 +129,25 @@
     letter-spacing: .08em;
     color: var(--muted);
     margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
+
+  .count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 10px;
+    padding: 1px 7px;
+    line-height: 1.6;
+  }
+
+  .count-badge-yellow { background: rgba(251,191,36,.15); color: var(--yellow); }
+  .count-badge-blue   { background: rgba(96,165,250,.12);  color: var(--blue); }
+  .count-badge-muted  { background: rgba(107,107,107,.15); color: var(--muted); }
 
   /* ── Issue rows ────────────────────────────────────────────────── */
   .issue-list { display: flex; flex-direction: column; gap: 6px; }
@@ -149,7 +162,7 @@
     border: 1px solid transparent;
   }
 
-  .issue-num   { font-size: 11px; color: var(--muted); min-width: 32px; }
+  .issue-num   { font-size: 11px; color: var(--muted); min-width: 32px; flex-shrink: 0; }
 
   .badge {
     font-size: 10px;
@@ -158,6 +171,7 @@
     border-radius: 4px;
     min-width: 28px;
     text-align: center;
+    flex-shrink: 0;
   }
   .badge-p0 { background: rgba(248,113,113,.15); color: var(--red); }
   .badge-p1 { background: rgba(251,191,36,.15);  color: var(--yellow); }
@@ -172,101 +186,17 @@
   .issue-area {
     font-size: 10px; color: var(--muted);
     background: var(--surface); padding: 2px 6px; border-radius: 4px;
-    white-space: nowrap;
+    white-space: nowrap; flex-shrink: 0;
   }
-
-  /* ── Priority summary strip ────────────────────────────────────── */
-  .priority-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    gap: 8px; margin-top: 14px;
-  }
-
-  .priority-cell {
-    text-align: center; padding: 10px 6px;
-    border-radius: 6px; background: var(--surface2);
-  }
-
-  .priority-cell .num { font-size: 20px; font-weight: 600; line-height: 1; }
-  .priority-cell .lbl { font-size: 10px; color: var(--muted); margin-top: 3px; }
-
-  /* ── Area bars ─────────────────────────────────────────────────── */
-  .area-list { display: flex; flex-direction: column; gap: 10px; }
-
-  .area-row { display: flex; align-items: center; gap: 10px; }
-
-  .area-name { font-size: 12px; color: var(--muted); min-width: 72px; }
-
-  .bar-track {
-    flex: 1; height: 4px; background: var(--surface2);
-    border-radius: 2px; overflow: hidden;
-  }
-
-  .bar-fill { height: 100%; background: var(--blue); border-radius: 2px; }
-
-  .area-count { font-size: 12px; color: var(--text); min-width: 20px; text-align: right; }
 
   .empty { color: var(--muted); font-size: 13px; text-align: center; padding: 24px 0; }
 
+  /* ── Links ─────────────────────────────────────────────────────── */
   a { color: inherit; text-decoration: none; }
-
-  a.issue-row:hover, a.approval-issue-row:hover {
-    border-color: var(--border);
-    background: #252525;
-  }
-
-  a.priority-cell:hover { background: #2a2a2a; }
-
-  a.stat-card:hover { background: #1c1c1c; }
-
-  .card-title a {
-    color: var(--muted);
-    border-bottom: 1px solid transparent;
-  }
+  a.issue-row:hover  { border-color: var(--border); background: #252525; }
+  a.stat-card:hover  { background: #1c1c1c; }
+  .card-title a { color: var(--muted); border-bottom: 1px solid transparent; }
   .card-title a:hover { border-bottom-color: var(--muted); }
-
-  /* ── Awaiting approval ─────────────────────────────────────────── */
-  .approval-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 16px;
-  }
-
-  .approval-card.has-items {
-    border-color: rgba(251,191,36,.35);
-  }
-
-  .approval-count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(251,191,36,.15);
-    color: var(--yellow);
-    font-size: 11px;
-    font-weight: 700;
-    border-radius: 12px;
-    padding: 1px 8px;
-    margin-left: 8px;
-  }
-
-  .approval-issue-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 12px;
-    background: var(--surface2);
-    border-radius: 6px;
-    border: 1px solid rgba(251,191,36,.12);
-  }
-
-  .approval-issue-row + .approval-issue-row { margin-top: 6px; }
-
-  .approval-area {
-    font-size: 10px; color: var(--yellow);
-    background: rgba(251,191,36,.1); padding: 2px 6px; border-radius: 4px;
-    white-space: nowrap;
-  }
 </style>
 </head>
 <body>
@@ -285,10 +215,8 @@
   "github": {
     "repo_url": null,
     "open_total": null,
-    "by_priority": { "p0": 0, "p1": 0, "p2": 0, "p3": 0 },
-    "by_area": {},
-    "critical_issues": [],
-    "awaiting_approval": []
+    "awaiting_approval": [],
+    "in_progress": []
   },
   "security": {
     "open_issues": null,
@@ -358,7 +286,6 @@
   var an   = d.analytics    || {};
   var sec  = d.security     || {};
   var arch = d.architecture || {};
-  var prio = gh.by_priority || {};
   var repo = gh.repo_url    || null;
 
   function issueHref(n)    { return repo ? repo + '/issues/' + n : null; }
@@ -373,12 +300,8 @@
   var secStatus  = sec.status  !== 'unknown' ? sec.status  : deriveSecStatus(sec);
   var archStatus = arch.status !== 'unknown' ? arch.status : deriveArchStatus(arch);
 
-  var areas = Object.entries(gh.by_area || {})
-    .sort(function(a,b){ return b[1]-a[1]; }).slice(0, 8);
-  var maxArea = areas.length ? Math.max.apply(null, areas.map(function(a){return a[1];})) : 1;
-
-  var critical  = (gh.critical_issues    || []).slice(0, 10);
-  var pending   = (gh.awaiting_approval  || []).slice(0, 15);
+  var pending    = (gh.awaiting_approval || []).slice(0, 20);
+  var inprogress = (gh.in_progress       || []).slice(0, 20);
 
   var updatedStr = d.last_updated
     ? 'Updated ' + new Date(d.last_updated).toLocaleString('en-US',
@@ -387,7 +310,27 @@
 
   var moneyPrefix = an.currency === 'EUR' ? '€' : '$';
 
-  var issueColor = (prio.p0 || 0) > 0 ? ' red' : (prio.p1 || 0) > 0 ? ' yellow' : '';
+  function issueRowInner(i) {
+    return '<span class="issue-num">#' + esc(i.number) + '</span>'
+      + (i.priority ? '<span class="badge badge-' + esc(i.priority) + '">' + esc(i.priority.toUpperCase()) + '</span>' : '')
+      + '<span class="issue-title">' + esc(i.title) + '</span>'
+      + (i.area ? '<span class="issue-area">' + esc(i.area) + '</span>' : '');
+  }
+
+  function issueCard(title, filterLabel, issues, badgeCls, cardCls, emptyMsg) {
+    var titleHtml = filterHref(filterLabel)
+      ? '<a href="' + filterHref(filterLabel) + '" target="_blank" rel="noopener">' + title + '</a>'
+      : title;
+    return '<div class="card ' + cardCls + '">'
+      + '<div class="card-title">' + titleHtml
+      + '<span class="count-badge ' + badgeCls + '">' + issues.length + '</span></div>'
+      + (issues.length
+          ? '<div class="issue-list">' + issues.map(function(i) {
+              return row('issue-row', issueHref(i.number), issueRowInner(i));
+            }).join('') + '</div>'
+          : '<div class="empty">' + emptyMsg + '</div>')
+      + '</div>';
+  }
 
   var html = '<header>'
     + '<div><div class="project-name">' + esc(d.project || 'Project') + '</div>'
@@ -410,9 +353,8 @@
     + '<div class="stat-sub">last 7 days</div></div>'
 
     + row('stat-card', allHref(), '<div class="stat-label">Open Issues</div>'
-        + '<div class="stat-value' + issueColor + '">' + fmt(gh.open_total) + '</div>'
-        + '<div class="stat-sub">'
-        + ((prio.p0 || 0) > 0 ? prio.p0 + ' critical' : 'github') + '</div>')
+        + '<div class="stat-value">' + fmt(gh.open_total) + '</div>'
+        + '<div class="stat-sub">github</div>')
     + '</div>'
 
     + '<div class="status-row">'
@@ -429,63 +371,9 @@
     + '</div>'
     + '</div>'
 
-    + (pending.length
-      ? '<div class="approval-card has-items">'
-        + '<div class="card-title">'
-        + (filterHref('status:proposed')
-            ? '<a href="' + filterHref('status:proposed') + '" target="_blank" rel="noopener">Awaiting Approval</a>'
-            : 'Awaiting Approval')
-        + '<span class="approval-count">' + pending.length + '</span></div>'
-        + '<div class="issue-list">'
-        + pending.map(function(i) {
-            return row('approval-issue-row', issueHref(i.number),
-              '<span class="issue-num">#' + esc(i.number) + '</span>'
-              + '<span class="issue-title">' + esc(i.title) + '</span>'
-              + (i.area ? '<span class="approval-area">' + esc(i.area) + '</span>' : ''));
-          }).join('')
-        + '</div></div>'
-      : '')
-
     + '<div class="main-grid">'
-
-    + '<div class="card"><div class="card-title">'
-    + (filterHref('priority:p0,priority:p1')
-        ? '<a href="' + filterHref('priority:p0,priority:p1') + '" target="_blank" rel="noopener">Critical Issues — P0 &amp; P1</a>'
-        : 'Critical Issues — P0 &amp; P1')
-    + '</div>'
-    + (critical.length
-      ? '<div class="issue-list">'
-        + critical.map(function(i) {
-            return row('issue-row', issueHref(i.number),
-              '<span class="issue-num">#' + i.number + '</span>'
-              + '<span class="badge badge-' + esc(i.priority) + '">' + esc((i.priority||'').toUpperCase()) + '</span>'
-              + '<span class="issue-title">' + esc(i.title) + '</span>'
-              + (i.area ? '<span class="issue-area">' + esc(i.area) + '</span>' : ''));
-          }).join('')
-        + '</div>'
-      : '<div class="empty">No critical issues open</div>')
-    + '<div class="priority-grid">'
-    + row('priority-cell', filterHref('priority:p0'), '<div class="num" style="color:var(--red)">' + (prio.p0||0) + '</div><div class="lbl">P0 critical</div>')
-    + row('priority-cell', filterHref('priority:p1'), '<div class="num" style="color:var(--yellow)">' + (prio.p1||0) + '</div><div class="lbl">P1 high</div>')
-    + row('priority-cell', filterHref('priority:p2'), '<div class="num" style="color:var(--blue)">' + (prio.p2||0) + '</div><div class="lbl">P2 medium</div>')
-    + row('priority-cell', filterHref('priority:p3'), '<div class="num" style="color:var(--muted)">' + (prio.p3||0) + '</div><div class="lbl">P3 low</div>')
-    + '</div></div>'
-
-    + '<div class="card"><div class="card-title">Issues by Area</div>'
-    + (areas.length
-      ? '<div class="area-list">'
-        + areas.map(function(entry) {
-            var pct = Math.round(entry[1] / maxArea * 100);
-            return '<div class="area-row">'
-              + '<div class="area-name">' + esc(entry[0]) + '</div>'
-              + '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>'
-              + '<div class="area-count">' + entry[1] + '</div>'
-              + '</div>';
-          }).join('')
-        + '</div>'
-      : '<div class="empty">No issues found</div>')
-    + '</div>'
-
+    + issueCard('Awaiting Approval', 'status:proposed',    pending,    'count-badge-yellow', 'card-approval',   'Nothing to approve')
+    + issueCard('In Progress',       'status:in-progress', inprogress, 'count-badge-blue',   'card-inprogress', 'No work in progress')
     + '</div>';
 
   document.getElementById('app').innerHTML = html;

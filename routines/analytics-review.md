@@ -59,10 +59,8 @@ Update `docs/overview.html` — the project status dashboard. Read the file, rep
 
 1. **GitHub** — run `gh repo view --json url -q .url` to get `github.repo_url`. Then run `gh issue list --state open --json number,title,labels --limit 200`:
    - `github.open_total` — total count
-   - `github.by_priority` — count per `priority:p0/p1/p2/p3` label
-   - `github.by_area` — count per `area:*` label (strip the `area:` prefix)
-   - `github.critical_issues` — all P0+P1 issues as `{ number, title, priority, area }`
-   - `github.awaiting_approval` — all issues with label `status:proposed` as `{ number, title, area }` (strip `area:` prefix)
+   - `github.awaiting_approval` — issues with label `status:proposed` as `{ number, title, priority, area }` (strip label prefixes)
+   - `github.in_progress` — issues with label `status:in-progress` as `{ number, title, priority, area }` (strip label prefixes)
 
 2. **Analytics** — from the analytics tool already queried above:
    - `analytics.users_total` — total registered users
@@ -82,10 +80,8 @@ Update `docs/overview.html` — the project status dashboard. Read the file, rep
   "github": {
     "repo_url": "https://github.com/owner/repo",
     "open_total": N,
-    "by_priority": { "p0": N, "p1": N, "p2": N, "p3": N },
-    "by_area": { "api": N, "ui": N, ... },
-    "critical_issues": [ { "number": N, "title": "...", "priority": "p0", "area": "api" } ],
-    "awaiting_approval": [ { "number": N, "title": "...", "area": "api" } ]
+    "awaiting_approval": [ { "number": N, "title": "...", "priority": "p1", "area": "api" } ],
+    "in_progress":       [ { "number": N, "title": "...", "priority": "p2", "area": "ui"  } ]
   },
   "security":     { "<keep existing values>" },
   "architecture": { "<keep existing values>" }
