@@ -53,15 +53,41 @@ The routine writes an analytics snapshot to `docs/insights/analytics/YYYY-MM-DD.
 
 ## After completing
 
-Update `docs/overview.html` with fresh analytics and GitHub data:
+Update `docs/overview.html` — the project status dashboard. Read the file, replace the JSON inside `<script id="overview-data">` with fresh data, write it back.
 
-1. Read `docs/overview.html`
-2. Run `gh issue list --state open --json number,title,labels --limit 200`
-3. Query the analytics tool for current user count, 7-day visitors, and 7-day revenue
-4. Rebuild the JSON data block (between the `DATA BLOCK` markers) with updated values
-5. Write `docs/overview.html`
+**Data to collect:**
 
-See [overview-update.md](overview-update.md) for the full data schema.
+1. **GitHub** — run `gh issue list --state open --json number,title,labels --limit 200`:
+   - `github.open_total` — total count
+   - `github.by_priority` — count per `priority:p0/p1/p2/p3` label
+   - `github.by_area` — count per `area:*` label (strip the `area:` prefix)
+   - `github.critical_issues` — all P0+P1 issues as `{ number, title, priority, area }`
+
+2. **Analytics** — from the analytics tool already queried above:
+   - `analytics.users_total` — total registered users
+   - `analytics.visitors_7d` — unique visitors last 7 days
+   - `analytics.revenue_7d` — revenue last 7 days (null if not applicable)
+
+3. **Security and Architecture** — preserve the existing values from the current JSON. These sections are updated by the security and architecture audit routines.
+
+4. Set `last_updated` to the current UTC timestamp (ISO 8601).
+
+**JSON schema:**
+```json
+{
+  "project": "<keep existing>",
+  "last_updated": "2025-01-15T08:05:00Z",
+  "analytics": { "users_total": N, "visitors_7d": N, "revenue_7d": N, "currency": "USD" },
+  "github": {
+    "open_total": N,
+    "by_priority": { "p0": N, "p1": N, "p2": N, "p3": N },
+    "by_area": { "api": N, "ui": N, ... },
+    "critical_issues": [ { "number": N, "title": "...", "priority": "p0", "area": "api" } ]
+  },
+  "security":     { "<keep existing values>" },
+  "architecture": { "<keep existing values>" }
+}
+```
 
 ---
 

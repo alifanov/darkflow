@@ -57,7 +57,7 @@ Update `docs/overview.html` with the fresh security status:
 7. Also recalculate `github.*` from the full issue list
 8. Write `docs/overview.html`
 
-See [overview-update.md](overview-update.md) for the full data schema.
+Preserve `analytics.*` and `architecture.*` from the existing JSON — only update `security.*` and `github.*`.
 
 ---
 

@@ -82,7 +82,7 @@ Update `docs/overview.html` with the fresh architecture status:
 6. Also recalculate `github.*` from the full issue list
 7. Write `docs/overview.html`
 
-See [overview-update.md](overview-update.md) for the full data schema.
+Preserve `analytics.*` and `security.*` from the existing JSON — only update `architecture.*` and `github.*`.
 
 ---
 
