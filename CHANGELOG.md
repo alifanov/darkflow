@@ -14,6 +14,31 @@ Categories:
 
 ---
 
+## [1.3.0] — 2026-05-19
+
+### New commands
+- **10 new `/darkflow:*` routine commands** — each routine's prompt now lives in a slash command under `.claude/commands/darkflow/`:
+  - `/darkflow:fix-issues` — pick up one approved issue, implement, close (reads `merge_strategy=` from `.darkflow` for PR vs direct)
+  - `/darkflow:analytics-review` — PostHog + recent commits → GitHub issues + overview update
+  - `/darkflow:observability-check` — errors / slow queries / latency → GitHub issues
+  - `/darkflow:gsc-check` — Google Search Console → GitHub issues
+  - `/darkflow:coolify-logs` — deployment log monitoring → fix errors
+  - `/darkflow:deployment-failure` — diagnose and fix a failed deployment
+  - `/darkflow:claude-md-update` — regenerate CLAUDE.md from codebase
+  - `/darkflow:architecture-review` — architectural analysis → GitHub issues + overview update
+  - `/darkflow:security-code-audit` — static `/security-review` → GitHub issues + overview update
+  - `/darkflow:security-runtime-audit` — runtime `/security-review` → GitHub issues + overview update
+
+### Updated routines
+- **All 10 routine pages** — `Instructions` block collapsed to a single line (`/darkflow:<name>`); `After completing` section removed (moved into the command). Configuration, integrations, and notes preserved.
+- **No more `[LANGUAGE]` / `[MAIN_BRANCH]` placeholders** — commands read `language=`, `branch=`, `merge_strategy=` from `.darkflow` automatically.
+
+### Installer
+- `install.sh` — fetches all 10 new command files; routine setup footer simplified to one-line prompts; CLAUDE.md `### Dark Flow commands` section updated to list routine commands.
+- `update.sh` — fetches all 10 new command files on update; CLAUDE.md section updated to list all routine commands.
+
+---
+
 ## [1.2.2] — 2026-05-18
 
 ### Installer

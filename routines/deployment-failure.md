@@ -7,21 +7,10 @@ Reactive routine triggered by a webhook when a deployment fails. Fetches the fai
 ## Instructions
 
 ```
-A deployment has just failed. Do the following:
-
-1. Get the deployment logs from the last failed deployment (Coolify / your platform)
-2. Identify the root cause — build error, runtime crash, missing env var, OOM, etc.
-3. Fix the code or configuration that caused the failure
-4. Commit and push the fix to [MAIN_BRANCH]
-5. Wait for the new deployment to complete
-6. Check application logs to confirm the fix worked
-
-If the root cause is unclear or the fix requires more than a small targeted change,
-do NOT guess — open a GitHub issue with label priority:p0, source:signoz, area:infra
-and leave a comment describing what you found. Then stop.
-
-Language: [LANGUAGE]
+/darkflow:deployment-failure
 ```
+
+The command reads `.darkflow` for branch, language, and merge strategy — no placeholders to replace.
 
 ---
 
@@ -88,20 +77,6 @@ Consider also adding to the instructions:
 Do not modify database migrations, environment variables, or infrastructure config
 without explicit approval — create a priority:p0 issue instead.
 ```
-
----
-
-## After completing
-
-Append a routine-log entry to `docs/overview.html`:
-
-1. Read `docs/overview.html`
-2. In the JSON inside `<script id="overview-data">`, append to the `logs` array:
-   ```json
-   { "timestamp": "<current UTC ISO 8601>", "routine": "deployment-failure", "summary": "<one-line summary, e.g. 'Fixed missing env DATABASE_URL, redeploy OK'>" }
-   ```
-3. Cap the array at the 50 most recent entries (drop older ones if it exceeds 50)
-4. Write `docs/overview.html` — change nothing else in the JSON
 
 ---
 

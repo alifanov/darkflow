@@ -19,15 +19,10 @@ npx skills add https://github.com/mattpocock/skills --skill improve-codebase-arc
 ## Instructions
 
 ```
-/improve-codebase-architecture
-
-After the review is complete, create a GitHub issue for each significant finding:
-- Labels: source:manual, area matching the affected module, priority based on impact, effort:m or effort:l
-- Focus on actionable improvements, not style preferences
-- Do not create issues for findings already tracked in open GitHub issues
-
-Language in GitHub issues: [LANGUAGE]
+/darkflow:architecture-review
 ```
+
+The command reads `.darkflow` for the output language — no placeholders to replace.
 
 ---
 
@@ -67,26 +62,6 @@ Sun 4:00  Security runtime audit
 ```
 
 All three run on Sunday with 1-hour gaps so they don't overlap.
-
----
-
-## After completing
-
-Update `docs/overview.html` with the fresh architecture status:
-
-1. Read `docs/overview.html`
-2. Run `gh issue list --state open --json number,title,labels --limit 200`
-3. Count issues with label `area:architecture` → `architecture.open_issues`
-4. Set `architecture.last_review` to today's date (YYYY-MM-DD)
-5. Derive `architecture.status`: `"warning"` if > 10 open, `"ok"` otherwise
-6. Also recalculate `github.*` from the full issue list
-7. Append a new entry to the `logs` array (cap at 50 most recent):
-   ```json
-   { "timestamp": "<current UTC ISO 8601>", "routine": "architecture-review", "summary": "<one-line summary, e.g. 'Found 4 architectural issues, opened 2 new GitHub issues'>" }
-   ```
-8. Write `docs/overview.html`
-
-Preserve `analytics.*` and `security.*` from the existing JSON — only update `architecture.*`, `github.*`, and `logs`.
 
 ---
 

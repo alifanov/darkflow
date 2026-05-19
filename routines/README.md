@@ -3,6 +3,8 @@
 Scheduled Claude Code agents that automate the triage loop. Set them up in **Claude Code → Routines → New routine**.
 
 > **Important:** set **Always allowed: Act without asking** on every routine — otherwise the agent stalls waiting for confirmation.
+>
+> Each routine prompt is now a single line: `/darkflow:<name>`. The command reads language, branch, and merge strategy from `.darkflow` automatically — no placeholders to replace.
 
 ---
 

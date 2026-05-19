@@ -208,10 +208,20 @@ smart_update_template "docs/github-issues.md"      "docs/github-issues.md"
 smart_update_template "docs/decisions/TEMPLATE.md" "docs/decisions/TEMPLATE.md"
 smart_update_template ".github/ISSUE_TEMPLATE/recommendation.yml" \
                       ".github/ISSUE_TEMPLATE/recommendation.yml"
-smart_update_template ".claude/commands/darkflow.md"         ".claude/commands/darkflow.md"
-smart_update_template ".claude/commands/darkflow/add-issue.md"     ".claude/commands/darkflow/add-issue.md"
-smart_update_template ".claude/commands/darkflow/install.md" ".claude/commands/darkflow/install.md"
-smart_update_template ".claude/commands/darkflow/update.md"  ".claude/commands/darkflow/update.md"
+smart_update_template ".claude/commands/darkflow.md"                         ".claude/commands/darkflow.md"
+smart_update_template ".claude/commands/darkflow/add-issue.md"               ".claude/commands/darkflow/add-issue.md"
+smart_update_template ".claude/commands/darkflow/install.md"                 ".claude/commands/darkflow/install.md"
+smart_update_template ".claude/commands/darkflow/update.md"                  ".claude/commands/darkflow/update.md"
+smart_update_template ".claude/commands/darkflow/fix-issues.md"              ".claude/commands/darkflow/fix-issues.md"
+smart_update_template ".claude/commands/darkflow/analytics-review.md"        ".claude/commands/darkflow/analytics-review.md"
+smart_update_template ".claude/commands/darkflow/observability-check.md"     ".claude/commands/darkflow/observability-check.md"
+smart_update_template ".claude/commands/darkflow/gsc-check.md"               ".claude/commands/darkflow/gsc-check.md"
+smart_update_template ".claude/commands/darkflow/coolify-logs.md"            ".claude/commands/darkflow/coolify-logs.md"
+smart_update_template ".claude/commands/darkflow/deployment-failure.md"      ".claude/commands/darkflow/deployment-failure.md"
+smart_update_template ".claude/commands/darkflow/claude-md-update.md"        ".claude/commands/darkflow/claude-md-update.md"
+smart_update_template ".claude/commands/darkflow/security-code-audit.md"     ".claude/commands/darkflow/security-code-audit.md"
+smart_update_template ".claude/commands/darkflow/security-runtime-audit.md"  ".claude/commands/darkflow/security-runtime-audit.md"
+smart_update_template ".claude/commands/darkflow/architecture-review.md"     ".claude/commands/darkflow/architecture-review.md"
 
 # ── 3. CLAUDE.md — update only the Dark Flow section ────────────────────────
 
@@ -316,7 +326,20 @@ Prompts: https://github.com/alifanov/darkflow/blob/main/routines/README.md
 ### Dark Flow commands
 
 Use \`/darkflow\` inside Claude Code to check workflow health and review the approved queue.
-Subcommands: \`/darkflow:add-issue\`, \`/darkflow:update\`, \`/darkflow:install\`.
+
+Workflow commands: \`/darkflow:add-issue\`, \`/darkflow:update\`, \`/darkflow:install\`.
+
+Routine commands (run any routine interactively or use as the routine prompt):
+- \`/darkflow:fix-issues\` — pick up one approved issue and close it
+- \`/darkflow:analytics-review\` — PostHog + commits → GitHub issues
+- \`/darkflow:observability-check\` — errors / slow queries / latency → GitHub issues
+- \`/darkflow:gsc-check\` — Google Search Console → GitHub issues
+- \`/darkflow:coolify-logs\` — deployment log monitoring
+- \`/darkflow:deployment-failure\` — diagnose and fix a failed deployment
+- \`/darkflow:claude-md-update\` — regenerate CLAUDE.md from codebase
+- \`/darkflow:architecture-review\` — architectural analysis → GitHub issues
+- \`/darkflow:security-code-audit\` — static security review → GitHub issues
+- \`/darkflow:security-runtime-audit\` — runtime security check → GitHub issues
 
 <!-- darkflow:end -->"
 

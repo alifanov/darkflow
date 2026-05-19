@@ -6,40 +6,11 @@ The core execution routine. Runs every hour, picks up one `status:approved` GitH
 
 ## Instructions
 
-Choose the variant that matches your project's merge strategy (the installer shows the exact instruction for your setup).
-
-### Variant A — Pull Request (default, recommended)
-
 ```
-Look at the open GitHub issues for this project. Take only one issue with status:approved,
-sorted by priority (p0 first, then p1, p2, p3).
-
-Implement all the changes needed for it.
-Open a pull request targeting [MAIN_BRANCH] with "Closes #N" in the description.
-Merge the pull request.
-Leave a comment on the issue confirming completion.
-
-Language in GitHub issues: [LANGUAGE]
+/darkflow:fix-issues
 ```
 
-### Variant B — Direct commit
-
-```
-Look at the open GitHub issues for this project. Take only one issue with status:approved,
-sorted by priority (p0 first, then p1, p2, p3).
-
-Implement all the changes needed for it.
-Commit and push directly to [MAIN_BRANCH].
-Leave a comment on the issue confirming completion.
-Close the issue.
-
-Language in GitHub issues: [LANGUAGE]
-```
-
-Replace `[MAIN_BRANCH]` with your actual branch name (`main`, `master`, `develop`, etc.).  
-Replace the language if needed.
-
-The Dark Flow installer generates the exact instruction for your setup at the end of installation.
+The command reads `.darkflow` for branch, language, and merge strategy — no placeholders to replace. The PR vs direct-commit variant is selected automatically from `merge_strategy=` in `.darkflow`.
 
 ---
 
@@ -74,20 +45,6 @@ This routine picks it up (next :00)
 ```
 
 The routine skips issues it cannot handle and leaves a comment explaining why.
-
----
-
-## After completing
-
-Append a routine-log entry to `docs/overview.html` (only if the run actually did work — skip on "no approved issues"):
-
-1. Read `docs/overview.html`
-2. In the JSON inside `<script id="overview-data">`, append to the `logs` array:
-   ```json
-   { "timestamp": "<current UTC ISO 8601>", "routine": "fix-issues", "summary": "<one-line summary, e.g. 'Closed #42: fixed N+1 in /api/orders, PR #44 merged'>" }
-   ```
-3. Cap the array at the 50 most recent entries (drop older ones if it exceeds 50)
-4. Write `docs/overview.html` — change nothing else in the JSON
 
 ---
 

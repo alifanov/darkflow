@@ -522,7 +522,20 @@ HEREDOC
   echo "### Dark Flow commands"
   echo ""
   echo "Use \`/darkflow\` inside Claude Code to check workflow health and review the approved queue."
-  echo "Subcommands: \`/darkflow:add-issue\`, \`/darkflow:update\`, \`/darkflow:install\`."
+  echo ""
+  echo "Workflow commands: \`/darkflow:add-issue\`, \`/darkflow:update\`, \`/darkflow:install\`."
+  echo ""
+  echo "Routine commands (run any routine interactively or use as the routine prompt):"
+  echo "- \`/darkflow:fix-issues\` — pick up one approved issue and close it"
+  [[ "$MOD_ANALYTICS"     == true ]] && echo "- \`/darkflow:analytics-review\` — PostHog + commits → GitHub issues"
+  [[ "$MOD_OBSERVABILITY" == true ]] && echo "- \`/darkflow:observability-check\` — errors / slow queries / latency → GitHub issues"
+  [[ "$MOD_GSC"           == true ]] && echo "- \`/darkflow:gsc-check\` — Google Search Console → GitHub issues"
+  [[ "$MOD_COOLIFY"       == true ]] && echo "- \`/darkflow:coolify-logs\` — deployment log monitoring"
+  [[ "$MOD_COOLIFY"       == true ]] && echo "- \`/darkflow:deployment-failure\` — diagnose and fix a failed deployment"
+  [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- \`/darkflow:claude-md-update\` — regenerate CLAUDE.md from codebase"
+  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- \`/darkflow:architecture-review\` — architectural analysis → GitHub issues"
+  echo "- \`/darkflow:security-code-audit\` — static security review → GitHub issues"
+  echo "- \`/darkflow:security-runtime-audit\` — runtime security check → GitHub issues"
   echo ""
   echo "<!-- darkflow:end -->"
 }
@@ -558,12 +571,22 @@ header "4/4  Claude Code commands"
 make_dir ".claude/commands"
 make_dir ".claude/commands/darkflow"
 
-safe_fetch ".claude/commands/darkflow.md"          ".claude/commands/darkflow.md"
-safe_fetch ".claude/commands/darkflow/add-issue.md"      ".claude/commands/darkflow/add-issue.md"
-safe_fetch ".claude/commands/darkflow/install.md"  ".claude/commands/darkflow/install.md"
-safe_fetch ".claude/commands/darkflow/update.md"   ".claude/commands/darkflow/update.md"
+safe_fetch ".claude/commands/darkflow.md"                               ".claude/commands/darkflow.md"
+safe_fetch ".claude/commands/darkflow/add-issue.md"                    ".claude/commands/darkflow/add-issue.md"
+safe_fetch ".claude/commands/darkflow/install.md"                      ".claude/commands/darkflow/install.md"
+safe_fetch ".claude/commands/darkflow/update.md"                       ".claude/commands/darkflow/update.md"
+safe_fetch ".claude/commands/darkflow/fix-issues.md"                   ".claude/commands/darkflow/fix-issues.md"
+safe_fetch ".claude/commands/darkflow/analytics-review.md"             ".claude/commands/darkflow/analytics-review.md"
+safe_fetch ".claude/commands/darkflow/observability-check.md"          ".claude/commands/darkflow/observability-check.md"
+safe_fetch ".claude/commands/darkflow/gsc-check.md"                    ".claude/commands/darkflow/gsc-check.md"
+safe_fetch ".claude/commands/darkflow/coolify-logs.md"                 ".claude/commands/darkflow/coolify-logs.md"
+safe_fetch ".claude/commands/darkflow/deployment-failure.md"           ".claude/commands/darkflow/deployment-failure.md"
+safe_fetch ".claude/commands/darkflow/claude-md-update.md"             ".claude/commands/darkflow/claude-md-update.md"
+safe_fetch ".claude/commands/darkflow/security-code-audit.md"          ".claude/commands/darkflow/security-code-audit.md"
+safe_fetch ".claude/commands/darkflow/security-runtime-audit.md"       ".claude/commands/darkflow/security-runtime-audit.md"
+safe_fetch ".claude/commands/darkflow/architecture-review.md"          ".claude/commands/darkflow/architecture-review.md"
 
-success "Installed /darkflow commands — /darkflow, /darkflow:add-issue, /darkflow:update, /darkflow:install"
+success "Installed /darkflow commands — /darkflow, /darkflow:add-issue, /darkflow:fix-issues, /darkflow:analytics-review, and 7 more"
 
 # ── Architecture review skill ─────────────────────────────────────────────────
 
@@ -613,33 +636,22 @@ else
   echo "  Fix issues       Hourly          Picks up status:approved → PR → merge into ${MAIN_BRANCH}"
 fi
 echo ""
-echo -e "  ${DIM}Fix Issues instruction for your setup:${RESET}"
-if [[ "$MERGE_STRATEGY" == "direct" ]]; then
-  echo -e "  ${DIM}  Take one GitHub issue (status:approved, highest priority), implement the fix,${RESET}"
-  echo -e "  ${DIM}  commit and push directly to ${MAIN_BRANCH}. Leave a comment on the issue.${RESET}"
-  echo -e "  ${DIM}  Close the issue. Language: ${LANGUAGE}.${RESET}"
-else
-  echo -e "  ${DIM}  Take one GitHub issue (status:approved, highest priority), implement the fix,${RESET}"
-  echo -e "  ${DIM}  open a PR targeting ${MAIN_BRANCH} with 'Closes #N', merge it.${RESET}"
-  echo -e "  ${DIM}  Language in GitHub issues: ${LANGUAGE}.${RESET}"
-fi
+echo -e "  ${DIM}Routine prompt: /darkflow:fix-issues${RESET}"
+echo -e "  ${DIM}(reads .darkflow for branch, language, merge strategy automatically)${RESET}"
 echo ""
 
 if [[ "$HAS_ROUTINES" == true ]]; then
   echo -e "  ${BOLD}Routines for your selected modules:${RESET}"
-  [[ "$MOD_ANALYTICS"    == true ]] && echo "  Analytics review     Daily 8:00      PostHog/analytics + commits → GitHub issues"
-  [[ "$MOD_OBSERVABILITY" == true ]] && echo "  Observability check  Daily 8:30      SigNoz/errors/slow URLs → GitHub issues"
-  [[ "$MOD_GSC"          == true ]] && echo "  GSC check            Weekly Mon 8:00  Google Search Console → GitHub issues"
-  [[ "$MOD_COOLIFY"      == true ]] && echo "  Coolify logs         Daily 9:00      Deployment logs → fix errors → verify"
-  [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "  CLAUDE.md update     Weekdays 9:00   Re-generates CLAUDE.md from codebase"
-  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "  Architecture review  Weekly Sun 2:00  /improve-codebase-architecture → GitHub issues"
+  [[ "$MOD_ANALYTICS"    == true ]] && echo "  Analytics review     Daily 8:00      /darkflow:analytics-review"
+  [[ "$MOD_OBSERVABILITY" == true ]] && echo "  Observability check  Daily 8:30      /darkflow:observability-check"
+  [[ "$MOD_GSC"          == true ]] && echo "  GSC check            Weekly Mon 8:00  /darkflow:gsc-check"
+  [[ "$MOD_COOLIFY"      == true ]] && echo "  Coolify logs         Daily 9:00      /darkflow:coolify-logs"
+  [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "  CLAUDE.md update     Weekdays 9:00   /darkflow:claude-md-update"
+  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "  Architecture review  Weekly Sun 2:00  /darkflow:architecture-review"
   echo ""
 fi
 
 echo -e "  ${DIM}⚠ Set 'Always allowed: Act without asking' on every routine.${RESET}"
-if [[ "$LANGUAGE" != "English" ]]; then
-  echo -e "  ${DIM}⚠ Each routine prompt ends with \"Language in GitHub issues: English\" — change to: ${LANGUAGE}${RESET}"
-fi
 echo ""
 
 # Summary of what was installed

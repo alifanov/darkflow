@@ -7,11 +7,7 @@ Daily check of Coolify deployment logs — finds errors, fixes them, waits for a
 ## Instructions
 
 ```
-1. Get logs for this project in Coolify for the last 24h
-2. Check for errors
-3. Fix these errors
-4. Wait for successful deployment
-5. Check app logs after deployment
+/darkflow:coolify-logs
 ```
 
 ---
@@ -34,20 +30,6 @@ Daily check of Coolify deployment logs — finds errors, fixes them, waits for a
   - MCP server: `@alifanov/coolify-mcp` or equivalent
   - Needs Coolify API token with deploy permissions
 - **Git** with push access — the routine commits fixes to main before triggering redeploy
-
----
-
-## After completing
-
-Append a routine-log entry to `docs/overview.html`:
-
-1. Read `docs/overview.html`
-2. In the JSON inside `<script id="overview-data">`, append to the `logs` array:
-   ```json
-   { "timestamp": "<current UTC ISO 8601>", "routine": "coolify-logs", "summary": "<one-line summary, e.g. 'No errors in last 24h, deploy healthy'>" }
-   ```
-3. Cap the array at the 50 most recent entries (drop older ones if it exceeds 50)
-4. Write `docs/overview.html` — change nothing else in the JSON
 
 ---
 
