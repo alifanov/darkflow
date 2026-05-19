@@ -87,18 +87,18 @@ The loop runs automatically via **Claude Code Routines** — see [routines/READM
 
 The real power comes from scheduling Claude Code agents that run the loop without manual triggering:
 
-| Routine | Schedule | What it does |
-|---|---|---|
-| [Analytics review](routines/analytics-review.md) | Daily 8:00 | PostHog + commits → `status:proposed` issues |
-| [Observability check](routines/observability-check.md) | Daily 8:30 | SigNoz/errors/slow URLs → issues |
-| [GSC check](routines/gsc-check.md) | Weekly Mon 8:00 | Google Search Console → issues |
-| [**Fix issues**](routines/fix-issues.md) | **Hourly** | Picks up `status:approved` → PR → merge |
-| [Coolify logs](routines/coolify-logs.md) | Daily 9:00 | Deployment logs → fixes errors → verifies |
-| [**Deployment failure fix**](routines/deployment-failure.md) | **API trigger** | Fires on failed deploy → diagnoses → fixes → redeploys |
-| [CLAUDE.md update](routines/claude-md-update.md) | Weekdays 9:00 | Re-generates CLAUDE.md from codebase |
-| [Security code audit](routines/security-code-audit.md) | Weekly Sun 3:00 | `/security-review` on codebase → issues |
-| [Security runtime audit](routines/security-runtime-audit.md) | Weekly Sun 4:00 | `/security-review` on live app → issues |
-| [Architecture review](routines/architecture-review.md) | Weekly Sun 2:00 | `/improve-codebase-architecture` → issues |
+| Routine | Schedule | What it does | Slash command |
+|---|---|---|---|
+| [Analytics review](routines/analytics-review.md) | Daily 8:00 | PostHog + commits → `status:proposed` issues | `/darkflow:analytics-review` |
+| [Observability check](routines/observability-check.md) | Daily 8:30 | SigNoz/errors/slow URLs → issues | `/darkflow:observability-check` |
+| [GSC check](routines/gsc-check.md) | Weekly Mon 8:00 | Google Search Console → issues | `/darkflow:gsc-check` |
+| [**Fix issues**](routines/fix-issues.md) | **Hourly** | Picks up `status:approved` → PR → merge | `/darkflow:fix-issues` |
+| [Coolify logs](routines/coolify-logs.md) | Daily 9:00 | Deployment logs → fixes errors → verifies | `/darkflow:coolify-logs` |
+| [**Deployment failure fix**](routines/deployment-failure.md) | **API trigger** | Fires on failed deploy → diagnoses → fixes → redeploys | `/darkflow:deployment-failure` |
+| [CLAUDE.md update](routines/claude-md-update.md) | Weekdays 9:00 | Re-generates CLAUDE.md from codebase | `/darkflow:claude-md-update` |
+| [Security code audit](routines/security-code-audit.md) | Weekly Sun 3:00 | `/security-review` on codebase → issues | `/darkflow:security-code-audit` |
+| [Security runtime audit](routines/security-runtime-audit.md) | Weekly Sun 4:00 | `/security-review` on live app → issues | `/darkflow:security-runtime-audit` |
+| [Architecture review](routines/architecture-review.md) | Weekly Sun 2:00 | `/improve-codebase-architecture` → issues | `/darkflow:architecture-review` |
 
 **Set up in:** Claude Code → Routines → New routine  
 **Important:** set "Always allowed: Act without asking" on every routine.
