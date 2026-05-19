@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [1.3.1] — 2026-05-19
+
+### Updated commands
+- **Merged** `/darkflow:security-code-audit` + `/darkflow:security-runtime-audit` → `/darkflow:security-audit` — both called the same `/security-review` skill; one command is cleaner. Schedule: weekly Sun 3:00.
+
+---
+
 ## [1.3.0] — 2026-05-19
 
 ### New commands

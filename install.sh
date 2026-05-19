@@ -534,8 +534,7 @@ HEREDOC
   [[ "$MOD_COOLIFY"       == true ]] && echo "- \`/darkflow:deployment-failure\` — diagnose and fix a failed deployment"
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- \`/darkflow:claude-md-update\` — regenerate CLAUDE.md from codebase"
   [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- \`/darkflow:architecture-review\` — architectural analysis → GitHub issues"
-  echo "- \`/darkflow:security-code-audit\` — static security review → GitHub issues"
-  echo "- \`/darkflow:security-runtime-audit\` — runtime security check → GitHub issues"
+  echo "- \`/darkflow:security-audit\` — full security review (static + runtime) → GitHub issues"
   echo ""
   echo "<!-- darkflow:end -->"
 }
@@ -582,11 +581,10 @@ safe_fetch ".claude/commands/darkflow/gsc-check.md"                    ".claude/
 safe_fetch ".claude/commands/darkflow/coolify-logs.md"                 ".claude/commands/darkflow/coolify-logs.md"
 safe_fetch ".claude/commands/darkflow/deployment-failure.md"           ".claude/commands/darkflow/deployment-failure.md"
 safe_fetch ".claude/commands/darkflow/claude-md-update.md"             ".claude/commands/darkflow/claude-md-update.md"
-safe_fetch ".claude/commands/darkflow/security-code-audit.md"          ".claude/commands/darkflow/security-code-audit.md"
-safe_fetch ".claude/commands/darkflow/security-runtime-audit.md"       ".claude/commands/darkflow/security-runtime-audit.md"
+safe_fetch ".claude/commands/darkflow/security-audit.md"               ".claude/commands/darkflow/security-audit.md"
 safe_fetch ".claude/commands/darkflow/architecture-review.md"          ".claude/commands/darkflow/architecture-review.md"
 
-success "Installed /darkflow commands — /darkflow, /darkflow:add-issue, /darkflow:fix-issues, /darkflow:analytics-review, and 7 more"
+success "Installed /darkflow commands — /darkflow, /darkflow:add-issue, /darkflow:fix-issues, /darkflow:analytics-review, and 6 more"
 
 # ── Architecture review skill ─────────────────────────────────────────────────
 

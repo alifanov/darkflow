@@ -219,8 +219,7 @@ smart_update_template ".claude/commands/darkflow/gsc-check.md"               ".c
 smart_update_template ".claude/commands/darkflow/coolify-logs.md"            ".claude/commands/darkflow/coolify-logs.md"
 smart_update_template ".claude/commands/darkflow/deployment-failure.md"      ".claude/commands/darkflow/deployment-failure.md"
 smart_update_template ".claude/commands/darkflow/claude-md-update.md"        ".claude/commands/darkflow/claude-md-update.md"
-smart_update_template ".claude/commands/darkflow/security-code-audit.md"     ".claude/commands/darkflow/security-code-audit.md"
-smart_update_template ".claude/commands/darkflow/security-runtime-audit.md"  ".claude/commands/darkflow/security-runtime-audit.md"
+smart_update_template ".claude/commands/darkflow/security-audit.md"          ".claude/commands/darkflow/security-audit.md"
 smart_update_template ".claude/commands/darkflow/architecture-review.md"     ".claude/commands/darkflow/architecture-review.md"
 
 # ── 3. CLAUDE.md — update only the Dark Flow section ────────────────────────
@@ -338,8 +337,7 @@ Routine commands (run any routine interactively or use as the routine prompt):
 - \`/darkflow:deployment-failure\` — diagnose and fix a failed deployment
 - \`/darkflow:claude-md-update\` — regenerate CLAUDE.md from codebase
 - \`/darkflow:architecture-review\` — architectural analysis → GitHub issues
-- \`/darkflow:security-code-audit\` — static security review → GitHub issues
-- \`/darkflow:security-runtime-audit\` — runtime security check → GitHub issues
+- \`/darkflow:security-audit\` — full security review (static + runtime) → GitHub issues
 
 <!-- darkflow:end -->"
 

@@ -1,4 +1,4 @@
-Check the live application's security posture (HTTP headers, TLS, CSP, DNS, exposed endpoints) and create status:proposed GitHub issues for each gap.
+Run a full security review — static code analysis and live app check — then create status:proposed GitHub issues for each finding.
 
 ## Step 1 — Read project config
 
@@ -12,7 +12,7 @@ If `.darkflow` is missing, continue with the default.
 /security-review
 
 After the review is complete, create a GitHub issue for each finding:
-- Labels: `source:security-review`, priority based on severity (`p0`=critical, `p1`=high, `p2`=medium, `p3`=low), `area:infra` / `area:api` as appropriate
+- Labels: `source:security-review`, priority based on severity (`p0`=critical, `p1`=high, `p2`=medium, `p3`=low), `area:api` / `area:auth` / `area:infra` as appropriate
 - Do not create issues for findings already tracked in open GitHub issues
 
 Language for all GitHub issues and output: the `language=` value from `.darkflow`.
@@ -30,7 +30,7 @@ Update `docs/overview.html` with the fresh security status:
 7. Also recalculate `github.*` from the full issue list
 8. Append a new entry to the `logs` array (cap at 50 most recent):
    ```json
-   { "timestamp": "<current UTC ISO 8601>", "routine": "security-runtime-audit", "summary": "<one-line summary, e.g. 'Headers OK, 2 CSP gaps opened as p2 issues'>" }
+   { "timestamp": "<current UTC ISO 8601>", "routine": "security-audit", "summary": "<one-line summary, e.g. 'No new vulnerabilities, 1 medium CSP gap opened'>" }
    ```
 9. Write `docs/overview.html`
 

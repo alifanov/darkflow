@@ -1,13 +1,13 @@
-# Security Code Audit
+# Security Audit
 
-Weekly static analysis of the codebase — finds security vulnerabilities, exposed secrets, insecure patterns, and outdated dependencies. Creates `status:proposed` GitHub issues for each finding.
+Weekly security review — static analysis of the codebase and live application check (HTTP headers, TLS, CSP, exposed endpoints). Creates `status:proposed` GitHub issues for each finding.
 
 ---
 
 ## Instructions
 
 ```
-/darkflow:security-code-audit
+/darkflow:security-audit
 ```
 
 The command reads `.darkflow` for the output language — no placeholders to replace.
@@ -42,6 +42,6 @@ Critical findings (`priority:p0`) should be reviewed immediately.
 
 ## Notes
 
-- Use **Opus** — `/security-review` reads the full codebase; Sonnet may miss subtle vulnerabilities
-- For monorepos, scope the review by adding after the command: "Focus on `apps/api/` and `packages/auth/`"
+- Use **Opus** — `/security-review` reads the full codebase and checks the live app; Sonnet may miss subtle vulnerabilities
+- For monorepos, add to instructions: "Focus on `apps/api/` and `packages/auth/`"
 - Consider running after major feature merges in addition to the weekly schedule

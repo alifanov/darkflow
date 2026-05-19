@@ -96,8 +96,7 @@ The real power comes from scheduling Claude Code agents that run the loop withou
 | [Coolify logs](routines/coolify-logs.md) | Daily 9:00 | Deployment logs → fixes errors → verifies |
 | [**Deployment failure fix**](routines/deployment-failure.md) | **API trigger** | Fires on failed deploy → diagnoses → fixes → redeploys |
 | [CLAUDE.md update](routines/claude-md-update.md) | Weekdays 9:00 | Re-generates CLAUDE.md from codebase |
-| [Security code audit](routines/security-code-audit.md) | Weekly Sun 3:00 | `/security-review` on codebase → issues |
-| [Security runtime audit](routines/security-runtime-audit.md) | Weekly Sun 4:00 | `/security-review` on live app → issues |
+| [Security audit](routines/security-audit.md) | Weekly Sun 3:00 | Full security review (static + runtime) → issues |
 | [Architecture review](routines/architecture-review.md) | Weekly Sun 2:00 | `/improve-codebase-architecture` → issues |
 
 **Set up in:** Claude Code → Routines → New routine  
@@ -120,8 +119,7 @@ On-demand (API trigger)
 Weekly
   Mon 8:00  /darkflow:gsc-check              → status:proposed issues
   Sun 2:00  /darkflow:architecture-review    → status:proposed issues (Opus) + updates overview
-  Sun 3:00  /darkflow:security-code-audit    → status:proposed issues (Opus) + updates overview
-  Sun 4:00  /darkflow:security-runtime-audit → status:proposed issues + updates overview
+  Sun 3:00  /darkflow:security-audit         → status:proposed issues (Opus) + updates overview
 
 Continuous
   :00  /darkflow:fix-issues (hourly)  → picks up status:approved → PR → merge
@@ -164,8 +162,7 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | `/darkflow:deployment-failure` | Diagnose and fix a failed deployment |
 | `/darkflow:claude-md-update` | Regenerate CLAUDE.md from codebase |
 | `/darkflow:architecture-review` | Architectural analysis → GitHub issues + overview update |
-| `/darkflow:security-code-audit` | Static security review → GitHub issues + overview update |
-| `/darkflow:security-runtime-audit` | Runtime security check → GitHub issues + overview update |
+| `/darkflow:security-audit` | Full security review (static + runtime) → GitHub issues + overview update |
 
 Routine commands read `language=`, `branch=`, and `merge_strategy=` from `.darkflow` automatically — no configuration needed at invocation time. They can also be run interactively at any time, not just on a schedule.
 
