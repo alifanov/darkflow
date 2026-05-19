@@ -321,7 +321,7 @@ Scheduled Claude Code agents that run this workflow automatically:
   new_section="${new_section}
 
 Set up via: Claude Code → Routines → New routine
-Prompts: https://github.com/alifanov/darkflow/blob/main/routines/README.md
+Prompts: https://github.com/alifanov/darkflow#routines-automated-agents
 
 ### Dark Flow commands
 

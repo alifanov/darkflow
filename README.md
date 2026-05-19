@@ -101,9 +101,73 @@ The real power comes from scheduling Claude Code agents that run the loop withou
 | [Architecture review](routines/architecture-review.md) | Weekly Sun 2:00 | `/improve-codebase-architecture` → issues | `/darkflow:architecture-review` |
 
 **Set up in:** Claude Code → Routines → New routine  
-**Important:** set "Always allowed: Act without asking" on every routine.
+**Important:** set "Always allowed: Act without asking" on every routine. Each routine prompt is a single slash command — no placeholders to replace.
 
 Each routine page has: full instructions, schedule, model recommendation, worktree setting, and required integrations.
+
+### How the loop fits together
+
+```
+Daily
+  8:00  /darkflow:analytics-review    → status:proposed issues + updates docs/overview.html
+  8:30  /darkflow:observability-check → status:proposed issues
+  9:00  /darkflow:coolify-logs        → verifies deploy, fixes errors
+  9:00  /darkflow:claude-md-update    → keeps agent context in sync
+
+On-demand (API trigger)
+  /darkflow:deployment-failure        → diagnoses → fixes → redeploys
+
+Weekly
+  Mon 8:00  /darkflow:gsc-check              → status:proposed issues
+  Sun 2:00  /darkflow:architecture-review    → status:proposed issues (Opus) + updates overview
+  Sun 3:00  /darkflow:security-code-audit    → status:proposed issues (Opus) + updates overview
+  Sun 4:00  /darkflow:security-runtime-audit → status:proposed issues + updates overview
+
+Continuous
+  :00  /darkflow:fix-issues (hourly)  → picks up status:approved → PR → merge
+
+Human
+       Reviews status:proposed → sets status:approved or status:rejected
+```
+
+### Setup checklist
+
+- [ ] Create routines in Claude Code → Routines → New routine
+- [ ] Set "Always allowed: Act without asking" on each
+- [ ] Verify `gh auth status` works in the project folder
+- [ ] Configure required MCP servers (see each routine's page for details)
+
+---
+
+## Slash commands
+
+All `/darkflow:*` commands are installed automatically and available inside Claude Code.
+
+### Workflow commands
+
+| Command | What it does |
+|---|---|
+| `/darkflow` | Health check: docs structure, labels, approved queue |
+| `/darkflow:add-issue [title]` | Create a GitHub issue for a manually identified task |
+| `/darkflow:update` | Update Dark Flow to the latest version |
+| `/darkflow:install` | Re-run the Dark Flow installer |
+
+### Routine commands
+
+| Command | What it does |
+|---|---|
+| `/darkflow:fix-issues` | Pick up one `status:approved` issue, implement, close |
+| `/darkflow:analytics-review` | PostHog + commits → GitHub issues + overview update |
+| `/darkflow:observability-check` | Errors / slow queries / latency → GitHub issues |
+| `/darkflow:gsc-check` | Google Search Console → GitHub issues |
+| `/darkflow:coolify-logs` | Deployment log monitoring → fix errors |
+| `/darkflow:deployment-failure` | Diagnose and fix a failed deployment |
+| `/darkflow:claude-md-update` | Regenerate CLAUDE.md from codebase |
+| `/darkflow:architecture-review` | Architectural analysis → GitHub issues + overview update |
+| `/darkflow:security-code-audit` | Static security review → GitHub issues + overview update |
+| `/darkflow:security-runtime-audit` | Runtime security check → GitHub issues + overview update |
+
+Routine commands read `language=`, `branch=`, and `merge_strategy=` from `.darkflow` automatically — no configuration needed at invocation time. They can also be run interactively at any time, not just on a schedule.
 
 ---
 

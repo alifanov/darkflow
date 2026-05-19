@@ -517,7 +517,7 @@ HEREDOC
   [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Architecture review** (Weekly Sun 2:00) — \`/improve-codebase-architecture\` → GitHub issues"
   echo ""
   echo "Set up via: Claude Code → Routines → New routine"
-  echo "Prompts: https://github.com/alifanov/darkflow/blob/main/routines/README.md"
+  echo "Prompts: https://github.com/alifanov/darkflow#routines-automated-agents"
   echo ""
   echo "### Dark Flow commands"
   echo ""
@@ -627,7 +627,7 @@ for m in "$MOD_ANALYTICS" "$MOD_OBSERVABILITY" "$MOD_GSC" "$MOD_COOLIFY" "$MOD_C
 done
 
 echo -e "${BOLD}Set up Claude Code Routines${RESET} (Claude Code → Routines → New routine)"
-echo "  Full prompts: https://github.com/alifanov/darkflow/blob/main/routines/README.md"
+echo "  Full prompts: https://github.com/alifanov/darkflow#routines-automated-agents"
 echo ""
 echo -e "  ${BOLD}Core routines (always recommended):${RESET}"
 if [[ "$MERGE_STRATEGY" == "direct" ]]; then
