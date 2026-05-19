@@ -77,6 +77,20 @@ The routine skips issues it cannot handle and leaves a comment explaining why.
 
 ---
 
+## After completing
+
+Append a routine-log entry to `docs/overview.html` (only if the run actually did work — skip on "no approved issues"):
+
+1. Read `docs/overview.html`
+2. In the JSON inside `<script id="overview-data">`, append to the `logs` array:
+   ```json
+   { "timestamp": "<current UTC ISO 8601>", "routine": "fix-issues", "summary": "<one-line summary, e.g. 'Closed #42: fixed N+1 in /api/orders, PR #44 merged'>" }
+   ```
+3. Cap the array at the 50 most recent entries (drop older ones if it exceeds 50)
+4. Write `docs/overview.html` — change nothing else in the JSON
+
+---
+
 ## Notes
 
 - **One issue per run** — keeps each execution atomic and reviewable

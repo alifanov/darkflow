@@ -115,6 +115,20 @@ Issues with labels: `status:proposed`, `source:signoz` (or relevant), `area:api`
 
 ---
 
+## After completing
+
+Append a routine-log entry to `docs/overview.html`:
+
+1. Read `docs/overview.html`
+2. In the JSON inside `<script id="overview-data">`, append to the `logs` array:
+   ```json
+   { "timestamp": "<current UTC ISO 8601>", "routine": "observability-check", "summary": "<one-line summary, e.g. '2 new error spikes, 1 slow endpoint → 3 issues opened'>" }
+   ```
+3. Cap the array at the 50 most recent entries (drop older ones if it exceeds 50)
+4. Write `docs/overview.html` — change nothing else in the JSON
+
+---
+
 ## Notes
 
 - Schedule 30 minutes after the analytics review (8:30 vs 8:00) to avoid parallel context usage

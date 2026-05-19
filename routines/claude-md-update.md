@@ -50,6 +50,22 @@ The Dark Flow workflow section (docs layers, routines list) is preserved — the
 
 ---
 
+## After completing
+
+If `CLAUDE.md` was actually updated and committed, append a routine-log entry to `docs/overview.html`:
+
+1. Read `docs/overview.html`
+2. In the JSON inside `<script id="overview-data">`, append to the `logs` array:
+   ```json
+   { "timestamp": "<current UTC ISO 8601>", "routine": "claude-md-update", "summary": "<one-line summary, e.g. 'Updated commands section and added 2 new env vars'>" }
+   ```
+3. Cap the array at the 50 most recent entries (drop older ones if it exceeds 50)
+4. Write `docs/overview.html` — change nothing else in the JSON
+
+Skip this step if the routine made no changes to `CLAUDE.md`.
+
+---
+
 ## Notes
 
 - Use **Opus** here — this routine reads the full codebase; Sonnet may miss important context in large repos

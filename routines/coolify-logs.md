@@ -37,6 +37,20 @@ Daily check of Coolify deployment logs — finds errors, fixes them, waits for a
 
 ---
 
+## After completing
+
+Append a routine-log entry to `docs/overview.html`:
+
+1. Read `docs/overview.html`
+2. In the JSON inside `<script id="overview-data">`, append to the `logs` array:
+   ```json
+   { "timestamp": "<current UTC ISO 8601>", "routine": "coolify-logs", "summary": "<one-line summary, e.g. 'No errors in last 24h, deploy healthy'>" }
+   ```
+3. Cap the array at the 50 most recent entries (drop older ones if it exceeds 50)
+4. Write `docs/overview.html` — change nothing else in the JSON
+
+---
+
 ## Notes
 
 - Schedule after the analytics routine (9:00 vs 8:00) so deployment noise doesn't skew analytics data

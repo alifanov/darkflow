@@ -72,6 +72,12 @@ Update `docs/overview.html` — the project status dashboard. Read the file, rep
 
 4. Set `last_updated` to the current UTC timestamp (ISO 8601).
 
+5. **Routine log** — append a new entry to the `logs` array:
+   ```json
+   { "timestamp": "<current UTC ISO 8601>", "routine": "analytics-review", "summary": "<one-line summary, e.g. 'Created 3 issues from PostHog data, no anomalies'>" }
+   ```
+   Keep only the most recent 50 entries (drop older ones if the array exceeds 50).
+
 **JSON schema:**
 ```json
 {

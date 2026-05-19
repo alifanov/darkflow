@@ -192,6 +192,38 @@
 
   .empty { color: var(--muted); font-size: 13px; text-align: center; padding: 24px 0; }
 
+  /* ── Logs section ──────────────────────────────────────────────── */
+  .logs-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .logs-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .logs-table th {
+    text-align: left;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logs-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .logs-table tr:last-child td { border-bottom: none; }
+  .logs-table tr:hover td { background: var(--surface2); }
+
+  .log-time     { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .log-routine  { font-weight: 500; white-space: nowrap; }
+  .log-summary  { color: var(--text); }
+
   /* ── Links ─────────────────────────────────────────────────────── */
   a { color: inherit; text-decoration: none; }
   a.issue-row:hover  { border-color: var(--border); background: #252525; }
@@ -230,7 +262,8 @@
     "open_issues": null,
     "last_review": null,
     "status": "unknown"
-  }
+  },
+  "logs": []
 }
 </script>
 <!-- ===== END DATA BLOCK ===== -->
@@ -304,6 +337,17 @@
 
   var pending    = (gh.awaiting_approval || []).slice(0, 20);
   var inprogress = (gh.in_progress       || []).slice(0, 20);
+  var logs       = (d.logs || []).slice().sort(function(a, b) {
+    return String(b.timestamp || '').localeCompare(String(a.timestamp || ''));
+  }).slice(0, 50);
+
+  function fmtLogTime(ts) {
+    if (!ts) return '—';
+    var dt = new Date(ts);
+    if (isNaN(dt.getTime())) return esc(ts);
+    return dt.toLocaleString('en-US',
+      { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  }
 
   var updatedStr = d.last_updated
     ? 'Updated ' + new Date(d.last_updated).toLocaleString('en-US',
@@ -382,6 +426,24 @@
     + '<div class="status-text">' + esc(statusSummary(arch)) + '</div></div>'
     + '<div class="status-detail">' + (arch.last_review ? 'Last review: ' + esc(arch.last_review) : 'No review recorded') + '</div>'
     + '</div>'
+    + '</div>'
+
+    + '<div class="logs-card">'
+    + '<div class="card-title">Routine Log'
+    + '<span class="count-badge count-badge-muted">' + logs.length + '</span></div>'
+    + (logs.length
+        ? '<table class="logs-table">'
+          + '<thead><tr><th>When</th><th>Routine</th><th>What was done</th></tr></thead>'
+          + '<tbody>'
+          + logs.map(function(l) {
+              return '<tr>'
+                + '<td class="log-time">'    + esc(fmtLogTime(l.timestamp)) + '</td>'
+                + '<td class="log-routine">' + esc(l.routine || '—')        + '</td>'
+                + '<td class="log-summary">' + esc(l.summary || '')         + '</td>'
+                + '</tr>';
+            }).join('')
+          + '</tbody></table>'
+        : '<div class="empty">No routine runs logged yet</div>')
     + '</div>';
 
   document.getElementById('app').innerHTML = html;

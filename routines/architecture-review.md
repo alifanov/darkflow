@@ -80,9 +80,13 @@ Update `docs/overview.html` with the fresh architecture status:
 4. Set `architecture.last_review` to today's date (YYYY-MM-DD)
 5. Derive `architecture.status`: `"warning"` if > 10 open, `"ok"` otherwise
 6. Also recalculate `github.*` from the full issue list
-7. Write `docs/overview.html`
+7. Append a new entry to the `logs` array (cap at 50 most recent):
+   ```json
+   { "timestamp": "<current UTC ISO 8601>", "routine": "architecture-review", "summary": "<one-line summary, e.g. 'Found 4 architectural issues, opened 2 new GitHub issues'>" }
+   ```
+8. Write `docs/overview.html`
 
-Preserve `analytics.*` and `security.*` from the existing JSON — only update `architecture.*` and `github.*`.
+Preserve `analytics.*` and `security.*` from the existing JSON — only update `architecture.*`, `github.*`, and `logs`.
 
 ---
 

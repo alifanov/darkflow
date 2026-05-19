@@ -91,6 +91,20 @@ without explicit approval — create a priority:p0 issue instead.
 
 ---
 
+## After completing
+
+Append a routine-log entry to `docs/overview.html`:
+
+1. Read `docs/overview.html`
+2. In the JSON inside `<script id="overview-data">`, append to the `logs` array:
+   ```json
+   { "timestamp": "<current UTC ISO 8601>", "routine": "deployment-failure", "summary": "<one-line summary, e.g. 'Fixed missing env DATABASE_URL, redeploy OK'>" }
+   ```
+3. Cap the array at the 50 most recent entries (drop older ones if it exceeds 50)
+4. Write `docs/overview.html` — change nothing else in the JSON
+
+---
+
 ## Notes
 
 - This routine overlaps intentionally with [Coolify Logs](coolify-logs.md) — the daily check is proactive, this one is reactive and fires within seconds of a failure

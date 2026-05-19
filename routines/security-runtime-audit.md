@@ -55,9 +55,13 @@ Update `docs/overview.html` with the fresh security status:
 5. Set `security.last_audit` to today's date (YYYY-MM-DD)
 6. Derive `security.status`: `"critical"` if critical_open > 0, `"warning"` if open > 5, `"ok"` otherwise
 7. Also recalculate `github.*` from the full issue list
-8. Write `docs/overview.html`
+8. Append a new entry to the `logs` array (cap at 50 most recent):
+   ```json
+   { "timestamp": "<current UTC ISO 8601>", "routine": "security-runtime-audit", "summary": "<one-line summary, e.g. 'Headers OK, 2 CSP gaps opened as p2 issues'>" }
+   ```
+9. Write `docs/overview.html`
 
-Preserve `analytics.*` and `architecture.*` from the existing JSON — only update `security.*` and `github.*`.
+Preserve `analytics.*` and `architecture.*` from the existing JSON — only update `security.*`, `github.*`, and `logs`.
 
 ---
 
