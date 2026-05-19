@@ -18,7 +18,7 @@ If there are no `status:approved` issues, stop — skip the run.
 Implement all the changes needed for it.
 
 **If `merge_strategy=pr`:**
-Open a pull request targeting the `branch=` value from `.darkflow` with `Closes #N` in the description. Merge the pull request. Leave a comment on the issue confirming completion.
+Open a pull request targeting the `branch=` value from `.darkflow` with `Closes #N` in the description. Merge the pull request into that branch. Leave a comment on the issue confirming completion. Close the issue.
 
 **If `merge_strategy=direct`:**
 Commit and push directly to the `branch=` value from `.darkflow`. Leave a comment on the issue confirming completion. Close the issue.
