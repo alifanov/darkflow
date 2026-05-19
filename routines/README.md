@@ -10,18 +10,18 @@ Scheduled Claude Code agents that automate the triage loop. Set them up in **Cla
 
 ## Routines index
 
-| Routine | Schedule | What it does |
-|---|---|---|
-| [Analytics Review](analytics-review.md) | Daily 8:00 | Checks PostHog + recent commits → `status:proposed` issues + updates `docs/overview.html` |
-| [Observability Check](observability-check.md) | Daily 8:30 | Checks SigNoz/errors/slow URLs → `status:proposed` issues |
-| [GSC Check](gsc-check.md) | Weekly Mon 8:00 | Checks Google Search Console → `status:proposed` issues |
-| [**Fix Issues**](fix-issues.md) | **Hourly** | Picks up `status:approved` → PR → merge to main |
-| [Coolify Logs](coolify-logs.md) | Daily 9:00 | Deployment log monitoring → fixes errors → verifies deploy |
-| [**Deployment Failure Fix**](deployment-failure.md) | **API trigger** | Fires on failed deploy → diagnoses → fixes → redeploys |
-| [CLAUDE.md Update](claude-md-update.md) | Weekdays 9:00 | Re-generates CLAUDE.md from current codebase |
-| [Security Code Audit](security-code-audit.md) | Weekly Sun 3:00 | `/security-review` on codebase → issues + updates overview |
-| [Security Runtime Audit](security-runtime-audit.md) | Weekly Sun 4:00 | `/security-review` on live app → issues + updates overview |
-| [Architecture Review](architecture-review.md) | Weekly Sun 2:00 | `/improve-codebase-architecture` → issues + updates overview |
+| Routine | Schedule | What it does | Slash command |
+|---|---|---|---|
+| [Analytics Review](analytics-review.md) | Daily 8:00 | Checks PostHog + recent commits → `status:proposed` issues + updates `docs/overview.html` | `/darkflow:analytics-review` |
+| [Observability Check](observability-check.md) | Daily 8:30 | Checks SigNoz/errors/slow URLs → `status:proposed` issues | `/darkflow:observability-check` |
+| [GSC Check](gsc-check.md) | Weekly Mon 8:00 | Checks Google Search Console → `status:proposed` issues | `/darkflow:gsc-check` |
+| [**Fix Issues**](fix-issues.md) | **Hourly** | Picks up `status:approved` → PR → merge to main | `/darkflow:fix-issues` |
+| [Coolify Logs](coolify-logs.md) | Daily 9:00 | Deployment log monitoring → fixes errors → verifies deploy | `/darkflow:coolify-logs` |
+| [**Deployment Failure Fix**](deployment-failure.md) | **API trigger** | Fires on failed deploy → diagnoses → fixes → redeploys | `/darkflow:deployment-failure` |
+| [CLAUDE.md Update](claude-md-update.md) | Weekdays 9:00 | Re-generates CLAUDE.md from current codebase | `/darkflow:claude-md-update` |
+| [Security Code Audit](security-code-audit.md) | Weekly Sun 3:00 | `/security-review` on codebase → issues + updates overview | `/darkflow:security-code-audit` |
+| [Security Runtime Audit](security-runtime-audit.md) | Weekly Sun 4:00 | `/security-review` on live app → issues + updates overview | `/darkflow:security-runtime-audit` |
+| [Architecture Review](architecture-review.md) | Weekly Sun 2:00 | `/improve-codebase-architecture` → issues + updates overview | `/darkflow:architecture-review` |
 
 ---
 
