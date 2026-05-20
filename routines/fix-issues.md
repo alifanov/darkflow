@@ -52,8 +52,7 @@ The routine skips issues it cannot handle and leaves a comment explaining why.
 
 - **One issue per run** — keeps each execution atomic and reviewable
 - If there are no `status:approved` issues the run is skipped ("Skipped" in history)
-- Add test commands to the instruction if your project requires them before merge:
-  `"Run pnpm test before merging. If tests fail, do not merge — leave a comment on the issue instead."`
+- Lint, tests, and build are run automatically before every merge — the command detects the tech stack and skips checks that don't exist. If any check fails, the issue is labelled `status:blocked` and a comment is left explaining what failed.
 - The routine only picks up `status:approved` — it respects `status:blocked` and `status:in-progress`
 - **PR strategy** is safer: leaves a merge trail, allows CI checks to run before merge
 - **Direct strategy** is faster but bypasses review; use only when you trust the agent fully

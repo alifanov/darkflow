@@ -17,6 +17,27 @@ If there are no `status:approved` issues, stop — skip the run.
 
 Implement all the changes needed for it.
 
+**Before merging or pushing — run quality checks:**
+
+Detect the project's tech stack and run all available checks. Stop at the first failure.
+
+| Stack | Commands to run (in order) |
+|---|---|
+| Node / pnpm | `pnpm lint` (if script exists) → `pnpm test` (if script exists) → `pnpm build` (if script exists) |
+| Node / npm | `npm run lint` → `npm test` → `npm run build` (skip any that aren't defined) |
+| Python | `ruff check .` (if ruff installed) → `pytest` (if pytest installed) |
+| Rust | `cargo clippy` → `cargo test` → `cargo build` |
+| Go | `go vet ./...` → `go test ./...` → `go build ./...` |
+| Other | Check for `Makefile` targets `lint`, `test`, `build` and run those that exist |
+
+**If any check fails:**
+- Do NOT merge or push
+- Leave a comment on the issue: what failed and the relevant error output (truncated to ~20 lines)
+- Label the issue `status:blocked`
+- Stop the run
+
+**If all checks pass (or no checks apply), proceed:**
+
 **If `merge_strategy=pr`:**
 Open a pull request targeting the `branch=` value from `.darkflow` with `Closes #N` in the description. Merge the pull request into that branch. Leave a comment on the issue confirming completion. Close the issue.
 
