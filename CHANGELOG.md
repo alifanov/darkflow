@@ -14,6 +14,16 @@ Categories:
 
 ---
 
+## [1.4.1] — 2026-05-20
+
+### Installer
+- **`darkflow-run.sh --watch [seconds]`** — foreground loop mode; runs dispatch every N seconds (default 900) in the terminal without requiring launchd or cron. Safe to run alongside a system scheduler (lock prevents concurrent dispatches). Minimum interval: 60 s.
+
+### Docs
+- **`routines/README.md`** — added "Running in the foreground (watch mode)" section with `--watch` usage, tmux example, and note on concurrency.
+
+---
+
 ## [1.4.0] — 2026-05-20
 
 ### Installer

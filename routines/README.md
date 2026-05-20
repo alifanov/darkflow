@@ -49,17 +49,35 @@ bash .darkflow.d/darkflow-run.sh --list
 bash .darkflow.d/darkflow-run.sh --dry-run
 ```
 
-## Setting up automatic scheduling
+## Running in the foreground (watch mode)
 
-During `install.sh` you are asked whether to install a system scheduler. If you said no, add it later:
+If you don't want to install a system scheduler, run the dispatcher in a terminal or tmux pane:
 
 ```bash
-bash install.sh --with-scheduler --force --target /path/to/your-project
+# Loop every 15 min (default)
+bash .darkflow.d/darkflow-run.sh --watch
+
+# Loop every 5 min
+bash .darkflow.d/darkflow-run.sh --watch 300
 ```
 
-This installs a single **launchd job** (macOS) or **crontab entry** (Linux) that runs the dispatcher every 15 minutes. One system job handles all routines for the project — no UI setup required.
+Each tick dispatches all due routines, then sleeps for the interval. Press Ctrl-C (or `kill`) to stop cleanly. Concurrent ticks are safe — if a launchd/cron tick fires while `--watch` is mid-dispatch, it logs "already running" and exits.
 
-To remove the system scheduler:
+Recommended: run inside `tmux` or `screen` so it survives terminal disconnect:
+
+```bash
+tmux new-session -d -s darkflow 'bash .darkflow.d/darkflow-run.sh --watch'
+```
+
+## Setting up automatic scheduling
+
+For background operation without a persistent terminal, install a system scheduler:
+
+```bash
+bash .darkflow.d/install-scheduler.sh
+```
+
+This installs a **launchd job** (macOS) or **crontab entry** (Linux) that fires the dispatcher every 15 minutes. To remove it:
 
 ```bash
 bash .darkflow.d/uninstall-scheduler.sh

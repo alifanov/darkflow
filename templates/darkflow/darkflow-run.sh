@@ -7,6 +7,8 @@
 #   bash .darkflow.d/darkflow-run.sh <name>       # manual: run one routine immediately
 #   bash .darkflow.d/darkflow-run.sh --list       # show routine status table
 #   bash .darkflow.d/darkflow-run.sh --dry-run    # show what would run, don't run it
+#   bash .darkflow.d/darkflow-run.sh --watch      # loop every 900s (no system scheduler needed)
+#   bash .darkflow.d/darkflow-run.sh --watch 300  # loop every 5 min
 #   bash .darkflow.d/darkflow-run.sh --self-test  # run internal cron-matcher tests
 
 set -euo pipefail
@@ -376,6 +378,36 @@ mode_manual() {
   run_routine "$name" "$model" "$permission_mode"
 }
 
+# ── Mode: watch ───────────────────────────────────────────────────────────────
+
+mode_watch() {
+  local interval="${1:-900}"
+  local tick=0
+
+  if ! [[ "$interval" =~ ^[0-9]+$ ]] || (( interval < 60 )); then
+    echo "darkflow-run: --watch interval must be an integer >= 60 (seconds)" >&2
+    exit 1
+  fi
+
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] Dark Flow watch mode started (tick every ${interval}s). Ctrl-C to stop."
+  trap 'echo ""; log "WATCH  stopped (signal)"; exit 0' INT TERM
+
+  while true; do
+    (( tick++ )) || true
+    log "WATCH  tick ${tick}"
+
+    mkdir -p "$STATE_DIR"
+    if mkdir "$LOCK_DIR" 2>/dev/null; then
+      mode_dispatch false
+      rmdir "$LOCK_DIR" 2>/dev/null || true
+    else
+      log "WATCH  skipped tick ${tick} (another dispatch is running)"
+    fi
+
+    sleep "$interval" || true   # || true so SIGINT from Ctrl-C doesn't exit with error
+  done
+}
+
 # ── Mode: self-test ───────────────────────────────────────────────────────────
 
 mode_self_test() {
@@ -450,6 +482,10 @@ case "${1:-}" in
     acquire_lock
     mode_dispatch true
     ;;
+  --watch)
+    preflight || exit 1
+    mode_watch "${2:-900}"
+    ;;
   --self-test)
     mode_self_test
     ;;
@@ -459,7 +495,7 @@ case "${1:-}" in
     mode_dispatch false
     ;;
   -*)
-    echo "Usage: darkflow-run.sh [<routine-name> | --list | --dry-run | --self-test]" >&2
+    echo "Usage: darkflow-run.sh [<routine-name> | --list | --dry-run | --watch [seconds] | --self-test]" >&2
     exit 1
     ;;
   *)
