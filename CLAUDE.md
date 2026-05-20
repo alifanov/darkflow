@@ -29,3 +29,5 @@ After changes, always verify the install script runs end-to-end without errors.
 ## Releases
 
 No build process — just commit and push. The install one-liner fetches from `master` branch raw files via GitHub CDN.
+
+After every change, bump the version in `VERSION` (semver: patch for fixes/copy, minor for new features or template changes, major for breaking installer changes).
