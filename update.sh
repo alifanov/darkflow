@@ -60,7 +60,7 @@ fetch_raw() {
   if [[ "$USE_LOCAL" == true ]]; then
     cat "$SCRIPT_DIR/$path" 2>/dev/null || true
   else
-    curl -fsSL "${DARKFLOW_REPO}/${path}" 2>/dev/null || true
+    curl -fsSL "${DARKFLOW_REPO}/${path}?t=$(date +%s)" 2>/dev/null || true
   fi
 }
 
