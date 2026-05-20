@@ -14,6 +14,16 @@ Categories:
 
 ---
 
+## [1.5.0] — 2026-05-20
+
+### Installer
+- **Makefile generation** — `install.sh` and `update.sh` now create (or update) a `Makefile` with `df-*` shortcut targets for all dispatcher and scheduler commands. If a `Makefile` already exists, the block is injected between `# darkflow:start` / `# darkflow:end` markers without touching existing targets.
+
+### Docs
+- **README** — added "Makefile shortcuts" section with `make df-*` usage examples.
+
+---
+
 ## [1.4.3] — 2026-05-20
 
 ### Installer

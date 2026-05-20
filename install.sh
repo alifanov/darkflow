@@ -351,6 +351,27 @@ safe_fetch() {
   fi
 }
 
+# KEEP IN SYNC with inject_makefile_block() in update.sh
+inject_makefile_block() {
+  local block_file="$1" target="Makefile"
+  if [[ ! -f "$target" ]]; then
+    cp "$block_file" "$target"
+    success "Created Makefile with Dark Flow targets (run: make df-help)"
+  elif grep -q "# darkflow:start" "$target"; then
+    awk -v bf="$block_file" '
+      /# darkflow:start/ { while ((getline l < bf) > 0) print l; close(bf); skip=1; next }
+      skip && /# darkflow:end/ { skip=0; next }
+      skip { next }
+      { print }
+    ' "$target" > "$target.tmp" && mv "$target.tmp" "$target"
+    success "Updated Dark Flow block in Makefile"
+  else
+    printf '\n' >> "$target"
+    cat "$block_file" >> "$target"
+    success "Appended Dark Flow block to existing Makefile"
+  fi
+}
+
 make_dir() {
   local d="$1"
   if [[ ! -d "$d" ]]; then
@@ -851,6 +872,12 @@ YAML_SECTION
 else
   info "Exists: .darkflow.d/routines.yml — skipping (use --force to overwrite)"
 fi
+
+# Generate Makefile with Dark Flow targets
+_mkfile_tmp=$(mktemp)
+fetch_file "Makefile.darkflow" "$_mkfile_tmp"
+inject_makefile_block "$_mkfile_tmp"
+rm -f "$_mkfile_tmp"
 
 # Optionally install system scheduler
 if [[ "$SETUP_SCHEDULER" == true ]]; then

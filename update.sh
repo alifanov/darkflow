@@ -185,6 +185,37 @@ smart_update_template() {
   fi
 }
 
+# KEEP IN SYNC with inject_makefile_block() in install.sh
+inject_makefile_block() {
+  local block_file="$1" target="Makefile"
+  if [[ "$DRY_RUN" == true ]]; then
+    if [[ ! -f "$target" ]]; then
+      info "Would create Makefile with Dark Flow targets"
+    elif grep -q "# darkflow:start" "$target"; then
+      info "Would update Dark Flow block in Makefile"
+    else
+      info "Would append Dark Flow block to existing Makefile"
+    fi
+    return
+  fi
+  if [[ ! -f "$target" ]]; then
+    cp "$block_file" "$target"
+    success "Created Makefile with Dark Flow targets (run: make df-help)"
+  elif grep -q "# darkflow:start" "$target"; then
+    awk -v bf="$block_file" '
+      /# darkflow:start/ { while ((getline l < bf) > 0) print l; close(bf); skip=1; next }
+      skip && /# darkflow:end/ { skip=0; next }
+      skip { next }
+      { print }
+    ' "$target" > "$target.tmp" && mv "$target.tmp" "$target"
+    success "Updated Dark Flow block in Makefile"
+  else
+    printf '\n' >> "$target"
+    cat "$block_file" >> "$target"
+    success "Appended Dark Flow block to existing Makefile"
+  fi
+}
+
 # ── Parent overview ───────────────────────────────────────────────────────────
 
 update_parent_overview() {
@@ -323,6 +354,16 @@ for gi_entry in ".darkflow.d/state/" ".darkflow.d/*.log"; do
     success "Added ${gi_entry} to .gitignore"
   fi
 done
+
+# Makefile — always sync the Dark Flow block (regeneratable, no user data inside)
+_mkfile_tmp=$(mktemp)
+if [[ "$USE_LOCAL" == true ]]; then
+  cp "$SOURCE_DIR/Makefile.darkflow" "$_mkfile_tmp"
+else
+  curl -fsSL "${DARKFLOW_REPO}/templates/Makefile.darkflow?t=$(date +%s)" -o "$_mkfile_tmp"
+fi
+inject_makefile_block "$_mkfile_tmp"
+rm -f "$_mkfile_tmp"
 
 # ── 3. CLAUDE.md — update only the Dark Flow section ────────────────────────
 

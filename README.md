@@ -41,6 +41,7 @@ The agent will fetch the installer, ask about your stack, run it with the right 
 4. Sets up GitHub issue labels via `gh` (if authenticated)
 5. Generates a comprehensive `CLAUDE.md` tailored to your modules
 6. Installs `/darkflow` and `/darkflow:*` slash commands for Claude Code
+7. Creates (or updates) a `Makefile` with `df-*` shortcut targets
 
 ---
 
@@ -118,6 +119,24 @@ bash .darkflow.d/darkflow-run.sh --dry-run        # preview what's due
 ```
 
 See [routines/README.md](./routines/README.md) for full dispatcher docs.
+
+### Makefile shortcuts
+
+The installer creates (or updates) a `Makefile` with `df-*` targets so you don't have to remember the full command paths:
+
+```bash
+make df-help                          # list all df-* targets
+make df-list                          # show routines and their status
+make df-dry-run                       # preview which routines are due
+make df-run                           # start the dispatcher loop (every 60s)
+make df-once                          # single dispatch pass
+make df-routine name=fix-issues       # run one routine now
+make df-scheduler-install             # install the system scheduler
+make df-scheduler-uninstall           # remove the system scheduler
+make df-update                        # update Dark Flow to the latest version
+```
+
+If your project already has a `Makefile`, the installer appends the `df-*` block between `# darkflow:start` / `# darkflow:end` markers — your existing targets are untouched. Running `install.sh` or `update.sh` again regenerates only that block.
 
 ### How the loop fits together
 
@@ -200,7 +219,8 @@ The updater:
 3. Re-runs label setup (additive — never removes existing labels)
 4. Smart-updates template files: skips unchanged, warns + shows diff if locally modified
 5. Regenerates the Dark Flow section in `CLAUDE.md` between `<!-- darkflow:start/end -->` markers
-6. Bumps the version in `.darkflow`
+6. Regenerates the `df-*` block in `Makefile` between `# darkflow:start/end` markers
+7. Bumps the version in `.darkflow`
 
 ---
 
