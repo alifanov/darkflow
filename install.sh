@@ -375,6 +375,73 @@ project_slug() {
   echo "${PROJECT_NAME}" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-*//;s/-*$//'
 }
 
+# ── Parent overview ───────────────────────────────────────────────────────────
+
+update_parent_overview() {
+  local parent_dir
+  parent_dir="$(cd "${TARGET_DIR}/.." 2>/dev/null && pwd)" || return 0
+  # Skip if already at filesystem root
+  [[ "$parent_dir" == "$TARGET_DIR" ]] && return 0
+
+  local parent_file="${parent_dir}/darkflow-overview.html"
+
+  # Create parent overview from template if it doesn't exist
+  if [[ ! -f "$parent_file" ]]; then
+    if [[ "$USE_LOCAL" == true ]]; then
+      cp "$SOURCE_DIR/darkflow-overview.html" "$parent_file" 2>/dev/null || true
+    else
+      curl -fsSL "${DARKFLOW_REPO}/templates/darkflow-overview.html" -o "$parent_file" 2>/dev/null || true
+    fi
+    if [[ -f "$parent_file" ]]; then
+      success "Created parent overview: $(basename "$parent_dir")/darkflow-overview.html"
+    else
+      dim "Could not create parent darkflow-overview.html — skipping"
+      return 0
+    fi
+  fi
+
+  local project_dir_name project_path _slug
+  project_dir_name="$(basename "$TARGET_DIR")"
+  project_path="./${project_dir_name}/docs/overview.html"
+  _slug="$(project_slug)"
+
+  if ! command -v python3 &>/dev/null; then
+    warn "python3 not found — add link manually to ${parent_file}: ${project_path}"
+    return 0
+  fi
+
+  local result
+  result=$(python3 - "$parent_file" "$PROJECT_NAME" "$_slug" "$project_path" "$(date -u +%Y-%m-%d)" << 'PYEOF'
+import sys, json, re
+pf, name, slug, path, installed = sys.argv[1:6]
+with open(pf) as f:
+    c = f.read()
+m = re.search(r'(<script[^>]+id="darkflow-overview-data"[^>]*>)([\s\S]*?)(</script>)', c)
+if not m:
+    sys.stderr.write('no darkflow-overview-data block\n'); sys.exit(1)
+try:
+    d = json.loads(m.group(2))
+except Exception:
+    d = {}
+projects = d.get('projects', [])
+if any(p.get('path') == path for p in projects):
+    print('exists'); sys.exit(0)
+projects.append({'name': name, 'slug': slug, 'path': path, 'installed': installed})
+d['projects'] = projects
+nb = m.group(1) + '\n' + json.dumps(d, indent=2) + '\n' + m.group(3)
+with open(pf, 'w') as f:
+    f.write(c[:m.start()] + nb + c[m.end():])
+print('added')
+PYEOF
+)
+  if [[ $? -eq 0 ]]; then
+    [[ "$result" == "added"  ]] && success "Linked ${PROJECT_NAME} in parent overview: ${parent_file}"
+    [[ "$result" == "exists" ]] && dim "Parent overview already links to ${PROJECT_NAME}"
+  else
+    warn "Could not update parent overview — add link manually: ${project_path}"
+  fi
+}
+
 # ── Create directory structure ────────────────────────────────────────────────
 
 header "1/5  Creating docs/ structure"
@@ -406,6 +473,7 @@ safe_fetch ".github/ISSUE_TEMPLATE/recommendation.yml" ".github/ISSUE_TEMPLATE/r
 
 inject_name "docs/README.md"
 inject_name "docs/overview.html"
+update_parent_overview
 
 # ── Write .darkflow config ────────────────────────────────────────────────────
 
@@ -432,6 +500,7 @@ DARKFLOW_VERSION=$(curl -fsSL "${DARKFLOW_REPO}/VERSION" 2>/dev/null | tr -d '[:
   [[ -n "$OBS_TOOL" ]] && echo "obs_tool=${OBS_TOOL}"
   [[ -n "$OBS_URL"  ]] && echo "obs_url=${OBS_URL}"
   echo "slug=$(project_slug)"
+  echo "name=${PROJECT_NAME}"
 } > .darkflow
 
 success "Created .darkflow config (version ${DARKFLOW_VERSION})"

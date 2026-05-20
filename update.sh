@@ -87,6 +87,8 @@ MODULES=$(read_config modules "")
 OBS_TOOL=$(read_config obs_tool "")
 SLUG=$(read_config slug "")
 [[ -z "$SLUG" ]] && SLUG=$(basename "$TARGET_DIR" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-*//;s/-*$//')
+PROJECT_NAME=$(read_config name "")
+[[ -z "$PROJECT_NAME" ]] && PROJECT_NAME="$(basename "$TARGET_DIR")"
 
 MOD_ANALYTICS=false;    MOD_OBSERVABILITY=false; MOD_GSC=false
 MOD_ADS=false;          MOD_COOLIFY=false;        MOD_CLAUDE_UPDATE=false
@@ -183,6 +185,72 @@ smart_update_template() {
   fi
 }
 
+# ── Parent overview ───────────────────────────────────────────────────────────
+
+update_parent_overview() {
+  local parent_dir
+  parent_dir="$(cd "${TARGET_DIR}/.." 2>/dev/null && pwd)" || return 0
+  [[ "$parent_dir" == "$TARGET_DIR" ]] && return 0
+
+  local parent_file="${parent_dir}/darkflow-overview.html"
+
+  if [[ ! -f "$parent_file" ]]; then
+    if [[ "$USE_LOCAL" == true ]]; then
+      cp "$SOURCE_DIR/darkflow-overview.html" "$parent_file" 2>/dev/null || true
+    else
+      curl -fsSL "${DARKFLOW_REPO}/templates/darkflow-overview.html" -o "$parent_file" 2>/dev/null || true
+    fi
+    if [[ -f "$parent_file" ]]; then
+      success "Created parent overview: $(basename "$parent_dir")/darkflow-overview.html"
+    else
+      skip "No parent darkflow-overview.html — skipping"
+      return 0
+    fi
+  fi
+
+  [[ "$DRY_RUN" == true ]] && { info "Would update parent overview: ${parent_file}"; return 0; }
+
+  local project_dir_name project_path
+  project_dir_name="$(basename "$TARGET_DIR")"
+  project_path="./${project_dir_name}/docs/overview.html"
+
+  if ! command -v python3 &>/dev/null; then
+    warn "python3 not found — add link manually to ${parent_file}: ${project_path}"
+    return 0
+  fi
+
+  local result
+  result=$(python3 - "$parent_file" "$PROJECT_NAME" "$SLUG" "$project_path" "$(date -u +%Y-%m-%d)" << 'PYEOF'
+import sys, json, re
+pf, name, slug, path, installed = sys.argv[1:6]
+with open(pf) as f:
+    c = f.read()
+m = re.search(r'(<script[^>]+id="darkflow-overview-data"[^>]*>)([\s\S]*?)(</script>)', c)
+if not m:
+    sys.stderr.write('no darkflow-overview-data block\n'); sys.exit(1)
+try:
+    d = json.loads(m.group(2))
+except Exception:
+    d = {}
+projects = d.get('projects', [])
+if any(p.get('path') == path for p in projects):
+    print('exists'); sys.exit(0)
+projects.append({'name': name, 'slug': slug, 'path': path, 'installed': installed})
+d['projects'] = projects
+nb = m.group(1) + '\n' + json.dumps(d, indent=2) + '\n' + m.group(3)
+with open(pf, 'w') as f:
+    f.write(c[:m.start()] + nb + c[m.end():])
+print('added')
+PYEOF
+)
+  if [[ $? -eq 0 ]]; then
+    [[ "$result" == "added"  ]] && success "Linked ${PROJECT_NAME} in parent overview: ${parent_file}"
+    [[ "$result" == "exists" ]] && skip "Parent overview already links to ${PROJECT_NAME}"
+  else
+    warn "Could not update parent overview — add link manually: ${project_path}"
+  fi
+}
+
 # ── 1. Labels ─────────────────────────────────────────────────────────────────
 
 header "1/4  GitHub labels"
@@ -232,6 +300,8 @@ smart_update_template "darkflow/install-scheduler.sh"      ".darkflow.d/install-
 [[ -f ".darkflow.d/install-scheduler.sh" ]] && chmod +x ".darkflow.d/install-scheduler.sh"
 smart_update_template "darkflow/uninstall-scheduler.sh"    ".darkflow.d/uninstall-scheduler.sh"
 [[ -f ".darkflow.d/uninstall-scheduler.sh" ]] && chmod +x ".darkflow.d/uninstall-scheduler.sh"
+
+update_parent_overview
 
 # routines.yml is project-specific (filtered by modules) — don't overwrite, just add if missing
 if [[ ! -f ".darkflow.d/routines.yml" ]]; then
