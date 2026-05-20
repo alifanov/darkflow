@@ -4,7 +4,6 @@
 #
 # Usage:
 #   bash .darkflow.d/darkflow-run.sh              # loop every 60s — checks for due routines (default)
-#   bash .darkflow.d/darkflow-run.sh --watch 300  # loop every 5 min (custom interval)
 #   bash .darkflow.d/darkflow-run.sh --once       # single dispatch and exit (for system scheduler)
 #   bash .darkflow.d/darkflow-run.sh <name>       # manual: run one routine immediately
 #   bash .darkflow.d/darkflow-run.sh --list       # show routine status table
@@ -381,15 +380,10 @@ mode_manual() {
 # ── Mode: watch ───────────────────────────────────────────────────────────────
 
 mode_watch() {
-  local interval="${1:-900}"
+  local interval=60
   local tick=0
 
-  if ! [[ "$interval" =~ ^[0-9]+$ ]] || (( interval < 60 )); then
-    echo "darkflow-run: --watch interval must be an integer >= 60 (seconds)" >&2
-    exit 1
-  fi
-
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] Dark Flow watch mode started (tick every ${interval}s). Ctrl-C to stop."
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] Dark Flow started (tick every ${interval}s). Ctrl-C to stop."
   trap 'echo ""; log "WATCH  stopped (signal)"; exit 0' INT TERM
 
   while true; do
@@ -487,10 +481,6 @@ case "${1:-}" in
     acquire_lock
     mode_dispatch false
     ;;
-  --watch)
-    preflight || exit 1
-    mode_watch "${2:-60}"
-    ;;
   --self-test)
     mode_self_test
     ;;
@@ -500,7 +490,7 @@ case "${1:-}" in
     mode_watch 60
     ;;
   -*)
-    echo "Usage: darkflow-run.sh [<routine-name> | --once | --list | --dry-run | --watch [seconds] | --self-test]" >&2
+    echo "Usage: darkflow-run.sh [<routine-name> | --once | --list | --dry-run | --self-test]" >&2
     exit 1
     ;;
   *)

@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [1.4.3] — 2026-05-20
+
+### Installer
+- **Removed `--watch` flag** — custom interval removed; no-arg loop always ticks every 60 s.
+
+---
+
 ## [1.4.2] — 2026-05-20
 
 ### Installer

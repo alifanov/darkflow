@@ -63,11 +63,7 @@ Recommended: run inside `tmux` or `screen` so it survives terminal disconnect:
 tmux new-session -d -s darkflow 'bash .darkflow.d/darkflow-run.sh'
 ```
 
-Press Ctrl-C (or `kill`) to stop cleanly. Use `--watch <seconds>` for a custom interval:
-
-```bash
-bash .darkflow.d/darkflow-run.sh --watch 300  # check every 5 min
-```
+Press Ctrl-C (or `kill`) to stop cleanly.
 
 ## Setting up a system scheduler
 
