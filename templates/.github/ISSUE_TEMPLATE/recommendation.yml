@@ -43,6 +43,7 @@ body:
         - area:dashboard
         - area:email
         - area:checks
+        - area:architecture
         - area:docs
         - area:infra
     validations:

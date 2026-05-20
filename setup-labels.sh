@@ -49,8 +49,10 @@ label "area:checkout"  "c2e0c6" "Payment / checkout flow"
 label "area:auth"      "c2e0c6" "Authentication"
 label "area:dashboard" "c2e0c6" "User dashboard / app"
 label "area:email"     "c2e0c6" "Email templates / sending"
-label "area:docs"      "c2e0c6" "Documentation in docs/"
-label "area:infra"     "c2e0c6" "Infrastructure / CI / config"
+label "area:checks"       "c2e0c6" "Security checks / scheduled jobs"
+label "area:architecture" "c2e0c6" "Cross-cutting architectural concerns"
+label "area:docs"         "c2e0c6" "Documentation in docs/"
+label "area:infra"        "c2e0c6" "Infrastructure / CI / config"
 
 # priority:*
 label "priority:p0" "b60205" "Breaks revenue or disables a feature right now"
