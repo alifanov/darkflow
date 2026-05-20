@@ -12,7 +12,7 @@ If `.darkflow` is missing, continue with the default.
 /improve-codebase-architecture
 
 After the review is complete, create a GitHub issue for each significant finding:
-- Labels: `source:manual`, area matching the affected module, priority based on impact, `effort:m` or `effort:l`
+- Labels: `status:proposed`, `source:manual`, area matching the affected module, priority based on impact, `effort:m` or `effort:l`
 - Focus on actionable improvements, not style preferences
 - Do not create issues for findings already tracked in open GitHub issues
 
