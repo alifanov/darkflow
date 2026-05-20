@@ -18,11 +18,11 @@ The command reads `.darkflow` for the target branch — no placeholders to repla
 
 | Setting | Value |
 |---|---|
-| Schedule | Weekdays (Mon–Fri) at ~9:00 |
+| Cron | `0 9 * * 1-5` (weekdays 9:00) |
 | Folder | Project root (`/path/to/your-project`) |
-| Model | **Opus** (recommended) — full codebase scan needs strong reasoning |
-| Worktree | **No** — commits directly to main branch |
-| Always allowed | **Act without asking** |
+| Model | Sonnet (default) |
+| Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
+| Run manually | `bash .darkflow.d/darkflow-run.sh claude-md-update` |
 
 ---
 

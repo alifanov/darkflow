@@ -18,11 +18,11 @@ The command reads `.darkflow` for branch, language, and merge strategy — no pl
 
 | Setting | Value |
 |---|---|
-| Schedule | Hourly at :00 |
+| Cron | `0 * * * *` (hourly at :00) |
 | Folder | Project root (`/path/to/your-project`) |
 | Model | Sonnet (default) |
-| Worktree | **Yes** (PR strategy) / **No** (direct strategy) |
-| Always allowed | **Act without asking** |
+| Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
+| Run manually | `bash .darkflow.d/darkflow-run.sh fix-issues` |
 
 ---
 

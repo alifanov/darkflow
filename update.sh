@@ -85,6 +85,8 @@ MAIN_BRANCH=$(read_config branch "main")
 MERGE_STRATEGY=$(read_config merge_strategy "pr")
 MODULES=$(read_config modules "")
 OBS_TOOL=$(read_config obs_tool "")
+SLUG=$(read_config slug "")
+[[ -z "$SLUG" ]] && SLUG=$(basename "$TARGET_DIR" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-*//;s/-*$//')
 
 MOD_ANALYTICS=false;    MOD_OBSERVABILITY=false; MOD_GSC=false
 MOD_ADS=false;          MOD_COOLIFY=false;        MOD_CLAUDE_UPDATE=false
@@ -222,6 +224,34 @@ smart_update_template ".claude/commands/darkflow/claude-md-update.md"        ".c
 smart_update_template ".claude/commands/darkflow/security-audit.md"          ".claude/commands/darkflow/security-audit.md"
 smart_update_template ".claude/commands/darkflow/architecture-review.md"     ".claude/commands/darkflow/architecture-review.md"
 
+# Dispatcher script — always update to latest
+mkdir -p ".darkflow.d/state"
+smart_update_template "darkflow/darkflow-run.sh"           ".darkflow.d/darkflow-run.sh"
+[[ -f ".darkflow.d/darkflow-run.sh" ]] && chmod +x ".darkflow.d/darkflow-run.sh"
+smart_update_template "darkflow/uninstall-scheduler.sh"    ".darkflow.d/uninstall-scheduler.sh"
+[[ -f ".darkflow.d/uninstall-scheduler.sh" ]] && chmod +x ".darkflow.d/uninstall-scheduler.sh"
+
+# routines.yml is project-specific (filtered by modules) — don't overwrite, just add if missing
+if [[ ! -f ".darkflow.d/routines.yml" ]]; then
+  info "Creating missing .darkflow.d/routines.yml (run install.sh to regenerate with module filtering)"
+  if [[ "$USE_LOCAL" == true ]]; then
+    cp "$SOURCE_DIR/darkflow/routines.yml" ".darkflow.d/routines.yml"
+  else
+    curl -fsSL "${DARKFLOW_REPO}/templates/darkflow/routines.yml?t=$(date +%s)" -o ".darkflow.d/routines.yml"
+  fi
+  success "Added: .darkflow.d/routines.yml"
+else
+  skip ".darkflow.d/routines.yml (project-specific — edit manually)"
+fi
+
+# Ensure .darkflow.d runtime files are git-ignored
+for gi_entry in ".darkflow.d/state/" ".darkflow.d/*.log"; do
+  if ! grep -qF "$gi_entry" .gitignore 2>/dev/null; then
+    [[ "$DRY_RUN" == false ]] && echo "$gi_entry" >> .gitignore
+    success "Added ${gi_entry} to .gitignore"
+  fi
+done
+
 # ── 3. CLAUDE.md — update only the Dark Flow section ────────────────────────
 
 header "3/4  CLAUDE.md"
@@ -319,8 +349,9 @@ Scheduled Claude Code agents that run this workflow automatically:
 
   new_section="${new_section}
 
-Set up via: Claude Code → Routines → New routine
-Prompts: https://github.com/alifanov/darkflow#routines-automated-agents
+Schedule: \`.darkflow.d/routines.yml\`  |  Dispatcher: \`bash .darkflow.d/darkflow-run.sh\`
+Run any routine manually: \`bash .darkflow.d/darkflow-run.sh <name>\`
+List status: \`bash .darkflow.d/darkflow-run.sh --list\`
 
 ### Dark Flow commands
 
@@ -381,7 +412,7 @@ if [[ -n "$NEW_ROUTINES" ]]; then
     echo "  + ${r} — https://github.com/alifanov/darkflow/blob/main/routines/${r}.md"
   done <<< "$NEW_ROUTINES"
   echo ""
-  echo -e "${DIM}Set them up in Claude Code → Routines → New routine${RESET}"
+  echo -e "${DIM}Add their entries to .darkflow.d/routines.yml (see https://github.com/alifanov/darkflow/blob/main/routines/)${RESET}"
 fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────
@@ -394,7 +425,13 @@ else
   echo -e "${GREEN}${BOLD}Dark Flow updated to ${LATEST_VERSION}${RESET}"
   echo ""
   echo "Commit the changes:"
-  echo "  git add .darkflow docs/agent-workflow.md docs/github-issues.md CLAUDE.md"
+  echo "  git add .darkflow .darkflow.d/darkflow-run.sh .darkflow.d/uninstall-scheduler.sh .darkflow.d/routines.yml"
+  echo "  git add docs/agent-workflow.md docs/github-issues.md CLAUDE.md"
   echo "  git commit -m 'chore: update dark-flow to ${LATEST_VERSION}'"
+  echo ""
+  if [[ ! -f "$HOME/Library/LaunchAgents/com.darkflow.${SLUG}.plist" ]] && \
+     ! crontab -l 2>/dev/null | grep -q "# darkflow:${SLUG}" 2>/dev/null; then
+    echo -e "${DIM}No system scheduler detected. To install: re-run install.sh --with-scheduler${RESET}"
+  fi
 fi
 echo ""

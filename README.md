@@ -85,44 +85,59 @@ The loop runs automatically via **Claude Code Routines** — see [routines/READM
 
 ## Routines (automated agents)
 
-The real power comes from scheduling Claude Code agents that run the loop without manual triggering:
+The real power comes from scheduling Claude agents that run the loop automatically. Dark Flow ships a **self-hosted dispatcher** — no Claude Code Routines UI required.
 
-| Routine | Schedule | What it does |
+| Routine | Cron | What it does |
 |---|---|---|
-| [Analytics review](routines/analytics-review.md) | Daily 8:00 | PostHog + commits → `status:proposed` issues |
-| [Observability check](routines/observability-check.md) | Daily 8:30 | SigNoz/errors/slow URLs → issues |
-| [GSC check](routines/gsc-check.md) | Weekly Mon 8:00 | Google Search Console → issues |
-| [**Fix issues**](routines/fix-issues.md) | **Hourly** | Picks up `status:approved` → PR → merge |
-| [Coolify logs](routines/coolify-logs.md) | Daily 9:00 | Deployment logs → fixes errors → verifies |
-| [**Deployment failure fix**](routines/deployment-failure.md) | **API trigger** | Fires on failed deploy → diagnoses → fixes → redeploys |
-| [CLAUDE.md update](routines/claude-md-update.md) | Weekdays 9:00 | Re-generates CLAUDE.md from codebase |
-| [Security audit](routines/security-audit.md) | Weekly Sun 3:00 | Full security review (static + runtime) → issues |
-| [Architecture review](routines/architecture-review.md) | Weekly Sun 2:00 | `/improve-codebase-architecture` → issues |
+| [**Fix issues**](routines/fix-issues.md) | `0 * * * *` | Hourly — picks up `status:approved` → PR → merge |
+| [Analytics review](routines/analytics-review.md) | `0 8 * * *` | Daily 8:00 — PostHog + commits → `status:proposed` issues |
+| [Observability check](routines/observability-check.md) | `30 8 * * *` | Daily 8:30 — SigNoz/errors/slow URLs → issues |
+| [GSC check](routines/gsc-check.md) | `0 8 * * 1` | Weekly Mon 8:00 — Google Search Console → issues |
+| [Coolify logs](routines/coolify-logs.md) | `0 9 * * *` | Daily 9:00 — deployment logs → fixes errors → verifies |
+| [CLAUDE.md update](routines/claude-md-update.md) | `0 9 * * 1-5` | Weekdays 9:00 — re-generates CLAUDE.md from codebase |
+| [Architecture review](routines/architecture-review.md) | `0 2 * * 0` | Weekly Sun 2:00 — `/improve-codebase-architecture` → issues |
+| [Security audit](routines/security-audit.md) | `0 3 * * 0` | Weekly Sun 3:00 — full security review → issues |
+| [**Deployment failure fix**](routines/deployment-failure.md) | *(manual/webhook)* | Diagnoses → fixes → redeploys on failure |
 
-**Set up in:** Claude Code → Routines → New routine  
-**Important:** set "Always allowed: Act without asking" on every routine. Each routine prompt is a single slash command — no placeholders to replace.
+Cron times are in the machine's local timezone. Schedule is defined in `.darkflow.d/routines.yml` — edit it to change frequency, model, or enable/disable a routine.
 
-Each routine page has: full instructions, schedule, model recommendation, worktree setting, and required integrations.
+### Scheduler setup
+
+During installation `install.sh` asks whether to set up a system scheduler (single **launchd** job on macOS or **crontab** entry on Linux that fires the dispatcher every 15 min). You can also add it later:
+
+```bash
+bash install.sh --with-scheduler --force --target /path/to/your-project
+```
+
+Or run routines manually at any time:
+
+```bash
+bash .darkflow.d/darkflow-run.sh fix-issues      # run one routine now
+bash .darkflow.d/darkflow-run.sh --list           # show status table
+bash .darkflow.d/darkflow-run.sh --dry-run        # preview what's due
+```
+
+See [routines/README.md](./routines/README.md) for full dispatcher docs.
 
 ### How the loop fits together
 
 ```
 Daily
-  8:00  /darkflow:analytics-review    → status:proposed issues + updates docs/overview.html
-  8:30  /darkflow:observability-check → status:proposed issues
-  9:00  /darkflow:coolify-logs        → verifies deploy, fixes errors
-  9:00  /darkflow:claude-md-update    → keeps agent context in sync
+  8:00  analytics-review     → status:proposed issues + updates docs/overview.html
+  8:30  observability-check  → status:proposed issues
+  9:00  coolify-logs         → verifies deploy, fixes errors
+  9:00  claude-md-update     → keeps agent context in sync
 
-On-demand (API trigger)
-  /darkflow:deployment-failure        → diagnoses → fixes → redeploys
+On-demand
+  deployment-failure         → diagnoses → fixes → redeploys
 
 Weekly
-  Mon 8:00  /darkflow:gsc-check              → status:proposed issues
-  Sun 2:00  /darkflow:architecture-review    → status:proposed issues (Opus) + updates overview
-  Sun 3:00  /darkflow:security-audit         → status:proposed issues (Opus) + updates overview
+  Mon 8:00  gsc-check             → status:proposed issues
+  Sun 2:00  architecture-review   → status:proposed issues (Opus) + updates overview
+  Sun 3:00  security-audit        → status:proposed issues (Opus) + updates overview
 
 Continuous
-  :00  /darkflow:fix-issues (hourly)  → picks up status:approved → PR → merge
+  :00  fix-issues (hourly)   → picks up status:approved → PR → merge
 
 Human
        Reviews status:proposed → sets status:approved or status:rejected
@@ -130,10 +145,10 @@ Human
 
 ### Setup checklist
 
-- [ ] Create routines in Claude Code → Routines → New routine
-- [ ] Set "Always allowed: Act without asking" on each
+- [ ] Run `install.sh` (or re-run with `--with-scheduler` to add automatic scheduling)
 - [ ] Verify `gh auth status` works in the project folder
 - [ ] Configure required MCP servers (see each routine's page for details)
+- [ ] Run `bash .darkflow.d/darkflow-run.sh --dry-run` to confirm the dispatcher works
 
 ---
 

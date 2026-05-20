@@ -31,6 +31,7 @@ MOD_ADS=""            # Google Ads, Meta Ads, etc.
 MOD_COOLIFY=""        # Coolify deployment monitoring
 MOD_CLAUDE_UPDATE=""  # Auto-regenerate CLAUDE.md
 MOD_ARCH_REVIEW=""    # Architecture review skill (improve-codebase-architecture)
+SETUP_SCHEDULER=""    # Install system scheduler (launchd/cron) for the dispatcher
 
 # Integration credentials (collected interactively or via flags)
 OBS_TOOL=""           # Observability tool name (SigNoz / Datadog / Grafana / Other)
@@ -65,7 +66,7 @@ while [[ $# -gt 0 ]]; do
     --all)                NON_INTERACTIVE=true
                           MOD_ANALYTICS=true MOD_OBSERVABILITY=true MOD_GSC=true
                           MOD_ADS=true MOD_COOLIFY=true MOD_CLAUDE_UPDATE=true
-                          MOD_ARCH_REVIEW=true
+                          MOD_ARCH_REVIEW=true SETUP_SCHEDULER=true
                           shift ;;
     --with-analytics)     MOD_ANALYTICS=true; shift ;;
     --with-observability) MOD_OBSERVABILITY=true; shift ;;
@@ -81,6 +82,8 @@ while [[ $# -gt 0 ]]; do
     --no-claude-update)   MOD_CLAUDE_UPDATE=false; shift ;;
     --with-arch-review)   MOD_ARCH_REVIEW=true; shift ;;
     --no-arch-review)     MOD_ARCH_REVIEW=false; shift ;;
+    --with-scheduler)     SETUP_SCHEDULER=true; shift ;;
+    --no-scheduler)       SETUP_SCHEDULER=false; shift ;;
     --obs-tool)           OBS_TOOL="$2"; shift 2 ;;
     --obs-url)            OBS_URL="$2"; shift 2 ;;
     --obs-api-key)        OBS_API_KEY="$2"; shift 2 ;;
@@ -104,6 +107,8 @@ while [[ $# -gt 0 ]]; do
       echo "  --with-coolify        Include Coolify deployment monitoring"
       echo "  --with-claude-update  Include auto CLAUDE.md regeneration routine"
       echo "  --with-arch-review    Install improve-codebase-architecture skill + weekly routine"
+      echo "  --with-scheduler      Install system scheduler (launchd on macOS / cron on Linux)"
+      echo "  --no-scheduler        Skip system scheduler setup"
       echo "  --branch NAME         Main branch name (default: main)"
       echo "  --merge-pr            Fix issues via pull requests (default)"
       echo "  --merge-direct        Fix issues by committing directly to main branch"
@@ -290,6 +295,40 @@ if [[ "$MOD_OBSERVABILITY" == true ]] && [[ -z "$OBS_URL" ]] && \
   esac
 fi
 
+# ── Scheduler prompt ──────────────────────────────────────────────────────────
+
+detect_os() {
+  case "$(uname)" in
+    Darwin) echo "macos" ;;
+    Linux)  echo "linux" ;;
+    *)      echo "other" ;;
+  esac
+}
+
+DETECTED_OS=$(detect_os)
+
+if [[ -z "$SETUP_SCHEDULER" ]]; then
+  if [[ "$NON_INTERACTIVE" == true ]] || [[ ! -t 0 ]]; then
+    SETUP_SCHEDULER=false
+  elif [[ "$DETECTED_OS" == "other" ]]; then
+    warn "Unsupported OS for automatic scheduler setup — skipping"
+    SETUP_SCHEDULER=false
+  else
+    echo ""
+    echo -e "${BOLD}Routine scheduler${RESET} — run routines automatically without keeping a terminal open"
+    echo ""
+    echo "  Installs a single ${DETECTED_OS == macos && echo 'launchd job' || echo 'crontab entry'} that fires the dispatcher every 15 min."
+    echo "  The dispatcher reads .darkflow.d/routines.yml and runs any due routine via claude -p."
+    echo ""
+    read -rp "  Set up system scheduler? [Y/n]: " sched_yn
+    case "${sched_yn:-Y}" in
+      [Yy]*|"") SETUP_SCHEDULER=true ;;
+      *)         SETUP_SCHEDULER=false ;;
+    esac
+    echo ""
+  fi
+fi
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 fetch_file() {
@@ -332,9 +371,13 @@ inject_name() {
   fi
 }
 
+project_slug() {
+  echo "${PROJECT_NAME}" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-*//;s/-*$//'
+}
+
 # ── Create directory structure ────────────────────────────────────────────────
 
-header "1/4  Creating docs/ structure"
+header "1/5  Creating docs/ structure"
 
 cd "$TARGET_DIR"
 
@@ -388,6 +431,7 @@ DARKFLOW_VERSION=$(curl -fsSL "${DARKFLOW_REPO}/VERSION" 2>/dev/null | tr -d '[:
   echo "modules=${local_mods%,}"
   [[ -n "$OBS_TOOL" ]] && echo "obs_tool=${OBS_TOOL}"
   [[ -n "$OBS_URL"  ]] && echo "obs_url=${OBS_URL}"
+  echo "slug=$(project_slug)"
 } > .darkflow
 
 success "Created .darkflow config (version ${DARKFLOW_VERSION})"
@@ -416,10 +460,18 @@ if [[ -n "$OBS_URL" ]] || [[ -n "$OBS_API_KEY" ]]; then
   info "Copy them to your main .env and configure your observability MCP accordingly"
 fi
 
+# Ensure .darkflow.d/ runtime files are git-ignored
+for gi_entry in ".darkflow.d/state/" ".darkflow.d/*.log"; do
+  if ! grep -qF "$gi_entry" .gitignore 2>/dev/null; then
+    echo "$gi_entry" >> .gitignore
+    success "Added ${gi_entry} to .gitignore"
+  fi
+done
+
 # ── GitHub labels ─────────────────────────────────────────────────────────────
 
 if [[ "$SKIP_LABELS" == false ]]; then
-  header "2/4  Setting up GitHub labels"
+  header "2/5  Setting up GitHub labels"
   if ! command -v gh &>/dev/null; then
     warn "gh not found — skipping label setup. Install: https://cli.github.com/"
   elif ! gh auth status &>/dev/null 2>&1; then
@@ -516,8 +568,9 @@ HEREDOC
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- **CLAUDE.md update** (Weekdays 9:00) — re-generates this file from codebase"
   [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Architecture review** (Weekly Sun 2:00) — \`/improve-codebase-architecture\` → GitHub issues"
   echo ""
-  echo "Set up via: Claude Code → Routines → New routine"
-  echo "Prompts: https://github.com/alifanov/darkflow#routines-automated-agents"
+  echo "Schedule: \`.darkflow.d/routines.yml\`  |  Dispatcher: \`bash .darkflow.d/darkflow-run.sh\`"
+  echo "Run any routine manually: \`bash .darkflow.d/darkflow-run.sh <name>\`"
+  echo "List status: \`bash .darkflow.d/darkflow-run.sh --list\`"
   echo ""
   echo "### Dark Flow commands"
   echo ""
@@ -540,7 +593,7 @@ HEREDOC
 }
 
 if [[ "$SKIP_CLAUDE_SNIPPET" == false ]]; then
-  header "3/4  CLAUDE.md"
+  header "3/5  CLAUDE.md"
 
   if [[ -f "CLAUDE.md" ]]; then
     if grep -q "agent-workflow.md" CLAUDE.md; then
@@ -565,7 +618,7 @@ fi
 
 # ── Claude Code command ───────────────────────────────────────────────────────
 
-header "4/4  Claude Code commands"
+header "4/5  Claude Code commands"
 
 make_dir ".claude/commands"
 make_dir ".claude/commands/darkflow"
@@ -586,10 +639,197 @@ safe_fetch ".claude/commands/darkflow/architecture-review.md"          ".claude/
 
 success "Installed /darkflow commands — /darkflow, /darkflow:add-issue, /darkflow:fix-issues, /darkflow:analytics-review, and 6 more"
 
+# ── Routine dispatcher (.darkflow.d/) ─────────────────────────────────────────
+
+header "5/6  Routine dispatcher"
+
+SLUG=$(project_slug)
+
+make_dir ".darkflow.d"
+make_dir ".darkflow.d/state"
+
+# Copy dispatcher script
+if [[ "$USE_LOCAL" == true ]]; then
+  cp "$SOURCE_DIR/darkflow/darkflow-run.sh" ".darkflow.d/darkflow-run.sh"
+else
+  curl -fsSL "${DARKFLOW_REPO}/templates/darkflow/darkflow-run.sh?t=$(date +%s)" -o ".darkflow.d/darkflow-run.sh"
+fi
+chmod +x ".darkflow.d/darkflow-run.sh"
+success "Installed .darkflow.d/darkflow-run.sh"
+
+# Copy uninstall helper
+if [[ "$USE_LOCAL" == true ]]; then
+  cp "$SOURCE_DIR/darkflow/uninstall-scheduler.sh" ".darkflow.d/uninstall-scheduler.sh"
+else
+  curl -fsSL "${DARKFLOW_REPO}/templates/darkflow/uninstall-scheduler.sh?t=$(date +%s)" -o ".darkflow.d/uninstall-scheduler.sh"
+fi
+chmod +x ".darkflow.d/uninstall-scheduler.sh"
+success "Installed .darkflow.d/uninstall-scheduler.sh"
+
+# Generate filtered routines.yml
+if [[ ! -f ".darkflow.d/routines.yml" || "$FORCE" == true ]]; then
+  {
+    cat << 'YAML_HEADER'
+# Dark Flow routine schedule — generated by install.sh. Safe to edit after installation.
+# Run a routine manually:  bash .darkflow.d/darkflow-run.sh <name>
+# List routines and status: bash .darkflow.d/darkflow-run.sh --list
+# Cron times are in the machine's local timezone.
+#
+# permission_mode options:
+#   bypassPermissions — act without asking (equivalent to "Always allowed" in the Claude Code UI)
+#   acceptEdits       — allow file edits but still prompt for shell commands
+defaults:
+  model: sonnet
+  permission_mode: bypassPermissions
+
+routines:
+  fix-issues:
+    cron: "0 * * * *"
+    model: sonnet
+    enabled: true
+YAML_HEADER
+
+    if [[ "$MOD_ANALYTICS" == true ]]; then
+      cat << 'YAML_SECTION'
+
+  analytics-review:
+    cron: "0 8 * * *"
+    model: sonnet
+    enabled: true
+YAML_SECTION
+    fi
+
+    if [[ "$MOD_OBSERVABILITY" == true ]]; then
+      cat << 'YAML_SECTION'
+
+  observability-check:
+    cron: "30 8 * * *"
+    model: sonnet
+    enabled: true
+YAML_SECTION
+    fi
+
+    if [[ "$MOD_GSC" == true ]]; then
+      cat << 'YAML_SECTION'
+
+  gsc-check:
+    cron: "0 8 * * 1"
+    model: sonnet
+    enabled: true
+YAML_SECTION
+    fi
+
+    if [[ "$MOD_COOLIFY" == true ]]; then
+      cat << 'YAML_SECTION'
+
+  coolify-logs:
+    cron: "0 9 * * *"
+    model: sonnet
+    enabled: true
+YAML_SECTION
+    fi
+
+    if [[ "$MOD_CLAUDE_UPDATE" == true ]]; then
+      cat << 'YAML_SECTION'
+
+  claude-md-update:
+    cron: "0 9 * * 1-5"
+    model: sonnet
+    enabled: true
+YAML_SECTION
+    fi
+
+    if [[ "$MOD_ARCH_REVIEW" == true ]]; then
+      cat << 'YAML_SECTION'
+
+  architecture-review:
+    cron: "0 2 * * 0"
+    model: opus
+    enabled: true
+YAML_SECTION
+    fi
+
+    cat << 'YAML_SECTION'
+
+  security-audit:
+    cron: "0 3 * * 0"
+    model: opus
+    enabled: true
+YAML_SECTION
+
+    if [[ "$MOD_COOLIFY" == true ]]; then
+      cat << 'YAML_SECTION'
+
+  deployment-failure:
+    cron: ""
+    model: sonnet
+    enabled: false
+YAML_SECTION
+    fi
+
+    echo ""
+  } > ".darkflow.d/routines.yml"
+  success "Created .darkflow.d/routines.yml"
+else
+  info "Exists: .darkflow.d/routines.yml — skipping (use --force to overwrite)"
+fi
+
+# Optionally install system scheduler
+if [[ "$SETUP_SCHEDULER" == true ]]; then
+  PROJECT_ABS="$(cd "$TARGET_DIR" && pwd)"
+  if [[ "$DETECTED_OS" == "macos" ]]; then
+    PLIST_PATH="$HOME/Library/LaunchAgents/com.darkflow.${SLUG}.plist"
+    cat > "$PLIST_PATH" << PLIST_EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.darkflow.${SLUG}</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>${PROJECT_ABS}/.darkflow.d/darkflow-run.sh</string>
+  </array>
+  <key>WorkingDirectory</key><string>${PROJECT_ABS}</string>
+  <key>StartInterval</key><integer>900</integer>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>${PROJECT_ABS}/.darkflow.d/launchd.out.log</string>
+  <key>StandardErrorPath</key><string>${PROJECT_ABS}/.darkflow.d/launchd.err.log</string>
+  <key>EnvironmentVariables</key>
+  <dict><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string></dict>
+</dict></plist>
+PLIST_EOF
+    launchctl unload "$PLIST_PATH" 2>/dev/null || true
+    launchctl load "$PLIST_PATH"
+    success "Installed launchd job: com.darkflow.${SLUG} (every 15 min)"
+    info "Logs: ${PROJECT_ABS}/.darkflow.d/launchd.{out,err}.log"
+
+  elif [[ "$DETECTED_OS" == "linux" ]]; then
+    CRON_LINE="*/15 * * * * cd ${PROJECT_ABS} && /bin/bash .darkflow.d/darkflow-run.sh >> .darkflow.d/cron.log 2>&1  # darkflow:${SLUG}"
+    (crontab -l 2>/dev/null | grep -v "# darkflow:${SLUG}"; echo "$CRON_LINE") | crontab -
+    success "Added crontab entry for darkflow:${SLUG} (every 15 min)"
+  fi
+
+  # Warn if dependencies missing
+  if ! command -v yq &>/dev/null; then
+    warn "yq not found — dispatcher needs it to parse routines.yml"
+    warn "  macOS: brew install yq  |  Linux: https://github.com/mikefarah/yq#install"
+  fi
+  if ! command -v claude &>/dev/null; then
+    warn "claude CLI not found — dispatcher needs it to run routines"
+    warn "  Install Claude Code: https://claude.ai/code"
+  fi
+
+else
+  info "Scheduler not installed. Run manually: bash .darkflow.d/darkflow-run.sh"
+  if [[ "$DETECTED_OS" != "other" ]]; then
+    info "To install later: re-run install.sh --with-scheduler --force"
+  fi
+fi
+
 # ── Architecture review skill ─────────────────────────────────────────────────
 
 if [[ "$MOD_ARCH_REVIEW" == true ]]; then
-  header "5/5  Architecture review skill"
+  header "6/6  Architecture review skill"
 
   if ! command -v npx &>/dev/null; then
     warn "npx not found — skipping skill install. Run manually:"
@@ -614,42 +854,43 @@ echo "Next steps:"
 echo "  1. Fill in docs/product/ — what are you building and for whom"
 echo "  2. Fill in docs/spec/    — user flows, screens, data model"
 echo "  3. Fill in docs/design/  — tokens, components, voice and tone"
-echo "  4. Commit: git add docs/ .github/ISSUE_TEMPLATE/ CLAUDE.md && git commit -m 'chore: install dark-flow workflow'"
-echo "  5. Open docs/overview.html in a browser — it updates daily via the Overview Update routine"
+echo "  4. Commit: git add docs/ .github/ISSUE_TEMPLATE/ CLAUDE.md .darkflow .darkflow.d/ && git commit -m 'chore: install dark-flow workflow'"
+echo "  5. Open docs/overview.html in a browser — it updates daily via the analytics-review routine"
 echo ""
 
-# Show only the routines relevant to chosen modules
-HAS_ROUTINES=false
-for m in "$MOD_ANALYTICS" "$MOD_OBSERVABILITY" "$MOD_GSC" "$MOD_COOLIFY" "$MOD_CLAUDE_UPDATE" "$MOD_ARCH_REVIEW"; do
-  [[ "$m" == true ]] && HAS_ROUTINES=true && break
-done
-
-echo -e "${BOLD}Set up Claude Code Routines${RESET} (Claude Code → Routines → New routine)"
-echo "  Full prompts: https://github.com/alifanov/darkflow#routines-automated-agents"
+echo -e "${BOLD}Routine dispatcher${RESET} — .darkflow.d/routines.yml + darkflow-run.sh"
 echo ""
-echo -e "  ${BOLD}Core routines (always recommended):${RESET}"
+echo -e "  ${BOLD}Core routines (always active):${RESET}"
 if [[ "$MERGE_STRATEGY" == "direct" ]]; then
-  echo "  Fix issues       Hourly          Picks up status:approved → commit → push to ${MAIN_BRANCH}"
+  echo "  fix-issues       0 * * * *      Picks up status:approved → commit → push to ${MAIN_BRANCH}"
 else
-  echo "  Fix issues       Hourly          Picks up status:approved → PR → merge into ${MAIN_BRANCH}"
+  echo "  fix-issues       0 * * * *      Picks up status:approved → PR → merge into ${MAIN_BRANCH}"
 fi
-echo ""
-echo -e "  ${DIM}Routine prompt: /darkflow:fix-issues${RESET}"
-echo -e "  ${DIM}(reads .darkflow for branch, language, merge strategy automatically)${RESET}"
+echo "  security-audit   0 3 * * 0      Full security review → GitHub issues"
 echo ""
 
-if [[ "$HAS_ROUTINES" == true ]]; then
+if [[ "$MOD_ANALYTICS" == true ]] || [[ "$MOD_OBSERVABILITY" == true ]] || \
+   [[ "$MOD_GSC" == true ]] || [[ "$MOD_COOLIFY" == true ]] || \
+   [[ "$MOD_CLAUDE_UPDATE" == true ]] || [[ "$MOD_ARCH_REVIEW" == true ]]; then
   echo -e "  ${BOLD}Routines for your selected modules:${RESET}"
-  [[ "$MOD_ANALYTICS"    == true ]] && echo "  Analytics review     Daily 8:00      /darkflow:analytics-review"
-  [[ "$MOD_OBSERVABILITY" == true ]] && echo "  Observability check  Daily 8:30      /darkflow:observability-check"
-  [[ "$MOD_GSC"          == true ]] && echo "  GSC check            Weekly Mon 8:00  /darkflow:gsc-check"
-  [[ "$MOD_COOLIFY"      == true ]] && echo "  Coolify logs         Daily 9:00      /darkflow:coolify-logs"
-  [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "  CLAUDE.md update     Weekdays 9:00   /darkflow:claude-md-update"
-  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "  Architecture review  Weekly Sun 2:00  /darkflow:architecture-review"
+  [[ "$MOD_ANALYTICS"     == true ]] && echo "  analytics-review     0 8 * * *      PostHog + commits → GitHub issues"
+  [[ "$MOD_OBSERVABILITY" == true ]] && echo "  observability-check  30 8 * * *     Errors / latency → GitHub issues"
+  [[ "$MOD_GSC"           == true ]] && echo "  gsc-check            0 8 * * 1      Google Search Console → GitHub issues"
+  [[ "$MOD_COOLIFY"       == true ]] && echo "  coolify-logs         0 9 * * *      Deployment monitoring → fix errors"
+  [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "  claude-md-update     0 9 * * 1-5    Re-generates CLAUDE.md from codebase"
+  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "  architecture-review  0 2 * * 0      Architectural analysis → GitHub issues"
   echo ""
 fi
 
-echo -e "  ${DIM}⚠ Set 'Always allowed: Act without asking' on every routine.${RESET}"
+echo -e "  Run manually:   ${DIM}bash .darkflow.d/darkflow-run.sh <name>${RESET}"
+echo -e "  Show status:    ${DIM}bash .darkflow.d/darkflow-run.sh --list${RESET}"
+echo -e "  Dry run:        ${DIM}bash .darkflow.d/darkflow-run.sh --dry-run${RESET}"
+if [[ "$SETUP_SCHEDULER" == true ]]; then
+  echo -e "  Scheduler:      ${GREEN}active (every 15 min)${RESET}"
+  echo -e "  Uninstall:      ${DIM}bash .darkflow.d/uninstall-scheduler.sh${RESET}"
+else
+  echo -e "  Scheduler:      ${DIM}not installed — re-run install.sh --with-scheduler to add${RESET}"
+fi
 echo ""
 
 # Summary of what was installed

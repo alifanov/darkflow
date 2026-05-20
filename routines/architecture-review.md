@@ -30,11 +30,11 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 
 | Setting | Value |
 |---|---|
-| Schedule | Weekly (e.g. Sunday at 2:00) |
+| Cron | `0 2 * * 0` (weekly Sun 2:00) |
 | Folder | Project root (`/path/to/your-project`) |
-| Model | **Opus** (recommended) — architectural reasoning requires deep understanding of the full codebase |
-| Worktree | **No** — read-only analysis |
-| Always allowed | **Act without asking** |
+| Model | Opus (recommended — deep architectural reasoning) |
+| Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
+| Run manually | `bash .darkflow.d/darkflow-run.sh architecture-review` |
 
 ---
 

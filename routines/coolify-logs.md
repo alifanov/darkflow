@@ -16,11 +16,11 @@ Daily check of Coolify deployment logs — finds errors, fixes them, waits for a
 
 | Setting | Value |
 |---|---|
-| Schedule | Every day at ~9:00 |
+| Cron | `0 9 * * *` (daily 9:00) |
 | Folder | Project root (`/path/to/your-project`) |
 | Model | Sonnet (default) |
-| Worktree | **No** — deploys to production, must run on main branch |
-| Always allowed | **Act without asking** |
+| Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
+| Run manually | `bash .darkflow.d/darkflow-run.sh coolify-logs` |
 
 ---
 
