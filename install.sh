@@ -432,7 +432,7 @@ update_parent_overview() {
   fi
 
   local result
-  result=$(python3 - "$parent_file" "$PROJECT_NAME" "$_slug" "$project_path" "$(date -u +%Y-%m-%d)" << 'PYEOF'
+  if result=$(python3 - "$parent_file" "$PROJECT_NAME" "$_slug" "$project_path" "$(date -u +%Y-%m-%d)" 2>/dev/null << 'PYEOF'
 import sys, json, re
 pf, name, slug, path, installed = sys.argv[1:6]
 with open(pf) as f:
@@ -454,8 +454,7 @@ with open(pf, 'w') as f:
     f.write(c[:m.start()] + nb + c[m.end():])
 print('added')
 PYEOF
-)
-  if [[ $? -eq 0 ]]; then
+); then
     [[ "$result" == "added"  ]] && success "Linked ${PROJECT_NAME} in parent overview: ${parent_file}"
     [[ "$result" == "exists" ]] && dim "Parent overview already links to ${PROJECT_NAME}"
   else

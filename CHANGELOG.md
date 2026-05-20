@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [1.5.1] — 2026-05-20
+
+### Installer
+- **Fix: update.sh and install.sh no longer crash when `darkflow-overview.html` has no `darkflow-overview-data` block** — Python `sys.exit(1)` inside a `$()` substitution was propagated by `set -euo pipefail`, aborting the script before the Makefile step and version bump. Fixed by moving the substitution into an `if result=$(...)` condition, which suppresses `set -e` for the command.
+
+---
+
 ## [1.5.0] — 2026-05-20
 
 ### Installer
