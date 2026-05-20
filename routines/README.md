@@ -36,7 +36,7 @@ Cron times are in the machine's local timezone.
 ## Running routines
 
 ```bash
-# Run all due routines (dispatcher mode)
+# Start the dispatcher loop (checks every minute — default)
 bash .darkflow.d/darkflow-run.sh
 
 # Run one routine immediately (ignores schedule and state)
@@ -49,27 +49,27 @@ bash .darkflow.d/darkflow-run.sh --list
 bash .darkflow.d/darkflow-run.sh --dry-run
 ```
 
-## Running in the foreground (watch mode)
+## Running in the foreground
 
-If you don't want to install a system scheduler, run the dispatcher in a terminal or tmux pane:
+The default no-argument mode is a **continuous loop** — it checks for due routines every minute, runs them, and sleeps until the next check. No system scheduler needed:
 
 ```bash
-# Loop every 15 min (default)
-bash .darkflow.d/darkflow-run.sh --watch
-
-# Loop every 5 min
-bash .darkflow.d/darkflow-run.sh --watch 300
+bash .darkflow.d/darkflow-run.sh
 ```
-
-Each tick dispatches all due routines, then sleeps for the interval. Press Ctrl-C (or `kill`) to stop cleanly. Concurrent ticks are safe — if a launchd/cron tick fires while `--watch` is mid-dispatch, it logs "already running" and exits.
 
 Recommended: run inside `tmux` or `screen` so it survives terminal disconnect:
 
 ```bash
-tmux new-session -d -s darkflow 'bash .darkflow.d/darkflow-run.sh --watch'
+tmux new-session -d -s darkflow 'bash .darkflow.d/darkflow-run.sh'
 ```
 
-## Setting up automatic scheduling
+Press Ctrl-C (or `kill`) to stop cleanly. Use `--watch <seconds>` for a custom interval:
+
+```bash
+bash .darkflow.d/darkflow-run.sh --watch 300  # check every 5 min
+```
+
+## Setting up a system scheduler
 
 For background operation without a persistent terminal, install a system scheduler:
 

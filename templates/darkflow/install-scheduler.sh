@@ -58,6 +58,7 @@ case "$OS" in
   <array>
     <string>/bin/bash</string>
     <string>${PROJECT_ROOT}/.darkflow.d/darkflow-run.sh</string>
+    <string>--once</string>
   </array>
   <key>WorkingDirectory</key><string>${PROJECT_ROOT}</string>
   <key>StartInterval</key><integer>900</integer>
@@ -76,7 +77,7 @@ PLIST_EOF
     ;;
 
   Linux)
-    CRON_LINE="*/15 * * * * cd ${PROJECT_ROOT} && /bin/bash .darkflow.d/darkflow-run.sh >> .darkflow.d/cron.log 2>&1  # darkflow:${SLUG}"
+    CRON_LINE="*/15 * * * * cd ${PROJECT_ROOT} && /bin/bash .darkflow.d/darkflow-run.sh --once >> .darkflow.d/cron.log 2>&1  # darkflow:${SLUG}"
     (crontab -l 2>/dev/null | grep -v "# darkflow:${SLUG}"; echo "$CRON_LINE") | crontab -
     success "Added crontab entry for darkflow:${SLUG} (every 15 min)"
     info "Logs: ${PROJECT_ROOT}/.darkflow.d/cron.log"

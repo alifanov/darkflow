@@ -3,12 +3,12 @@
 # Lives at .darkflow.d/darkflow-run.sh — run from anywhere in the project.
 #
 # Usage:
-#   bash .darkflow.d/darkflow-run.sh              # dispatch: run all due routines
+#   bash .darkflow.d/darkflow-run.sh              # loop every 60s — checks for due routines (default)
+#   bash .darkflow.d/darkflow-run.sh --watch 300  # loop every 5 min (custom interval)
+#   bash .darkflow.d/darkflow-run.sh --once       # single dispatch and exit (for system scheduler)
 #   bash .darkflow.d/darkflow-run.sh <name>       # manual: run one routine immediately
 #   bash .darkflow.d/darkflow-run.sh --list       # show routine status table
 #   bash .darkflow.d/darkflow-run.sh --dry-run    # show what would run, don't run it
-#   bash .darkflow.d/darkflow-run.sh --watch      # loop every 900s (no system scheduler needed)
-#   bash .darkflow.d/darkflow-run.sh --watch 300  # loop every 5 min
 #   bash .darkflow.d/darkflow-run.sh --self-test  # run internal cron-matcher tests
 
 set -euo pipefail
@@ -482,20 +482,25 @@ case "${1:-}" in
     acquire_lock
     mode_dispatch true
     ;;
+  --once)
+    preflight || exit 1
+    acquire_lock
+    mode_dispatch false
+    ;;
   --watch)
     preflight || exit 1
-    mode_watch "${2:-900}"
+    mode_watch "${2:-60}"
     ;;
   --self-test)
     mode_self_test
     ;;
   "")
+    # Default: continuous loop, check every minute
     preflight || exit 1
-    acquire_lock
-    mode_dispatch false
+    mode_watch 60
     ;;
   -*)
-    echo "Usage: darkflow-run.sh [<routine-name> | --list | --dry-run | --watch [seconds] | --self-test]" >&2
+    echo "Usage: darkflow-run.sh [<routine-name> | --once | --list | --dry-run | --watch [seconds] | --self-test]" >&2
     exit 1
     ;;
   *)

@@ -14,6 +14,15 @@ Categories:
 
 ---
 
+## [1.4.2] — 2026-05-20
+
+### Installer
+- **`darkflow-run.sh` default changed to loop** — no-argument invocation now runs continuously, checking for due routines every 60 s instead of doing a single-shot dispatch and exiting.
+- **`--once` flag added** — single-shot dispatch for use by system schedulers (launchd plist and crontab entries now call `darkflow-run.sh --once`).
+- **`--watch [seconds]`** default interval changed from 900 to 60 s (consistent with no-arg default).
+
+---
+
 ## [1.4.1] — 2026-05-20
 
 ### Installer
