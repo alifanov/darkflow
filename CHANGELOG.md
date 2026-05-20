@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [1.5.3] — 2026-05-20
+
+### Installer
+- **Removed `df-dry-run` and `df-routine` targets from Makefile** — these were redundant for typical use.
+
+---
+
 ## [1.5.2] — 2026-05-20
 
 ### Installer

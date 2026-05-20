@@ -127,10 +127,8 @@ The installer creates (or updates) a `Makefile` with `df-*` targets so you don't
 ```bash
 make df-help                          # list all df-* targets
 make df-list                          # show routines and their status
-make df-dry-run                       # preview which routines are due
 make df-run                           # start the dispatcher loop (every 60s)
 make df-once                          # single dispatch pass
-make df-routine name=fix-issues       # run one routine now
 make df-scheduler-install             # install the system scheduler
 make df-scheduler-uninstall           # remove the system scheduler
 make df-update                        # update Dark Flow to the latest version
