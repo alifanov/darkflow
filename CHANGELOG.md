@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [1.5.2] — 2026-05-20
+
+### Installer
+- **Fix: CLAUDE.md update no longer crashes on BSD awk** — passing multiline `new_section` via `awk -v` is undefined behaviour in POSIX awk and causes exit code 1 on some implementations. Replaced with a temp-file approach (same pattern as `inject_makefile_block`) that is safe on all awk variants.
+
+---
+
 ## [1.5.1] — 2026-05-20
 
 ### Installer

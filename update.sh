@@ -485,12 +485,16 @@ Routine commands (run any routine interactively or use as the routine prompt):
 <!-- darkflow:end -->"
 
   if [[ "$DRY_RUN" == false ]]; then
-    # Replace between markers using awk
-    awk -v new="$new_section" '
-      /<!-- darkflow:start -->/ { printing=1; print new; next }
-      /<!-- darkflow:end -->/   { printing=0; next }
-      !printing
+    # Write new_section to a temp file — awk -v cannot handle multiline strings
+    _section_tmp=$(mktemp)
+    printf '%s\n' "$new_section" > "$_section_tmp"
+    awk -v nf="$_section_tmp" '
+      /<!-- darkflow:start -->/ { while ((getline l < nf) > 0) print l; close(nf); skip=1; next }
+      skip && /<!-- darkflow:end -->/ { skip=0; next }
+      skip { next }
+      { print }
     ' CLAUDE.md > CLAUDE.md.tmp && mv CLAUDE.md.tmp CLAUDE.md
+    rm -f "$_section_tmp"
     success "Updated Dark Flow section in CLAUDE.md"
   else
     info "Would update Dark Flow section in CLAUDE.md"
