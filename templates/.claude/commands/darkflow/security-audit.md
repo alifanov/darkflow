@@ -15,6 +15,22 @@ After the review is complete, create a GitHub issue for each finding:
 - Labels: `source:security-review`, priority based on severity (`p0`=critical, `p1`=high, `p2`=medium, `p3`=low), `area:api` / `area:auth` / `area:infra` as appropriate
 - Do not create issues for findings already tracked in open GitHub issues
 
+**Issue format (required):**
+
+- **Title**: action-oriented verb — "Fix X", "Restrict Y", "Add Z" — never just a statement of the finding ("X is vulnerable", "Found Y")
+- **Body**:
+  ```
+  ## Problem
+  <what was found and why it is a risk>
+
+  ## What to do
+  <concrete steps to resolve it — specific files, configs, or APIs to change>
+
+  ## Acceptance criteria
+  - [ ] <verifiable outcome 1>
+  - [ ] <verifiable outcome 2 if needed>
+  ```
+
 Language for all GitHub issues and output: the `language=` value from `.darkflow`.
 
 ## Step 3 — After completing

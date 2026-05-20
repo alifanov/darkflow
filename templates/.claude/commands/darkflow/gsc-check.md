@@ -13,6 +13,22 @@ Check Google Search Console data for the last week. Analyse positions, CTR, impr
 
 Add all recommendations as GitHub Issues to the remote GitHub repository of this project. Use labels: `status:proposed`, `source:gsc`, `area:landing`, `priority:*`, `effort:*`.
 
+**Issue format (required):**
+
+- **Title**: action-oriented verb — "Improve title tag on /pricing", "Fix missing meta description for /blog/*", "Add structured data to product pages" — never just a statement of the finding ("Low CTR on /pricing", "Missing meta tags")
+- **Body**:
+  ```
+  ## Problem
+  <metric, current value, affected URL or page group>
+
+  ## What to do
+  <concrete SEO action — specific tag, content, or config to change>
+
+  ## Acceptance criteria
+  - [ ] <verifiable outcome, e.g. "CTR on /pricing rises above 3% within 4 weeks">
+  - [ ] <additional criterion if needed>
+  ```
+
 Write a GSC snapshot to `docs/insights/search-console/YYYY-MM-DD.md` before posting recommendations.
 
 Language for all GitHub issues and output: the `language=` value from `.darkflow`.

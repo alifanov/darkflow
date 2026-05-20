@@ -17,6 +17,22 @@ Before making recommendations, get data on: new user funnel, errors, any anomali
 
 Add all recommendations as GitHub Issues to the remote GitHub repository of this project. Use labels: `status:proposed`, `source:posthog`, `area:*`, `priority:*`, `effort:*`.
 
+**Issue format (required):**
+
+- **Title**: action-oriented verb — "Add X to onboarding funnel", "Fix drop-off on Y step", "Instrument Z event" — never just a statement of observation ("Low conversion on step 2", "Anomaly detected in signups")
+- **Body**:
+  ```
+  ## Problem
+  <what the data shows and why it matters>
+
+  ## What to do
+  <concrete action — specific page, flow, component, or event to change>
+
+  ## Acceptance criteria
+  - [ ] <measurable outcome, e.g. "Step 2 → Step 3 conversion rises above 60%">
+  - [ ] <additional criterion if needed>
+  ```
+
 Do NOT create recommendations about paid ads — that is handled in a separate routine.
 
 Write an analytics snapshot to `docs/insights/analytics/YYYY-MM-DD.md` before posting recommendations.

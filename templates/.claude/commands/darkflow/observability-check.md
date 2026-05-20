@@ -24,6 +24,22 @@ For each finding:
 
 Create a GitHub issue for each significant finding. Use labels: `status:proposed`, `source:signoz` (or the relevant observability tool), `area:api` / `area:worker` / `area:infra`, `priority:*`, `effort:*`.
 
+**Issue format (required):**
+
+- **Title**: action-oriented verb — "Add index on X", "Cache Y endpoint", "Fix N+1 in Z" — never just a description of the symptom ("Slow endpoint detected", "High error rate on X")
+- **Body**:
+  ```
+  ## Problem
+  <metric, current value, comparison to previous period>
+
+  ## What to do
+  <concrete fix — specific table, query, endpoint, or config to change>
+
+  ## Acceptance criteria
+  - [ ] <measurable outcome, e.g. "p95 latency on /api/users drops below 500ms">
+  - [ ] <additional criterion if needed>
+  ```
+
 Language for all GitHub issues and output: the `language=` value from `.darkflow`.
 
 ## Step 3 — After completing
