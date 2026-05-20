@@ -228,6 +228,8 @@ smart_update_template ".claude/commands/darkflow/architecture-review.md"     ".c
 mkdir -p ".darkflow.d/state"
 smart_update_template "darkflow/darkflow-run.sh"           ".darkflow.d/darkflow-run.sh"
 [[ -f ".darkflow.d/darkflow-run.sh" ]] && chmod +x ".darkflow.d/darkflow-run.sh"
+smart_update_template "darkflow/install-scheduler.sh"      ".darkflow.d/install-scheduler.sh"
+[[ -f ".darkflow.d/install-scheduler.sh" ]] && chmod +x ".darkflow.d/install-scheduler.sh"
 smart_update_template "darkflow/uninstall-scheduler.sh"    ".darkflow.d/uninstall-scheduler.sh"
 [[ -f ".darkflow.d/uninstall-scheduler.sh" ]] && chmod +x ".darkflow.d/uninstall-scheduler.sh"
 
@@ -425,7 +427,7 @@ else
   echo -e "${GREEN}${BOLD}Dark Flow updated to ${LATEST_VERSION}${RESET}"
   echo ""
   echo "Commit the changes:"
-  echo "  git add .darkflow .darkflow.d/darkflow-run.sh .darkflow.d/uninstall-scheduler.sh .darkflow.d/routines.yml"
+  echo "  git add .darkflow .darkflow.d/darkflow-run.sh .darkflow.d/install-scheduler.sh .darkflow.d/uninstall-scheduler.sh .darkflow.d/routines.yml"
   echo "  git add docs/agent-workflow.md docs/github-issues.md CLAUDE.md"
   echo "  git commit -m 'chore: update dark-flow to ${LATEST_VERSION}'"
   echo ""

@@ -657,6 +657,15 @@ fi
 chmod +x ".darkflow.d/darkflow-run.sh"
 success "Installed .darkflow.d/darkflow-run.sh"
 
+# Copy install-scheduler helper
+if [[ "$USE_LOCAL" == true ]]; then
+  cp "$SOURCE_DIR/darkflow/install-scheduler.sh" ".darkflow.d/install-scheduler.sh"
+else
+  curl -fsSL "${DARKFLOW_REPO}/templates/darkflow/install-scheduler.sh?t=$(date +%s)" -o ".darkflow.d/install-scheduler.sh"
+fi
+chmod +x ".darkflow.d/install-scheduler.sh"
+success "Installed .darkflow.d/install-scheduler.sh"
+
 # Copy uninstall helper
 if [[ "$USE_LOCAL" == true ]]; then
   cp "$SOURCE_DIR/darkflow/uninstall-scheduler.sh" ".darkflow.d/uninstall-scheduler.sh"
@@ -820,9 +829,9 @@ PLIST_EOF
   fi
 
 else
-  info "Scheduler not installed. Run manually: bash .darkflow.d/darkflow-run.sh"
+  info "Scheduler not installed."
   if [[ "$DETECTED_OS" != "other" ]]; then
-    info "To install later: re-run install.sh --with-scheduler --force"
+    info "To install later: bash .darkflow.d/install-scheduler.sh"
   fi
 fi
 
@@ -889,7 +898,7 @@ if [[ "$SETUP_SCHEDULER" == true ]]; then
   echo -e "  Scheduler:      ${GREEN}active (every 15 min)${RESET}"
   echo -e "  Uninstall:      ${DIM}bash .darkflow.d/uninstall-scheduler.sh${RESET}"
 else
-  echo -e "  Scheduler:      ${DIM}not installed — re-run install.sh --with-scheduler to add${RESET}"
+  echo -e "  Scheduler:      ${DIM}not installed — run: bash .darkflow.d/install-scheduler.sh${RESET}"
 fi
 echo ""
 
