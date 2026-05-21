@@ -472,7 +472,7 @@ mode_watch() {
 
     mkdir -p "$STATE_DIR"
     if mkdir "$LOCK_DIR" 2>/dev/null; then
-      mode_dispatch false
+      mode_dispatch false || log "WATCH  dispatch error (tick ${tick})"
       rmdir "$LOCK_DIR" 2>/dev/null || true
     else
       log "WATCH  skipped tick ${tick} (another dispatch is running)"
