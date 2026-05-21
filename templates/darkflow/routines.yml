@@ -12,7 +12,7 @@ defaults:
 
 routines:
   fix-issues:
-    cron: "0 * * * *"
+    cron: "*/15 * * * *"
     model: sonnet
     enabled: true
 

@@ -1,6 +1,6 @@
 # Fix Issues
 
-The core execution routine. Runs every hour, picks up one `status:approved` GitHub issue, implements the fix, and closes it. The merge strategy (PR vs direct commit) and target branch are configured during Dark Flow installation.
+The core execution routine. Runs every 15 minutes, picks up one `status:approved` GitHub issue, implements the fix, and closes it. The merge strategy (PR vs direct commit) and target branch are configured during Dark Flow installation.
 
 ---
 
@@ -18,7 +18,7 @@ The command reads `.darkflow` for branch, language, and merge strategy — no pl
 
 | Setting | Value |
 |---|---|
-| Cron | `0 * * * *` (hourly at :00) |
+| Cron | `*/15 * * * *` (every 15 minutes) |
 | Folder | Project root (`/path/to/your-project`) |
 | Model | Sonnet (default) |
 | Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |

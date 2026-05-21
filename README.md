@@ -90,7 +90,7 @@ The real power comes from scheduling Claude agents that run the loop automatical
 
 | Routine | Cron | What it does |
 |---|---|---|
-| [**Fix issues**](routines/fix-issues.md) | `0 * * * *` | Hourly — picks up `status:approved` → PR → merge |
+| [**Fix issues**](routines/fix-issues.md) | `*/15 * * * *` | Every 15 min — picks up `status:approved` → PR → merge |
 | [Analytics review](routines/analytics-review.md) | `0 8 * * *` | Daily 8:00 — PostHog + commits → `status:proposed` issues |
 | [Observability check](routines/observability-check.md) | `30 8 * * *` | Daily 8:30 — SigNoz/errors/slow URLs → issues |
 | [GSC check](routines/gsc-check.md) | `0 8 * * 1` | Weekly Mon 8:00 — Google Search Console → issues |
@@ -154,7 +154,7 @@ Weekly
   Sun 3:00  security-audit        → status:proposed issues (Opus) + updates overview
 
 Continuous
-  :00  fix-issues (hourly)   → picks up status:approved → PR → merge
+  :00/:15/:30/:45  fix-issues (every 15 min)   → picks up status:approved → PR → merge
 
 Human
        Reviews status:proposed → sets status:approved or status:rejected

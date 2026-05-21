@@ -21,7 +21,7 @@ All routines and their default cron expressions:
 
 | Routine | Cron | Description |
 |---|---|---|
-| `fix-issues` | `0 * * * *` | Hourly — picks up `status:approved` issues, implements, merges |
+| `fix-issues` | `*/15 * * * *` | Every 15 min — picks up `status:approved` issues, implements, merges |
 | `analytics-review` | `0 8 * * *` | Daily 8:00 — PostHog + recent commits → GitHub issues |
 | `observability-check` | `30 8 * * *` | Daily 8:30 — errors / latency → GitHub issues |
 | `gsc-check` | `0 8 * * 1` | Weekly Mon 8:00 — Google Search Console → GitHub issues |
@@ -86,7 +86,7 @@ Open `.darkflow.d/routines.yml` and change `cron`, `model`, or `enabled` for any
 ```yaml
 routines:
   fix-issues:
-    cron: "0 * * * *"   # change frequency here
+    cron: "*/15 * * * *"   # change frequency here
     model: sonnet
     enabled: true        # set false to disable without deleting
 ```
