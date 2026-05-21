@@ -352,6 +352,35 @@ sync_overview() {
     git push >/dev/null 2>&1 || log "OVERVIEW push failed"
     log "OVERVIEW synced"
   fi
+
+  # Sync parent darkflow-overview.html with proposed count + last_updated
+  local df_parent df_project_name df_entry_path df_proposed_n
+  df_project_name="$(basename "$PROJECT_ROOT")"
+  df_entry_path="./${df_project_name}/docs/overview.html"
+  df_parent="$(cd "${PROJECT_ROOT}/.." 2>/dev/null && pwd)/darkflow-overview.html"
+  if [[ -f "$df_parent" ]] && command -v python3 &>/dev/null; then
+    df_proposed_n=$(printf '%s\n' "$issues" | jq '[.[] | select(any(.labels[].name; . == "status:proposed"))] | length' 2>/dev/null || echo 0)
+    python3 - "$df_parent" "$df_entry_path" "$df_proposed_n" "$now_iso" "$PROJECT_ROOT" 2>/dev/null << 'PYEOF' || true
+import sys, json, re
+pf, path, proposed_n, last_updated, project_path = sys.argv[1:6]
+with open(pf) as f:
+    c = f.read()
+m = re.search(r'(<script[^>]+id="darkflow-overview-data"[^>]*>)([\s\S]*?)(</script>)', c)
+if not m: sys.exit(0)
+try: d = json.loads(m.group(2))
+except: sys.exit(0)
+for p in d.get('projects', []):
+    if p.get('path') == path:
+        p['proposed_count'] = int(proposed_n)
+        p['last_updated'] = last_updated
+        p['project_path'] = project_path
+        break
+nb = m.group(1) + '\n' + json.dumps(d, indent=2) + '\n' + m.group(3)
+with open(pf, 'w') as f:
+    f.write(c[:m.start()] + nb + c[m.end():])
+PYEOF
+    log "OVERVIEW parent darkflow-overview.html synced"
+  fi
 }
 
 # ── Mode: list ────────────────────────────────────────────────────────────────

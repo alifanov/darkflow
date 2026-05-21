@@ -432,9 +432,9 @@ update_parent_overview() {
   fi
 
   local result
-  if result=$(python3 - "$parent_file" "$PROJECT_NAME" "$_slug" "$project_path" "$(date -u +%Y-%m-%d)" 2>/dev/null << 'PYEOF'
+  if result=$(python3 - "$parent_file" "$PROJECT_NAME" "$_slug" "$project_path" "$(date -u +%Y-%m-%d)" "$TARGET_DIR" 2>/dev/null << 'PYEOF'
 import sys, json, re
-pf, name, slug, path, installed = sys.argv[1:6]
+pf, name, slug, path, installed, project_path_abs = sys.argv[1:7]
 with open(pf) as f:
     c = f.read()
 m = re.search(r'(<script[^>]+id="darkflow-overview-data"[^>]*>)([\s\S]*?)(</script>)', c)
@@ -447,7 +447,7 @@ except Exception:
 projects = d.get('projects', [])
 if any(p.get('path') == path for p in projects):
     print('exists'); sys.exit(0)
-projects.append({'name': name, 'slug': slug, 'path': path, 'installed': installed})
+projects.append({'name': name, 'slug': slug, 'path': path, 'installed': installed, 'project_path': project_path_abs})
 d['projects'] = projects
 nb = m.group(1) + '\n' + json.dumps(d, indent=2) + '\n' + m.group(3)
 with open(pf, 'w') as f:
