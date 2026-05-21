@@ -100,7 +100,11 @@
     if (!ts) return null;
     var dt = new Date(ts);
     if (isNaN(dt.getTime())) return ts;
-    return dt.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    var hasTime = ts.indexOf('T') !== -1 || ts.indexOf(' ') !== -1;
+    if (hasTime) {
+      return dt.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+    return dt.toLocaleString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
   }
 
   var d        = JSON.parse(document.getElementById('darkflow-overview-data').textContent);
@@ -116,14 +120,13 @@
     html += '<div class="empty">No projects yet.<br>Run <code>install.sh</code> inside any project directory.</div>';
   } else {
     html += projects.map(function (p) {
-      var updStr = p.last_updated ? fmtDate(p.last_updated) : (p.installed || null);
+      var updStr = fmtDate(p.last_updated || p.installed || null);
       return '<a class="project-card" href="' + esc(p.path) + '">'
         + '<div class="project-name">' + esc(p.name)
           + (p.proposed_count > 0 ? '<span class="proposed-badge">' + p.proposed_count + ' proposed</span>' : '')
           + '</div>'
-        + (p.slug ? '<div class="project-slug">' + esc(p.slug) + '</div>' : '')
         + (p.project_path ? '<div class="project-path">' + esc(p.project_path) + '</div>' : '')
-        + (updStr ? '<div class="project-updated">' + (p.last_updated ? 'Updated' : 'Installed') + ' <span>' + esc(updStr) + '</span></div>' : '')
+        + (updStr ? '<div class="project-updated">Updated <span>' + esc(updStr) + '</span></div>' : '')
         + '</a>';
     }).join('');
   }
