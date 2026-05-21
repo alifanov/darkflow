@@ -302,7 +302,6 @@ mode_dispatch() {
   default_model=$(yaml_get '.defaults.model' "$YAML" "sonnet")
   default_perm=$(yaml_get '.defaults.permission_mode' "$YAML" "bypassPermissions")
 
-  log "DISPATCH start (dry_run=${dry_run})"
   rotate_log
 
   local any_due=false
@@ -335,7 +334,6 @@ mode_dispatch() {
       continue
     fi
 
-    log "DUE    ${name} (scheduled=$(epoch_fmt "$prev"), last=$([ "$last_run" = 0 ] && echo never || epoch_fmt "$last_run"))"
     any_due=true
 
     if [[ "$dry_run" == true ]]; then
@@ -345,8 +343,6 @@ mode_dispatch() {
     fi
 
   done < <(routine_names)
-
-  log "DISPATCH end"
 
   if [[ "$dry_run" == true && "$any_due" == false ]]; then
     echo "  No routines are due at this time."
