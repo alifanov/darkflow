@@ -235,7 +235,6 @@ preflight() {
 acquire_lock() {
   mkdir -p "$STATE_DIR"
   if ! mkdir "$LOCK_DIR" 2>/dev/null; then
-    log "SKIP   already running (lock held); exiting"
     exit 0
   fi
   trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
@@ -270,7 +269,6 @@ run_routine() {
 
   now=$(now_epoch)
   write_state "$name" "$(( now - now % 60 ))"
-  log "END    ${name} exit=${exit_code}"
   return $exit_code
 }
 
@@ -334,7 +332,6 @@ mode_dispatch() {
     prev=$(prev_fire "$c_min" "$c_hr" "$c_dom" "$c_month" "$c_dow" "$floor")
 
     if [[ "$prev" == "0" || "$prev" -le "$last_run" ]]; then
-      log "SKIP   ${name} (not due)"
       continue
     fi
 
