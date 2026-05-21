@@ -272,6 +272,88 @@ run_routine() {
   return $exit_code
 }
 
+# ── Overview sync ─────────────────────────────────────────────────────────────
+# Called after any routine actually ran. Updates docs/overview.html with fresh
+# issue counts and commits + pushes if the file changed.
+
+sync_overview() {
+  local overview="${PROJECT_ROOT}/docs/overview.html"
+  [[ -f "$overview" ]] || return 0
+
+  if ! command -v gh &>/dev/null || ! command -v jq &>/dev/null; then
+    log "OVERVIEW skipped (gh/jq missing)"
+    return 0
+  fi
+
+  # Extract current JSON data block
+  local cur
+  cur=$(awk '/<script id="overview-data"/{f=1;next} f&&/<\/script>/{exit} f{print}' "$overview")
+  if [[ -z "$cur" ]] || ! echo "$cur" | jq empty 2>/dev/null; then
+    log "OVERVIEW skipped (data block missing or invalid JSON)"
+    return 0
+  fi
+
+  # Fetch open issues and repo URL (tolerate gh auth failures)
+  local issues repo now_iso
+  issues=$(gh issue list --state open --json number,title,labels --limit 200 2>/dev/null) || return 0
+  repo=$(gh repo view --json url -q .url 2>/dev/null || echo "")
+  now_iso=$(date -u +%FT%TZ)
+
+  # Build merged JSON — preserves project, analytics, logs, last_audit, last_review
+  local newjson
+  newjson=$(jq -n \
+    --argjson cur "$cur" \
+    --argjson i "$issues" \
+    --arg repo "$repo" \
+    --arg now "$now_iso" \
+    '
+      def names: [.labels[].name];
+      def mk: { number, title,
+        priority: ([names[] | select(startswith("priority:")) | sub("priority:"; "")][0] // null),
+        area:     ([names[] | select(startswith("area:"))     | sub("area:"; "")][0]     // null) };
+      ($i | map(select(any(.labels[].name; . == "status:proposed"))))        as $prop |
+      ($i | map(select(any(.labels[].name; . == "status:in-progress"))))     as $prog |
+      ($i | map(select(any(.labels[].name; . == "source:security-review")))) as $sec  |
+      ($sec | map(select(any(.labels[].name; . == "priority:p0" or . == "priority:p1"))) | length) as $secCrit |
+      ($i | map(select(any(.labels[].name; . == "area:architecture"))) | length) as $archN |
+      $cur
+      | .last_updated = $now
+      | .github = {
+          repo_url: (if $repo != "" then $repo else $cur.github.repo_url end),
+          open_total: ($i | length),
+          awaiting_approval: ($prop | map(mk)),
+          in_progress: ($prog | map(mk))
+        }
+      | .security.open_issues   = ($sec | length)
+      | .security.critical_open = $secCrit
+      | .security.status = (if $secCrit > 0 then "critical"
+                             elif ($sec | length) > 5 then "warning"
+                             else "ok" end)
+      | .architecture.open_issues = $archN
+      | .architecture.status = (if $archN > 10 then "warning" else "ok" end)
+    ') || { log "OVERVIEW skipped (jq error)"; return 0; }
+
+  # Splice new JSON back into the file (replace only the data block)
+  local tmpjson="${overview}.json.tmp" tmph="${overview}.tmp"
+  printf '%s\n' "$newjson" > "$tmpjson"
+  awk -v jsonfile="$tmpjson" '
+    BEGIN { s=0 }
+    /<script id="overview-data"/ { print; while ((getline line < jsonfile) > 0) print line; s=1; next }
+    s && /<\/script>/ { s=0; print; next }
+    s { next }
+    { print }
+  ' "$overview" > "$tmph" && mv "$tmph" "$overview"
+  rm -f "$tmpjson"
+
+  # Commit and push only if something changed
+  if ! git diff --quiet -- docs/overview.html 2>/dev/null; then
+    git add docs/overview.html
+    git commit -m "chore: sync overview.html issue counts" >/dev/null 2>&1 || return 0
+    git push >/dev/null 2>&1 || log "OVERVIEW push failed"
+    log "OVERVIEW synced"
+  fi
+}
+
 # ── Mode: list ────────────────────────────────────────────────────────────────
 
 mode_list() {
@@ -347,6 +429,10 @@ mode_dispatch() {
   if [[ "$dry_run" == true && "$any_due" == false ]]; then
     echo "  No routines are due at this time."
   fi
+
+  if [[ "$dry_run" != true && "$any_due" == true ]]; then
+    sync_overview
+  fi
 }
 
 # ── Mode: manual ──────────────────────────────────────────────────────────────
@@ -368,6 +454,7 @@ mode_manual() {
 
   log "MANUAL ${name}"
   run_routine "$name" "$model" "$permission_mode"
+  sync_overview
 }
 
 # ── Mode: watch ───────────────────────────────────────────────────────────────
