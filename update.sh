@@ -148,7 +148,7 @@ smart_update_template() {
       if [[ "$USE_LOCAL" == true ]]; then
         cp "$SOURCE_DIR/$rel_path" "$dest"
       else
-        curl -fsSL "${DARKFLOW_REPO}/templates/${rel_path}" -o "$dest"
+        curl -fsSL "${DARKFLOW_REPO}/templates/${rel_path}?t=$(date +%s)" -o "$dest"
       fi
       success "Added: $dest"
     else
@@ -162,7 +162,7 @@ smart_update_template() {
   if [[ "$USE_LOCAL" == true ]]; then
     latest=$(cat "$SOURCE_DIR/$rel_path" 2>/dev/null || echo "")
   else
-    latest=$(curl -fsSL "${DARKFLOW_REPO}/templates/${rel_path}" 2>/dev/null || echo "")
+    latest=$(curl -fsSL "${DARKFLOW_REPO}/templates/${rel_path}?t=$(date +%s)" 2>/dev/null || echo "")
   fi
 
   local current

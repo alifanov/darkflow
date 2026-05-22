@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [2.2.3] — 2026-05-22
+
+### Installer
+- **Fixed stale template downloads in `update.sh`** — `smart_update_template()` fetched template files without a cache-buster, so GitHub's raw CDN could serve content up to ~5 min old after a push. Added `?t=$(date +%s)` to both curl calls, matching `fetch_raw()`
+
+---
+
 ## [2.2.1] — 2026-05-22
 
 ### Worker
