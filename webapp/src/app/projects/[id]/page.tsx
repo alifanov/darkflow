@@ -27,8 +27,8 @@ const STATUS_TEXT: Record<string, string> = {
 const CARDS: { key: string; label: string; statuses: string[] }[] = [
   { key: "proposed", label: "Требуют одобрения", statuses: ["proposed"] },
   { key: "approved", label: "Одобрены", statuses: ["approved"] },
-  { key: "in-progress", label: "В процессе", statuses: ["in-progress", "blocked"] },
-  { key: "rejected", label: "Отменены", statuses: ["rejected"] },
+  { key: "in-progress", label: "В процессе", statuses: ["in-progress"] },
+  { key: "rejected", label: "Отменены", statuses: ["rejected", "blocked"] },
 ];
 
 export default async function ProjectPage({
