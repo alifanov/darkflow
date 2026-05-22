@@ -463,7 +463,9 @@ HEARTBEAT_PID=""
 start_heartbeat_loop() {
   local routine="$1"
   (
-    trap '' INT TERM
+    # Ignore INT so Ctrl-C during a dispatch doesn't kill the heartbeat;
+    # TERM stays catchable so stop_heartbeat_loop can reap it cleanly.
+    trap '' INT
     while true; do
       sleep 60
       send_heartbeat "running" "$routine"
@@ -474,7 +476,9 @@ start_heartbeat_loop() {
 
 stop_heartbeat_loop() {
   if [[ -n "${HEARTBEAT_PID:-}" ]]; then
-    kill "$HEARTBEAT_PID" 2>/dev/null || true
+    kill -TERM "$HEARTBEAT_PID" 2>/dev/null || true
+    # Belt-and-suspenders: if it's wedged, SIGKILL can't be trapped/ignored.
+    kill -KILL "$HEARTBEAT_PID" 2>/dev/null || true
     wait "$HEARTBEAT_PID" 2>/dev/null || true
     HEARTBEAT_PID=""
   fi
