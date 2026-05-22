@@ -9,41 +9,41 @@ importers:
   .:
     dependencies:
       '@prisma/client':
-        specifier: ^6
+        specifier: ^6.19.3
         version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
       next:
-        specifier: ^15
+        specifier: ^15.5.18
         version: 15.5.18(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       octokit:
-        specifier: ^4
+        specifier: ^4.1.4
         version: 4.1.4
       react:
-        specifier: ^19
+        specifier: ^19.2.6
         version: 19.2.6
       react-dom:
-        specifier: ^19
+        specifier: ^19.2.6
         version: 19.2.6(react@19.2.6)
     devDependencies:
       '@tailwindcss/postcss':
-        specifier: ^4
+        specifier: ^4.3.0
         version: 4.3.0
       '@types/node':
-        specifier: ^22
+        specifier: ^22.19.19
         version: 22.19.19
       '@types/react':
-        specifier: ^19
+        specifier: ^19.2.15
         version: 19.2.15
       '@types/react-dom':
-        specifier: ^19
+        specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.15)
       prisma:
-        specifier: ^6
+        specifier: ^6.19.3
         version: 6.19.3(typescript@5.9.3)
       tailwindcss:
-        specifier: ^4
+        specifier: ^4.3.0
         version: 4.3.0
       typescript:
-        specifier: ^5
+        specifier: ^5.9.3
         version: 5.9.3
 
 packages:
