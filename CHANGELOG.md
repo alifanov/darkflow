@@ -14,6 +14,21 @@ Categories:
 
 ---
 
+## [2.2.0] — 2026-05-22
+
+### Worker
+- **Issues sync every minute** — the watch loop now pushes GitHub issues + project metadata to the web UI on every 60 s tick, not just after a routine runs. `--once` syncs on every invocation too
+- **`--sync` mode** — `darkflow-run.sh --sync` pushes issues + metadata to the web UI without running any routine
+
+### Web UI
+- **Heartbeat auto-registers the project** — `POST /api/worker/heartbeat` now upserts the project instead of returning 404, so a restarted worker shows up even if install/update never reached the UI. The worker sends the project name with each heartbeat
+
+### Installer
+- **`make df-sync` target** — manual web UI sync without running a routine
+- **Install/update run a full sync** — `install.sh` and `update.sh` now call `darkflow-run.sh --sync`, so the project *and* its open GitHub issues appear in the UI immediately
+
+---
+
 ## [2.1.1] — 2026-05-22
 
 ### Installer

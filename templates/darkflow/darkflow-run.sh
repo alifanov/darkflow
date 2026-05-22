@@ -6,6 +6,7 @@
 #   bash .darkflow.d/darkflow-run.sh              # loop every 60s — checks for due routines (default)
 #   bash .darkflow.d/darkflow-run.sh --once       # single dispatch and exit (for system scheduler)
 #   bash .darkflow.d/darkflow-run.sh <name>       # manual: run one routine immediately
+#   bash .darkflow.d/darkflow-run.sh --sync       # push issues + metadata to the web UI
 #   bash .darkflow.d/darkflow-run.sh --list       # show routine status table
 #   bash .darkflow.d/darkflow-run.sh --dry-run    # show what would run, don't run it
 #   bash .darkflow.d/darkflow-run.sh --self-test  # run internal cron-matcher tests
@@ -446,13 +447,14 @@ send_heartbeat() {
   repo_url=$(_get_repo_url_cached)
   [[ -z "$repo_url" ]] && return 0
 
-  local routine_field="null"
+  local proj_name routine_field="null"
+  proj_name=$(darkflow_val "name" "$(basename "$PROJECT_ROOT")")
   [[ -n "$routine" ]] && routine_field="\"${routine}\""
 
   curl -fsS -o /dev/null -m 5 \
     -X POST "${webapp_url}/api/worker/heartbeat" \
     -H "Content-Type: application/json" \
-    -d "{\"repoUrl\":\"${repo_url}\",\"status\":\"${status}\",\"routine\":${routine_field}}" \
+    -d "{\"repoUrl\":\"${repo_url}\",\"status\":\"${status}\",\"routine\":${routine_field},\"name\":\"${proj_name}\"}" \
     2>/dev/null || true
 }
 
@@ -553,10 +555,6 @@ mode_dispatch() {
   if [[ "$dry_run" == true && "$any_due" == false ]]; then
     echo "  No routines are due at this time."
   fi
-
-  if [[ "$dry_run" != true && "$any_due" == true ]]; then
-    sync_webapp
-  fi
 }
 
 # ── Mode: manual ──────────────────────────────────────────────────────────────
@@ -598,6 +596,7 @@ mode_watch() {
     mkdir -p "$STATE_DIR"
     if mkdir "$LOCK_DIR" 2>/dev/null; then
       mode_dispatch false || log "WATCH  dispatch error (tick ${tick})"
+      sync_webapp
       rmdir "$LOCK_DIR" 2>/dev/null || true
     else
       log "WATCH  skipped tick ${tick} (another dispatch is running)"
@@ -667,6 +666,21 @@ mode_self_test() {
   fi
 }
 
+# ── Mode: sync ────────────────────────────────────────────────────────────────
+# Pushes current GitHub issues and project metadata to the web UI without
+# running any routine. Useful right after install to populate the dashboard.
+
+mode_sync() {
+  if ! command -v gh &>/dev/null || ! command -v jq &>/dev/null || ! command -v curl &>/dev/null; then
+    echo "darkflow-run: --sync requires gh, jq, and curl" >&2
+    exit 1
+  fi
+  log "SYNC   manual web UI sync"
+  send_heartbeat "idle"
+  sync_webapp
+  echo "Synced GitHub issues and project metadata to the web UI."
+}
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 mkdir -p "$STATE_DIR"
@@ -685,9 +699,13 @@ case "${1:-}" in
     preflight || exit 1
     acquire_lock
     mode_dispatch false
+    sync_webapp
     ;;
   --self-test)
     mode_self_test
+    ;;
+  --sync)
+    mode_sync
     ;;
   "")
     # Default: continuous loop, check every minute
@@ -695,7 +713,7 @@ case "${1:-}" in
     mode_watch 60
     ;;
   -*)
-    echo "Usage: darkflow-run.sh [<routine-name> | --once | --list | --dry-run | --self-test]" >&2
+    echo "Usage: darkflow-run.sh [<routine-name> | --once | --sync | --list | --dry-run | --self-test]" >&2
     exit 1
     ;;
   *)
