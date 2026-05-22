@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { IssueActions } from "@/components/IssueActions";
+import { DeleteProjectButton } from "@/components/DeleteProjectButton";
 
 export const dynamic = "force-dynamic";
 
@@ -49,23 +50,30 @@ export default async function ProjectPage({
         <Link href="/" className="text-sm" style={{ color: "var(--muted)" }}>
           ← Projects
         </Link>
-        <h1 className="text-2xl font-bold mt-2" style={{ color: "var(--text)" }}>
-          {project.name}
-        </h1>
-        <a
-          href={project.repoUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm"
-          style={{ color: "var(--accent)" }}
-        >
-          {project.repoUrl}
-        </a>
-        {project.lastSyncedAt && (
-          <div className="text-sm mt-1" style={{ color: "var(--muted)" }}>
-            Last synced {project.lastSyncedAt.toISOString().slice(0, 16).replace("T", " ")} UTC
+        <div className="flex items-start justify-between gap-4 mt-2">
+          <div>
+            <h1 className="text-2xl font-bold" style={{ color: "var(--text)" }}>
+              {project.name}
+            </h1>
+            <a
+              href={project.repoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm"
+              style={{ color: "var(--accent)" }}
+            >
+              {project.repoUrl}
+            </a>
+            {project.lastSyncedAt && (
+              <div className="text-sm mt-1" style={{ color: "var(--muted)" }}>
+                Last synced {project.lastSyncedAt.toISOString().slice(0, 16).replace("T", " ")} UTC
+              </div>
+            )}
           </div>
-        )}
+          <div className="shrink-0 mt-1">
+            <DeleteProjectButton projectId={project.id} projectName={project.name} />
+          </div>
+        </div>
       </div>
 
       {proposed.length > 0 && (
