@@ -181,7 +181,6 @@ function IssueRow({
     title: string;
     status: string;
     priority: string | null;
-    area: string | null;
     url: string | null;
   };
   showActions?: boolean;
@@ -212,10 +211,11 @@ function IssueRow({
             issue.title
           )}
         </div>
-        <div className="flex items-center gap-2 mt-1 text-xs" style={{ color: "var(--muted)" }}>
-          {issue.area && <span>{issue.area}</span>}
-          {issue.priority && <span>· {issue.priority}</span>}
-        </div>
+        {issue.priority && (
+          <div className="flex items-center gap-2 mt-1 text-xs" style={{ color: "var(--muted)" }}>
+            <span>{issue.priority}</span>
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-3 shrink-0">
         <span

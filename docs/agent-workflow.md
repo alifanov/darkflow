@@ -10,12 +10,12 @@ Full label spec and agent loop — in [`github-issues.md`](./github-issues.md).
 ```bash
 gh issue list --label "status:approved" --state open --json number,title,labels,body --limit 20
 ```
-If there are approved issues whose `area:*` matches the current context — take them first. Before starting: `status:approved` → `status:in-progress` + comment with branch link.
+If there are approved issues matching the current context — take them first. Before starting: `status:approved` → `status:in-progress` + comment with branch link.
 
 **After analyzing an `insights/*` snapshot** — turn each recommendation into an issue:
 ```bash
 gh issue create --title "..." \
-  --label "status:proposed,source:<...>,area:<...>,priority:<...>,effort:<...>" \
+  --label "status:proposed,source:<...>,priority:<...>,effort:<...>" \
   --body "<context + link to snapshot + acceptance criteria>"
 ```
 The snapshot entry remains the source of truth; the issue = the work artifact.

@@ -347,7 +347,6 @@ sync_webapp() {
       url,
       status:   (label_prefix("status:")   // "none"),
       priority: label_prefix("priority:"),
-      area:     label_prefix("area:"),
       source:   label_prefix("source:"),
       effort:   label_prefix("effort:")
     })

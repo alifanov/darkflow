@@ -41,19 +41,6 @@ label "source:ux-audit"        "5319e7" "From UI review / session recordings"
 label "source:user-feedback"   "5319e7" "From insights/qualitative/*"
 label "source:manual"          "5319e7" "Hypothesis without data source"
 
-# area:* — where in the codebase (extend for your project)
-label "area:worker"    "c2e0c6" "Background worker / job queue"
-label "area:api"       "c2e0c6" "API routes / backend"
-label "area:landing"   "c2e0c6" "Landing page / SEO pages"
-label "area:checkout"  "c2e0c6" "Payment / checkout flow"
-label "area:auth"      "c2e0c6" "Authentication"
-label "area:dashboard" "c2e0c6" "User dashboard / app"
-label "area:email"     "c2e0c6" "Email templates / sending"
-label "area:checks"       "c2e0c6" "Security checks / scheduled jobs"
-label "area:architecture" "c2e0c6" "Cross-cutting architectural concerns"
-label "area:docs"         "c2e0c6" "Documentation in docs/"
-label "area:infra"        "c2e0c6" "Infrastructure / CI / config"
-
 # priority:*
 label "priority:p0" "b60205" "Breaks revenue or disables a feature right now"
 label "priority:p1" "d93f0b" "This week"

@@ -36,7 +36,6 @@ model Issue {
   url       String?
   status    String   @default("none")
   priority  String?
-  area      String?
   source    String?
   effort    String?
   updatedAt DateTime @updatedAt

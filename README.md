@@ -11,7 +11,7 @@ When Claude Code (or any AI agent) works on your project, it generates insights 
 Dark Flow installs:
 - A **5-layer docs structure** (`product / spec / design / insights / decisions`) with clear read/write rules for the agent
 - A **GitHub Issues triage loop** — agent creates `status:proposed` issues from insights, human approves or rejects, agent picks up `status:approved` tasks automatically
-- A **taxonomy of labels** (`status:*`, `source:*`, `area:*`, `priority:*`, `effort:*`) so you can filter with `gh issue list --label "status:approved"`
+- A **taxonomy of labels** (`status:*`, `source:*`, `priority:*`, `effort:*`) so you can filter with `gh issue list --label "status:approved"`
 - **Agent-workflow rules** baked into `docs/agent-workflow.md` (referenced from CLAUDE.md)
 
 ---
@@ -112,7 +112,7 @@ Human reviews
   → sets status:approved or status:rejected
 Agent starts next session
   → gh issue list --label "status:approved"
-  → picks up matching area:* tasks
+  → picks up matching tasks
   → sets status:in-progress, comments with branch name
   → closes via PR with "Closes #N"
 ```
@@ -264,7 +264,7 @@ The updater:
 
 After install, edit:
 - `docs/agent-workflow.md` — add project-specific read/write rules
-- `docs/github-issues.md` — extend area:* labels if needed
+- `docs/github-issues.md` — adjust the label taxonomy if needed
 - `.github/ISSUE_TEMPLATE/recommendation.yml` — adjust dropdown options
 
 ---

@@ -30,26 +30,6 @@ body:
       required: true
 
   - type: dropdown
-    id: area
-    attributes:
-      label: Area (область кода)
-      description: Можно выбрать несколько через запятую в заголовке — здесь основная
-      options:
-        - area:worker
-        - area:api
-        - area:landing
-        - area:checkout
-        - area:auth
-        - area:dashboard
-        - area:email
-        - area:checks
-        - area:architecture
-        - area:docs
-        - area:infra
-    validations:
-      required: true
-
-  - type: dropdown
     id: priority
     attributes:
       label: Priority

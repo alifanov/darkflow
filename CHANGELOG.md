@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [2.4.0] — 2026-05-22
+
+### Updated label
+- **Removed the `area:*` label group** from the taxonomy — `setup-labels.sh`, `docs/github-issues.md`, the issue template, and the worker dispatcher no longer create or parse `area:*`. The webapp `Issue.area` column is dropped via migration `20260522000002_drop_issue_area`
+
+---
+
 ## [2.2.3] — 2026-05-22
 
 ### Installer

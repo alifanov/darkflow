@@ -8,7 +8,7 @@ See also: [`decisions/`](./decisions/) for the ADR explaining why this approach 
 
 ## Таксономия лейблов
 
-Все имена — на английском, формат `prefix:value`. Ставить только по одному лейблу из каждой группы `status:*`, `source:*`, `priority:*`, `effort:*` — по несколько допускается только `area:*`.
+Все имена — на английском, формат `prefix:value`. Ставить ровно по одному лейблу из каждой группы `status:*`, `source:*`, `priority:*`, `effort:*`.
 
 ### `status:*` — жизненный цикл (state machine)
 
@@ -37,12 +37,6 @@ See also: [`decisions/`](./decisions/) for the ADR explaining why this approach 
 | `source:ux-audit` | UI-ревью (`impeccable`, `critique`, session recordings) |
 | `source:user-feedback` | `docs/insights/qualitative/*` (интервью, письма) |
 | `source:manual` | Гипотеза без data-источника |
-
-### `area:*` — где в коде живёт изменение
-
-Можно несколько. Заменяет префиксы `[UX]`/`[SEO]`/`[Монетизация]` в заголовках issue.
-
-`area:worker` · `area:api` · `area:landing` · `area:checkout` · `area:auth` · `area:dashboard` · `area:email` · `area:checks` · `area:architecture` · `area:docs` · `area:infra`
 
 ### `priority:*` — срочность
 
@@ -80,7 +74,7 @@ See also: [`decisions/`](./decisions/) for the ADR explaining why this approach 
    ```bash
    gh issue create \
      --title "Короткое действенное описание" \
-     --label "status:proposed,source:<...>,area:<...>,priority:<...>,effort:<...>,<тип>" \
+     --label "status:proposed,source:<...>,priority:<...>,effort:<...>,<тип>" \
      --body "$(cat <<'EOF'
    ## Контекст
 
@@ -104,7 +98,7 @@ See also: [`decisions/`](./decisions/) for the ADR explaining why this approach 
      --json number,title,labels,body \
      --limit 20
    ```
-   Если есть approved issue, совпадающие с текущим контекстом по `area:*` — берёт их первыми.
+   Если есть approved issue, совпадающие с текущим контекстом — берёт их первыми.
 
 3. **При старте работы над issue** — переключает статус и оставляет коммент:
    ```bash
@@ -125,7 +119,7 @@ See also: [`decisions/`](./decisions/) for the ADR explaining why this approach 
 ## Антипаттерны
 
 - **Не ставить датированные source-лейблы** (`posthog-2026-05-16`) — используй `source:posthog` + ссылку на снимок в теле issue.
-- **Не кодировать приоритет в заголовке** (`[SEO/P0]`) — ставь `priority:p0` + `area:landing`.
+- **Не кодировать приоритет в заголовке** (`[SEO/P0]`) — ставь `priority:p0`.
 - **Не пересоздавать rejected issue** без новых данных — укажи в снимке `Не пересоздаём — отклонено в #N`.
 - **Не закрывать issue вручную как "done"** без PR или ссылки — закрытие через `Closes #N` в PR даёт трассируемость.
 - **Не ставить `effort:l`** без разбивки на sub-issue — задача в > 1 дня всегда дробится.
@@ -154,19 +148,6 @@ gh label create "source:security-review" --color "5319e7" --description "Из se
 gh label create "source:ux-audit"        --color "5319e7" --description "Из UI-ревью / session recordings"
 gh label create "source:user-feedback"   --color "5319e7" --description "Из insights/qualitative/*"
 gh label create "source:manual"          --color "5319e7" --description "Гипотеза без data-источника"
-
-# area
-gh label create "area:worker"    --color "c2e0c6" --description "worker/ — job queue, checks"
-gh label create "area:api"       --color "c2e0c6" --description "app/api/* — Route Handlers"
-gh label create "area:landing"   --color "c2e0c6" --description "Лендинг и SEO-страницы"
-gh label create "area:checkout"  --color "c2e0c6" --description "Платёжный флоу"
-gh label create "area:auth"      --color "c2e0c6" --description "Аутентификация (NextAuth)"
-gh label create "area:dashboard" --color "c2e0c6" --description "Личный кабинет пользователя"
-gh label create "area:email"     --color "c2e0c6" --description "Email (Resend, шаблоны)"
-gh label create "area:checks"       --color "c2e0c6" --description "Scheduled checks / security jobs"
-gh label create "area:architecture" --color "c2e0c6" --description "Архитектурные изменения"
-gh label create "area:docs"         --color "c2e0c6" --description "Документация docs/"
-gh label create "area:infra"        --color "c2e0c6" --description "Инфра, CI/CD, конфиги"
 
 # priority
 gh label create "priority:p0" --color "b60205" --description "Бьёт по revenue / выключает фичу сейчас"

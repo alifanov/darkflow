@@ -542,7 +542,7 @@ Check approved task queue:
 ```bash
 gh issue list --label "status:approved" --state open --json number,title,labels,body --limit 20
 ```
-If there are approved issues with `area:*` matching the current context — pick them first.
+If there are approved issues matching the current context — pick them first.
 Before starting: set `status:in-progress`, leave a comment with the branch name.
 
 ### When to read docs

@@ -9,7 +9,6 @@ interface IngestIssue {
   url?: string;
   status?: string;
   priority?: string;
-  area?: string;
   source?: string;
   effort?: string;
 }
@@ -100,7 +99,6 @@ export async function POST(req: NextRequest) {
           url: i.url ?? null,
           status: i.status ?? "none",
           priority: i.priority ?? null,
-          area: i.area ?? null,
           source: i.source ?? null,
           effort: i.effort ?? null,
         })),
