@@ -16,6 +16,43 @@ Dark Flow installs:
 
 ---
 
+## Web UI
+
+Dark Flow ships a built-in web dashboard for reviewing and triaging GitHub issues without leaving your terminal setup.
+
+**Start the server:**
+
+```bash
+# 1. Copy the env template and fill in your GitHub App credentials
+cp .env.example .env
+
+# 2. Start Postgres + webapp
+make up          # docker compose up -d
+```
+
+Open **http://localhost:5555** — you'll see all projects that have synced with the worker.
+
+| Make target | What it does |
+|---|---|
+| `make up` | Start services in the background |
+| `make down` | Stop all services |
+| `make build` | Rebuild the webapp image |
+| `make logs` | Stream logs (Ctrl-C to stop) |
+| `make restart` | Restart all services |
+| `make ps` | Show container status |
+| `make db-shell` | Open psql inside the Postgres container |
+
+**GitHub App setup** (one-time, required for Approve / Reject):
+
+1. Go to **GitHub → Settings → Developer settings → GitHub Apps → New GitHub App**
+2. Grant **Issues: Read & Write** permission, no webhook needed
+3. Install the App on your repositories
+4. Copy **App ID** and generate a **Private key** → paste into `.env`
+
+The worker registers projects automatically on first sync. No manual setup needed once the App is configured.
+
+---
+
 ## Install
 
 Open Claude Code in your project directory and paste this message:
@@ -140,7 +177,7 @@ If your project already has a `Makefile`, the installer appends the `df-*` block
 
 ```
 Daily
-  8:00  analytics-review     → status:proposed issues + updates docs/overview.html
+  8:00  analytics-review     → status:proposed issues + analytics snapshot → syncs to web UI
   8:30  observability-check  → status:proposed issues
   9:00  coolify-logs         → verifies deploy, fixes errors
   9:00  claude-md-update     → keeps agent context in sync
@@ -150,14 +187,15 @@ On-demand
 
 Weekly
   Mon 8:00  gsc-check             → status:proposed issues
-  Sun 2:00  architecture-review   → status:proposed issues (Opus) + updates overview
-  Sun 3:00  security-audit        → status:proposed issues (Opus) + updates overview
+  Sun 2:00  architecture-review   → status:proposed issues (Opus) + arch snapshot → syncs to web UI
+  Sun 3:00  security-audit        → status:proposed issues (Opus) + security snapshot → syncs to web UI
 
 Continuous
   :00/:15/:30/:45  fix-issues (every 15 min)   → picks up status:approved → PR → merge
 
 Human
-       Reviews status:proposed → sets status:approved or status:rejected
+       Reviews status:proposed in web UI (localhost:5555) → Approve / Reject
+       or: gh issue edit N --add-label status:approved
 ```
 
 ### Setup checklist
@@ -187,14 +225,14 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | Command | What it does |
 |---|---|
 | `/darkflow:fix-issues` | Pick up one `status:approved` issue, implement, close |
-| `/darkflow:analytics-review` | PostHog + commits → GitHub issues + overview update |
+| `/darkflow:analytics-review` | PostHog + commits → GitHub issues + analytics snapshot |
 | `/darkflow:observability-check` | Errors / slow queries / latency → GitHub issues |
 | `/darkflow:gsc-check` | Google Search Console → GitHub issues |
 | `/darkflow:coolify-logs` | Deployment log monitoring → fix errors |
 | `/darkflow:deployment-failure` | Diagnose and fix a failed deployment |
 | `/darkflow:claude-md-update` | Regenerate CLAUDE.md from codebase |
-| `/darkflow:architecture-review` | Architectural analysis → GitHub issues + overview update |
-| `/darkflow:security-audit` | Full security review (static + runtime) → GitHub issues + overview update |
+| `/darkflow:architecture-review` | Architectural analysis → GitHub issues + architecture snapshot |
+| `/darkflow:security-audit` | Full security review (static + runtime) → GitHub issues + security snapshot |
 
 Routine commands read `language=`, `branch=`, and `merge_strategy=` from `.darkflow` automatically — no configuration needed at invocation time. They can also be run interactively at any time, not just on a schedule.
 
