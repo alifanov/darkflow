@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [2.2.1] — 2026-05-22
+
+### Worker
+- **Issue sync moved to every 5 minutes** — the watch loop now runs the full web UI sync (GitHub issues + metadata) every 5th tick instead of every minute, to cut down on `gh` API calls. The worker-alive heartbeat still pings every 60 s
+
+---
+
 ## [2.2.0] — 2026-05-22
 
 ### Worker

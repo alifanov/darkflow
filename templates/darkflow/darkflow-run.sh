@@ -596,7 +596,11 @@ mode_watch() {
     mkdir -p "$STATE_DIR"
     if mkdir "$LOCK_DIR" 2>/dev/null; then
       mode_dispatch false || log "WATCH  dispatch error (tick ${tick})"
-      sync_webapp
+      # Full web UI sync (GitHub issues + metadata) every 5th tick (~5 min).
+      # The heartbeat above keeps the worker-alive signal fresh every minute.
+      if (( tick % 5 == 1 )); then
+        sync_webapp
+      fi
       rmdir "$LOCK_DIR" 2>/dev/null || true
     else
       log "WATCH  skipped tick ${tick} (another dispatch is running)"
