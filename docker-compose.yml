@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: darkflow
+      POSTGRES_USER: darkflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-darkflow}
+    volumes:
+      - darkflow-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U darkflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  webapp:
+    build: ./webapp
+    restart: unless-stopped
+    ports:
+      - "5555:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://darkflow:${POSTGRES_PASSWORD:-darkflow}@db:5432/darkflow
+      GITHUB_APP_ID: ${GITHUB_APP_ID}
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY}
+      NODE_ENV: production
+
+volumes:
+  darkflow-db:

@@ -35,19 +35,21 @@ Language for all GitHub issues and output: the `language=` value from `.darkflow
 
 ## Step 3 — After completing
 
-Update `docs/overview.html` with the fresh security status:
+Save a security snapshot so the Dark Flow worker can forward it to the web UI.
 
-1. Read `docs/overview.html`
-2. Run `gh issue list --state open --json number,title,labels --limit 200`
-3. Count issues with label `source:security-review` → `security.open_issues`
-4. Count those with `priority:p0` or `priority:p1` → `security.critical_open`
-5. Set `security.last_audit` to today's date (YYYY-MM-DD)
-6. Derive `security.status`: `"critical"` if critical_open > 0, `"warning"` if open > 5, `"ok"` otherwise
-7. Also recalculate `github.*` from the full issue list
-8. Append a new entry to the `logs` array (cap at 50 most recent):
-   ```json
-   { "timestamp": "<current UTC ISO 8601>", "routine": "security-audit", "summary": "<one-line summary, e.g. 'No new vulnerabilities, 1 medium CSP gap opened'>" }
-   ```
-9. Write `docs/overview.html`
+Run `gh issue list --state open --json number,labels --limit 200`, then:
+- Count issues with label `source:security-review` → `openIssues`
+- Count those with `priority:p0` or `priority:p1` → `criticalOpen`
+- Derive `status`: `"critical"` if criticalOpen > 0, `"warning"` if openIssues > 5, `"ok"` otherwise
 
-Preserve `analytics.*` and `architecture.*` from the existing JSON — only update `security.*`, `github.*`, and `logs`.
+Write `.darkflow.d/state/metrics/security.json` (create parent directories if needed):
+
+```json
+{
+  "openIssues":   <integer>,
+  "criticalOpen": <integer>,
+  "status":       "ok" | "warning" | "critical"
+}
+```
+
+The worker will pick up this file on its next sync. You do not need to update any HTML files.

@@ -38,6 +38,9 @@ OBS_TOOL=""           # Observability tool name (SigNoz / Datadog / Grafana / Ot
 OBS_URL=""            # Observability tool base URL
 OBS_API_KEY=""        # Observability API key
 
+# Webapp URL — where the Dark Flow web UI runs
+WEBAPP_URL="http://localhost:5555"
+
 # ── Colours ───────────────────────────────────────────────────────────────────
 
 BOLD="\033[1m"
@@ -87,6 +90,7 @@ while [[ $# -gt 0 ]]; do
     --obs-tool)           OBS_TOOL="$2"; shift 2 ;;
     --obs-url)            OBS_URL="$2"; shift 2 ;;
     --obs-api-key)        OBS_API_KEY="$2"; shift 2 ;;
+    --webapp-url)         WEBAPP_URL="$2"; shift 2 ;;
     --branch)             MAIN_BRANCH="$2"; shift 2 ;;
     --merge-pr)           MERGE_STRATEGY="pr"; shift ;;
     --merge-direct)       MERGE_STRATEGY="direct"; shift ;;
@@ -396,72 +400,6 @@ project_slug() {
   echo "${PROJECT_NAME}" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-*//;s/-*$//'
 }
 
-# ── Parent overview ───────────────────────────────────────────────────────────
-
-update_parent_overview() {
-  local parent_dir
-  parent_dir="$(cd "${TARGET_DIR}/.." 2>/dev/null && pwd)" || return 0
-  # Skip if already at filesystem root
-  [[ "$parent_dir" == "$TARGET_DIR" ]] && return 0
-
-  local parent_file="${parent_dir}/darkflow-overview.html"
-
-  # Create parent overview from template if it doesn't exist
-  if [[ ! -f "$parent_file" ]]; then
-    if [[ "$USE_LOCAL" == true ]]; then
-      cp "$SOURCE_DIR/darkflow-overview.html" "$parent_file" 2>/dev/null || true
-    else
-      curl -fsSL "${DARKFLOW_REPO}/templates/darkflow-overview.html" -o "$parent_file" 2>/dev/null || true
-    fi
-    if [[ -f "$parent_file" ]]; then
-      success "Created parent overview: $(basename "$parent_dir")/darkflow-overview.html"
-    else
-      dim "Could not create parent darkflow-overview.html — skipping"
-      return 0
-    fi
-  fi
-
-  local project_dir_name project_path _slug
-  project_dir_name="$(basename "$TARGET_DIR")"
-  project_path="./${project_dir_name}/docs/overview.html"
-  _slug="$(project_slug)"
-
-  if ! command -v python3 &>/dev/null; then
-    warn "python3 not found — add link manually to ${parent_file}: ${project_path}"
-    return 0
-  fi
-
-  local result
-  if result=$(python3 - "$parent_file" "$PROJECT_NAME" "$_slug" "$project_path" "$(date -u +%Y-%m-%d)" "$TARGET_DIR" 2>/dev/null << 'PYEOF'
-import sys, json, re
-pf, name, slug, path, installed, project_path_abs = sys.argv[1:7]
-with open(pf) as f:
-    c = f.read()
-m = re.search(r'(<script[^>]+id="darkflow-overview-data"[^>]*>)([\s\S]*?)(</script>)', c)
-if not m:
-    sys.stderr.write('no darkflow-overview-data block\n'); sys.exit(1)
-try:
-    d = json.loads(m.group(2))
-except Exception:
-    d = {}
-projects = d.get('projects', [])
-if any(p.get('path') == path for p in projects):
-    print('exists'); sys.exit(0)
-projects.append({'name': name, 'slug': slug, 'path': path, 'installed': installed, 'project_path': project_path_abs})
-d['projects'] = projects
-nb = m.group(1) + '\n' + json.dumps(d, indent=2) + '\n' + m.group(3)
-with open(pf, 'w') as f:
-    f.write(c[:m.start()] + nb + c[m.end():])
-print('added')
-PYEOF
-); then
-    [[ "$result" == "added"  ]] && success "Linked ${PROJECT_NAME} in parent overview: ${parent_file}"
-    [[ "$result" == "exists" ]] && dim "Parent overview already links to ${PROJECT_NAME}"
-  else
-    warn "Could not update parent overview — add link manually: ${project_path}"
-  fi
-}
-
 # ── Create directory structure ────────────────────────────────────────────────
 
 header "1/5  Creating docs/ structure"
@@ -488,12 +426,9 @@ safe_fetch "docs/README.md"              "docs/README.md"
 safe_fetch "docs/agent-workflow.md"      "docs/agent-workflow.md"
 safe_fetch "docs/github-issues.md"       "docs/github-issues.md"
 safe_fetch "docs/decisions/TEMPLATE.md"  "docs/decisions/TEMPLATE.md"
-safe_fetch "docs/overview.html"          "docs/overview.html"
 safe_fetch ".github/ISSUE_TEMPLATE/recommendation.yml" ".github/ISSUE_TEMPLATE/recommendation.yml"
 
 inject_name "docs/README.md"
-inject_name "docs/overview.html"
-update_parent_overview
 
 # ── Write .darkflow config ────────────────────────────────────────────────────
 
@@ -521,6 +456,7 @@ DARKFLOW_VERSION=$(curl -fsSL "${DARKFLOW_REPO}/VERSION" 2>/dev/null | tr -d '[:
   [[ -n "$OBS_URL"  ]] && echo "obs_url=${OBS_URL}"
   echo "slug=$(project_slug)"
   echo "name=${PROJECT_NAME}"
+  echo "webapp_url=${WEBAPP_URL}"
 } > .darkflow
 
 success "Created .darkflow config (version ${DARKFLOW_VERSION})"
@@ -960,7 +896,7 @@ echo "  1. Fill in docs/product/ — what are you building and for whom"
 echo "  2. Fill in docs/spec/    — user flows, screens, data model"
 echo "  3. Fill in docs/design/  — tokens, components, voice and tone"
 echo "  4. Commit: git add docs/ .github/ISSUE_TEMPLATE/ CLAUDE.md .darkflow .darkflow.d/ && git commit -m 'chore: install dark-flow workflow'"
-echo "  5. Open docs/overview.html in a browser — it updates daily via the analytics-review routine"
+echo "  5. Open ${WEBAPP_URL} in a browser — projects and issues sync automatically when the worker runs"
 echo ""
 
 echo -e "${BOLD}Routine dispatcher${RESET} — .darkflow.d/routines.yml + darkflow-run.sh"

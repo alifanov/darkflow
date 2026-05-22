@@ -6,10 +6,17 @@ Dark Flow is a workflow installer for AI-assisted development projects.
 
 ```
 install.sh              ← main installer (copies templates, sets up labels)
+update.sh               ← upgrader
 setup-labels.sh         ← standalone GitHub labels setup
+docker-compose.yml      ← runs the web UI + Postgres database
+webapp/                 ← Next.js web app (projects list, issue triage, approve/reject)
+  prisma/               ← database schema and migrations (Postgres via Prisma)
+  src/app/              ← App Router pages and API routes
 templates/
+  darkflow/             ← worker dispatcher (darkflow-run.sh, routines.yml)
   docs/                 ← generic docs structure templates
   .github/              ← GitHub issue template
+  .claude/commands/     ← slash commands installed into target projects
 README.md               ← user-facing documentation
 ```
 

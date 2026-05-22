@@ -41,46 +41,23 @@ Language for all GitHub issues and output: the `language=` value from `.darkflow
 
 ## Step 3 — After completing
 
-Update `docs/overview.html` — the project status dashboard.
+Save an analytics snapshot so the Dark Flow worker can forward it to the web UI.
 
-**Data to collect:**
-
-1. **GitHub** — run `gh repo view --json url -q .url` to get `github.repo_url`. Then run `gh issue list --state open --json number,title,labels --limit 200`:
-   - `github.open_total` — total count
-   - `github.awaiting_approval` — issues with label `status:proposed` as `{ number, title, priority, area }` (strip label prefixes)
-   - `github.in_progress` — issues with label `status:in-progress` as `{ number, title, priority, area }` (strip label prefixes)
-
-2. **Analytics** — from the analytics tool already queried above:
-   - `analytics.users_total` — total registered users
-   - `analytics.visitors_7d` — unique visitors last 7 days
-   - `analytics.revenue_7d` — revenue last 7 days (null if not applicable)
-   - `analytics.ads_spend_7d` — Google Ads spend last 7 days (null if Google Ads MCP is not connected)
-
-3. **Security and Architecture** — preserve the existing values from the current JSON. These sections are updated by the security and architecture audit routines.
-
-4. Set `last_updated` to the current UTC timestamp (ISO 8601).
-
-5. **Routine log** — append a new entry to the `logs` array:
-   ```json
-   { "timestamp": "<current UTC ISO 8601>", "routine": "analytics-review", "summary": "<one-line summary, e.g. 'Created 3 issues from PostHog data, no anomalies'>" }
-   ```
-   Keep only the most recent 50 entries (drop older ones if the array exceeds 50).
-
-Read `docs/overview.html`, replace the JSON inside `<script id="overview-data">` with fresh data using this schema, write it back:
+Write `.darkflow.d/state/metrics/analytics.json` with the following structure (create parent
+directories if they don't exist):
 
 ```json
 {
-  "project": "<keep existing>",
-  "last_updated": "2025-01-15T08:05:00Z",
-  "analytics": { "users_total": N, "visitors_7d": N, "revenue_7d": N, "ads_spend_7d": N_or_null, "currency": "USD" },
-  "github": {
-    "repo_url": "https://github.com/owner/repo",
-    "open_total": N,
-    "awaiting_approval": [ { "number": N, "title": "...", "priority": "p1", "area": "api" } ],
-    "in_progress":       [ { "number": N, "title": "...", "priority": "p2", "area": "ui"  } ]
-  },
-  "security":     { "<keep existing values>" },
-  "architecture": { "<keep existing values>" },
-  "logs": [ "<last 50 entries>" ]
+  "usersTotal":  <integer or null>,
+  "visitors7d":  <integer or null>,
+  "revenue7d":   <float or null>,
+  "adsSpend7d":  <float or null>,
+  "currency":    "USD"
 }
 ```
+
+Fill in the values from the analytics data already queried in Step 2. Use `null` for any
+metric that is not available for this project.
+
+The worker will pick up this file on its next sync and forward it to the webapp API together
+with the current issue list. You do not need to update any HTML files or call any API endpoints.

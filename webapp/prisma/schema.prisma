@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id            String    @id @default(cuid())
+  name          String
+  repoUrl       String    @unique
+  branch        String    @default("main")
+  language      String    @default("English")
+  mergeStrategy String    @default("pr")
+  modules       String[]
+  lastSyncedAt  DateTime?
+  createdAt     DateTime  @default(now())
+
+  issues             Issue[]
+  analyticsSnapshots AnalyticsSnapshot[]
+  securityStatus     SecurityStatus?
+  architectureStatus ArchitectureStatus?
+  routineLogs        RoutineLog[]
+}
+
+model Issue {
+  id        String   @id @default(cuid())
+  projectId String
+  number    Int
+  title     String
+  body      String?
+  state     String   @default("open")
+  url       String?
+  status    String   @default("none")
+  priority  String?
+  area      String?
+  source    String?
+  effort    String?
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, number])
+}
+
+model AnalyticsSnapshot {
+  id          String   @id @default(cuid())
+  projectId   String
+  usersTotal  Int?
+  visitors7d  Int?
+  revenue7d   Float?
+  adsSpend7d  Float?
+  currency    String   @default("USD")
+  capturedAt  DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model SecurityStatus {
+  id           String   @id @default(cuid())
+  projectId    String   @unique
+  openIssues   Int      @default(0)
+  criticalOpen Int      @default(0)
+  status       String   @default("ok")
+  updatedAt    DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ArchitectureStatus {
+  id         String   @id @default(cuid())
+  projectId  String   @unique
+  openIssues Int      @default(0)
+  status     String   @default("ok")
+  updatedAt  DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model RoutineLog {
+  id        String   @id @default(cuid())
+  projectId String
+  routine   String
+  summary   String
+  timestamp DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}

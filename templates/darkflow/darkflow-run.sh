@@ -21,6 +21,11 @@ YAML="${DARKFLOW_D}/routines.yml"
 STATE_DIR="${DARKFLOW_D}/state"
 LOCK_DIR="${STATE_DIR}/.lock"
 LOG="${DARKFLOW_D}/darkflow-run.log"
+METRICS_DIR="${DARKFLOW_D}/state/metrics"
+DARKFLOW_CFG="${PROJECT_ROOT}/.darkflow"
+
+# Accumulated routine log entries for this dispatch cycle (JSON lines)
+PENDING_LOGS=()
 
 cd "$PROJECT_ROOT"
 
@@ -61,6 +66,17 @@ rotate_log() {
   if [[ -f "$LOG" ]] && [[ "$(wc -c < "$LOG")" -gt 1048576 ]]; then
     tail -c 524288 "$LOG" > "${LOG}.tmp" && mv "${LOG}.tmp" "$LOG"
   fi
+}
+
+# ── .darkflow config reader ───────────────────────────────────────────────────
+
+darkflow_val() {
+  local key="$1" default="${2:-}" val
+  if [[ -f "$DARKFLOW_CFG" ]]; then
+    val=$(grep -E "^${key}=" "$DARKFLOW_CFG" 2>/dev/null | head -1 | cut -d= -f2-)
+    if [[ -n "$val" ]]; then echo "$val"; return; fi
+  fi
+  echo "$default"
 }
 
 # ── Cron field matching ────────────────────────────────────────────────────────
@@ -269,118 +285,133 @@ run_routine() {
 
   now=$(now_epoch)
   write_state "$name" "$(( now - now % 60 ))"
+
+  local status_str="ok"
+  [[ "$exit_code" != "0" ]] && status_str="exit:${exit_code}"
+  local ts; ts=$(date -u +%FT%TZ)
+  PENDING_LOGS+=("{\"routine\":\"${name}\",\"summary\":\"ran ${name} — ${status_str}\",\"timestamp\":\"${ts}\"}")
+
   return $exit_code
 }
 
-# ── Overview sync ─────────────────────────────────────────────────────────────
-# Called after any routine actually ran. Updates docs/overview.html with fresh
-# issue counts and commits + pushes if the file changed.
+# ── Webapp sync ───────────────────────────────────────────────────────────────
+# Called after any routine actually ran. POSTs issue data and project metadata
+# to the Dark Flow webapp API (/api/ingest) using the webapp_url from .darkflow.
 
-sync_overview() {
-  local overview="${PROJECT_ROOT}/docs/overview.html"
-  [[ -f "$overview" ]] || return 0
-
-  if ! command -v gh &>/dev/null || ! command -v jq &>/dev/null; then
-    log "OVERVIEW skipped (gh/jq missing)"
+sync_webapp() {
+  local webapp_url
+  webapp_url=$(darkflow_val "webapp_url" "")
+  if [[ -z "$webapp_url" ]]; then
+    log "WEBAPP skipped (webapp_url not set in .darkflow)"
+    PENDING_LOGS=()
     return 0
   fi
 
-  # Extract current JSON data block
-  local cur
-  cur=$(awk '/<script id="overview-data"/{f=1;next} f&&/<\/script>/{exit} f{print}' "$overview")
-  if [[ -z "$cur" ]] || ! echo "$cur" | jq empty 2>/dev/null; then
-    log "OVERVIEW skipped (data block missing or invalid JSON)"
+  if ! command -v gh &>/dev/null || ! command -v jq &>/dev/null || ! command -v curl &>/dev/null; then
+    log "WEBAPP skipped (gh, jq, or curl missing)"
+    PENDING_LOGS=()
     return 0
   fi
 
-  # Fetch open issues and repo URL (tolerate gh auth failures)
-  local issues repo now_iso
-  issues=$(gh issue list --state open --json number,title,labels --limit 200 2>/dev/null) || return 0
-  repo=$(gh repo view --json url -q .url 2>/dev/null || echo "")
+  local repo_url issues now_iso
+  repo_url=$(gh repo view --json url -q .url 2>/dev/null || echo "")
+  if [[ -z "$repo_url" ]]; then
+    log "WEBAPP skipped (could not determine repo URL)"
+    PENDING_LOGS=()
+    return 0
+  fi
+
+  issues=$(gh issue list --state all --json number,title,body,state,labels,url --limit 300 2>/dev/null) || {
+    log "WEBAPP skipped (gh issue list failed)"
+    PENDING_LOGS=()
+    return 0
+  }
   now_iso=$(date -u +%FT%TZ)
 
-  # Build merged JSON — preserves project, analytics, logs, last_audit, last_review
-  local newjson
-  newjson=$(jq -n \
-    --argjson cur "$cur" \
-    --argjson i "$issues" \
-    --arg repo "$repo" \
-    --arg now "$now_iso" \
-    '
-      def names: [.labels[].name];
-      def mk: { number, title,
-        priority: ([names[] | select(startswith("priority:")) | sub("priority:"; "")][0] // null),
-        area:     ([names[] | select(startswith("area:"))     | sub("area:"; "")][0]     // null) };
-      ($i | map(select(any(.labels[].name; . == "status:proposed"))))        as $prop |
-      ($i | map(select(any(.labels[].name; . == "status:in-progress"))))     as $prog |
-      ($i | map(select(any(.labels[].name; . == "source:security-review")))) as $sec  |
-      ($sec | map(select(any(.labels[].name; . == "priority:p0" or . == "priority:p1"))) | length) as $secCrit |
-      ($i | map(select(any(.labels[].name; . == "area:architecture"))) | length) as $archN |
-      $cur
-      | .last_updated = $now
-      | .github = {
-          repo_url: (if $repo != "" then $repo else $cur.github.repo_url end),
-          open_total: ($i | length),
-          awaiting_approval: ($prop | map(mk)),
-          in_progress: ($prog | map(mk))
-        }
-      | .security.open_issues   = ($sec | length)
-      | .security.critical_open = $secCrit
-      | .security.status = (if $secCrit > 0 then "critical"
-                             elif ($sec | length) > 5 then "warning"
-                             else "ok" end)
-      | .architecture.open_issues = $archN
-      | .architecture.status = (if $archN > 10 then "warning" else "ok" end)
-    ') || { log "OVERVIEW skipped (jq error)"; return 0; }
+  # Parse each issue's labels into structured fields
+  local issues_json
+  issues_json=$(printf '%s\n' "$issues" | jq '
+    def label_prefix(p): [.labels[].name | select(startswith(p)) | ltrimstr(p)][0] // null;
+    map({
+      number,
+      title,
+      body,
+      state,
+      url,
+      status:   (label_prefix("status:")   // "none"),
+      priority: label_prefix("priority:"),
+      area:     label_prefix("area:"),
+      source:   label_prefix("source:"),
+      effort:   label_prefix("effort:")
+    })
+  ') || { log "WEBAPP skipped (jq parse error)"; PENDING_LOGS=(); return 0; }
 
-  # Splice new JSON back into the file (replace only the data block)
-  local tmpjson="${overview}.json.tmp" tmph="${overview}.tmp"
-  printf '%s\n' "$newjson" > "$tmpjson"
-  awk -v jsonfile="$tmpjson" '
-    BEGIN { s=0 }
-    /<script id="overview-data"/ { print; while ((getline line < jsonfile) > 0) print line; s=1; next }
-    s && /<\/script>/ { s=0; print; next }
-    s { next }
-    { print }
-  ' "$overview" > "$tmph" && mv "$tmph" "$overview"
-  rm -f "$tmpjson"
+  # Read project metadata from .darkflow
+  local proj_name proj_branch proj_lang proj_merge proj_modules
+  proj_name=$(darkflow_val "name" "$(basename "$PROJECT_ROOT")")
+  proj_branch=$(darkflow_val "branch" "main")
+  proj_lang=$(darkflow_val "language" "English")
+  proj_merge=$(darkflow_val "merge_strategy" "pr")
+  proj_modules=$(darkflow_val "modules" "")
 
-  # Commit and push only if something changed
-  if ! git diff --quiet -- docs/overview.html 2>/dev/null; then
-    git add docs/overview.html
-    git commit -m "chore: sync overview.html issue counts" >/dev/null 2>&1 || return 0
-    git push >/dev/null 2>&1 || log "OVERVIEW push failed"
-    log "OVERVIEW synced"
+  # Build modules JSON array (comma-separated string → JSON array)
+  local modules_json
+  modules_json=$(echo "$proj_modules" | jq -Rc 'split(",") | map(select(length > 0))')
+
+  # Build optional sections from metrics files
+  local analytics_json="null" security_json="null" architecture_json="null"
+  [[ -f "${METRICS_DIR}/analytics.json" ]]     && analytics_json=$(cat "${METRICS_DIR}/analytics.json")
+  [[ -f "${METRICS_DIR}/security.json" ]]      && security_json=$(cat "${METRICS_DIR}/security.json")
+  [[ -f "${METRICS_DIR}/architecture.json" ]]  && architecture_json=$(cat "${METRICS_DIR}/architecture.json")
+
+  # Build logs JSON array from accumulated PENDING_LOGS
+  local logs_json="[]"
+  if [[ "${#PENDING_LOGS[@]}" -gt 0 ]]; then
+    logs_json=$(printf '%s\n' "${PENDING_LOGS[@]}" | jq -sc '.')
   fi
 
-  # Sync parent darkflow-overview.html with proposed count + last_updated
-  local df_parent df_project_name df_entry_path df_proposed_n
-  df_project_name="$(basename "$PROJECT_ROOT")"
-  df_entry_path="./${df_project_name}/docs/overview.html"
-  df_parent="$(cd "${PROJECT_ROOT}/.." 2>/dev/null && pwd)/darkflow-overview.html"
-  if [[ -f "$df_parent" ]] && command -v python3 &>/dev/null; then
-    df_proposed_n=$(printf '%s\n' "$issues" | jq '[.[] | select(any(.labels[].name; . == "status:proposed"))] | length' 2>/dev/null || echo 0)
-    python3 - "$df_parent" "$df_entry_path" "$df_proposed_n" "$now_iso" "$PROJECT_ROOT" 2>/dev/null << 'PYEOF' || true
-import sys, json, re
-pf, path, proposed_n, last_updated, project_path = sys.argv[1:6]
-with open(pf) as f:
-    c = f.read()
-m = re.search(r'(<script[^>]+id="darkflow-overview-data"[^>]*>)([\s\S]*?)(</script>)', c)
-if not m: sys.exit(0)
-try: d = json.loads(m.group(2))
-except: sys.exit(0)
-for p in d.get('projects', []):
-    if p.get('path') == path:
-        p['proposed_count'] = int(proposed_n)
-        p['last_updated'] = last_updated
-        p['project_path'] = project_path
-        break
-nb = m.group(1) + '\n' + json.dumps(d, indent=2) + '\n' + m.group(3)
-with open(pf, 'w') as f:
-    f.write(c[:m.start()] + nb + c[m.end():])
-PYEOF
-    log "OVERVIEW parent darkflow-overview.html synced"
+  # Assemble payload
+  local payload
+  payload=$(jq -n \
+    --arg repoUrl    "$repo_url" \
+    --arg name       "$proj_name" \
+    --arg branch     "$proj_branch" \
+    --arg language   "$proj_lang" \
+    --arg merge      "$proj_merge" \
+    --argjson modules    "$modules_json" \
+    --argjson issues     "$issues_json" \
+    --argjson analytics  "$analytics_json" \
+    --argjson security   "$security_json" \
+    --argjson architecture "$architecture_json" \
+    --argjson logs       "$logs_json" \
+    '{
+      repoUrl:       $repoUrl,
+      name:          $name,
+      branch:        $branch,
+      language:      $language,
+      mergeStrategy: $merge,
+      modules:       $modules,
+      issues:        $issues,
+      logs:          $logs
+    }
+    | if $analytics   != null then . + {analytics: $analytics}     else . end
+    | if $security    != null then . + {security: $security}        else . end
+    | if $architecture != null then . + {architecture: $architecture} else . end
+    ') || { log "WEBAPP skipped (payload build error)"; PENDING_LOGS=(); return 0; }
+
+  local http_code
+  http_code=$(curl -fsS -o /dev/null -w "%{http_code}" \
+    -X POST "${webapp_url}/api/ingest" \
+    -H "Content-Type: application/json" \
+    -d "$payload" 2>/dev/null) || true
+
+  if [[ "$http_code" =~ ^2 ]]; then
+    log "WEBAPP synced (HTTP ${http_code})"
+  else
+    log "WEBAPP sync failed (HTTP ${http_code:-000})"
   fi
+
+  PENDING_LOGS=()
 }
 
 # ── Mode: list ────────────────────────────────────────────────────────────────
@@ -460,7 +491,7 @@ mode_dispatch() {
   fi
 
   if [[ "$dry_run" != true && "$any_due" == true ]]; then
-    sync_overview
+    sync_webapp
   fi
 }
 
@@ -483,7 +514,7 @@ mode_manual() {
 
   log "MANUAL ${name}"
   run_routine "$name" "$model" "$permission_mode"
-  sync_overview
+  sync_webapp
 }
 
 # ── Mode: watch ───────────────────────────────────────────────────────────────
