@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { IssueActions } from "@/components/IssueActions";
 import { DeleteProjectButton } from "@/components/DeleteProjectButton";
-import { BranchEditor } from "@/components/BranchEditor";
 
 export const dynamic = "force-dynamic";
 
@@ -83,7 +82,12 @@ export default async function ProjectPage({
             >
               {project.repoUrl}
             </a>
-            <BranchEditor projectId={project.id} branch={project.branch} />
+            <div className="text-sm mt-1" style={{ color: "var(--muted)" }}>
+              Основная ветка:{" "}
+              <span className="font-mono" style={{ color: "var(--text)" }}>
+                {project.branch}
+              </span>
+            </div>
             {project.lastSyncedAt && (
               <div className="text-sm mt-1" style={{ color: "var(--muted)" }}>
                 Last synced {project.lastSyncedAt.toISOString().slice(0, 16).replace("T", " ")} UTC
