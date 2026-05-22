@@ -470,6 +470,27 @@ if [[ -n "$NEW_ROUTINES" ]]; then
   echo -e "${DIM}Add their entries to .darkflow.d/routines.yml (see https://github.com/alifanov/darkflow/blob/main/routines/)${RESET}"
 fi
 
+# ── Register with web UI ─────────────────────────────────────────────────────
+
+if [[ "$DRY_RUN" == false ]]; then
+  _reg_webapp_url=$(read_config "webapp_url" "")
+  _reg_proj_name=$(read_config "name" "$(basename "$TARGET_DIR")")
+  _reg_branch=$(read_config "branch" "main")
+  _reg_lang=$(read_config "language" "English")
+  _reg_merge=$(read_config "merge_strategy" "pr")
+  if [[ -n "$_reg_webapp_url" ]] && command -v curl &>/dev/null && command -v gh &>/dev/null; then
+    _reg_repo_url=$(gh repo view --json url -q .url 2>/dev/null || echo "")
+    if [[ -n "$_reg_repo_url" ]]; then
+      _reg_payload="{\"repoUrl\":\"${_reg_repo_url}\",\"name\":\"${_reg_proj_name}\",\"branch\":\"${_reg_branch}\",\"language\":\"${_reg_lang}\",\"mergeStrategy\":\"${_reg_merge}\"}"
+      _reg_code=$(curl -fsS -o /dev/null -w "%{http_code}" -m 5 \
+        -X POST "${_reg_webapp_url}/api/ingest" \
+        -H "Content-Type: application/json" \
+        -d "$_reg_payload" 2>/dev/null || echo "000")
+      [[ "$_reg_code" =~ ^2 ]] && success "Registered project in web UI (${_reg_webapp_url})" || true
+    fi
+  fi
+fi
+
 # ── Done ──────────────────────────────────────────────────────────────────────
 
 echo ""

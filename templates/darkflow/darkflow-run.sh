@@ -253,7 +253,7 @@ acquire_lock() {
   if ! mkdir "$LOCK_DIR" 2>/dev/null; then
     exit 0
   fi
-  trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
+  trap 'rmdir "$LOCK_DIR" 2>/dev/null || true; stop_heartbeat_loop' EXIT
 }
 
 # ── Routine execution ─────────────────────────────────────────────────────────
@@ -277,11 +277,17 @@ run_routine() {
 
   log "START  ${name} (model=${model}, perm=${permission_mode})"
 
+  send_heartbeat "running" "$name"
+  start_heartbeat_loop "$name"
+
   if claude -p "/darkflow:${name}" --model "${model}" "${perm_args[@]}"; then
     exit_code=0
   else
     exit_code=$?
   fi
+
+  stop_heartbeat_loop
+  send_heartbeat "idle"
 
   now=$(now_epoch)
   write_state "$name" "$(( now - now % 60 ))"
@@ -414,6 +420,64 @@ sync_webapp() {
   PENDING_LOGS=()
 }
 
+# ── Worker heartbeat ──────────────────────────────────────────────────────────
+# Sends lightweight status pings to /api/worker/heartbeat so the web UI shows
+# which projects have an active worker and what routine is running.
+# The watch loop sends "idle" every 60 s even when no routine runs.
+
+_REPO_URL_CACHE=""
+
+_get_repo_url_cached() {
+  if [[ -z "$_REPO_URL_CACHE" ]]; then
+    _REPO_URL_CACHE=$(gh repo view --json url -q .url 2>/dev/null || echo "")
+  fi
+  echo "$_REPO_URL_CACHE"
+}
+
+send_heartbeat() {
+  local status="$1" routine="${2:-}"
+  local webapp_url
+  webapp_url=$(darkflow_val "webapp_url" "")
+  [[ -z "$webapp_url" ]] && return 0
+  ! command -v curl &>/dev/null && return 0
+  ! command -v gh   &>/dev/null && return 0
+
+  local repo_url
+  repo_url=$(_get_repo_url_cached)
+  [[ -z "$repo_url" ]] && return 0
+
+  local routine_field="null"
+  [[ -n "$routine" ]] && routine_field="\"${routine}\""
+
+  curl -fsS -o /dev/null -m 5 \
+    -X POST "${webapp_url}/api/worker/heartbeat" \
+    -H "Content-Type: application/json" \
+    -d "{\"repoUrl\":\"${repo_url}\",\"status\":\"${status}\",\"routine\":${routine_field}}" \
+    2>/dev/null || true
+}
+
+HEARTBEAT_PID=""
+
+start_heartbeat_loop() {
+  local routine="$1"
+  (
+    trap '' INT TERM
+    while true; do
+      sleep 60
+      send_heartbeat "running" "$routine"
+    done
+  ) &
+  HEARTBEAT_PID=$!
+}
+
+stop_heartbeat_loop() {
+  if [[ -n "${HEARTBEAT_PID:-}" ]]; then
+    kill "$HEARTBEAT_PID" 2>/dev/null || true
+    wait "$HEARTBEAT_PID" 2>/dev/null || true
+    HEARTBEAT_PID=""
+  fi
+}
+
 # ── Mode: list ────────────────────────────────────────────────────────────────
 
 mode_list() {
@@ -524,11 +588,12 @@ mode_watch() {
   local tick=0
 
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] Dark Flow started (tick every ${interval}s). Ctrl-C to stop."
-  trap 'echo ""; log "WATCH  stopped (signal)"; exit 0' INT TERM
+  trap 'echo ""; log "WATCH  stopped (signal)"; stop_heartbeat_loop; exit 0' INT TERM
 
   while true; do
     (( tick++ )) || true
     log "WATCH  tick ${tick}"
+    send_heartbeat "idle"
 
     mkdir -p "$STATE_DIR"
     if mkdir "$LOCK_DIR" 2>/dev/null; then

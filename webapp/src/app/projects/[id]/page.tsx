@@ -36,6 +36,7 @@ export default async function ProjectPage({
       issues: { orderBy: [{ status: "asc" }, { number: "desc" }] },
       securityStatus: true,
       architectureStatus: true,
+      workerStatus: true,
     },
   });
 
@@ -43,6 +44,11 @@ export default async function ProjectPage({
 
   const proposed = project.issues.filter((i) => i.status === "proposed");
   const others = project.issues.filter((i) => i.status !== "proposed");
+
+  const now = Date.now();
+  const ALIVE_MS = 2 * 60 * 1000;
+  const ws = project.workerStatus;
+  const workerAlive = ws && now - new Date(ws.updatedAt).getTime() < ALIVE_MS;
 
   return (
     <div>
@@ -67,6 +73,23 @@ export default async function ProjectPage({
             {project.lastSyncedAt && (
               <div className="text-sm mt-1" style={{ color: "var(--muted)" }}>
                 Last synced {project.lastSyncedAt.toISOString().slice(0, 16).replace("T", " ")} UTC
+              </div>
+            )}
+            {workerAlive && ws.status === "running" && (
+              <div className="flex items-center gap-1.5 text-sm mt-1" style={{ color: "var(--green)" }}>
+                <span
+                  className="worker-dot-running"
+                  style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", display: "inline-block", flexShrink: 0 }}
+                />
+                Worker running: {ws.routine ?? "routine"}
+              </div>
+            )}
+            {workerAlive && ws.status === "idle" && (
+              <div className="flex items-center gap-1.5 text-sm mt-1" style={{ color: "var(--muted)" }}>
+                <span
+                  style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--muted)", display: "inline-block", flexShrink: 0, opacity: 0.5 }}
+                />
+                Worker online
               </div>
             )}
           </div>

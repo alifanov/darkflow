@@ -23,6 +23,7 @@ model Project {
   securityStatus     SecurityStatus?
   architectureStatus ArchitectureStatus?
   routineLogs        RoutineLog[]
+  workerStatus       WorkerStatus?
 }
 
 model Issue {
@@ -85,6 +86,16 @@ model RoutineLog {
   routine   String
   summary   String
   timestamp DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model WorkerStatus {
+  id        String   @id @default(cuid())
+  projectId String   @unique
+  routine   String?
+  status    String   @default("idle")
+  updatedAt DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }

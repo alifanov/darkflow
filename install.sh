@@ -886,6 +886,20 @@ if [[ "$MOD_ARCH_REVIEW" == true ]]; then
   fi
 fi
 
+# ── Register with web UI ─────────────────────────────────────────────────────
+
+if [[ -n "$WEBAPP_URL" ]] && command -v curl &>/dev/null && command -v gh &>/dev/null; then
+  _reg_repo_url=$(gh repo view --json url -q .url 2>/dev/null || echo "")
+  if [[ -n "$_reg_repo_url" ]]; then
+    _reg_payload="{\"repoUrl\":\"${_reg_repo_url}\",\"name\":\"${PROJECT_NAME}\",\"branch\":\"${MAIN_BRANCH}\",\"language\":\"${LANGUAGE}\",\"mergeStrategy\":\"${MERGE_STRATEGY}\"}"
+    _reg_code=$(curl -fsS -o /dev/null -w "%{http_code}" -m 5 \
+      -X POST "${WEBAPP_URL}/api/ingest" \
+      -H "Content-Type: application/json" \
+      -d "$_reg_payload" 2>/dev/null || echo "000")
+    [[ "$_reg_code" =~ ^2 ]] && success "Registered project in web UI (${WEBAPP_URL})" || true
+  fi
+fi
+
 # ── Done ──────────────────────────────────────────────────────────────────────
 
 echo ""

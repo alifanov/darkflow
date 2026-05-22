@@ -14,6 +14,22 @@ Categories:
 
 ---
 
+## [2.1.0] — 2026-05-22
+
+### Web UI
+- **Worker status indicator** — projects list and detail page now show a live dot: pulsing green while a routine is running, grey when the worker is online/idle, nothing when offline
+- **Worker heartbeat API** — new `POST /api/worker/heartbeat` endpoint; worker updates its status once per minute so the UI stays accurate
+
+### Installer
+- **Auto-register on install/update** — `install.sh` and `update.sh` now call `/api/ingest` at the end so the project appears in the web UI immediately, without waiting for the first routine run
+
+### Worker
+- **Heartbeat in watch loop** — `darkflow-run.sh` sends an "idle" ping every 60 s so the web UI can tell the worker is alive even between routines
+- **Running status** — before each routine starts, the worker sends `status=running + routine=<name>`; after it completes, sends `status=idle`
+- **Background heartbeat loop** — a background process keeps sending `running` pings every 60 s for long-running routines
+
+---
+
 ## [1.5.3] — 2026-05-20
 
 ### Installer

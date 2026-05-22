@@ -26,5 +26,5 @@ df-scheduler-uninstall:  ## remove the system scheduler
 	bash .darkflow.d/uninstall-scheduler.sh
 
 df-update:  ## update Dark Flow to the latest version
-	bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/update.sh)
+	curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/update.sh | bash
 # darkflow:end

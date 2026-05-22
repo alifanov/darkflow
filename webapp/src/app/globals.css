@@ -17,3 +17,11 @@ body {
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
+
+@keyframes worker-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.worker-dot-running {
+  animation: worker-pulse 1.4s ease-in-out infinite;
+}
