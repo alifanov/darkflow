@@ -24,12 +24,22 @@ const STATUS_TEXT: Record<string, string> = {
   none: "var(--muted)",
 };
 
+const CARDS: { key: string; label: string; statuses: string[] }[] = [
+  { key: "proposed", label: "Требуют одобрения", statuses: ["proposed"] },
+  { key: "approved", label: "Одобрены", statuses: ["approved"] },
+  { key: "in-progress", label: "В процессе", statuses: ["in-progress", "blocked"] },
+  { key: "rejected", label: "Отменены", statuses: ["rejected"] },
+];
+
 export default async function ProjectPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ filter?: string }>;
 }) {
   const { id } = await params;
+  const { filter } = await searchParams;
   const project = await prisma.project.findUnique({
     where: { id },
     include: {
@@ -42,8 +52,10 @@ export default async function ProjectPage({
 
   if (!project) notFound();
 
-  const proposed = project.issues.filter((i) => i.status === "proposed");
-  const others = project.issues.filter((i) => i.status !== "proposed");
+  const activeCard = CARDS.find((c) => c.key === filter);
+  const displayed = activeCard
+    ? project.issues.filter((i) => activeCard.statuses.includes(i.status))
+    : project.issues;
 
   const now = Date.now();
   const ALIVE_MS = 2 * 60 * 1000;
@@ -99,29 +111,56 @@ export default async function ProjectPage({
         </div>
       </div>
 
-      {proposed.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text)" }}>
-            Awaiting approval ({proposed.length})
-          </h2>
-          <div className="flex flex-col gap-2">
-            {proposed.map((issue) => (
-              <IssueRow key={issue.id} issue={issue} showActions />
-            ))}
-          </div>
-        </section>
+      {project.issues.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          {CARDS.map((card) => {
+            const count = project.issues.filter((i) =>
+              card.statuses.includes(i.status)
+            ).length;
+            const isActive = filter === card.key;
+            const accent = STATUS_TEXT[card.key] ?? "var(--muted)";
+            return (
+              <Link
+                key={card.key}
+                href={isActive ? `/projects/${project.id}` : `/projects/${project.id}?filter=${card.key}`}
+                className="rounded-lg border p-4 flex flex-col gap-1 transition-colors"
+                style={{
+                  background: isActive
+                    ? STATUS_COLORS[card.key] ?? "var(--surface)"
+                    : "var(--surface)",
+                  borderColor: isActive ? accent : "var(--border)",
+                }}
+              >
+                <span className="text-2xl font-bold" style={{ color: accent }}>
+                  {count}
+                </span>
+                <span className="text-xs" style={{ color: "var(--muted)" }}>
+                  {card.label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       )}
 
-      {others.length > 0 && (
+      {project.issues.length > 0 && (
         <section>
           <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text)" }}>
-            All issues ({others.length})
+            {activeCard ? activeCard.label : "All issues"} ({displayed.length})
           </h2>
-          <div className="flex flex-col gap-2">
-            {others.map((issue) => (
-              <IssueRow key={issue.id} issue={issue} />
-            ))}
-          </div>
+          {displayed.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              {displayed.map((issue) => (
+                <IssueRow
+                  key={issue.id}
+                  issue={issue}
+                  showActions={issue.status === "proposed"}
+                />
+              ))}
+            </div>
+          ) : (
+            <p style={{ color: "var(--muted)" }}>Нет issues в этой категории.</p>
+          )}
         </section>
       )}
 
