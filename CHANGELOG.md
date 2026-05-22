@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [2.1.1] — 2026-05-22
+
+### Installer
+- **`df-update` asks about `--force`** — prompts "Force overwrite locally modified files? [y/N]" before running `update.sh`, so you can choose to preserve or overwrite local edits
+
+---
+
 ## [2.1.0] — 2026-05-22
 
 ### Web UI
