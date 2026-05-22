@@ -85,9 +85,9 @@ export default async function ProjectPage({
               </div>
             )}
             {workerAlive && ws.status === "idle" && (
-              <div className="flex items-center gap-1.5 text-sm mt-1" style={{ color: "var(--muted)" }}>
+              <div className="flex items-center gap-1.5 text-sm mt-1" style={{ color: "var(--green)" }}>
                 <span
-                  style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--muted)", display: "inline-block", flexShrink: 0, opacity: 0.5 }}
+                  style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", display: "inline-block", flexShrink: 0, opacity: 0.55 }}
                 />
                 Worker online
               </div>
