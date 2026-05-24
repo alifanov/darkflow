@@ -123,7 +123,8 @@ ITEMS_COUNT=$(yq '.items | length' "$CHECKLIST")
 
 MISSING_IDS=()
 declare -A ITEM_TYPE ITEM_PATH ITEM_TEMPLATE ITEM_EXEC ITEM_MARKER \
-            ITEM_KEY ITEM_DEFAULT ITEM_CHECK ITEM_FIX ITEM_WHEN ITEM_GROUP ITEM_DESC
+            ITEM_KEY ITEM_DEFAULT ITEM_CHECK ITEM_FIX ITEM_WHEN ITEM_GROUP ITEM_DESC \
+            ITEM_ROUTINE_KEY ITEM_CRON ITEM_MODEL ITEM_ENABLED
 
 q() {
   # yq query returning "null" -> empty string
@@ -149,6 +150,10 @@ for ((i = 0; i < ITEMS_COUNT; i++)); do
   ITEM_WHEN[$id]=$(q ".items[$i].when")
   ITEM_GROUP[$id]=$(q ".items[$i].group")
   ITEM_DESC[$id]=$(q ".items[$i].desc")
+  ITEM_ROUTINE_KEY[$id]=$(q ".items[$i].routine_key")
+  ITEM_CRON[$id]=$(q ".items[$i].cron")
+  ITEM_MODEL[$id]=$(q ".items[$i].model")
+  ITEM_ENABLED[$id]=$(q ".items[$i].enabled")
 
   # ── Evaluate `when` ────────────────────────────────────────────────────────
   when="${ITEM_WHEN[$id]}"
@@ -182,6 +187,12 @@ for ((i = 0; i < ITEMS_COUNT; i++)); do
       expr="${ITEM_CHECK[$id]//\$\{SLUG\}/${SLUG}}"
       if eval "$expr" >/dev/null 2>&1; then
         present=true
+      fi ;;
+    routine)
+      # routines.yml must define a key under `routines:` matching routine_key
+      if [[ -f "$path" ]]; then
+        present_val=$(yq ".routines[\"${ITEM_ROUTINE_KEY[$id]}\"]" "$path" 2>/dev/null || echo "null")
+        [[ "$present_val" != "null" && -n "$present_val" ]] && present=true
       fi ;;
     *)
       echo -e "${YELLOW}⚠ Unknown type for ${id}: ${type}${RESET}" >&2
@@ -282,6 +293,24 @@ fix_install_scheduler() {
   fi
 }
 
+fix_add_routine() {
+  local id="$1"
+  local file="${ITEM_PATH[$id]}"
+  local key="${ITEM_ROUTINE_KEY[$id]}"
+  local cron="${ITEM_CRON[$id]}"
+  local model="${ITEM_MODEL[$id]:-sonnet}"
+  local enabled="${ITEM_ENABLED[$id]:-true}"
+
+  if [[ ! -f "$file" ]]; then
+    echo -e "  ${YELLOW}⚠${RESET} ${file} missing — run update.sh first"
+    return 1
+  fi
+
+  # Build the routine block as JSON then merge via yq (idempotent — overwrites only this key)
+  yq -i ".routines[\"${key}\"] = {\"cron\": \"${cron}\", \"model\": \"${model}\", \"enabled\": ${enabled}}" "$file"
+  echo -e "  ${GREEN}✓${RESET} Added routine ${key} (${cron:-manual}, ${model}) to ${file}"
+}
+
 fix_install_arch_skill() {
   if ! command -v npx >/dev/null 2>&1; then
     echo -e "  ${YELLOW}⚠${RESET} npx not found — install Node.js, then run:"
@@ -311,6 +340,7 @@ for id in "${MISSING_IDS[@]}"; do
     append-config)        fix_append_config "$id"   && FIXED=$((FIXED + 1)) || SKIPPED=$((SKIPPED + 1)) ;;
     install-scheduler)    fix_install_scheduler     && FIXED=$((FIXED + 1)) || SKIPPED=$((SKIPPED + 1)) ;;
     install-arch-skill)   fix_install_arch_skill    && FIXED=$((FIXED + 1)) || SKIPPED=$((SKIPPED + 1)) ;;
+    add-routine)          fix_add_routine "$id"     && FIXED=$((FIXED + 1)) || SKIPPED=$((SKIPPED + 1)) ;;
     *)
       echo -e "  ${YELLOW}⚠${RESET} Unknown fix handler '${handler}' for ${id}"
       SKIPPED=$((SKIPPED + 1)) ;;

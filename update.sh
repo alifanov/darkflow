@@ -455,22 +455,10 @@ if [[ "$DRY_RUN" == false ]]; then
   success "Updated .darkflow to version ${LATEST_VERSION}"
 fi
 
-# ── New routines announcement ─────────────────────────────────────────────────
-
-NEW_ROUTINES=$(fetch_raw "CHANGELOG.md" | awk "/## \[${LATEST_VERSION}\]/,/## \[${INSTALLED_VERSION}\]/" \
-  | grep "New routine" | sed 's/.*`\(.*\)`.*/\1/' || true)
-
-if [[ -n "$NEW_ROUTINES" ]]; then
-  echo ""
-  echo -e "${BOLD}New routines available in this version:${RESET}"
-  while IFS= read -r r; do
-    echo "  + ${r} — https://github.com/alifanov/darkflow/blob/main/routines/${r}.md"
-  done <<< "$NEW_ROUTINES"
-  echo ""
-  echo -e "${DIM}Add their entries to .darkflow.d/routines.yml (see https://github.com/alifanov/darkflow/blob/main/routines/)${RESET}"
-fi
-
 # ── 5. Verification (always pull the latest checklist) ──────────────────────
+# Also detects missing routines in .darkflow.d/routines.yml (replaces the old
+# CHANGELOG-based "New routines available" announcement — check.sh handles
+# this interactively now).
 
 header "5/5  Verification"
 
