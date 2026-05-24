@@ -38,6 +38,14 @@ interface IngestLog {
   timestamp?: string;
 }
 
+interface IngestRoutine {
+  name: string;
+  cron?: string | null;
+  model?: string | null;
+  enabled?: boolean;
+  permissionMode?: string | null;
+}
+
 interface IngestBody {
   repoUrl: string;
   name?: string;
@@ -50,6 +58,7 @@ interface IngestBody {
   security?: IngestSecurity;
   architecture?: IngestArchitecture;
   logs?: IngestLog[];
+  routines?: IngestRoutine[];
 }
 
 export async function POST(req: NextRequest) {
@@ -166,6 +175,22 @@ export async function POST(req: NextRequest) {
         timestamp: l.timestamp ? new Date(l.timestamp) : new Date(),
       })),
     });
+  }
+
+  if (body.routines !== undefined) {
+    await prisma.routineConfig.deleteMany({ where: { projectId: project.id } });
+    if (body.routines.length > 0) {
+      await prisma.routineConfig.createMany({
+        data: body.routines.map((r) => ({
+          projectId: project.id,
+          name: r.name,
+          cron: r.cron ?? null,
+          model: r.model ?? null,
+          enabled: r.enabled ?? true,
+          permissionMode: r.permissionMode ?? null,
+        })),
+      });
+    }
   }
 
   return NextResponse.json({ ok: true, projectId: project.id });

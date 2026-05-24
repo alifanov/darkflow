@@ -424,6 +424,12 @@ sync_webapp() {
     logs_json=$(printf '%s\n' "${PENDING_LOGS[@]}" | jq -sc '.')
   fi
 
+  # Parse routines.yml into a JSON array snapshot
+  local routines_json="[]"
+  if [[ -f "$YAML" ]]; then
+    routines_json=$(yq -o=json '.routines | to_entries | map({"name": .key, "cron": .value.cron, "model": .value.model, "enabled": (.value.enabled // true), "permissionMode": .value.permission_mode})' "$YAML" 2>/dev/null | jq -c '.' 2>/dev/null || echo "[]")
+  fi
+
   # Assemble payload
   local payload
   payload=$(jq -n \
@@ -438,6 +444,7 @@ sync_webapp() {
     --argjson security   "$security_json" \
     --argjson architecture "$architecture_json" \
     --argjson logs       "$logs_json" \
+    --argjson routines   "$routines_json" \
     '{
       repoUrl:       $repoUrl,
       name:          $name,
@@ -446,7 +453,8 @@ sync_webapp() {
       mergeStrategy: $merge,
       modules:       $modules,
       issues:        $issues,
-      logs:          $logs
+      logs:          $logs,
+      routines:      $routines
     }
     | if $analytics   != null then . + {analytics: $analytics}     else . end
     | if $security    != null then . + {security: $security}        else . end
