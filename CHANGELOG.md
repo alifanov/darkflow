@@ -14,17 +14,30 @@ Categories:
 
 ---
 
+## [2.9.1] — 2026-05-24
+
+### Installer
+- **Fixed `make df-check` / `make df-check-fix` failing under `/bin/sh`** — replaced `bash <(curl …)` (bash-only process substitution) with `mktemp` + `curl -o` + `bash $tmp`. Also keeps stdin attached to the TTY so the `--fix` prompt works
+
+## [2.9.0] — 2026-05-24
+
+### Installer
+- **New Makefile targets `df-check` and `df-check-fix`** — standalone way to run the verifier without going through `update.sh`. `df-check-fix` interactively restores any missing artifacts
+
+## [2.8.1] — 2026-05-24
+
+### Installer
+- **Routine entries in `.darkflow.d/routines.yml` are now part of the checklist** (`type: routine`). When a new Dark Flow version introduces a new routine, old installs detect the gap via `check.sh` and interactive `--fix` adds the cron/model/enabled block via `yq -i`. Replaces the old non-actionable "New routines available" announcement in `update.sh`
+
 ## [2.8.0] — 2026-05-24
 
 ### Installer
 - **Added `checklist.yml` + `check.sh`** — declarative manifest of every artifact the installer must leave in a project (files, dirs, scheduler, config keys, per-module dirs). `check.sh` verifies them and supports `--fix` for interactive auto-restore
 - **`install.sh` runs `check.sh --quiet`** at the end as a sanity check after installation
 - **`update.sh` fetches the *latest* `check.sh` and `checklist.yml`** from `main` and runs `check.sh --fix` so an old installation picks up any artifacts added between its version and the current one — fixes the recurring "not everything stayed after update" issue
-- **Routine entries in `.darkflow.d/routines.yml` are now part of the checklist** (`type: routine`). When a new Dark Flow version introduces a new routine, old installs detect the gap via `check.sh` and interactive `--fix` adds the cron/model/enabled block via `yq -i`. Replaces the old non-actionable "New routines available" announcement in `update.sh`
 
 ### Docs
 - **README troubleshooting section** mentions `bash check.sh` for repairing partial installs
-- **New Makefile targets** `make df-check` and `make df-check-fix` for running the verifier directly without going through `update.sh`
 
 ---
 
