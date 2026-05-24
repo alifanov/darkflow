@@ -40,7 +40,6 @@ model Issue {
   pendingStatusAt DateTime?
   priority        String?
   source          String?
-  effort          String?
   updatedAt       DateTime  @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)

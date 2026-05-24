@@ -97,7 +97,7 @@ Store credentials in your project `.env` (referenced by the env block above), ne
 
 ## What gets created
 
-Issues with labels: `status:proposed`, `source:signoz` (or relevant), `priority:*`, `effort:*`
+Issues with labels: `status:proposed`, `source:signoz` (or relevant), `priority:*`
 
 ---
 

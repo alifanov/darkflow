@@ -34,7 +34,7 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 
 ## What gets created
 
-Issues with labels: `status:proposed`, `source:security-review`, `priority:p0`–`p3`, `effort:*`
+Issues with labels: `status:proposed`, `source:security-review`, `priority:p0`–`p3`
 
 Critical findings (`priority:p0`) should be reviewed immediately.
 

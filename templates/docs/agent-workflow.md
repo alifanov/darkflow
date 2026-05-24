@@ -15,7 +15,7 @@ If there are approved issues matching the current context — take them first. B
 **After analyzing an `insights/*` snapshot** — turn each recommendation into an issue:
 ```bash
 gh issue create --title "..." \
-  --label "status:proposed,source:<...>,priority:<...>,effort:<...>" \
+  --label "status:proposed,source:<...>,priority:<...>" \
   --body "<context + link to snapshot + acceptance criteria>"
 ```
 The snapshot entry remains the source of truth; the issue = the work artifact.

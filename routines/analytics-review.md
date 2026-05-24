@@ -35,7 +35,7 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 
 ## What gets created
 
-Issues with labels: `status:proposed`, `source:posthog`, `priority:*`, `effort:*`
+Issues with labels: `status:proposed`, `source:posthog`, `priority:*`
 
 The routine writes an analytics snapshot to `docs/insights/analytics/YYYY-MM-DD.md` before posting recommendations.
 

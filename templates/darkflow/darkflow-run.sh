@@ -395,8 +395,7 @@ sync_webapp() {
       url,
       status:   (label_prefix("status:")   // "none"),
       priority: label_prefix("priority:"),
-      source:   label_prefix("source:"),
-      effort:   label_prefix("effort:")
+      source:   label_prefix("source:")
     })
   ') || { log "WEBAPP skipped (jq parse error)"; PENDING_LOGS=(); return 0; }
 

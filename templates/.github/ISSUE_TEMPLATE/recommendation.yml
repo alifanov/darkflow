@@ -41,18 +41,6 @@ body:
     validations:
       required: true
 
-  - type: dropdown
-    id: effort
-    attributes:
-      label: Effort
-      options:
-        - "effort:xs — ≤ 30 минут"
-        - "effort:s — ~ 2 часа"
-        - "effort:m — ~ полдня"
-        - "effort:l — > 1 дня (дробить)"
-    validations:
-      required: true
-
   - type: textarea
     id: context
     attributes:

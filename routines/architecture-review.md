@@ -47,9 +47,9 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 
 ## What gets created
 
-Issues with labels: `status:proposed`, `source:manual`, `priority:p2`–`p3` (architectural debt is rarely urgent), `effort:m`–`l`
+Issues with labels: `status:proposed`, `source:manual`, `priority:p2`–`p3` (architectural debt is rarely urgent)
 
-Large findings (`effort:l`) should be broken into sub-issues before approving.
+Large findings (multi-day work) should be broken into sub-issues before approving.
 
 ---
 

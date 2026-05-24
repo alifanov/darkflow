@@ -36,7 +36,7 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 
 ## What gets created
 
-Issues with labels: `status:proposed`, `source:gsc`, `priority:*`, `effort:*`
+Issues with labels: `status:proposed`, `source:gsc`, `priority:*`
 
 The routine writes a GSC snapshot to `docs/insights/search-console/YYYY-MM-DD.md` before posting recommendations.
 

@@ -8,7 +8,7 @@ See also: [`decisions/`](./decisions/) for the ADR explaining why this approach 
 
 ## Таксономия лейблов
 
-Все имена — на английском, формат `prefix:value`. Ставить ровно по одному лейблу из каждой группы `status:*`, `source:*`, `priority:*`, `effort:*`.
+Все имена — на английском, формат `prefix:value`. Ставить ровно по одному лейблу из каждой группы `status:*`, `source:*`, `priority:*`.
 
 ### `status:*` — жизненный цикл (state machine)
 
@@ -49,17 +49,6 @@ See also: [`decisions/`](./decisions/) for the ADR explaining why this approach 
 | `priority:p2` | жёлтый `#fbca04` | В этом месяце |
 | `priority:p3` | серый `#cccccc` | Когда-нибудь / nice-to-have |
 
-### `effort:*` — оценка трудозатрат
-
-Ровно один. Помогает агенту решить: взять одну крупную задачу или батч мелких.
-
-| Лейбл | Оценка |
-|---|---|
-| `effort:xs` | ≤ 30 минут |
-| `effort:s` | ~ 2 часа |
-| `effort:m` | ~ полдня |
-| `effort:l` | > 1 дня — дробить на sub-issue |
-
 ### Тип задачи — стандартные GitHub-лейблы
 
 Не создаём параллельный `type:*`. Используем встроенные: `bug`, `enhancement`, `documentation`, `dependencies`.
@@ -74,7 +63,7 @@ See also: [`decisions/`](./decisions/) for the ADR explaining why this approach 
    ```bash
    gh issue create \
      --title "Короткое действенное описание" \
-     --label "status:proposed,source:<...>,priority:<...>,effort:<...>,<тип>" \
+     --label "status:proposed,source:<...>,priority:<...>,<тип>" \
      --body "$(cat <<'EOF'
    ## Контекст
 
@@ -122,7 +111,6 @@ See also: [`decisions/`](./decisions/) for the ADR explaining why this approach 
 - **Не кодировать приоритет в заголовке** (`[SEO/P0]`) — ставь `priority:p0`.
 - **Не пересоздавать rejected issue** без новых данных — укажи в снимке `Не пересоздаём — отклонено в #N`.
 - **Не закрывать issue вручную как "done"** без PR или ссылки — закрытие через `Closes #N` в PR даёт трассируемость.
-- **Не ставить `effort:l`** без разбивки на sub-issue — задача в > 1 дня всегда дробится.
 
 ---
 
@@ -154,11 +142,4 @@ gh label create "priority:p0" --color "b60205" --description "Бьёт по reve
 gh label create "priority:p1" --color "d93f0b" --description "На этой неделе"
 gh label create "priority:p2" --color "fbca04" --description "В этом месяце"
 gh label create "priority:p3" --color "cccccc" --description "Когда-нибудь / nice-to-have"
-
-# effort
-gh label create "effort:xs" --color "bfdadc" --description "≤ 30 минут"
-gh label create "effort:s"  --color "bfdadc" --description "~ 2 часа"
-gh label create "effort:m"  --color "bfdadc" --description "~ полдня"
-gh label create "effort:l"  --color "bfdadc" --description "> 1 дня — дробить"
-
 ```
