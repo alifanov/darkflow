@@ -24,6 +24,7 @@ Categories:
 
 ### Docs
 - **README troubleshooting section** mentions `bash check.sh` for repairing partial installs
+- **New Makefile targets** `make df-check` and `make df-check-fix` for running the verifier directly without going through `update.sh`
 
 ---
 
