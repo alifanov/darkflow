@@ -308,6 +308,46 @@ run_routine() {
 
 STATUS_LABELS_ALL=(status:proposed status:approved status:rejected status:needs-info status:in-progress status:blocked)
 
+# ── Auto-revive stuck in-progress issues ──────────────────────────────────────
+# If an issue has been in status:in-progress for >1h (per updatedAt), treat it
+# as crashed/stalled, drop status:in-progress and set status:approved so the
+# next fix-issues run will pick it up again. Reuses the issues_json already
+# fetched by sync_webapp to avoid an extra `gh issue list` call.
+
+STUCK_IN_PROGRESS_THRESHOLD=3600
+
+revive_stuck_issues() {
+  local issues_json="$1"
+  [[ -z "$issues_json" ]] && return 0
+  ! command -v gh &>/dev/null && return 0
+  ! command -v jq &>/dev/null && return 0
+
+  local now_secs threshold_iso
+  now_secs=$(now_epoch)
+  threshold_iso=$(epoch_fmt $(( now_secs - STUCK_IN_PROGRESS_THRESHOLD )) "%Y-%m-%dT%H:%M:%SZ" 2>/dev/null) || threshold_iso=""
+  [[ -z "$threshold_iso" ]] && return 0
+
+  local stuck
+  stuck=$(echo "$issues_json" | jq -r --arg cutoff "$threshold_iso" '
+    .[] | select(any(.labels[]; .name == "status:in-progress"))
+        | select(.updatedAt < $cutoff)
+        | .number
+  ' 2>/dev/null) || return 0
+  [[ -z "$stuck" ]] && return 0
+
+  local num
+  while IFS= read -r num; do
+    [[ -z "$num" ]] && continue
+    if gh issue edit "$num" \
+         --remove-label "status:in-progress" \
+         --add-label "status:approved" >/dev/null 2>&1; then
+      log "REVIVE #${num} stuck >1h in-progress → approved"
+    else
+      log "REVIVE #${num} failed to relabel"
+    fi
+  done <<< "$stuck"
+}
+
 apply_pending_statuses() {
   local webapp_url repo_url pending_json count
   webapp_url=$(darkflow_val "webapp_url" "")
@@ -376,11 +416,14 @@ sync_webapp() {
     return 0
   fi
 
-  issues=$(gh issue list --state all --json number,title,body,state,labels,url --limit 300 2>/dev/null) || {
+  issues=$(gh issue list --state all --json number,title,body,state,labels,url,updatedAt --limit 300 2>/dev/null) || {
     log "WEBAPP skipped (gh issue list failed)"
     PENDING_LOGS=()
     return 0
   }
+
+  revive_stuck_issues "$issues"
+
   now_iso=$(date -u +%FT%TZ)
 
   # Parse each issue's labels into structured fields
