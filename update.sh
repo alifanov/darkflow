@@ -470,6 +470,43 @@ if [[ -n "$NEW_ROUTINES" ]]; then
   echo -e "${DIM}Add their entries to .darkflow.d/routines.yml (see https://github.com/alifanov/darkflow/blob/main/routines/)${RESET}"
 fi
 
+# ── 5. Verification (always pull the latest checklist) ──────────────────────
+
+header "5/5  Verification"
+
+if ! command -v yq >/dev/null 2>&1; then
+  warn "yq not installed — skipping installation check. Install yq to enable: brew install yq"
+else
+  CHECK_TMP=$(mktemp)
+  CHECKLIST_TMP=$(mktemp)
+  CHECK_ARGS=()
+
+  if [[ "$USE_LOCAL" == true && -f "$SCRIPT_DIR/check.sh" ]]; then
+    cp "$SCRIPT_DIR/check.sh" "$CHECK_TMP"
+    cp "$SCRIPT_DIR/checklist.yml" "$CHECKLIST_TMP" 2>/dev/null || true
+    CHECK_ARGS+=(--templates "$SCRIPT_DIR/templates")
+  else
+    # Always fetch latest from main, even when update.sh was run from a local clone
+    curl -fsSL "${DARKFLOW_REPO}/check.sh?t=$(date +%s)"      -o "$CHECK_TMP"      2>/dev/null || true
+    curl -fsSL "${DARKFLOW_REPO}/checklist.yml?t=$(date +%s)" -o "$CHECKLIST_TMP" 2>/dev/null || true
+  fi
+
+  [[ -s "$CHECKLIST_TMP" ]] && CHECK_ARGS+=(--checklist "$CHECKLIST_TMP")
+
+  if [[ -s "$CHECK_TMP" ]]; then
+    if [[ "$DRY_RUN" == true ]]; then
+      bash "$CHECK_TMP" "${CHECK_ARGS[@]}" || warn "Verification reported missing items (dry run — not fixing)"
+    elif [[ -t 0 ]]; then
+      bash "$CHECK_TMP" --fix "${CHECK_ARGS[@]}" || warn "Verification incomplete — review missing items above"
+    else
+      bash "$CHECK_TMP" "${CHECK_ARGS[@]}" || warn "Verification reported missing items — run: bash check.sh --fix"
+    fi
+  else
+    warn "Could not fetch check.sh — skipping verification"
+  fi
+  rm -f "$CHECK_TMP" "$CHECKLIST_TMP"
+fi
+
 # ── Sync with web UI ─────────────────────────────────────────────────────────
 
 if [[ "$DRY_RUN" == false ]]; then

@@ -451,6 +451,7 @@ DARKFLOW_VERSION=$(curl -fsSL "${DARKFLOW_REPO}/VERSION" 2>/dev/null | tr -d '[:
   [[ "$MOD_COOLIFY"       == true ]] && local_mods="${local_mods}coolify,"
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && local_mods="${local_mods}claude-update,"
   [[ "$MOD_ARCH_REVIEW"   == true ]] && local_mods="${local_mods}arch-review,"
+  [[ "$SETUP_SCHEDULER"   == true ]] && local_mods="${local_mods}scheduler,"
   echo "modules=${local_mods%,}"
   [[ -n "$OBS_TOOL" ]] && echo "obs_tool=${OBS_TOOL}"
   [[ -n "$OBS_URL"  ]] && echo "obs_url=${OBS_URL}"
@@ -894,6 +895,23 @@ if [[ -n "$WEBAPP_URL" ]] && [[ -f "$TARGET_DIR/.darkflow.d/darkflow-run.sh" ]];
   else
     info "Web UI sync skipped — run 'make df-sync' once gh/jq/curl and the UI are ready"
   fi
+fi
+
+# ── Verification ──────────────────────────────────────────────────────────────
+
+header "Verification"
+
+if command -v yq >/dev/null 2>&1; then
+  if [[ "$USE_LOCAL" == true && -f "$SCRIPT_DIR/check.sh" ]]; then
+    bash "$SCRIPT_DIR/check.sh" --quiet \
+      --checklist "$SCRIPT_DIR/checklist.yml" --templates "$SCRIPT_DIR/templates" \
+      || warn "Some artifacts missing — run: bash $SCRIPT_DIR/check.sh --fix"
+  else
+    bash <(curl -fsSL "${DARKFLOW_REPO}/check.sh?t=$(date +%s)") --quiet \
+      || warn "Some artifacts missing — run: bash <(curl -fsSL ${DARKFLOW_REPO}/check.sh) --fix"
+  fi
+else
+  warn "yq not installed — skipping installation check. Install yq to enable: brew install yq"
 fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────

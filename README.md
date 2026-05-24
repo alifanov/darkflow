@@ -257,6 +257,18 @@ The updater:
 5. Regenerates the Dark Flow section in `CLAUDE.md` between `<!-- darkflow:start/end -->` markers
 6. Regenerates the `df-*` block in `Makefile` between `# darkflow:start/end` markers
 7. Bumps the version in `.darkflow`
+8. Runs `check.sh --fix` against the **latest** `checklist.yml` from `main` — interactively restores any artifacts that older `update.sh` versions didn't know to install (new commands, dirs, scheduler entries, config keys)
+
+### Repairing a partial install
+
+If something disappeared after an update, or you suspect parts are missing:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/check.sh)        # report only
+bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/check.sh) --fix  # interactive auto-fix
+```
+
+`check.sh` reads `checklist.yml` (the source of truth for every file/dir/config the installer leaves behind) and verifies each item against your project. Requires `yq`.
 
 ---
 

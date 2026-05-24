@@ -14,6 +14,18 @@ Categories:
 
 ---
 
+## [2.8.0] — 2026-05-24
+
+### Installer
+- **Added `checklist.yml` + `check.sh`** — declarative manifest of every artifact the installer must leave in a project (files, dirs, scheduler, config keys, per-module dirs). `check.sh` verifies them and supports `--fix` for interactive auto-restore
+- **`install.sh` runs `check.sh --quiet`** at the end as a sanity check after installation
+- **`update.sh` fetches the *latest* `check.sh` and `checklist.yml`** from `main` and runs `check.sh --fix` so an old installation picks up any artifacts added between its version and the current one — fixes the recurring "not everything stayed after update" issue
+
+### Docs
+- **README troubleshooting section** mentions `bash check.sh` for repairing partial installs
+
+---
+
 ## [2.4.0] — 2026-05-22
 
 ### Updated label
