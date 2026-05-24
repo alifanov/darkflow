@@ -644,7 +644,7 @@ mode_watch() {
   local tick=0
 
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] Dark Flow started (tick every ${interval}s). Ctrl-C to stop."
-  trap 'echo ""; log "WATCH  stopped (signal)"; stop_heartbeat_loop; exit 0' INT TERM
+  trap 'echo ""; log "WATCH  stopped (signal)"; stop_heartbeat_loop; send_heartbeat "stopped"; exit 0' INT TERM
 
   while true; do
     (( tick++ )) || true

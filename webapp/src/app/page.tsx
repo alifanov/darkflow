@@ -32,7 +32,8 @@ export default async function ProjectsPage() {
         <div className="flex flex-col gap-3">
           {projects.map((p) => {
             const ws = p.workerStatus;
-            const alive = ws && now - new Date(ws.updatedAt).getTime() < ALIVE_MS;
+            const alive =
+              ws && ws.status !== "stopped" && now - new Date(ws.updatedAt).getTime() < ALIVE_MS;
             return (
               <Link
                 key={p.id}

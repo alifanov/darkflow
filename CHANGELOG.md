@@ -14,6 +14,11 @@ Categories:
 
 ---
 
+## [2.10.2] — 2026-05-24
+
+### Workflow
+- **Worker now marks itself offline immediately on Ctrl-C** — `darkflow-run.sh watch` sends a final heartbeat with `status="stopped"` when receiving SIGINT/SIGTERM, instead of leaving the UI to wait out the 2-minute liveness window. Web UI (`/` and `/projects/[id]`) treats `stopped` as offline regardless of timestamp freshness.
+
 ## [2.10.1] — 2026-05-24
 
 ### Installer
