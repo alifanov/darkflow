@@ -87,21 +87,43 @@ export async function POST(req: NextRequest) {
   });
 
   if (body.issues !== undefined) {
+    // Snapshot pending statuses so we can preserve those still in flight
+    // (worker hasn't yet applied them in GitHub).
+    const existingPending = await prisma.issue.findMany({
+      where: { projectId: project.id, pendingStatus: { not: null } },
+      select: { number: true, pendingStatus: true, pendingStatusAt: true },
+    });
+    const pendingByNumber = new Map(
+      existingPending.map((i) => [i.number, i])
+    );
+
     await prisma.issue.deleteMany({ where: { projectId: project.id } });
     if (body.issues.length > 0) {
       await prisma.issue.createMany({
-        data: body.issues.map((i) => ({
-          projectId: project.id,
-          number: i.number,
-          title: i.title,
-          body: i.body ?? null,
-          state: i.state ?? "open",
-          url: i.url ?? null,
-          status: i.status ?? "none",
-          priority: i.priority ?? null,
-          source: i.source ?? null,
-          effort: i.effort ?? null,
-        })),
+        data: body.issues.map((i) => {
+          const newStatus = i.status ?? "none";
+          const prevPending = pendingByNumber.get(i.number);
+          // If the synced GitHub status now matches the pending target, the
+          // worker successfully applied it — drop the pending marker.
+          const stillPending =
+            prevPending && prevPending.pendingStatus !== newStatus
+              ? prevPending
+              : null;
+          return {
+            projectId: project.id,
+            number: i.number,
+            title: i.title,
+            body: i.body ?? null,
+            state: i.state ?? "open",
+            url: i.url ?? null,
+            status: newStatus,
+            pendingStatus: stillPending?.pendingStatus ?? null,
+            pendingStatusAt: stillPending?.pendingStatusAt ?? null,
+            priority: i.priority ?? null,
+            source: i.source ?? null,
+            effort: i.effort ?? null,
+          };
+        }),
       });
     }
   }

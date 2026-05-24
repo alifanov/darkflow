@@ -24,8 +24,6 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://darkflow:${POSTGRES_PASSWORD:-darkflow}@db:5432/darkflow
-      GITHUB_APP_ID: ${GITHUB_APP_ID}
-      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY}
       NODE_ENV: production
 
 volumes:

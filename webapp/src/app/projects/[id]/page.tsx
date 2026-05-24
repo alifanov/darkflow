@@ -186,6 +186,7 @@ function IssueRow({
     number: number;
     title: string;
     status: string;
+    pendingStatus: string | null;
     priority: string | null;
     url: string | null;
   };
@@ -193,6 +194,7 @@ function IssueRow({
 }) {
   const bg = STATUS_COLORS[issue.status] ?? STATUS_COLORS.none;
   const color = STATUS_TEXT[issue.status] ?? "var(--muted)";
+  const isPending = issue.pendingStatus !== null;
 
   return (
     <div
@@ -230,6 +232,19 @@ function IssueRow({
         >
           {issue.status}
         </span>
+        {isPending && (
+          <span
+            className="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide"
+            style={{
+              background: "transparent",
+              color: "var(--muted)",
+              border: "1px dashed var(--border)",
+            }}
+            title="Ожидает синхронизации с GitHub"
+          >
+            pending sync
+          </span>
+        )}
         {showActions && <IssueActions issueId={issue.id} />}
       </div>
     </div>

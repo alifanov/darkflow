@@ -301,6 +301,52 @@ run_routine() {
   return $exit_code
 }
 
+# ── Apply pending status changes ──────────────────────────────────────────────
+# Pulls pending approve/reject decisions from the web UI and applies them to
+# GitHub via `gh issue edit`. Runs right before sync_webapp so the subsequent
+# `gh issue list` reflects the new labels and ingest can clear pendingStatus.
+
+STATUS_LABELS_ALL=(status:proposed status:approved status:rejected status:needs-info status:in-progress status:blocked)
+
+apply_pending_statuses() {
+  local webapp_url repo_url pending_json count
+  webapp_url=$(darkflow_val "webapp_url" "")
+  [[ -z "$webapp_url" ]] && return 0
+  ! command -v gh   &>/dev/null && return 0
+  ! command -v jq   &>/dev/null && return 0
+  ! command -v curl &>/dev/null && return 0
+
+  repo_url=$(gh repo view --json url -q .url 2>/dev/null || echo "")
+  [[ -z "$repo_url" ]] && return 0
+
+  pending_json=$(curl -fsS -m 10 -G \
+    --data-urlencode "repoUrl=${repo_url}" \
+    "${webapp_url}/api/pending-status" 2>/dev/null) || return 0
+
+  count=$(echo "$pending_json" | jq '.pending | length' 2>/dev/null || echo 0)
+  [[ "$count" == "0" || -z "$count" ]] && return 0
+
+  log "PENDING applying ${count} status change(s)"
+
+  local remove_args=()
+  local lbl
+  for lbl in "${STATUS_LABELS_ALL[@]}"; do
+    remove_args+=(--remove-label "$lbl")
+  done
+
+  local i num target
+  for ((i=0; i<count; i++)); do
+    num=$(echo "$pending_json" | jq -r ".pending[$i].number")
+    target=$(echo "$pending_json" | jq -r ".pending[$i].pendingStatus")
+    [[ -z "$num" || -z "$target" || "$target" == "null" ]] && continue
+    if gh issue edit "$num" "${remove_args[@]}" --add-label "status:${target}" >/dev/null 2>&1; then
+      log "PENDING #${num} → status:${target}"
+    else
+      log "PENDING #${num} failed to apply status:${target}"
+    fi
+  done
+}
+
 # ── Webapp sync ───────────────────────────────────────────────────────────────
 # Called after any routine actually ran. POSTs issue data and project metadata
 # to the Dark Flow webapp API (/api/ingest) using the webapp_url from .darkflow.
@@ -319,6 +365,8 @@ sync_webapp() {
     PENDING_LOGS=()
     return 0
   fi
+
+  apply_pending_statuses
 
   local repo_url issues now_iso
   repo_url=$(gh repo view --json url -q .url 2>/dev/null || echo "")
