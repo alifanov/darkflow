@@ -9,11 +9,36 @@ Read `.darkflow` in the project root. Extract:
 
 If `.darkflow` is missing, continue with the defaults.
 
-## Step 2 — Do the work
+## Step 2 — Pick the next issue
 
-Look at the open GitHub issues for this project. Take only **one** issue with `status:approved`, sorted by priority (p0 first, then p1, p2, p3).
+Pick exactly **one** open issue with the `status:approved` label, choosing strictly by priority. Walk the priority labels in this order and stop at the first level that has any issues:
 
-If there are no `status:approved` issues, stop — skip the run.
+1. `priority:p0`
+2. `priority:p1`
+3. `priority:p2`
+4. `priority:p3`
+5. `status:approved` without any `priority:*` label (treat as lowest)
+
+Within the chosen level, take the **oldest** issue (smallest issue number). Concretely:
+
+```bash
+for p in p0 p1 p2 p3; do
+  n=$(gh issue list --state open --label "status:approved" --label "priority:$p" \
+        --json number --jq 'sort_by(.number) | .[0].number')
+  [[ -n "$n" ]] && break
+done
+# Fallback for status:approved issues with no priority label:
+if [[ -z "$n" ]]; then
+  n=$(gh issue list --state open --label "status:approved" \
+        --json number,labels \
+        --jq '[.[] | select((.labels | map(.name) | map(startswith("priority:")) | any) | not)]
+              | sort_by(.number) | .[0].number')
+fi
+```
+
+If `$n` is empty after all levels, stop — skip the run.
+
+## Step 3 — Do the work
 
 Implement all the changes needed for it.
 
@@ -46,7 +71,7 @@ Commit and push directly to the `branch=` value from `.darkflow`. Leave a commen
 
 Language for GitHub comments and output: the `language=` value from `.darkflow`.
 
-## Step 3 — After completing
+## Step 4 — After completing
 
 Only if the run actually did work (not a "no approved issues" skip), append a routine-log entry to `docs/overview.html`:
 

@@ -14,6 +14,11 @@ Categories:
 
 ---
 
+## [2.11.0] — 2026-05-24
+
+### Updated routine
+- **`fix-issues` now picks the next issue strictly by priority** — replaced the vague "sorted by priority" instruction with an explicit walk through `priority:p0 → p1 → p2 → p3`, taking the oldest issue at the first non-empty level. Added a fallback for `status:approved` issues that have no priority label (treated as lowest). Included concrete `gh issue list` snippets so the agent doesn't have to invent the query.
+
 ## [2.10.3] — 2026-05-24
 
 ### Workflow
