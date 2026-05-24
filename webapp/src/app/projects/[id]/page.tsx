@@ -73,10 +73,10 @@ export default async function ProjectPage({
     : project.issues;
 
   const now = Date.now();
-  const ALIVE_MS = 2 * 60 * 1000;
+  // Worker heartbeats every 30 s; 75 s tolerates one missed beat before flipping offline.
+  const ALIVE_MS = 75 * 1000;
   const ws = project.workerStatus;
-  const workerAlive =
-    ws && ws.status !== "stopped" && now - new Date(ws.updatedAt).getTime() < ALIVE_MS;
+  const workerAlive = ws && now - new Date(ws.updatedAt).getTime() < ALIVE_MS;
 
   return (
     <div>

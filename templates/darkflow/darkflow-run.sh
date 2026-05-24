@@ -478,7 +478,7 @@ sync_webapp() {
 # ── Worker heartbeat ──────────────────────────────────────────────────────────
 # Sends lightweight status pings to /api/worker/heartbeat so the web UI shows
 # which projects have an active worker and what routine is running.
-# The watch loop sends "idle" every 60 s even when no routine runs.
+# The watch loop sends "idle" every 30 s even when no routine runs.
 
 _REPO_URL_CACHE=""
 
@@ -521,7 +521,7 @@ start_heartbeat_loop() {
     # TERM stays catchable so stop_heartbeat_loop can reap it cleanly.
     trap '' INT
     while true; do
-      sleep 60
+      sleep 30
       send_heartbeat "running" "$routine"
     done
   ) &
@@ -640,11 +640,11 @@ mode_manual() {
 # ── Mode: watch ───────────────────────────────────────────────────────────────
 
 mode_watch() {
-  local interval=60
+  local interval=30
   local tick=0
 
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] Dark Flow started (tick every ${interval}s). Ctrl-C to stop."
-  trap 'echo ""; log "WATCH  stopped (signal)"; stop_heartbeat_loop; send_heartbeat "stopped"; exit 0' INT TERM
+  trap 'echo ""; log "WATCH  stopped (signal)"; stop_heartbeat_loop; exit 0' INT TERM
 
   while true; do
     (( tick++ )) || true
@@ -654,9 +654,9 @@ mode_watch() {
     mkdir -p "$STATE_DIR"
     if mkdir "$LOCK_DIR" 2>/dev/null; then
       mode_dispatch false || log "WATCH  dispatch error (tick ${tick})"
-      # Full web UI sync (GitHub issues + metadata) every 5th tick (~5 min).
-      # The heartbeat above keeps the worker-alive signal fresh every minute.
-      if (( tick % 5 == 1 )); then
+      # Full web UI sync (GitHub issues + metadata) every 10th tick (~5 min).
+      # The heartbeat above keeps the worker-alive signal fresh every 30 s.
+      if (( tick % 10 == 1 )); then
         sync_webapp
       fi
       rmdir "$LOCK_DIR" 2>/dev/null || true

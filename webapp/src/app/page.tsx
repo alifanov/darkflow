@@ -17,7 +17,8 @@ export default async function ProjectsPage() {
   });
 
   const now = Date.now();
-  const ALIVE_MS = 2 * 60 * 1000;
+  // Worker heartbeats every 30 s; 75 s tolerates one missed beat before flipping offline.
+  const ALIVE_MS = 75 * 1000;
 
   return (
     <div>
@@ -32,8 +33,7 @@ export default async function ProjectsPage() {
         <div className="flex flex-col gap-3">
           {projects.map((p) => {
             const ws = p.workerStatus;
-            const alive =
-              ws && ws.status !== "stopped" && now - new Date(ws.updatedAt).getTime() < ALIVE_MS;
+            const alive = ws && now - new Date(ws.updatedAt).getTime() < ALIVE_MS;
             return (
               <Link
                 key={p.id}

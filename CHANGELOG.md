@@ -14,6 +14,11 @@ Categories:
 
 ---
 
+## [2.10.3] — 2026-05-24
+
+### Workflow
+- **Worker-online detection is now purely cache-based** — reverted the `status="stopped"` shutdown signal from 2.10.2 (an extra protocol that didn't help with crashes). Instead, worker heartbeats every 30 s (was 60 s) and the web UI considers the worker offline after 75 s of silence (was 120 s). One missed beat is tolerated; two flips it offline. After Ctrl-C the UI now reflects offline within ~75 s on next page render. The watch loop's full sync cadence is unchanged (still ~5 min, now every 10th tick).
+
 ## [2.10.2] — 2026-05-24
 
 ### Workflow
