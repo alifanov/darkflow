@@ -107,11 +107,6 @@ items:
   - { id: routine-claude-md-update,    group: routines, type: routine, when: module.claude-update, path: .darkflow.d/routines.yml, routine_key: claude-md-update,    cron: "0 9 * * 1-5", model: sonnet, enabled: true,  fix: add-routine, desc: "claude-md-update (weekdays 9:00)" }
   - { id: routine-architecture-review, group: routines, type: routine, when: module.arch-review,   path: .darkflow.d/routines.yml, routine_key: architecture-review, cron: "0 2 * * 0",   model: opus,   enabled: true,  fix: add-routine, desc: "architecture-review (weekly Sun 2:00)" }
 
-  # ── Arch-review skill ────────────────────────────────────────────────────────
-  - id: mod-arch-review-skill
-    group: module-arch-review
-    type: command
-    when: module.arch-review
-    check: 'command -v npx >/dev/null 2>&1 && npx --no-install skills list 2>/dev/null | grep -q improve-codebase-architecture'
-    fix: install-arch-skill
-    desc: "improve-codebase-architecture skill (via npx skills)"
+  # Note: the improve-codebase-architecture skill is installed once via install.sh
+  # (`npx skills add ...`) and we do NOT verify it here — `npx skills list` does
+  # network calls and can hang. Re-run install.sh if the skill goes missing.

@@ -14,6 +14,11 @@ Categories:
 
 ---
 
+## [2.10.1] — 2026-05-24
+
+### Installer
+- **Fixed `make df-check` hanging silently** — removed the `mod-arch-review-skill` item from `checklist.yml` whose check (`npx --no-install skills list`) could hang on network. Also added a `▸ Fetching check.sh from darkflow/main...` progress echo so users see activity during the curl download
+
 ## [2.10.0] — 2026-05-24
 
 ### Removed label
