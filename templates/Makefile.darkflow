@@ -30,10 +30,10 @@ df-scheduler-uninstall:  ## remove the system scheduler
 	bash .darkflow.d/uninstall-scheduler.sh
 
 df-check:  ## verify all Dark Flow artifacts are installed (report only)
-	bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/check.sh)
+	@tmp=$$(mktemp) && curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/check.sh -o $$tmp && bash $$tmp; rc=$$?; rm -f $$tmp; exit $$rc
 
 df-check-fix:  ## verify + interactively install missing artifacts (files, dirs, routines)
-	bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/check.sh) --fix
+	@tmp=$$(mktemp) && curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/check.sh -o $$tmp && bash $$tmp --fix; rc=$$?; rm -f $$tmp; exit $$rc
 
 df-update:  ## update Dark Flow to the latest version (also runs df-check at the end)
 	@printf "Force overwrite locally modified files? [y/N] "; \
