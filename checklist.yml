@@ -19,8 +19,8 @@ schema: 1
 #   key          (config-key) key=… that must exist in `path`
 #   default      (config-key) value to append if missing
 #   check        (command) shell expression — exit 0 = present
-#   fix          named handler in check.sh (copy-template | mkdir | append-config | install-scheduler | install-arch-skill | rerun-update)
-#                Omit for marker types — they only warn and recommend `update.sh --force`.
+#   fix          named handler in check.sh (copy-template | mkdir | append-config | install-scheduler | install-arch-skill | add-routine | update-force)
+#                Marker types use `update-force` to re-run update.sh --force (executes at most once per check.sh run).
 #   when         module.<name> | platform.macos | platform.linux
 #   desc         one-line description
 
@@ -64,9 +64,9 @@ items:
   - { id: dispatcher-uninstall,    group: dispatcher, type: file, path: .darkflow.d/uninstall-scheduler.sh, template: darkflow/uninstall-scheduler.sh, executable: true, fix: copy-template, desc: "Scheduler uninstaller helper" }
   - { id: dispatcher-routines,     group: dispatcher, type: file, path: .darkflow.d/routines.yml,           template: darkflow/routines.yml,                              fix: copy-template, desc: "Routine schedule (project-specific — copy of generic template if missing)" }
 
-  # ── Markers (informational only — fix via `update.sh --force`) ───────────────
-  - { id: marker-claude-md,        group: docs,       type: marker, path: CLAUDE.md, marker_start: "darkflow:start", desc: "Dark Flow section in CLAUDE.md" }
-  - { id: marker-makefile,         group: dispatcher, type: marker, path: Makefile,  marker_start: "# darkflow:start", desc: "Dark Flow block in Makefile" }
+  # ── Markers (auto-fixed by re-running `update.sh --force` once) ──────────────
+  - { id: marker-claude-md,        group: docs,       type: marker, path: CLAUDE.md, marker_start: "darkflow:start", fix: update-force, desc: "Dark Flow section in CLAUDE.md" }
+  - { id: marker-makefile,         group: dispatcher, type: marker, path: Makefile,  marker_start: "# darkflow:start", fix: update-force, desc: "Dark Flow block in Makefile" }
 
   # ── .darkflow config keys ────────────────────────────────────────────────────
   - { id: cfg-webapp-url,          group: config,     type: config-key, path: .darkflow, key: webapp_url,     default: "http://localhost:5555", fix: append-config, desc: "webapp_url" }

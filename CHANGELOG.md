@@ -14,6 +14,11 @@ Categories:
 
 ---
 
+## [2.11.1] — 2026-05-24
+
+### Installer
+- **`make df-check-fix` now actually fixes missing marker blocks** — marker items (`CLAUDE.md` Dark Flow section, `Makefile` Dark Flow block) had no fix handler, so check.sh would just print "run: bash update.sh --force" and exit 1. Added an `update-force` handler that runs `update.sh --force` (local copy if available, otherwise fetched from the remote). Runs at most once per check.sh invocation even if both markers are missing.
+
 ## [2.11.0] — 2026-05-24
 
 ### Updated routine

@@ -320,6 +320,33 @@ fix_install_arch_skill() {
   npx skills add https://github.com/mattpocock/skills --skill improve-codebase-architecture
 }
 
+UPDATE_FORCE_RAN=false
+fix_update_force() {
+  local id="$1"
+  # Run update.sh --force only once per check.sh invocation, even if multiple
+  # marker items are missing. Prefer the local copy if check.sh was run from
+  # the darkflow repo checkout; otherwise fetch from the remote.
+  if [[ "$UPDATE_FORCE_RAN" == true ]]; then
+    echo -e "  ${DIM}↳ ${ITEM_PATH[$id]} restored by the earlier update.sh --force run${RESET}"
+    return 0
+  fi
+
+  echo -e "  ${CYAN}▸${RESET} Running update.sh --force to restore ${ITEM_PATH[$id]}..."
+  if [[ -n "$SCRIPT_DIR" && -f "$SCRIPT_DIR/update.sh" ]]; then
+    if bash "$SCRIPT_DIR/update.sh" --force --target "$TARGET_DIR"; then
+      UPDATE_FORCE_RAN=true
+      return 0
+    fi
+  else
+    if bash <(curl -fsSL "${DARKFLOW_REPO}/update.sh?t=$(date +%s)") --force --target "$TARGET_DIR"; then
+      UPDATE_FORCE_RAN=true
+      return 0
+    fi
+  fi
+  echo -e "  ${YELLOW}⚠${RESET} update.sh --force failed for ${ITEM_PATH[$id]}"
+  return 1
+}
+
 FIXED=0
 SKIPPED=0
 for id in "${MISSING_IDS[@]}"; do
@@ -341,6 +368,7 @@ for id in "${MISSING_IDS[@]}"; do
     install-scheduler)    fix_install_scheduler     && FIXED=$((FIXED + 1)) || SKIPPED=$((SKIPPED + 1)) ;;
     install-arch-skill)   fix_install_arch_skill    && FIXED=$((FIXED + 1)) || SKIPPED=$((SKIPPED + 1)) ;;
     add-routine)          fix_add_routine "$id"     && FIXED=$((FIXED + 1)) || SKIPPED=$((SKIPPED + 1)) ;;
+    update-force)         fix_update_force "$id"    && FIXED=$((FIXED + 1)) || SKIPPED=$((SKIPPED + 1)) ;;
     *)
       echo -e "  ${YELLOW}⚠${RESET} Unknown fix handler '${handler}' for ${id}"
       SKIPPED=$((SKIPPED + 1)) ;;
