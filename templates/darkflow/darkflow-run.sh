@@ -305,6 +305,21 @@ run_routine() {
       ;;
   esac
 
+  if [[ "$name" == "fix-issues" ]] && command -v gh &>/dev/null; then
+    local approved_count
+    approved_count=$(gh issue list --state open --label "status:approved" \
+                       --json number --jq 'length' 2>/dev/null || echo "")
+    if [[ "$approved_count" == "0" ]]; then
+      log "SKIP   ${name} — no open status:approved issues"
+      local skip_now skip_ts
+      skip_now=$(now_epoch)
+      write_state "$name" "$(( skip_now - skip_now % 60 ))"
+      skip_ts=$(date -u +%FT%TZ)
+      PENDING_LOGS+=("{\"routine\":\"${name}\",\"summary\":\"skipped fix-issues — no approved issues\",\"timestamp\":\"${skip_ts}\"}")
+      return 0
+    fi
+  fi
+
   log "START  ${name} (model=${model}, perm=${permission_mode})"
 
   send_heartbeat "running" "$name"
