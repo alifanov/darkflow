@@ -1126,6 +1126,7 @@ if [[ "$DRY_RUN" == false ]]; then
       sed -i "s/^version=.*/version=${LATEST_VERSION}/" .darkflow
       sed -i "s/^installed=.*/installed=$(date -u +%Y-%m-%d)/" .darkflow
     fi
+    grep -q "^version="    .darkflow || echo "version=${LATEST_VERSION}" >> .darkflow
     grep -q "^slug="       .darkflow || echo "slug=${SLUG}"            >> .darkflow
     grep -q "^name="       .darkflow || echo "name=${PROJECT_NAME}"    >> .darkflow
     grep -q "^webapp_url=" .darkflow || echo "webapp_url=${WEBAPP_URL}" >> .darkflow
