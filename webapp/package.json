@@ -12,7 +12,8 @@
     "@prisma/client": "^6",
     "next": "^15",
     "react": "^19",
-    "react-dom": "^19"
+    "react-dom": "^19",
+    "react-markdown": "~10.1.0"
   },
   "pnpm": {
     "overrides": {

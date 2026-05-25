@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { IssueActions } from "@/components/IssueActions";
 import { DeleteProjectButton } from "@/components/DeleteProjectButton";
 import { LocalTime } from "@/components/LocalTime";
+import ReactMarkdown from "react-markdown";
 
 export const dynamic = "force-dynamic";
 
@@ -403,12 +404,43 @@ function RoutineLogsList({
                   className="px-4 pb-4 pt-1 border-t"
                   style={{ borderColor: "var(--border)" }}
                 >
-                  <pre
-                    className="text-xs font-mono whitespace-pre-wrap break-words overflow-auto max-h-[500px] p-3 rounded"
+                  <div
+                    className="text-xs overflow-auto max-h-[500px] p-3 rounded prose prose-invert prose-xs max-w-none"
                     style={{ background: "var(--bg)", color: "var(--text)", lineHeight: 1.5 }}
                   >
-                    {l.output}
-                  </pre>
+                    <ReactMarkdown
+                      components={{
+                        code: ({ children, className }) => {
+                          const isBlock = className?.includes("language-");
+                          return isBlock ? (
+                            <pre className="font-mono text-xs whitespace-pre-wrap break-words rounded p-2 my-1" style={{ background: "var(--card)", color: "var(--text)" }}>
+                              <code>{children}</code>
+                            </pre>
+                          ) : (
+                            <code className="font-mono px-1 rounded text-xs" style={{ background: "var(--card)", color: "var(--text)" }}>{children}</code>
+                          );
+                        },
+                        pre: ({ children }) => <>{children}</>,
+                        p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
+                        ul: ({ children }) => <ul className="list-disc pl-4 mb-1">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal pl-4 mb-1">{children}</ol>,
+                        li: ({ children }) => <li className="mb-0.5">{children}</li>,
+                        h1: ({ children }) => <h1 className="text-sm font-bold mb-1">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-sm font-semibold mb-1">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-xs font-semibold mb-1">{children}</h3>,
+                        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                        em: ({ children }) => <em className="italic">{children}</em>,
+                        hr: () => <hr className="my-2 border-t" style={{ borderColor: "var(--border)" }} />,
+                        blockquote: ({ children }) => (
+                          <blockquote className="border-l-2 pl-2 my-1 italic" style={{ borderColor: "var(--muted)", color: "var(--muted)" }}>
+                            {children}
+                          </blockquote>
+                        ),
+                      }}
+                    >
+                      {l.output}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               </details>
             ) : (
