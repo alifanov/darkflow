@@ -25,6 +25,7 @@ model Project {
   routineLogs        RoutineLog[]
   routineConfigs     RoutineConfig[]
   workerStatus       WorkerStatus?
+  commits            Commit[]
 }
 
 model Issue {
@@ -104,6 +105,22 @@ model RoutineConfig {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, name])
+}
+
+model Commit {
+  id          String   @id @default(cuid())
+  projectId   String
+  sha         String
+  message     String
+  author      String
+  email       String?
+  committedAt DateTime
+  url         String?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, sha])
+  @@index([projectId, committedAt(sort: Desc)])
 }
 
 model WorkerStatus {

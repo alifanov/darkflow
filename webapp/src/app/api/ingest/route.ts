@@ -45,6 +45,15 @@ interface IngestRoutine {
   permissionMode?: string | null;
 }
 
+interface IngestCommit {
+  sha: string;
+  message: string;
+  author: string;
+  email?: string | null;
+  committedAt: string;
+  url?: string | null;
+}
+
 interface IngestBody {
   repoUrl: string;
   name?: string;
@@ -58,6 +67,7 @@ interface IngestBody {
   architecture?: IngestArchitecture;
   logs?: IngestLog[];
   routines?: IngestRoutine[];
+  commits?: IngestCommit[];
 }
 
 export async function POST(req: NextRequest) {
@@ -189,6 +199,21 @@ export async function POST(req: NextRequest) {
         })),
       });
     }
+  }
+
+  if (body.commits && body.commits.length > 0) {
+    await prisma.commit.createMany({
+      data: body.commits.map((c) => ({
+        projectId: project.id,
+        sha: c.sha,
+        message: c.message,
+        author: c.author,
+        email: c.email ?? null,
+        committedAt: new Date(c.committedAt),
+        url: c.url ?? null,
+      })),
+      skipDuplicates: true,
+    });
   }
 
   return NextResponse.json({ ok: true, projectId: project.id });

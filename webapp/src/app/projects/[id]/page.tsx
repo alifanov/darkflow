@@ -32,16 +32,17 @@ const CARDS: { key: string; label: string; statuses: string[] }[] = [
   { key: "rejected", label: "Rejected", statuses: ["rejected", "blocked"] },
 ];
 
-const TABS: { key: "issues" | "logs" | "routines"; label: string }[] = [
+const TABS: { key: "issues" | "logs" | "routines" | "commits"; label: string }[] = [
   { key: "issues", label: "Issues" },
   { key: "logs", label: "Logs" },
   { key: "routines", label: "Routines" },
+  { key: "commits", label: "Commits" },
 ];
 
 type TabKey = (typeof TABS)[number]["key"];
 
 function isTab(v: string | undefined): v is TabKey {
-  return v === "issues" || v === "logs" || v === "routines";
+  return v === "issues" || v === "logs" || v === "routines" || v === "commits";
 }
 
 export default async function ProjectPage({
@@ -62,6 +63,7 @@ export default async function ProjectPage({
       workerStatus: true,
       routineLogs: { orderBy: { timestamp: "desc" }, take: 100 },
       routineConfigs: { orderBy: { name: "asc" } },
+      commits: { orderBy: { committedAt: "desc" }, take: 50 },
     },
   });
 
@@ -168,6 +170,8 @@ export default async function ProjectPage({
       {activeTab === "logs" && <RoutineLogsList logs={project.routineLogs} />}
 
       {activeTab === "routines" && <RoutineConfigList configs={project.routineConfigs} />}
+
+      {activeTab === "commits" && <CommitList commits={project.commits} />}
     </div>
   );
 }
@@ -361,6 +365,70 @@ function RoutineLogsList({
             </span>
           </div>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function CommitList({
+  commits,
+}: {
+  commits: {
+    id: string;
+    sha: string;
+    message: string;
+    author: string;
+    email: string | null;
+    committedAt: Date;
+    url: string | null;
+  }[];
+}) {
+  if (commits.length === 0) {
+    return <p style={{ color: "var(--muted)" }}>No commits synced yet.</p>;
+  }
+  return (
+    <section>
+      <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text)" }}>
+        Recent commits ({commits.length})
+      </h2>
+      <div className="flex flex-col gap-2">
+        {commits.map((c) => {
+          const shortSha = c.sha.slice(0, 7);
+          const shaEl = (
+            <span className="text-xs font-mono shrink-0" style={{ color: "var(--accent)" }}>
+              {shortSha}
+            </span>
+          );
+          return (
+            <div
+              key={c.id}
+              className="flex items-center gap-3 rounded-lg border px-4 py-3"
+              style={{ background: "var(--surface)", borderColor: "var(--border)" }}
+            >
+              {c.url ? (
+                <a
+                  href={c.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline shrink-0"
+                >
+                  {shaEl}
+                </a>
+              ) : (
+                shaEl
+              )}
+              <span className="text-sm truncate flex-1" style={{ color: "var(--text)" }}>
+                {c.message}
+              </span>
+              <span className="text-xs shrink-0 hidden sm:inline" style={{ color: "var(--muted)" }}>
+                {c.author}
+              </span>
+              <span className="text-xs font-mono shrink-0" style={{ color: "var(--muted)" }}>
+                <LocalTime date={c.committedAt} />
+              </span>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

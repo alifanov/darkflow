@@ -501,6 +501,25 @@ sync_webapp() {
     routines_json=$(yq -o=json '.routines | to_entries | map({"name": .key, "cron": .value.cron, "model": .value.model, "enabled": (.value.enabled // true), "permissionMode": .value.permission_mode})' "$YAML" 2>/dev/null | jq -c '.' 2>/dev/null || echo "[]")
   fi
 
+  # Last 50 commits via git log; tab-separated to dodge quoting issues in messages.
+  local commits_json="[]"
+  if command -v git &>/dev/null && git rev-parse --git-dir &>/dev/null; then
+    local commit_base="${repo_url%.git}"
+    commits_json=$(git log -n 50 --pretty=format:'%H%x09%cI%x09%an%x09%ae%x09%s' 2>/dev/null \
+      | jq -Rsc --arg base "$commit_base" '
+          split("\n") | map(select(length > 0))
+          | map(split("\t") | {
+              sha:         .[0],
+              committedAt: .[1],
+              author:      .[2],
+              email:       .[3],
+              message:     .[4],
+              url:         ($base + "/commit/" + .[0])
+            })
+        ' 2>/dev/null) || commits_json="[]"
+    [[ -z "$commits_json" ]] && commits_json="[]"
+  fi
+
   # Assemble payload
   local payload
   payload=$(jq -n \
@@ -516,6 +535,7 @@ sync_webapp() {
     --argjson architecture "$architecture_json" \
     --argjson logs       "$logs_json" \
     --argjson routines   "$routines_json" \
+    --argjson commits    "$commits_json" \
     '{
       repoUrl:       $repoUrl,
       name:          $name,
@@ -525,7 +545,8 @@ sync_webapp() {
       modules:       $modules,
       issues:        $issues,
       logs:          $logs,
-      routines:      $routines
+      routines:      $routines,
+      commits:       $commits
     }
     | if $analytics   != null then . + {analytics: $analytics}     else . end
     | if $security    != null then . + {security: $security}        else . end
