@@ -1,9 +1,9 @@
-Run the Dark Flow updater — compares installed version against latest, shows changelog, and smart-updates template files (preserves local modifications unless --force is passed):
+Run the Dark Flow installer — it automatically detects whether to update or do a fresh install:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/update.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh)
 ```
 
 Options:
 - `--dry-run` — show what would change without applying anything
-- `--force` — overwrite template files even if locally modified
+- `--force` — re-apply all templates even if already up to date

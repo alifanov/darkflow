@@ -72,13 +72,14 @@ The agent will fetch the installer, ask about your stack, run it with the right 
 
 ### What the installer does
 
-1. Asks which optional modules apply to your project
+1. Asks which optional modules apply to your project (analytics, observability, GSC, ads, Coolify, CLAUDE.md update, architecture review)
 2. Creates `docs/` folder structure with template files
 3. Creates `.github/ISSUE_TEMPLATE/recommendation.yml`
 4. Sets up GitHub issue labels via `gh` (if authenticated)
-5. Generates a comprehensive `CLAUDE.md` tailored to your modules
+5. Writes `.darkflow.d/claude.md` with the Dark Flow agent workflow and adds a single `@.darkflow.d/claude.md` reference to `CLAUDE.md`
 6. Installs `/darkflow` and `/darkflow:*` slash commands for Claude Code
 7. Creates (or updates) a `Makefile` with `df-*` shortcut targets
+8. Verifies the installation against `checklist.yml` and auto-fixes any missing artifacts
 
 ---
 
@@ -243,35 +244,35 @@ Routine commands read `language=`, `branch=`, and `merge_strategy=` from `.darkf
 
 ## Updating Dark Flow
 
-When a new version of Dark Flow is released, paste this into Claude Code:
+Run the same install command — it detects your installed version and updates automatically:
 
 ```
 Update Dark Flow in this project:
-bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/update.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh)
 
 After updating, commit the changes.
 ```
 
-The updater:
-1. Compares your installed version (from `.darkflow`) against the latest
-2. Shows changelog entries since your version
+The installer:
+1. Compares your installed version (from `.darkflow`) against the latest and shows the changelog
+2. Smart-updates template files: skips unchanged, warns + shows diff if locally modified
 3. Re-runs label setup (additive — never removes existing labels)
-4. Smart-updates template files: skips unchanged, warns + shows diff if locally modified
-5. Regenerates the Dark Flow section in `CLAUDE.md` between `<!-- darkflow:start/end -->` markers
-6. Regenerates the `df-*` block in `Makefile` between `# darkflow:start/end` markers
-7. Bumps the version in `.darkflow`
-8. Runs `check.sh --fix` against the **latest** `checklist.yml` from `main` — interactively restores any artifacts that older `update.sh` versions didn't know to install (new commands, dirs, scheduler entries, config keys)
+4. Regenerates `.darkflow.d/claude.md` (Dark Flow instructions for Claude)
+5. Regenerates the `df-*` block in `Makefile` between `# darkflow:start/end` markers
+6. Bumps the version in `.darkflow`
+7. Runs the built-in checklist against the latest `checklist.yml` — interactively restores any missing artifacts
+
+If already on the latest version, the installer exits immediately with "Already up to date." Use `--force` to re-apply all templates regardless.
 
 ### Repairing a partial install
 
-If something disappeared after an update, or you suspect parts are missing:
+If something is missing or broken, run the installer with `--force`:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/check.sh)        # report only
-bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/check.sh) --fix  # interactive auto-fix
+bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh) --force
 ```
 
-`check.sh` reads `checklist.yml` (the source of truth for every file/dir/config the installer leaves behind) and verifies each item against your project. Requires `yq`.
+The installer verifies every artifact defined in `checklist.yml` and auto-fixes what's missing.
 
 ---
 

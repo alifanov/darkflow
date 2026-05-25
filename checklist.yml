@@ -64,9 +64,10 @@ items:
   - { id: dispatcher-uninstall,    group: dispatcher, type: file, path: .darkflow.d/uninstall-scheduler.sh, template: darkflow/uninstall-scheduler.sh, executable: true, fix: copy-template, desc: "Scheduler uninstaller helper" }
   - { id: dispatcher-routines,     group: dispatcher, type: file, path: .darkflow.d/routines.yml,           template: darkflow/routines.yml,                              fix: copy-template, desc: "Routine schedule (project-specific — copy of generic template if missing)" }
 
-  # ── Markers (auto-fixed by re-running `update.sh --force` once) ──────────────
-  - { id: marker-claude-md,        group: docs,       type: marker, path: CLAUDE.md, marker_start: "darkflow:start", fix: update-force, desc: "Dark Flow section in CLAUDE.md" }
-  - { id: marker-makefile,         group: dispatcher, type: marker, path: Makefile,  marker_start: "# darkflow:start", fix: update-force, desc: "Dark Flow block in Makefile" }
+  # ── Dark Flow instruction file + CLAUDE.md reference ────────────────────────
+  - { id: file-darkflow-claude,    group: docs,       type: file,   path: .darkflow.d/claude.md,  fix: copy-template, template: darkflow/claude.md, desc: "Dark Flow instructions for Claude" }
+  - { id: ref-claude-md,           group: docs,       type: marker, path: CLAUDE.md, marker_start: "@.darkflow.d/claude.md", fix: add-darkflow-ref, desc: "@-include reference in CLAUDE.md" }
+  - { id: marker-makefile,         group: dispatcher, type: marker, path: Makefile,  marker_start: "# darkflow:start", fix: regenerate-marker, desc: "Dark Flow block in Makefile" }
 
   # ── .darkflow config keys ────────────────────────────────────────────────────
   - { id: cfg-webapp-url,          group: config,     type: config-key, path: .darkflow, key: webapp_url,     default: "http://localhost:5555", fix: append-config, desc: "webapp_url" }
