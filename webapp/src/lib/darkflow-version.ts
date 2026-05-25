@@ -1,14 +1,9 @@
 import fs from "fs";
 import path from "path";
 
-let _cached: string | null = null;
-
 export function getLatestDarkflowVersion(): string {
-  if (_cached !== null) return _cached;
-
   if (process.env.DARKFLOW_LATEST_VERSION) {
-    _cached = process.env.DARKFLOW_LATEST_VERSION.trim();
-    return _cached;
+    return process.env.DARKFLOW_LATEST_VERSION.trim();
   }
 
   // Dev: cwd is webapp/, prod (Docker): VERSION mounted at /app/VERSION
@@ -19,13 +14,11 @@ export function getLatestDarkflowVersion(): string {
 
   for (const p of candidates) {
     try {
-      _cached = fs.readFileSync(p, "utf-8").trim();
-      return _cached;
+      return fs.readFileSync(p, "utf-8").trim();
     } catch {
       // try next
     }
   }
 
-  _cached = "unknown";
-  return _cached;
+  return "unknown";
 }
