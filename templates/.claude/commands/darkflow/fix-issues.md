@@ -21,17 +21,25 @@ Pick exactly **one** open issue with the `status:approved` label, choosing stric
 
 Within the chosen level, take the **oldest** issue (smallest issue number). Concretely:
 
+Issues with `action:reply` are handled exclusively by `mailbox-check` — skip them here.
+
 ```bash
 for p in p0 p1 p2 p3; do
   n=$(gh issue list --state open --label "status:approved" --label "priority:$p" \
-        --json number --jq 'sort_by(.number) | .[0].number')
+        --json number,labels \
+        --jq '[.[] | select(.labels | map(.name) | index("action:reply") | not)]
+              | sort_by(.number) | .[0].number')
   [[ -n "$n" ]] && break
 done
 # Fallback for status:approved issues with no priority label:
 if [[ -z "$n" ]]; then
   n=$(gh issue list --state open --label "status:approved" \
         --json number,labels \
-        --jq '[.[] | select((.labels | map(.name) | map(startswith("priority:")) | any) | not)]
+        --jq '[.[] | select(
+                (.labels | map(.name) | map(startswith("priority:")) | any) | not
+              ) | select(
+                .labels | map(.name) | index("action:reply") | not
+              )]
               | sort_by(.number) | .[0].number')
 fi
 ```

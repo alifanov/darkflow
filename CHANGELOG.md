@@ -14,6 +14,24 @@ Categories:
 
 ---
 
+## [2.17.0] — 2026-05-25
+
+### New routine
+- **`mailbox-check`** — optional IMAP+SMTP integration. Reads unseen messages from the project inbox every hour and creates `status:proposed` GitHub issues tagged `source:mailbox`. Human chooses `action:reply` (agent sends email reply via SMTP after approve) or `action:fix` (issue flows through normal `fix-issues`). Credentials are saved to `.env.darkflow` (already git-ignored).
+
+### New label
+- **`source:mailbox`** — marks issues created from incoming email
+- **`action:reply`** — approved mailbox issue where agent should send an email reply
+- **`action:fix`** — approved mailbox issue where agent should make a code/product change
+
+### Updated routine
+- **`fix-issues`** — now skips issues with `action:reply` label (those are handled by `mailbox-check`)
+
+### Installer
+- New **Mailbox** module (`--mod-mailbox`): adds IMAP/SMTP credential prompts, writes to `.env.darkflow`, copies `fetch.py` / `send.py` to `.darkflow.d/mailbox/`
+
+---
+
 ## [2.14.0] — 2026-05-25
 
 ### Installer

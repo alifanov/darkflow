@@ -31,11 +31,20 @@ MOD_ADS=""
 MOD_COOLIFY=""
 MOD_CLAUDE_UPDATE=""
 MOD_ARCH_REVIEW=""
+MOD_MAILBOX=""
 SETUP_SCHEDULER=""
 
 OBS_TOOL=""
 OBS_URL=""
 OBS_API_KEY=""
+MAILBOX_IMAP_HOST=""
+MAILBOX_IMAP_PORT=""
+MAILBOX_IMAP_USER=""
+MAILBOX_IMAP_PASSWORD=""
+MAILBOX_SMTP_HOST=""
+MAILBOX_SMTP_PORT=""
+MAILBOX_SMTP_USER=""
+MAILBOX_SMTP_PASSWORD=""
 WEBAPP_URL="http://localhost:5555"
 
 BOLD="\033[1m"
@@ -68,7 +77,7 @@ while [[ $# -gt 0 ]]; do
     --all)                NON_INTERACTIVE=true
                           MOD_ANALYTICS=true; MOD_OBSERVABILITY=true; MOD_GSC=true
                           MOD_ADS=true; MOD_COOLIFY=true; MOD_CLAUDE_UPDATE=true
-                          MOD_ARCH_REVIEW=true; SETUP_SCHEDULER=true
+                          MOD_ARCH_REVIEW=true; MOD_MAILBOX=true; SETUP_SCHEDULER=true
                           shift ;;
     --with-analytics)     MOD_ANALYTICS=true; shift ;;
     --with-observability) MOD_OBSERVABILITY=true; shift ;;
@@ -84,6 +93,8 @@ while [[ $# -gt 0 ]]; do
     --no-claude-update)   MOD_CLAUDE_UPDATE=false; shift ;;
     --with-arch-review)   MOD_ARCH_REVIEW=true; shift ;;
     --no-arch-review)     MOD_ARCH_REVIEW=false; shift ;;
+    --with-mailbox)       MOD_MAILBOX=true; shift ;;
+    --no-mailbox)         MOD_MAILBOX=false; shift ;;
     --with-scheduler)     SETUP_SCHEDULER=true; shift ;;
     --no-scheduler)       SETUP_SCHEDULER=false; shift ;;
     --obs-tool)           OBS_TOOL="$2"; shift 2 ;;
@@ -228,6 +239,7 @@ if [[ "$MODE" == "update" ]]; then
   [[ "$MODULES" == *"coolify"*       && -z "$MOD_COOLIFY"       ]] && MOD_COOLIFY=true
   [[ "$MODULES" == *"claude-update"* && -z "$MOD_CLAUDE_UPDATE" ]] && MOD_CLAUDE_UPDATE=true
   [[ "$MODULES" == *"arch-review"*   && -z "$MOD_ARCH_REVIEW"   ]] && MOD_ARCH_REVIEW=true
+  [[ "$MODULES" == *"mailbox"*       && -z "$MOD_MAILBOX"       ]] && MOD_MAILBOX=true
   [[ "$MODULES" == *"scheduler"*     && -z "$SETUP_SCHEDULER"   ]] && SETUP_SCHEDULER=true
 fi
 
@@ -374,6 +386,7 @@ ask_module MOD_ADS            "Paid Ads"            "(Google Ads, Meta…) — i
 ask_module MOD_COOLIFY        "Coolify"             "deployment log monitoring — daily logs check routine"
 ask_module MOD_CLAUDE_UPDATE  "CLAUDE.md update"    "weekday routine that re-generates CLAUDE.md from codebase" false
 ask_module MOD_ARCH_REVIEW    "Architecture review" "installs improve-codebase-architecture skill + weekly routine" false
+ask_module MOD_MAILBOX        "Mailbox"             "(IMAP+SMTP) — hourly inbox check → GitHub issues + automated replies" false
 
 # ── Observability integration ─────────────────────────────────────────────────
 
@@ -401,6 +414,39 @@ if [[ "$MOD_OBSERVABILITY" == true && -z "$OBS_URL" && \
       echo ""
       ;;
     *) info "Skipping observability integration setup" ;;
+  esac
+fi
+
+# ── Mailbox integration ───────────────────────────────────────────────────────
+
+if [[ "$MOD_MAILBOX" == true && -z "$MAILBOX_IMAP_HOST" && \
+      "$NON_INTERACTIVE" == false && -t 0 ]]; then
+  echo ""
+  echo -e "${BOLD}Mailbox integration${RESET}"
+  echo ""
+  read -rp "  Configure IMAP/SMTP now? [Y/n]: " _want_mailbox
+  case "${_want_mailbox:-Y}" in
+    [Yy]*|"")
+      echo ""
+      echo -e "  ${DIM}IMAP (incoming mail)${RESET}"
+      read -rp "  IMAP host: " MAILBOX_IMAP_HOST
+      read -rp "  IMAP port [993]: " MAILBOX_IMAP_PORT
+      [[ -z "$MAILBOX_IMAP_PORT" ]] && MAILBOX_IMAP_PORT="993"
+      read -rp "  IMAP username: " MAILBOX_IMAP_USER
+      read -rsp "  IMAP password: " MAILBOX_IMAP_PASSWORD; echo ""
+      echo ""
+      echo -e "  ${DIM}SMTP (outgoing mail — for sending replies)${RESET}"
+      read -rp "  SMTP host [${MAILBOX_IMAP_HOST}]: " MAILBOX_SMTP_HOST
+      [[ -z "$MAILBOX_SMTP_HOST" ]] && MAILBOX_SMTP_HOST="$MAILBOX_IMAP_HOST"
+      read -rp "  SMTP port [587]: " MAILBOX_SMTP_PORT
+      [[ -z "$MAILBOX_SMTP_PORT" ]] && MAILBOX_SMTP_PORT="587"
+      read -rp "  SMTP username [${MAILBOX_IMAP_USER}]: " MAILBOX_SMTP_USER
+      [[ -z "$MAILBOX_SMTP_USER" ]] && MAILBOX_SMTP_USER="$MAILBOX_IMAP_USER"
+      read -rsp "  SMTP password (leave blank to reuse IMAP password): " MAILBOX_SMTP_PASSWORD; echo ""
+      [[ -z "$MAILBOX_SMTP_PASSWORD" ]] && MAILBOX_SMTP_PASSWORD="$MAILBOX_IMAP_PASSWORD"
+      echo ""
+      ;;
+    *) info "Skipping mailbox integration setup" ;;
   esac
 fi
 
@@ -600,6 +646,9 @@ setup_labels() {
   _do_label "source:ux-audit"        "5319e7" "From UI review / session recordings"
   _do_label "source:user-feedback"   "5319e7" "From insights/qualitative/*"
   _do_label "source:manual"          "5319e7" "Hypothesis without data source"
+  _do_label "source:mailbox"         "5319e7" "From inbox email — incoming customer requests"
+  _do_label "action:reply"           "0052cc" "Approved mailbox issue — agent will send email reply"
+  _do_label "action:fix"             "0052cc" "Approved mailbox issue — agent will make a code change"
   _do_label "priority:p0"            "b60205" "Breaks revenue or disables a feature right now"
   _do_label "priority:p1"            "d93f0b" "This week"
   _do_label "priority:p2"            "fbca04" "This month"
@@ -679,6 +728,7 @@ HEREDOC
   [[ "$MOD_COOLIFY"       == true ]] && echo "- **Coolify logs** (Daily 9:00) — deployment monitoring → fix errors"
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- **CLAUDE.md update** (Weekdays 9:00) — re-generates this file from codebase"
   [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Architecture review** (Weekly Sun 2:00) — \`/improve-codebase-architecture\` → GitHub issues"
+  [[ "$MOD_MAILBOX"       == true ]] && echo "- **Mailbox check** (Hourly) — IMAP inbox → GitHub issues with \`action:reply\` / \`action:fix\` choice; approved replies sent via SMTP"
   echo ""
   echo "Schedule: \`.darkflow.d/routines.yml\`  |  Dispatcher: \`bash .darkflow.d/darkflow-run.sh\`"
   echo "Run any routine manually: \`bash .darkflow.d/darkflow-run.sh <name>\`"
@@ -699,6 +749,7 @@ HEREDOC
   [[ "$MOD_COOLIFY"       == true ]] && echo "- \`/darkflow:deployment-failure\` — diagnose and fix a failed deployment"
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- \`/darkflow:claude-md-update\` — regenerate CLAUDE.md from codebase"
   [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- \`/darkflow:architecture-review\` — architectural analysis → GitHub issues"
+  [[ "$MOD_MAILBOX"       == true ]] && echo "- \`/darkflow:mailbox-check\` — read new mail and send approved replies via SMTP"
   echo "- \`/darkflow:security-audit\` — full security review (static + runtime) → GitHub issues"
 }
 
@@ -1024,10 +1075,16 @@ smart_update_template ".claude/commands/darkflow/claude-md-update.md"           
 smart_update_template ".claude/commands/darkflow/security-audit.md"               ".claude/commands/darkflow/security-audit.md"
 smart_update_template ".claude/commands/darkflow/vulnerability-check.md"          ".claude/commands/darkflow/vulnerability-check.md"
 smart_update_template ".claude/commands/darkflow/architecture-review.md"          ".claude/commands/darkflow/architecture-review.md"
+smart_update_template ".claude/commands/darkflow/mailbox-check.md"                ".claude/commands/darkflow/mailbox-check.md"
 
 smart_update_template "darkflow/darkflow-run.sh"        ".darkflow.d/darkflow-run.sh"        "true"
 smart_update_template "darkflow/install-scheduler.sh"   ".darkflow.d/install-scheduler.sh"   "true"
 smart_update_template "darkflow/uninstall-scheduler.sh" ".darkflow.d/uninstall-scheduler.sh" "true"
+
+if [[ "$MOD_MAILBOX" == true ]]; then
+  smart_update_template "darkflow/mailbox/fetch.py" ".darkflow.d/mailbox/fetch.py" "true"
+  smart_update_template "darkflow/mailbox/send.py"  ".darkflow.d/mailbox/send.py"  "true"
+fi
 
 # ── 3. Config (.darkflow) ─────────────────────────────────────────────────────
 
@@ -1043,6 +1100,7 @@ if [[ "$DRY_RUN" == false ]]; then
     [[ "$MOD_COOLIFY"       == true ]] && _local_mods="${_local_mods}coolify,"
     [[ "$MOD_CLAUDE_UPDATE" == true ]] && _local_mods="${_local_mods}claude-update,"
     [[ "$MOD_ARCH_REVIEW"   == true ]] && _local_mods="${_local_mods}arch-review,"
+    [[ "$MOD_MAILBOX"       == true ]] && _local_mods="${_local_mods}mailbox,"
     [[ "$SETUP_SCHEDULER"   == true ]] && _local_mods="${_local_mods}scheduler,"
     {
       echo "# Dark Flow project config — managed by install.sh"
@@ -1075,21 +1133,37 @@ if [[ "$DRY_RUN" == false ]]; then
   fi
 
   # Integration credentials
-  if [[ -n "$OBS_URL" || -n "$OBS_API_KEY" ]]; then
+  if [[ -n "$OBS_URL" || -n "$OBS_API_KEY" || -n "$MAILBOX_IMAP_HOST" ]]; then
     {
       echo "# Dark Flow — integration credentials"
       echo "# Copy to your main .env (do NOT commit if it contains real keys)"
-      echo ""
-      [[ -n "$OBS_TOOL"    ]] && echo "# ${OBS_TOOL}"
-      [[ -n "$OBS_URL"     ]] && echo "OBSERVABILITY_URL=${OBS_URL}"
-      [[ -n "$OBS_API_KEY" ]] && echo "OBSERVABILITY_API_KEY=${OBS_API_KEY}"
+      if [[ -n "$OBS_TOOL" || -n "$OBS_URL" || -n "$OBS_API_KEY" ]]; then
+        echo ""
+        [[ -n "$OBS_TOOL"    ]] && echo "# ${OBS_TOOL}"
+        [[ -n "$OBS_URL"     ]] && echo "OBSERVABILITY_URL=${OBS_URL}"
+        [[ -n "$OBS_API_KEY" ]] && echo "OBSERVABILITY_API_KEY=${OBS_API_KEY}"
+      fi
+      if [[ -n "$MAILBOX_IMAP_HOST" ]]; then
+        echo ""
+        echo "# Mailbox — IMAP (incoming)"
+        echo "MAILBOX_IMAP_HOST=${MAILBOX_IMAP_HOST}"
+        echo "MAILBOX_IMAP_PORT=${MAILBOX_IMAP_PORT:-993}"
+        echo "MAILBOX_IMAP_USER=${MAILBOX_IMAP_USER}"
+        echo "MAILBOX_IMAP_PASSWORD=${MAILBOX_IMAP_PASSWORD}"
+        echo ""
+        echo "# Mailbox — SMTP (outgoing replies)"
+        echo "MAILBOX_SMTP_HOST=${MAILBOX_SMTP_HOST}"
+        echo "MAILBOX_SMTP_PORT=${MAILBOX_SMTP_PORT:-587}"
+        echo "MAILBOX_SMTP_USER=${MAILBOX_SMTP_USER}"
+        echo "MAILBOX_SMTP_PASSWORD=${MAILBOX_SMTP_PASSWORD}"
+      fi
     } > ".env.darkflow"
     grep -qF ".env.darkflow" .gitignore 2>/dev/null || echo ".env.darkflow" >> .gitignore
     success "Credentials saved to .env.darkflow (git-ignored)"
   fi
 
   # .gitignore entries
-  for _gi in ".darkflow.d/state/" ".darkflow.d/*.log"; do
+  for _gi in ".darkflow.d/state/" ".darkflow.d/mailbox/state/" ".darkflow.d/*.log"; do
     grep -qF "$_gi" .gitignore 2>/dev/null || { echo "$_gi" >> .gitignore; success "Added ${_gi} to .gitignore"; }
   done
 fi
@@ -1159,6 +1233,14 @@ YAML
   architecture-review:
     cron: "0 2 * * 0"
     model: opus
+    enabled: true
+YAML
+
+      [[ "$MOD_MAILBOX" == true ]] && cat << 'YAML'
+
+  mailbox-check:
+    cron: "0 * * * *"
+    model: sonnet
     enabled: true
 YAML
 

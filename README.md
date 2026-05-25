@@ -137,6 +137,7 @@ The real power comes from scheduling Claude agents that run the loop automatical
 | [Architecture review](routines/architecture-review.md) | `0 2 * * 0` | Weekly Sun 2:00 — `/improve-codebase-architecture` → issues |
 | [Security audit](routines/security-audit.md) | `0 3 * * 0` | Weekly Sun 3:00 — full security review → issues |
 | [Vulnerability check](routines/vulnerability-check.md) | `0 6 * * *` | Daily 6:00 — GitHub Dependabot + code/secret scanning alerts → issues |
+| [Mailbox check](routines/mailbox-check.md) | `0 * * * *` | Hourly — IMAP inbox → issues; approved `action:reply` issues → SMTP reply *(optional)* |
 | [**Deployment failure fix**](routines/deployment-failure.md) | *(manual/webhook)* | Diagnoses → fixes → redeploys on failure |
 
 Cron times are in the machine's local timezone. Schedule is defined in `.darkflow.d/routines.yml` — edit it to change frequency, model, or enable/disable a routine.
