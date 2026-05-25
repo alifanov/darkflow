@@ -61,7 +61,7 @@ export default async function ProjectPage({
       securityStatus: true,
       architectureStatus: true,
       workerStatus: true,
-      routineLogs: { orderBy: { timestamp: "desc" }, take: 100 },
+      routineLogs: { orderBy: { timestamp: "desc" }, take: 100, select: { id: true, routine: true, summary: true, output: true, timestamp: true } },
       routineConfigs: { orderBy: { name: "asc" } },
       commits: { orderBy: { committedAt: "desc" }, take: 50 },
     },
@@ -334,7 +334,7 @@ function IssueRow({
 function RoutineLogsList({
   logs,
 }: {
-  logs: { id: string; routine: string; summary: string; timestamp: Date }[];
+  logs: { id: string; routine: string; summary: string; output: string | null; timestamp: Date }[];
 }) {
   if (logs.length === 0) {
     return <p style={{ color: "var(--muted)" }}>No logs yet.</p>;
@@ -348,21 +348,59 @@ function RoutineLogsList({
         {logs.map((l) => (
           <div
             key={l.id}
-            className="flex items-center gap-3 rounded-lg border px-4 py-3"
+            className="rounded-lg border"
             style={{ background: "var(--surface)", borderColor: "var(--border)" }}
           >
-            <span className="text-xs font-mono shrink-0" style={{ color: "var(--muted)" }}>
-              <LocalTime date={l.timestamp} />
-            </span>
-            <span
-              className="rounded-full px-2 py-0.5 text-xs font-medium font-mono shrink-0"
-              style={{ background: "var(--bg)", color: "var(--text)", border: "1px solid var(--border)" }}
-            >
-              {l.routine}
-            </span>
-            <span className="text-sm truncate" style={{ color: "var(--text)" }}>
-              {l.summary}
-            </span>
+            {l.output ? (
+              <details>
+                <summary
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer list-none select-none"
+                  style={{ color: "var(--text)" }}
+                >
+                  <span className="text-xs font-mono shrink-0" style={{ color: "var(--muted)" }}>
+                    <LocalTime date={l.timestamp} />
+                  </span>
+                  <span
+                    className="rounded-full px-2 py-0.5 text-xs font-medium font-mono shrink-0"
+                    style={{ background: "var(--bg)", color: "var(--text)", border: "1px solid var(--border)" }}
+                  >
+                    {l.routine}
+                  </span>
+                  <span className="text-sm flex-1 truncate" style={{ color: "var(--text)" }}>
+                    {l.summary}
+                  </span>
+                  <span className="text-xs shrink-0" style={{ color: "var(--muted)" }}>
+                    ▶ output
+                  </span>
+                </summary>
+                <div
+                  className="px-4 pb-4 pt-1 border-t"
+                  style={{ borderColor: "var(--border)" }}
+                >
+                  <pre
+                    className="text-xs font-mono whitespace-pre-wrap break-words overflow-auto max-h-[500px] p-3 rounded"
+                    style={{ background: "var(--bg)", color: "var(--text)", lineHeight: 1.5 }}
+                  >
+                    {l.output}
+                  </pre>
+                </div>
+              </details>
+            ) : (
+              <div className="flex items-center gap-3 px-4 py-3">
+                <span className="text-xs font-mono shrink-0" style={{ color: "var(--muted)" }}>
+                  <LocalTime date={l.timestamp} />
+                </span>
+                <span
+                  className="rounded-full px-2 py-0.5 text-xs font-medium font-mono shrink-0"
+                  style={{ background: "var(--bg)", color: "var(--text)", border: "1px solid var(--border)" }}
+                >
+                  {l.routine}
+                </span>
+                <span className="text-sm truncate" style={{ color: "var(--text)" }}>
+                  {l.summary}
+                </span>
+              </div>
+            )}
           </div>
         ))}
       </div>

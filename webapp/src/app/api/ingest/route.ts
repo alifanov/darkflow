@@ -34,6 +34,7 @@ interface IngestArchitecture {
 interface IngestLog {
   routine: string;
   summary: string;
+  output?: string;
   timestamp?: string;
 }
 
@@ -180,6 +181,7 @@ export async function POST(req: NextRequest) {
         projectId: project.id,
         routine: l.routine,
         summary: l.summary,
+        output: l.output ?? null,
         timestamp: l.timestamp ? new Date(l.timestamp) : new Date(),
       })),
     });
