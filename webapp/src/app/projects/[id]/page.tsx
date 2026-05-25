@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { IssueActions } from "@/components/IssueActions";
 import { DeleteProjectButton } from "@/components/DeleteProjectButton";
+import { LocalTime } from "@/components/LocalTime";
 
 export const dynamic = "force-dynamic";
 
@@ -106,7 +107,7 @@ export default async function ProjectPage({
             </div>
             {project.lastSyncedAt && (
               <div className="text-sm mt-1" style={{ color: "var(--muted)" }}>
-                Last synced {project.lastSyncedAt.toISOString().slice(0, 16).replace("T", " ")} UTC
+                Last synced <LocalTime date={project.lastSyncedAt} />
               </div>
             )}
             {workerAlive && ws.status === "running" && (
@@ -347,7 +348,7 @@ function RoutineLogsList({
             style={{ background: "var(--surface)", borderColor: "var(--border)" }}
           >
             <span className="text-xs font-mono shrink-0" style={{ color: "var(--muted)" }}>
-              {l.timestamp.toISOString().slice(0, 16).replace("T", " ")} UTC
+              <LocalTime date={l.timestamp} />
             </span>
             <span
               className="rounded-full px-2 py-0.5 text-xs font-medium font-mono shrink-0"
@@ -428,7 +429,7 @@ function RoutineConfigList({
               )}
             </div>
             <div className="text-xs mt-2" style={{ color: "var(--muted)" }}>
-              Updated: {c.updatedAt.toISOString().slice(0, 16).replace("T", " ")} UTC
+              Updated: <LocalTime date={c.updatedAt} />
             </div>
           </div>
         ))}

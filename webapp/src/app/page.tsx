@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { LocalTime } from "@/components/LocalTime";
 
 export const dynamic = "force-dynamic";
 
@@ -86,7 +87,7 @@ export default async function ProjectsPage() {
                 </div>
                 {p.lastSyncedAt && (
                   <div className="text-xs mt-2" style={{ color: "var(--muted)" }}>
-                    Last synced {p.lastSyncedAt.toISOString().slice(0, 16).replace("T", " ")} UTC
+                    Last synced <LocalTime date={p.lastSyncedAt} />
                   </div>
                 )}
               </Link>
