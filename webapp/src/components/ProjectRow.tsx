@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { LocalTime } from "@/components/LocalTime";
 
 interface ProjectRowProps {
+  index: number;
   id: string;
   name: string;
   repoUrl: string | null;
@@ -19,6 +20,7 @@ interface ProjectRowProps {
 }
 
 export function ProjectRow({
+  index,
   id,
   name,
   repoUrl,
@@ -50,6 +52,11 @@ export function ProjectRow({
       tabIndex={0}
       style={{ borderBottom: "1px solid var(--border)" }}
     >
+      {/* Index */}
+      <td className="py-3 px-4 font-mono text-xs" style={{ color: "var(--muted)", width: "2.5rem" }}>
+        {index}
+      </td>
+
       {/* Name */}
       <td className="py-3 px-4 font-semibold" style={{ color: "var(--text)" }}>
         {name}

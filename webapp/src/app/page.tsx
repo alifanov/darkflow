@@ -25,9 +25,19 @@ export default async function ProjectsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6" style={{ color: "var(--text)" }}>
-        Projects
-      </h1>
+      <div className="flex items-center gap-3 mb-6">
+        <h1 className="text-2xl font-bold" style={{ color: "var(--text)" }}>
+          Projects
+        </h1>
+        {projects.length > 0 && (
+          <span
+            className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
+            style={{ background: "var(--surface)", color: "var(--muted)", border: "1px solid var(--border)" }}
+          >
+            {projects.length}
+          </span>
+        )}
+      </div>
       {projects.length === 0 ? (
         <p style={{ color: "var(--muted)" }}>
           No projects yet. Worker will register projects on first sync.
@@ -37,10 +47,10 @@ export default async function ProjectsPage() {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
-                {["Name", "Repo", "Branch", "Version", "Worker", "Proposed", "Issues", "Last synced"].map((col, i) => (
+                {["#", "Name", "Repo", "Branch", "Version", "Worker", "Proposed", "Issues", "Last synced"].map((col, i) => (
                   <th
                     key={col}
-                    className={`py-2 px-4 text-xs font-medium uppercase tracking-wider text-left${i >= 5 && i <= 6 ? " text-right" : ""}`}
+                    className={`py-2 px-4 text-xs font-medium uppercase tracking-wider text-left${i >= 6 && i <= 7 ? " text-right" : ""}`}
                     style={{ color: "var(--muted)" }}
                   >
                     {col}
@@ -49,7 +59,7 @@ export default async function ProjectsPage() {
               </tr>
             </thead>
             <tbody>
-              {projects.map((p) => {
+              {projects.map((p, idx) => {
                 const ws = p.workerStatus;
                 const alive = ws && now - new Date(ws.updatedAt).getTime() < ALIVE_MS;
                 const workerState = alive
@@ -67,6 +77,7 @@ export default async function ProjectsPage() {
                 return (
                   <ProjectRow
                     key={p.id}
+                    index={idx + 1}
                     id={p.id}
                     name={p.name}
                     repoUrl={p.repoUrl}
