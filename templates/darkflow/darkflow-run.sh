@@ -504,6 +504,12 @@ sync_webapp() {
   [[ -f "${METRICS_DIR}/security.json" ]]      && security_json=$(cat "${METRICS_DIR}/security.json")
   [[ -f "${METRICS_DIR}/architecture.json" ]]  && architecture_json=$(cat "${METRICS_DIR}/architecture.json")
 
+  # Read attention items from .darkflow.d/attention.json (written by routines/scripts)
+  local alerts_json="[]"
+  if [[ -f "${DARKFLOW_D}/attention.json" ]]; then
+    alerts_json=$(jq -c '.' "${DARKFLOW_D}/attention.json" 2>/dev/null || echo "[]")
+  fi
+
   # Build logs JSON array from accumulated PENDING_LOGS
   local logs_json="[]"
   if [[ "${#PENDING_LOGS[@]}" -gt 0 ]]; then
@@ -551,6 +557,7 @@ sync_webapp() {
     --argjson logs       "$logs_json" \
     --argjson routines   "$routines_json" \
     --argjson commits    "$commits_json" \
+    --argjson alerts     "$alerts_json" \
     '{
       repoUrl:       $repoUrl,
       name:          $name,
@@ -561,7 +568,8 @@ sync_webapp() {
       issues:        $issues,
       logs:          $logs,
       routines:      $routines,
-      commits:       $commits
+      commits:       $commits,
+      alerts:        $alerts
     }
     | if $analytics   != null then . + {analytics: $analytics}     else . end
     | if $security    != null then . + {security: $security}        else . end

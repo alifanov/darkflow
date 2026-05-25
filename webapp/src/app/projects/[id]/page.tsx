@@ -32,18 +32,26 @@ const CARDS: { key: string; label: string; statuses: string[] }[] = [
   { key: "rejected", label: "Rejected", statuses: ["rejected", "blocked"] },
 ];
 
-const TABS: { key: "issues" | "logs" | "routines" | "commits"; label: string }[] = [
+const TABS: { key: "issues" | "logs" | "routines" | "commits" | "attention"; label: string }[] = [
   { key: "issues", label: "Issues" },
   { key: "logs", label: "Logs" },
   { key: "routines", label: "Routines" },
   { key: "commits", label: "Commits" },
+  { key: "attention", label: "Need Attention" },
 ];
 
 type TabKey = (typeof TABS)[number]["key"];
 
 function isTab(v: string | undefined): v is TabKey {
-  return v === "issues" || v === "logs" || v === "routines" || v === "commits";
+  return v === "issues" || v === "logs" || v === "routines" || v === "commits" || v === "attention";
 }
+
+const SEVERITY_ORDER: Record<string, number> = { critical: 0, warning: 1, info: 2 };
+const SEVERITY_COLOR: Record<string, string> = {
+  critical: "var(--red)",
+  warning: "#d29922",
+  info: "var(--accent)",
+};
 
 export default async function ProjectPage({
   params,
@@ -64,6 +72,7 @@ export default async function ProjectPage({
       routineLogs: { orderBy: { timestamp: "desc" }, take: 100, select: { id: true, routine: true, summary: true, output: true, timestamp: true } },
       routineConfigs: { orderBy: { name: "asc" } },
       commits: { orderBy: { committedAt: "desc" }, take: 50 },
+      alerts: { orderBy: { createdAt: "asc" } },
     },
   });
 
@@ -140,11 +149,13 @@ export default async function ProjectPage({
         {TABS.map((t) => {
           const isActive = activeTab === t.key;
           const href = t.key === "issues" ? `/projects/${project.id}` : `/projects/${project.id}?tab=${t.key}`;
+          const alertCount = t.key === "attention" ? project.alerts.length : 0;
+          const hasCritical = t.key === "attention" && project.alerts.some((a) => a.severity === "critical");
           return (
             <Link
               key={t.key}
               href={href}
-              className="px-4 py-2 text-sm border-b-2 -mb-px transition-colors"
+              className="px-4 py-2 text-sm border-b-2 -mb-px transition-colors flex items-center gap-1.5"
               style={{
                 color: isActive ? "var(--text)" : "var(--muted)",
                 borderBottomColor: isActive ? "var(--accent)" : "transparent",
@@ -152,6 +163,19 @@ export default async function ProjectPage({
               }}
             >
               {t.label}
+              {alertCount > 0 && (
+                <span
+                  className="rounded-full px-1.5 py-0 text-[10px] font-bold leading-5"
+                  style={{
+                    background: hasCritical ? "var(--red)" : "#d29922",
+                    color: "#fff",
+                    minWidth: "1.25rem",
+                    textAlign: "center",
+                  }}
+                >
+                  {alertCount}
+                </span>
+              )}
             </Link>
           );
         })}
@@ -172,6 +196,8 @@ export default async function ProjectPage({
       {activeTab === "routines" && <RoutineConfigList configs={project.routineConfigs} />}
 
       {activeTab === "commits" && <CommitList commits={project.commits} />}
+
+      {activeTab === "attention" && <AttentionTab alerts={project.alerts} />}
     </div>
   );
 }
@@ -539,6 +565,71 @@ function RoutineConfigList({
             </div>
           </div>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function AttentionTab({
+  alerts,
+}: {
+  alerts: { id: string; key: string; title: string; severity: string; details: string | null; createdAt: Date }[];
+}) {
+  if (alerts.length === 0) {
+    return <p style={{ color: "var(--muted)" }}>No attention items. Everything looks healthy.</p>;
+  }
+
+  const sorted = [...alerts].sort(
+    (a, b) => (SEVERITY_ORDER[a.severity] ?? 99) - (SEVERITY_ORDER[b.severity] ?? 99)
+  );
+
+  return (
+    <section>
+      <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text)" }}>
+        Needs attention ({alerts.length})
+      </h2>
+      <div className="flex flex-col gap-2">
+        {sorted.map((alert) => {
+          const color = SEVERITY_COLOR[alert.severity] ?? "var(--muted)";
+          return (
+            <div
+              key={alert.id}
+              className="rounded-lg border overflow-hidden flex"
+              style={{ background: "var(--surface)", borderColor: "var(--border)" }}
+            >
+              <div
+                className="w-1 shrink-0"
+                style={{ background: color }}
+              />
+              <div className="flex-1 p-4">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className="rounded-full px-2 py-0.5 text-xs font-medium uppercase tracking-wide"
+                      style={{ background: "transparent", color, border: `1px solid ${color}` }}
+                    >
+                      {alert.severity}
+                    </span>
+                    <span className="font-medium" style={{ color: "var(--text)" }}>
+                      {alert.title}
+                    </span>
+                  </div>
+                  <span className="text-xs shrink-0" style={{ color: "var(--muted)" }}>
+                    Detected <LocalTime date={alert.createdAt} />
+                  </span>
+                </div>
+                {alert.details && (
+                  <pre
+                    className="text-xs font-mono whitespace-pre-wrap break-words mt-3 p-3 rounded"
+                    style={{ background: "var(--bg)", color: "var(--text)", lineHeight: 1.6 }}
+                  >
+                    {alert.details}
+                  </pre>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

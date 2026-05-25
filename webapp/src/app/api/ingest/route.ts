@@ -55,6 +55,13 @@ interface IngestCommit {
   url?: string | null;
 }
 
+interface IngestAlert {
+  key: string;
+  title: string;
+  severity?: string;
+  details?: string | null;
+}
+
 interface IngestBody {
   repoUrl: string;
   name?: string;
@@ -69,6 +76,7 @@ interface IngestBody {
   logs?: IngestLog[];
   routines?: IngestRoutine[];
   commits?: IngestCommit[];
+  alerts?: IngestAlert[];
 }
 
 export async function POST(req: NextRequest) {
@@ -216,6 +224,30 @@ export async function POST(req: NextRequest) {
       })),
       skipDuplicates: true,
     });
+  }
+
+  if (body.alerts !== undefined) {
+    const incomingKeys = body.alerts.map((a) => a.key);
+    await prisma.projectAlert.deleteMany({
+      where: { projectId: project.id, key: { notIn: incomingKeys } },
+    });
+    for (const a of body.alerts) {
+      await prisma.projectAlert.upsert({
+        where: { projectId_key: { projectId: project.id, key: a.key } },
+        create: {
+          projectId: project.id,
+          key: a.key,
+          title: a.title,
+          severity: a.severity ?? "warning",
+          details: a.details ?? null,
+        },
+        update: {
+          title: a.title,
+          severity: a.severity ?? "warning",
+          details: a.details ?? null,
+        },
+      });
+    }
   }
 
   return NextResponse.json({ ok: true, projectId: project.id });
