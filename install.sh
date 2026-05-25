@@ -4,7 +4,7 @@
 #
 # New project:       bash install.sh
 # Existing project:  bash install.sh  (auto-detects installed version)
-# One-liner:         bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh)
+# One-liner:         curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh -o /tmp/darkflow-install.sh && bash /tmp/darkflow-install.sh
 # All modules:       bash install.sh --all
 # Silent/CI:         bash install.sh --yes
 # Preview changes:   bash install.sh --dry-run

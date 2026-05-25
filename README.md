@@ -61,7 +61,7 @@ Open Claude Code in your project directory and paste this message:
 Install Dark Flow workflow from https://github.com/alifanov/darkflow
 
 Run the installer:
-bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh)
+curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh -o /tmp/darkflow-install.sh && bash /tmp/darkflow-install.sh
 
 Ask me which optional modules I want (analytics, observability, GSC, ads, Coolify, CLAUDE.md update),
 then run the installer with the appropriate flags.
@@ -249,7 +249,7 @@ Run the same install command — it detects your installed version and updates a
 
 ```
 Update Dark Flow in this project:
-bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh)
+curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh -o /tmp/darkflow-install.sh && bash /tmp/darkflow-install.sh
 
 After updating, commit the changes.
 ```
@@ -270,7 +270,7 @@ If already on the latest version, the installer exits immediately with "Already 
 If something is missing or broken, run the installer with `--force`:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh) --force
+curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh -o /tmp/darkflow-install.sh && bash /tmp/darkflow-install.sh --force
 ```
 
 The installer verifies every artifact defined in `checklist.yml` and auto-fixes what's missing.
