@@ -693,7 +693,14 @@ check_for_update() {
 
   local ts; ts=$(date -u +%FT%TZ)
   local claude_output exit_code=0
-  claude_output=$(claude -p "/darkflow:self-update" --model sonnet --permission-mode bypassPermissions 2>&1) || exit_code=$?
+  # Fallback: if the slash command isn't installed yet (pre-2.20.0 projects),
+  # run the installer directly instead of failing with "Unknown command".
+  if [[ -f ".claude/commands/darkflow/self-update.md" ]]; then
+    claude_output=$(claude -p "/darkflow:self-update" --model sonnet --permission-mode bypassPermissions 2>&1) || exit_code=$?
+  else
+    log "UPDATE self-update.md not found, running installer directly"
+    claude_output=$(bash <(curl -fsSL -m 30 "${DARKFLOW_REPO}/install.sh") --force --yes 2>&1) || exit_code=$?
+  fi
 
   local status_str="ok"
   [[ "$exit_code" != "0" ]] && status_str="exit:${exit_code}"
