@@ -105,11 +105,22 @@ export default async function ProjectPage({
 
   if (!project) notFound();
 
+  const PRIORITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
   const activeTab: TabKey = isTab(tab) ? tab : "issues";
-  const activeCard = CARDS.find((c) => c.key === filter);
+
+  const sortedIssues = [...project.issues].sort((a, b) => {
+    const pa = PRIORITY_ORDER[a.priority ?? ""] ?? 99;
+    const pb = PRIORITY_ORDER[b.priority ?? ""] ?? 99;
+    if (pa !== pb) return pa - pb;
+    return b.number - a.number;
+  });
+
+  const showAll = filter === "all";
+  const effectiveFilter = showAll ? undefined : (filter ?? "proposed");
+  const activeCard = CARDS.find((c) => c.key === effectiveFilter);
   const displayed = activeCard
-    ? project.issues.filter((i) => activeCard.statuses.includes(i.status))
-    : project.issues;
+    ? sortedIssues.filter((i) => activeCard.statuses.includes(i.status))
+    : sortedIssues;
 
   const now = Date.now();
   // Worker heartbeats every 30 s; 75 s tolerates one missed beat before flipping offline.
@@ -211,8 +222,9 @@ export default async function ProjectPage({
       {activeTab === "issues" && (
         <IssuesTab
           projectId={project.id}
-          issues={project.issues}
-          filter={filter}
+          issues={sortedIssues}
+          effectiveFilter={effectiveFilter}
+          showAll={showAll}
           displayed={displayed}
           activeCard={activeCard}
         />
@@ -232,7 +244,8 @@ export default async function ProjectPage({
 function IssuesTab({
   projectId,
   issues,
-  filter,
+  effectiveFilter,
+  showAll,
   displayed,
   activeCard,
 }: {
@@ -246,7 +259,8 @@ function IssuesTab({
     priority: string | null;
     url: string | null;
   }[];
-  filter: string | undefined;
+  effectiveFilter: string | undefined;
+  showAll: boolean;
   displayed: typeof issues;
   activeCard: (typeof CARDS)[number] | undefined;
 }) {
@@ -256,12 +270,12 @@ function IssuesTab({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           {CARDS.map((card) => {
             const count = issues.filter((i) => card.statuses.includes(i.status)).length;
-            const isActive = filter === card.key;
+            const isActive = !showAll && effectiveFilter === card.key;
             const accent = STATUS_TEXT[card.key] ?? "var(--muted)";
             return (
               <Link
                 key={card.key}
-                href={isActive ? `/projects/${projectId}` : `/projects/${projectId}?filter=${card.key}`}
+                href={isActive ? `/projects/${projectId}?filter=all` : `/projects/${projectId}?filter=${card.key}`}
                 className="rounded-lg border p-4 flex flex-col gap-1 transition-colors"
                 style={{
                   background: isActive ? STATUS_COLORS[card.key] ?? "var(--surface)" : "var(--surface)",
@@ -336,7 +350,7 @@ function IssueTableRow({
         #{issue.number}
       </td>
       <td className="py-3 px-4">
-        <div className="font-medium truncate max-w-md" style={{ color: "var(--text)" }}>
+        <div className="font-medium" style={{ color: "var(--text)" }}>
           {issue.url ? (
             <a href={issue.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
               {issue.title}

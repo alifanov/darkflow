@@ -37,10 +37,10 @@ export default async function ProjectsPage() {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
-                {["Name", "Repo", "Version", "Worker", "Proposed", "Issues", "Last synced"].map((col, i) => (
+                {["Name", "Repo", "Branch", "Version", "Worker", "Proposed", "Issues", "Last synced"].map((col, i) => (
                   <th
                     key={col}
-                    className={`py-2 px-4 text-xs font-medium uppercase tracking-wider text-left${i >= 4 && i <= 5 ? " text-right" : ""}`}
+                    className={`py-2 px-4 text-xs font-medium uppercase tracking-wider text-left${i >= 5 && i <= 6 ? " text-right" : ""}`}
                     style={{ color: "var(--muted)" }}
                   >
                     {col}
@@ -70,6 +70,7 @@ export default async function ProjectsPage() {
                     id={p.id}
                     name={p.name}
                     repoUrl={p.repoUrl}
+                    branch={p.branch}
                     versionBadge={versionBadge}
                     darkflowVersion={p.darkflowVersion}
                     latestVersion={latestVersion}
