@@ -325,11 +325,9 @@ run_routine() {
   send_heartbeat "running" "$name"
   start_heartbeat_loop "$name"
 
-  if claude -p "/darkflow:${name}" --model "${model}" "${perm_args[@]}"; then
-    exit_code=0
-  else
-    exit_code=$?
-  fi
+  local claude_output
+  claude_output=$(claude -p "/darkflow:${name}" --model "${model}" "${perm_args[@]}" 2>&1)
+  exit_code=$?
 
   stop_heartbeat_loop
   send_heartbeat "idle"
@@ -340,7 +338,9 @@ run_routine() {
   local status_str="ok"
   [[ "$exit_code" != "0" ]] && status_str="exit:${exit_code}"
   local ts; ts=$(date -u +%FT%TZ)
-  PENDING_LOGS+=("{\"routine\":\"${name}\",\"summary\":\"ran ${name} — ${status_str}\",\"timestamp\":\"${ts}\"}")
+  local output_json
+  output_json=$(jq -Rsa '.' <<< "$claude_output")
+  PENDING_LOGS+=("{\"routine\":\"${name}\",\"summary\":\"ran ${name} — ${status_str}\",\"output\":${output_json},\"timestamp\":\"${ts}\"}")
 
   return $exit_code
 }
