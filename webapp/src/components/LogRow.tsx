@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { LocalTime } from "@/components/LocalTime";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface LogRowProps {
   id: string;
@@ -51,6 +52,7 @@ export function LogRow({ routine, summary, output, timestamp }: LogRowProps) {
               style={{ background: "var(--bg)", color: "var(--text)", lineHeight: 1.5 }}
             >
               <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
                 components={{
                   code: ({ children, className }) => {
                     const isBlock = className?.includes("language-");
@@ -78,6 +80,20 @@ export function LogRow({ routine, summary, output, timestamp }: LogRowProps) {
                       {children}
                     </blockquote>
                   ),
+                  table: ({ children }) => (
+                    <div className="overflow-x-auto my-2">
+                      <table className="text-xs border-collapse w-auto" style={{ borderColor: "var(--border)" }}>{children}</table>
+                    </div>
+                  ),
+                  thead: ({ children }) => <thead>{children}</thead>,
+                  tbody: ({ children }) => <tbody>{children}</tbody>,
+                  tr: ({ children }) => <tr style={{ borderBottom: "1px solid var(--border)" }}>{children}</tr>,
+                  th: ({ children }) => (
+                    <th className="px-3 py-1 text-left font-semibold" style={{ borderBottom: "1px solid var(--border)", color: "var(--muted)" }}>
+                      {children}
+                    </th>
+                  ),
+                  td: ({ children }) => <td className="px-3 py-1">{children}</td>,
                 }}
               >
                 {output}
