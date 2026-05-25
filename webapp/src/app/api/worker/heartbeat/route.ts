@@ -21,10 +21,10 @@ export async function POST(req: NextRequest) {
     create: {
       repoUrl,
       name: name ?? repoUrl.split("/").pop() ?? repoUrl,
-      darkflowVersion: darkflowVersion ?? null,
+      darkflowVersion: darkflowVersion || null,
     },
     update: {
-      ...(darkflowVersion !== undefined ? { darkflowVersion } : {}),
+      ...(darkflowVersion ? { darkflowVersion } : {}),
     },
   });
 
