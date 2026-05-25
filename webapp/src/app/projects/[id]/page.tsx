@@ -25,16 +25,16 @@ const STATUS_TEXT: Record<string, string> = {
 };
 
 const CARDS: { key: string; label: string; statuses: string[] }[] = [
-  { key: "proposed", label: "Требуют одобрения", statuses: ["proposed"] },
-  { key: "approved", label: "Одобрены", statuses: ["approved"] },
-  { key: "in-progress", label: "В процессе", statuses: ["in-progress"] },
-  { key: "rejected", label: "Отменены", statuses: ["rejected", "blocked"] },
+  { key: "proposed", label: "Needs approval", statuses: ["proposed"] },
+  { key: "approved", label: "Approved", statuses: ["approved"] },
+  { key: "in-progress", label: "In progress", statuses: ["in-progress"] },
+  { key: "rejected", label: "Rejected", statuses: ["rejected", "blocked"] },
 ];
 
 const TABS: { key: "issues" | "logs" | "routines"; label: string }[] = [
   { key: "issues", label: "Issues" },
-  { key: "logs", label: "Логи" },
-  { key: "routines", label: "Настройки рутин" },
+  { key: "logs", label: "Logs" },
+  { key: "routines", label: "Routines" },
 ];
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -99,7 +99,7 @@ export default async function ProjectPage({
               {project.repoUrl}
             </a>
             <div className="text-sm mt-1" style={{ color: "var(--muted)" }}>
-              Основная ветка:{" "}
+              Main branch:{" "}
               <span className="font-mono" style={{ color: "var(--text)" }}>
                 {project.branch}
               </span>
@@ -240,7 +240,7 @@ function IssuesTab({
               ))}
             </div>
           ) : (
-            <p style={{ color: "var(--muted)" }}>Нет issues в этой категории.</p>
+            <p style={{ color: "var(--muted)" }}>No issues in this category.</p>
           )}
         </section>
       )}
@@ -315,7 +315,7 @@ function IssueRow({
               color: "var(--muted)",
               border: "1px dashed var(--border)",
             }}
-            title="Ожидает синхронизации с GitHub"
+            title="Pending sync with GitHub"
           >
             pending sync
           </span>
@@ -332,12 +332,12 @@ function RoutineLogsList({
   logs: { id: string; routine: string; summary: string; timestamp: Date }[];
 }) {
   if (logs.length === 0) {
-    return <p style={{ color: "var(--muted)" }}>Логов пока нет.</p>;
+    return <p style={{ color: "var(--muted)" }}>No logs yet.</p>;
   }
   return (
     <section>
       <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text)" }}>
-        Последние выполнения ({logs.length})
+        Recent runs ({logs.length})
       </h2>
       <div className="flex flex-col gap-2">
         {logs.map((l) => (
@@ -381,15 +381,15 @@ function RoutineConfigList({
   if (configs.length === 0) {
     return (
       <p style={{ color: "var(--muted)" }}>
-        Настройки рутин ещё не получены от воркера. Они появятся после первой синхронизации с
-        обновлённой версией <span className="font-mono">darkflow-run.sh</span>.
+        Routine configs have not been received from the worker yet. They will appear after the first
+        sync with an updated version of <span className="font-mono">darkflow-run.sh</span>.
       </p>
     );
   }
   return (
     <section>
       <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text)" }}>
-        Рутины ({configs.length})
+        Routines ({configs.length})
       </h2>
       <div className="flex flex-col gap-2">
         {configs.map((c) => (
@@ -428,7 +428,7 @@ function RoutineConfigList({
               )}
             </div>
             <div className="text-xs mt-2" style={{ color: "var(--muted)" }}>
-              Обновлено: {c.updatedAt.toISOString().slice(0, 16).replace("T", " ")} UTC
+              Updated: {c.updatedAt.toISOString().slice(0, 16).replace("T", " ")} UTC
             </div>
           </div>
         ))}
