@@ -24,6 +24,7 @@ LOCK_DIR="${STATE_DIR}/.lock"
 LOG="${DARKFLOW_D}/darkflow-run.log"
 METRICS_DIR="${DARKFLOW_D}/state/metrics"
 DARKFLOW_CFG="${PROJECT_ROOT}/.darkflow"
+DARKFLOW_REPO="https://raw.githubusercontent.com/alifanov/darkflow/main"
 
 # Accumulated routine log entries for this dispatch cycle (JSON lines)
 PENDING_LOGS=()
@@ -658,6 +659,54 @@ stop_heartbeat_loop() {
   fi
 }
 
+# ── Self-update check ─────────────────────────────────────────────────────────
+# Fetches the latest Dark Flow VERSION from GitHub; if it differs from the
+# installed version, triggers /darkflow:self-update via Claude.
+# Throttled to at most once per minute via STATE_DIR/last-update-check.
+# Returns 0 always (update failure should never abort the caller).
+
+check_for_update() {
+  ! command -v curl   &>/dev/null && return 0
+  ! command -v claude &>/dev/null && return 0
+
+  local check_ts_file="${STATE_DIR}/last-update-check"
+  local last_check=0
+  [[ -f "$check_ts_file" ]] && last_check=$(cat "$check_ts_file" 2>/dev/null || echo 0)
+  local now_ts; now_ts=$(now_epoch)
+  if (( now_ts - last_check < 60 )); then
+    return 0
+  fi
+  echo "$now_ts" > "$check_ts_file"
+
+  local installed_version latest
+  installed_version=$(darkflow_val "version" "0.0.0")
+  [[ -z "$installed_version" ]] && installed_version="0.0.0"
+
+  latest=$(curl -fsSL -m 5 "${DARKFLOW_REPO}/VERSION" 2>/dev/null | tr -d '[:space:]') || latest=""
+  [[ -z "$latest" ]] && return 0   # no network or fetch failed — skip silently
+
+  [[ "$latest" == "$installed_version" ]] && return 0
+
+  log "UPDATE detected ${installed_version} → ${latest}, running /darkflow:self-update"
+
+  local ts; ts=$(date -u +%FT%TZ)
+  local claude_output exit_code=0
+  claude_output=$(claude -p "/darkflow:self-update" --model sonnet --permission-mode bypassPermissions 2>&1) || exit_code=$?
+
+  local status_str="ok"
+  [[ "$exit_code" != "0" ]] && status_str="exit:${exit_code}"
+  local output_json
+  output_json=$(jq -Rsa '.' <<< "$claude_output")
+  PENDING_LOGS+=("{\"routine\":\"self-update\",\"summary\":\"self-update ${installed_version}→${latest} — ${status_str}\",\"output\":${output_json},\"timestamp\":\"${ts}\"}")
+
+  if [[ "$exit_code" == "0" ]]; then
+    log "UPDATE complete (now at ${latest})"
+  else
+    log "UPDATE failed (exit ${exit_code})"
+  fi
+  return 0
+}
+
 # ── Mode: list ────────────────────────────────────────────────────────────────
 
 mode_list() {
@@ -767,6 +816,14 @@ mode_watch() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] Dark Flow started (tick every ${interval}s). Ctrl-C to stop."
   trap 'echo ""; log "WATCH  stopped (signal)"; stop_heartbeat_loop; exit 0' INT TERM
 
+  # Check for update at startup; exec self if a new version was installed.
+  local _watch_pre_ver; _watch_pre_ver=$(darkflow_val "version" "0.0.0")
+  check_for_update
+  if [[ "$(darkflow_val "version" "0.0.0")" != "$_watch_pre_ver" ]]; then
+    log "UPDATE reloading dispatcher"
+    exec "${BASH_SOURCE[0]}"
+  fi
+
   while true; do
     (( tick++ )) || true
     log "WATCH  tick ${tick}"
@@ -779,6 +836,16 @@ mode_watch() {
       # The heartbeat above keeps the worker-alive signal fresh every 30 s.
       if (( tick % 10 == 1 )); then
         sync_webapp
+      fi
+      # Check for update every 30 ticks (~15 min); reload if new version installed.
+      if (( tick % 30 == 0 )); then
+        local _tick_pre_ver; _tick_pre_ver=$(darkflow_val "version" "0.0.0")
+        check_for_update
+        if [[ "$(darkflow_val "version" "0.0.0")" != "$_tick_pre_ver" ]]; then
+          log "UPDATE reloading dispatcher"
+          release_lock
+          exec "${BASH_SOURCE[0]}"
+        fi
       fi
       release_lock
     else
@@ -888,6 +955,7 @@ case "${1:-}" in
   --once)
     preflight || exit 1
     acquire_lock
+    check_for_update
     mode_dispatch false
     sync_webapp
     ;;
