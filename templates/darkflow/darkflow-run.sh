@@ -249,12 +249,41 @@ preflight() {
 
 # ── Lock ──────────────────────────────────────────────────────────────────────
 
-acquire_lock() {
+# Try to take the dispatch lock. Returns 0 on success, 1 on contention.
+# Reclaims the lock if the recorded owner PID is no longer alive (stale lock
+# from a SIGKILLed / OOM-killed / power-loss dispatch that never ran its trap).
+try_acquire_lock() {
   mkdir -p "$STATE_DIR"
-  if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+  if mkdir "$LOCK_DIR" 2>/dev/null; then
+    echo "$$" > "$LOCK_DIR/pid"
+    return 0
+  fi
+
+  local owner_pid=""
+  [[ -f "$LOCK_DIR/pid" ]] && owner_pid=$(cat "$LOCK_DIR/pid" 2>/dev/null || echo "")
+
+  if [[ -n "$owner_pid" ]] && kill -0 "$owner_pid" 2>/dev/null; then
+    return 1
+  fi
+
+  log "LOCK   reclaiming stale lock (owner PID ${owner_pid:-unknown} not running)"
+  rm -rf "$LOCK_DIR"
+  if mkdir "$LOCK_DIR" 2>/dev/null; then
+    echo "$$" > "$LOCK_DIR/pid"
+    return 0
+  fi
+  return 1
+}
+
+release_lock() {
+  rm -rf "$LOCK_DIR" 2>/dev/null || true
+}
+
+acquire_lock() {
+  if ! try_acquire_lock; then
     exit 0
   fi
-  trap 'rmdir "$LOCK_DIR" 2>/dev/null || true; stop_heartbeat_loop' EXIT
+  trap 'release_lock; stop_heartbeat_loop' EXIT
 }
 
 # ── Routine execution ─────────────────────────────────────────────────────────
@@ -685,6 +714,7 @@ mode_manual() {
 mode_watch() {
   local interval=30
   local tick=0
+  local consecutive_skips=0
 
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] Dark Flow started (tick every ${interval}s). Ctrl-C to stop."
   trap 'echo ""; log "WATCH  stopped (signal)"; stop_heartbeat_loop; exit 0' INT TERM
@@ -694,17 +724,24 @@ mode_watch() {
     log "WATCH  tick ${tick}"
     send_heartbeat "idle"
 
-    mkdir -p "$STATE_DIR"
-    if mkdir "$LOCK_DIR" 2>/dev/null; then
+    if try_acquire_lock; then
+      consecutive_skips=0
       mode_dispatch false || log "WATCH  dispatch error (tick ${tick})"
       # Full web UI sync (GitHub issues + metadata) every 10th tick (~5 min).
       # The heartbeat above keeps the worker-alive signal fresh every 30 s.
       if (( tick % 10 == 1 )); then
         sync_webapp
       fi
-      rmdir "$LOCK_DIR" 2>/dev/null || true
+      release_lock
     else
-      log "WATCH  skipped tick ${tick} (another dispatch is running)"
+      (( consecutive_skips++ )) || true
+      local owner_pid=""
+      [[ -f "$LOCK_DIR/pid" ]] && owner_pid=$(cat "$LOCK_DIR/pid" 2>/dev/null || echo "")
+      if (( consecutive_skips >= 5 )); then
+        log "WATCH  WARN skipped tick ${tick} (${consecutive_skips} skips in a row, lock held by PID ${owner_pid:-unknown})"
+      else
+        log "WATCH  skipped tick ${tick} (another dispatch is running, PID ${owner_pid:-unknown})"
+      fi
     fi
 
     sleep "$interval" || true   # || true so SIGINT from Ctrl-C doesn't exit with error
