@@ -339,6 +339,7 @@ run_routine() {
 
   local status_str="ok"
   [[ "$exit_code" != "0" ]] && status_str="exit:${exit_code}"
+  log "DONE   ${name} (${status_str})"
   local ts; ts=$(date -u +%FT%TZ)
   local output_json
   output_json=$(jq -Rsa '.' <<< "$claude_output")
