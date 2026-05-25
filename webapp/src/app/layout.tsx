@@ -20,7 +20,7 @@ export default function RootLayout({
         >
           <span className="text-lg font-semibold tracking-tight">⚡ Dark Flow</span>
         </header>
-        <main className="max-w-5xl mx-auto px-6 py-8">{children}</main>
+        <main className="max-w-7xl mx-auto px-6 py-8">{children}</main>
       </body>
     </html>
   );
