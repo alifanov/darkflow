@@ -498,7 +498,7 @@ fetch_file() {
 # Add if missing. If exists: skip when identical, warn+diff if locally modified,
 # overwrite silently with --force.
 smart_update_template() {
-  local rel_path="$1" dest="$2" is_exec="${3:-}"
+  local rel_path="$1" dest="$2" is_exec="${3:-}" always_update="${4:-}"
 
   if [[ ! -f "$dest" ]]; then
     if [[ "$DRY_RUN" == false ]]; then
@@ -521,13 +521,17 @@ smart_update_template() {
 
   if [[ "$current" == "$latest" ]]; then
     skip "$dest (unchanged)"
-  elif [[ "$FORCE" == true ]]; then
+  elif [[ "$FORCE" == true || "$always_update" == "true" ]]; then
     if [[ "$DRY_RUN" == false ]]; then
       echo "$latest" > "$dest"
       [[ "$is_exec" == "true" ]] && chmod +x "$dest"
-      changed "Updated (--force): $dest"
+      if [[ "$always_update" == "true" ]]; then
+        changed "Updated (infrastructure): $dest"
+      else
+        changed "Updated (--force): $dest"
+      fi
     else
-      info "Would update (--force): $dest"
+      info "Would update: $dest"
     fi
   else
     warn "Locally modified: $dest"
@@ -1077,9 +1081,9 @@ smart_update_template ".claude/commands/darkflow/vulnerability-check.md"        
 smart_update_template ".claude/commands/darkflow/architecture-review.md"          ".claude/commands/darkflow/architecture-review.md"
 smart_update_template ".claude/commands/darkflow/mailbox-check.md"                ".claude/commands/darkflow/mailbox-check.md"
 
-smart_update_template "darkflow/darkflow-run.sh"        ".darkflow.d/darkflow-run.sh"        "true"
-smart_update_template "darkflow/install-scheduler.sh"   ".darkflow.d/install-scheduler.sh"   "true"
-smart_update_template "darkflow/uninstall-scheduler.sh" ".darkflow.d/uninstall-scheduler.sh" "true"
+smart_update_template "darkflow/darkflow-run.sh"        ".darkflow.d/darkflow-run.sh"        "true" "true"
+smart_update_template "darkflow/install-scheduler.sh"   ".darkflow.d/install-scheduler.sh"   "true" "true"
+smart_update_template "darkflow/uninstall-scheduler.sh" ".darkflow.d/uninstall-scheduler.sh" "true" "true"
 
 if [[ "$MOD_MAILBOX" == true ]]; then
   smart_update_template "darkflow/mailbox/fetch.py" ".darkflow.d/mailbox/fetch.py" "true"
