@@ -26,7 +26,6 @@ After the installer finishes, check for stale slash commands that are no longer 
    - `mailbox-check.md`
    - `observability-check.md`
    - `security-audit.md`
-   - `update.md`
    - `vulnerability-check.md`
 3. If there are any files **not** in the list above, show them to the user and ask whether to delete them (they are likely leftovers from an older Dark Flow version).
 4. Delete only the files the user confirms.
