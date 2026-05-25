@@ -166,12 +166,10 @@ The installer creates (or updates) a `Makefile` with `df-*` targets so you don't
 
 ```bash
 make df-help                          # list all df-* targets
-make df-list                          # show routines and their status
 make df-run                           # start the dispatcher loop (every 60s)
-make df-once                          # single dispatch pass
+make df-sync                          # push GitHub issues + project metadata to the web UI
 make df-scheduler-install             # install the system scheduler
 make df-scheduler-uninstall           # remove the system scheduler
-make df-update                        # update Dark Flow to the latest version
 ```
 
 If your project already has a `Makefile`, the installer appends the `df-*` block between `# darkflow:start` / `# darkflow:end` markers — your existing targets are untouched. Running `install.sh` or `update.sh` again regenerates only that block.
