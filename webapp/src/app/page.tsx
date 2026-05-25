@@ -1,21 +1,25 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { LocalTime } from "@/components/LocalTime";
+import { getLatestDarkflowVersion } from "@/lib/darkflow-version";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProjectsPage() {
-  const projects = await prisma.project.findMany({
-    orderBy: { lastSyncedAt: "desc" },
-    include: {
-      _count: { select: { issues: true } },
-      issues: {
-        where: { status: "proposed" },
-        select: { id: true },
+  const [projects, latestVersion] = await Promise.all([
+    prisma.project.findMany({
+      orderBy: { lastSyncedAt: "desc" },
+      include: {
+        _count: { select: { issues: true } },
+        issues: {
+          where: { status: "proposed" },
+          select: { id: true },
+        },
+        workerStatus: true,
       },
-      workerStatus: true,
-    },
-  });
+    }),
+    Promise.resolve(getLatestDarkflowVersion()),
+  ]);
 
   const now = Date.now();
   // Worker heartbeats every 30 s; 75 s tolerates one missed beat before flipping offline.
@@ -50,8 +54,23 @@ export default async function ProjectsPage() {
                     <div className="font-semibold text-base" style={{ color: "var(--text)" }}>
                       {p.name}
                     </div>
-                    <div className="text-sm mt-0.5" style={{ color: "var(--muted)" }}>
-                      {p.repoUrl}
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className="text-sm" style={{ color: "var(--muted)" }}>
+                        {p.repoUrl}
+                      </span>
+                      {p.darkflowVersion == null ? (
+                        <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: "var(--border)", color: "var(--muted)" }}>
+                          DF —
+                        </span>
+                      ) : p.darkflowVersion === latestVersion ? (
+                        <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: "var(--border)", color: "var(--muted)" }}>
+                          v{p.darkflowVersion}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-200">
+                          v{p.darkflowVersion} ⚠ →{latestVersion}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-4 shrink-0 text-sm">

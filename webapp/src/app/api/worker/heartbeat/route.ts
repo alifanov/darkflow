@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
-  let body: { repoUrl?: string; status?: string; routine?: string | null; name?: string };
+  let body: { repoUrl?: string; status?: string; routine?: string | null; name?: string; darkflowVersion?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { repoUrl, status, routine, name } = body;
+  const { repoUrl, status, routine, name, darkflowVersion } = body;
   if (!repoUrl || !status) {
     return NextResponse.json({ error: "repoUrl and status required" }, { status: 400 });
   }
@@ -21,8 +21,11 @@ export async function POST(req: NextRequest) {
     create: {
       repoUrl,
       name: name ?? repoUrl.split("/").pop() ?? repoUrl,
+      darkflowVersion: darkflowVersion ?? null,
     },
-    update: {},
+    update: {
+      ...(darkflowVersion !== undefined ? { darkflowVersion } : {}),
+    },
   });
 
   await prisma.workerStatus.upsert({

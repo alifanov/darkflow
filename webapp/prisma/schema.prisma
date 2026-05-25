@@ -14,7 +14,8 @@ model Project {
   branch        String    @default("main")
   language      String    @default("English")
   mergeStrategy String    @default("pr")
-  modules       String[]
+  modules            String[]
+  darkflowVersion    String?
   lastSyncedAt  DateTime?
   createdAt     DateTime  @default(now())
 

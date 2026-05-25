@@ -487,12 +487,13 @@ sync_webapp() {
   ') || { log "WEBAPP skipped (jq parse error)"; PENDING_LOGS=(); return 0; }
 
   # Read project metadata from .darkflow
-  local proj_name proj_branch proj_lang proj_merge proj_modules
+  local proj_name proj_branch proj_lang proj_merge proj_modules proj_version
   proj_name=$(darkflow_val "name" "$(basename "$PROJECT_ROOT")")
   proj_branch=$(darkflow_val "branch" "main")
   proj_lang=$(darkflow_val "language" "English")
   proj_merge=$(darkflow_val "merge_strategy" "pr")
   proj_modules=$(darkflow_val "modules" "")
+  proj_version=$(darkflow_val "version" "")
 
   # Build modules JSON array (comma-separated string → JSON array)
   local modules_json
@@ -549,6 +550,7 @@ sync_webapp() {
     --arg branch     "$proj_branch" \
     --arg language   "$proj_lang" \
     --arg merge      "$proj_merge" \
+    --arg version    "$proj_version" \
     --argjson modules    "$modules_json" \
     --argjson issues     "$issues_json" \
     --argjson analytics  "$analytics_json" \
@@ -559,17 +561,18 @@ sync_webapp() {
     --argjson commits    "$commits_json" \
     --argjson alerts     "$alerts_json" \
     '{
-      repoUrl:       $repoUrl,
-      name:          $name,
-      branch:        $branch,
-      language:      $language,
-      mergeStrategy: $merge,
-      modules:       $modules,
-      issues:        $issues,
-      logs:          $logs,
-      routines:      $routines,
-      commits:       $commits,
-      alerts:        $alerts
+      repoUrl:          $repoUrl,
+      name:             $name,
+      branch:           $branch,
+      language:         $language,
+      mergeStrategy:    $merge,
+      modules:          $modules,
+      darkflowVersion:  $version,
+      issues:           $issues,
+      logs:             $logs,
+      routines:         $routines,
+      commits:          $commits,
+      alerts:           $alerts
     }
     | if $analytics   != null then . + {analytics: $analytics}     else . end
     | if $security    != null then . + {security: $security}        else . end
@@ -617,14 +620,15 @@ send_heartbeat() {
   repo_url=$(_get_repo_url_cached)
   [[ -z "$repo_url" ]] && return 0
 
-  local proj_name routine_field="null"
+  local proj_name proj_hb_version routine_field="null"
   proj_name=$(darkflow_val "name" "$(basename "$PROJECT_ROOT")")
+  proj_hb_version=$(darkflow_val "version" "")
   [[ -n "$routine" ]] && routine_field="\"${routine}\""
 
   curl -fsS -o /dev/null -m 5 \
     -X POST "${webapp_url}/api/worker/heartbeat" \
     -H "Content-Type: application/json" \
-    -d "{\"repoUrl\":\"${repo_url}\",\"status\":\"${status}\",\"routine\":${routine_field},\"name\":\"${proj_name}\"}" \
+    -d "{\"repoUrl\":\"${repo_url}\",\"status\":\"${status}\",\"routine\":${routine_field},\"name\":\"${proj_name}\",\"darkflowVersion\":\"${proj_hb_version}\"}" \
     2>/dev/null || true
 }
 

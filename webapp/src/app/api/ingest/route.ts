@@ -69,6 +69,7 @@ interface IngestBody {
   language?: string;
   mergeStrategy?: string;
   modules?: string[];
+  darkflowVersion?: string;
   issues?: IngestIssue[];
   analytics?: IngestAnalytics;
   security?: IngestSecurity;
@@ -101,6 +102,7 @@ export async function POST(req: NextRequest) {
       language: body.language ?? "English",
       mergeStrategy: body.mergeStrategy ?? "pr",
       modules: body.modules ?? [],
+      darkflowVersion: body.darkflowVersion ?? null,
       lastSyncedAt: new Date(),
     },
     update: {
@@ -109,6 +111,7 @@ export async function POST(req: NextRequest) {
       language: body.language ?? undefined,
       mergeStrategy: body.mergeStrategy ?? undefined,
       modules: body.modules ?? undefined,
+      darkflowVersion: body.darkflowVersion ?? undefined,
       lastSyncedAt: new Date(),
     },
   });
