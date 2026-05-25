@@ -29,6 +29,7 @@ All routines and their default cron expressions:
 | `claude-md-update` | `0 9 * * 1-5` | Weekdays 9:00 — regenerates CLAUDE.md from codebase |
 | `architecture-review` | `0 2 * * 0` | Weekly Sun 2:00 — architectural analysis → GitHub issues |
 | `security-audit` | `0 3 * * 0` | Weekly Sun 3:00 — full security review → GitHub issues |
+| `vulnerability-check` | `0 6 * * *` | Daily 6:00 — GitHub Dependabot + code/secret scanning alerts → GitHub issues |
 | `deployment-failure` | *(none — manual/webhook)* | Diagnoses and fixes a failed deployment |
 
 Cron times are in the machine's local timezone.

@@ -135,6 +135,7 @@ The real power comes from scheduling Claude agents that run the loop automatical
 | [CLAUDE.md update](routines/claude-md-update.md) | `0 9 * * 1-5` | Weekdays 9:00 — re-generates CLAUDE.md from codebase |
 | [Architecture review](routines/architecture-review.md) | `0 2 * * 0` | Weekly Sun 2:00 — `/improve-codebase-architecture` → issues |
 | [Security audit](routines/security-audit.md) | `0 3 * * 0` | Weekly Sun 3:00 — full security review → issues |
+| [Vulnerability check](routines/vulnerability-check.md) | `0 6 * * *` | Daily 6:00 — GitHub Dependabot + code/secret scanning alerts → issues |
 | [**Deployment failure fix**](routines/deployment-failure.md) | *(manual/webhook)* | Diagnoses → fixes → redeploys on failure |
 
 Cron times are in the machine's local timezone. Schedule is defined in `.darkflow.d/routines.yml` — edit it to change frequency, model, or enable/disable a routine.
@@ -177,6 +178,7 @@ If your project already has a `Makefile`, the installer appends the `df-*` block
 
 ```
 Daily
+  6:00  vulnerability-check  → status:proposed issues from GitHub Dependabot / code / secret scanning
   8:00  analytics-review     → status:proposed issues + analytics snapshot → syncs to web UI
   8:30  observability-check  → status:proposed issues
   9:00  coolify-logs         → verifies deploy, fixes errors
@@ -233,6 +235,7 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | `/darkflow:claude-md-update` | Regenerate CLAUDE.md from codebase |
 | `/darkflow:architecture-review` | Architectural analysis → GitHub issues + architecture snapshot |
 | `/darkflow:security-audit` | Full security review (static + runtime) → GitHub issues + security snapshot |
+| `/darkflow:vulnerability-check` | GitHub Dependabot + code/secret scanning alerts → GitHub issues |
 
 Routine commands read `language=`, `branch=`, and `merge_strategy=` from `.darkflow` automatically — no configuration needed at invocation time. They can also be run interactively at any time, not just on a schedule.
 

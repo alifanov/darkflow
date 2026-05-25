@@ -661,9 +661,10 @@ safe_fetch ".claude/commands/darkflow/coolify-logs.md"                 ".claude/
 safe_fetch ".claude/commands/darkflow/deployment-failure.md"           ".claude/commands/darkflow/deployment-failure.md"
 safe_fetch ".claude/commands/darkflow/claude-md-update.md"             ".claude/commands/darkflow/claude-md-update.md"
 safe_fetch ".claude/commands/darkflow/security-audit.md"               ".claude/commands/darkflow/security-audit.md"
+safe_fetch ".claude/commands/darkflow/vulnerability-check.md"          ".claude/commands/darkflow/vulnerability-check.md"
 safe_fetch ".claude/commands/darkflow/architecture-review.md"          ".claude/commands/darkflow/architecture-review.md"
 
-success "Installed /darkflow commands — /darkflow, /darkflow:add-issue, /darkflow:fix-issues, /darkflow:analytics-review, and 6 more"
+success "Installed /darkflow commands — /darkflow, /darkflow:add-issue, /darkflow:fix-issues, /darkflow:analytics-review, and 7 more"
 
 # ── Routine dispatcher (.darkflow.d/) ─────────────────────────────────────────
 
@@ -789,6 +790,11 @@ YAML_SECTION
   security-audit:
     cron: "0 3 * * 0"
     model: opus
+    enabled: true
+
+  vulnerability-check:
+    cron: "0 6 * * *"
+    model: sonnet
     enabled: true
 YAML_SECTION
 
@@ -936,6 +942,7 @@ else
   echo "  fix-issues       0 * * * *      Picks up status:approved → PR → merge into ${MAIN_BRANCH}"
 fi
 echo "  security-audit   0 3 * * 0      Full security review → GitHub issues"
+echo "  vulnerability-check  0 6 * * *  GitHub Dependabot + code/secret scanning → GitHub issues"
 echo ""
 
 if [[ "$MOD_ANALYTICS" == true ]] || [[ "$MOD_OBSERVABILITY" == true ]] || \
