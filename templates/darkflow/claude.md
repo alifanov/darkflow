@@ -40,13 +40,12 @@ Scheduled Claude Code agents that run this workflow automatically:
 
 Schedule: `.darkflow.d/routines.yml`  |  Dispatcher: `bash .darkflow.d/darkflow-run.sh`
 Run any routine manually: `bash .darkflow.d/darkflow-run.sh <name>`
-List status: `bash .darkflow.d/darkflow-run.sh --list`
 
 ### Dark Flow commands
 
 Use `/darkflow` inside Claude Code to check workflow health and review the approved queue.
 
-Workflow commands: `/darkflow:add-issue`, `/darkflow:update`, `/darkflow:install`.
+Workflow commands: `/darkflow:add-issue`, `/darkflow:install`.
 
 Routine commands (run any routine interactively or use as the routine prompt):
 - `/darkflow:fix-issues` — pick up one approved issue and close it

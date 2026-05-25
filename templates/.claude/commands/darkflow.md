@@ -27,5 +27,4 @@ Check the Dark Flow workflow status for this project and help the user manage it
 ## Available subcommands
 
 - `/darkflow:add-issue [title]` — create a GitHub issue for a manually identified task
-- `/darkflow:update` — update Dark Flow to the latest version (also re-runs label setup)
 - `/darkflow:install` — re-run the Dark Flow installer
