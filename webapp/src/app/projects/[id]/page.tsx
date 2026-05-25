@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { IssueActions } from "@/components/IssueActions";
 import { DeleteProjectButton } from "@/components/DeleteProjectButton";
 import { LocalTime } from "@/components/LocalTime";
-import ReactMarkdown from "react-markdown";
+import { LogRow } from "@/components/LogRow";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +53,32 @@ const SEVERITY_COLOR: Record<string, string> = {
   warning: "#d29922",
   info: "var(--accent)",
 };
+
+function TableContainer({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
+      <table className="w-full border-collapse text-sm">{children}</table>
+    </div>
+  );
+}
+
+function TableHead({ cols }: { cols: string[] }) {
+  return (
+    <thead>
+      <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
+        {cols.map((col) => (
+          <th
+            key={col}
+            className="py-2 px-4 text-xs font-medium uppercase tracking-wider text-left"
+            style={{ color: "var(--muted)" }}
+          >
+            {col}
+          </th>
+        ))}
+      </tr>
+    </thead>
+  );
+}
 
 export default async function ProjectPage({
   params,
@@ -238,9 +264,7 @@ function IssuesTab({
                 href={isActive ? `/projects/${projectId}` : `/projects/${projectId}?filter=${card.key}`}
                 className="rounded-lg border p-4 flex flex-col gap-1 transition-colors"
                 style={{
-                  background: isActive
-                    ? STATUS_COLORS[card.key] ?? "var(--surface)"
-                    : "var(--surface)",
+                  background: isActive ? STATUS_COLORS[card.key] ?? "var(--surface)" : "var(--surface)",
                   borderColor: isActive ? accent : "var(--border)",
                 }}
               >
@@ -262,15 +286,18 @@ function IssuesTab({
             {activeCard ? activeCard.label : "All issues"} ({displayed.length})
           </h2>
           {displayed.length > 0 ? (
-            <div className="flex flex-col gap-2">
-              {displayed.map((issue) => (
-                <IssueRow
-                  key={issue.id}
-                  issue={issue}
-                  showActions={issue.status === "proposed"}
-                />
-              ))}
-            </div>
+            <TableContainer>
+              <TableHead cols={["#", "Title", "Priority", "Status", "Actions"]} />
+              <tbody>
+                {displayed.map((issue) => (
+                  <IssueTableRow
+                    key={issue.id}
+                    issue={issue}
+                    showActions={issue.status === "proposed"}
+                  />
+                ))}
+              </tbody>
+            </TableContainer>
           ) : (
             <p style={{ color: "var(--muted)" }}>No issues in this category.</p>
           )}
@@ -284,7 +311,7 @@ function IssuesTab({
   );
 }
 
-function IssueRow({
+function IssueTableRow({
   issue,
   showActions,
 }: {
@@ -304,57 +331,44 @@ function IssueRow({
   const isPending = issue.pendingStatus !== null;
 
   return (
-    <div
-      className="flex items-center gap-3 rounded-lg border p-4"
-      style={{ background: "var(--surface)", borderColor: "var(--border)" }}
-    >
-      <span className="text-sm font-mono shrink-0" style={{ color: "var(--muted)" }}>
+    <tr className="project-row" style={{ borderBottom: "1px solid var(--border)" }}>
+      <td className="py-3 px-4 font-mono text-xs" style={{ color: "var(--muted)", width: "3.5rem" }}>
         #{issue.number}
-      </span>
-      <div className="flex-1 min-w-0">
-        <div className="font-medium truncate" style={{ color: "var(--text)" }}>
+      </td>
+      <td className="py-3 px-4">
+        <div className="font-medium truncate max-w-md" style={{ color: "var(--text)" }}>
           {issue.url ? (
-            <a
-              href={issue.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:underline"
-            >
+            <a href={issue.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
               {issue.title}
             </a>
           ) : (
             issue.title
           )}
         </div>
-        {issue.priority && (
-          <div className="flex items-center gap-2 mt-1 text-xs" style={{ color: "var(--muted)" }}>
-            <span>{issue.priority}</span>
-          </div>
-        )}
-      </div>
-      <div className="flex items-center gap-3 shrink-0">
-        <span
-          className="rounded-full px-2.5 py-0.5 text-xs font-medium"
-          style={{ background: bg, color }}
-        >
-          {issue.status}
-        </span>
-        {isPending && (
-          <span
-            className="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide"
-            style={{
-              background: "transparent",
-              color: "var(--muted)",
-              border: "1px dashed var(--border)",
-            }}
-            title="Pending sync with GitHub"
-          >
-            pending sync
+      </td>
+      <td className="py-3 px-4 text-xs" style={{ color: "var(--muted)" }}>
+        {issue.priority ?? "—"}
+      </td>
+      <td className="py-3 px-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ background: bg, color }}>
+            {issue.status}
           </span>
-        )}
+          {isPending && (
+            <span
+              className="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide"
+              style={{ background: "transparent", color: "var(--muted)", border: "1px dashed var(--border)" }}
+              title="Pending sync with GitHub"
+            >
+              pending sync
+            </span>
+          )}
+        </div>
+      </td>
+      <td className="py-3 px-4">
         {showActions && <IssueActions issueId={issue.id} />}
-      </div>
-    </div>
+      </td>
+    </tr>
   );
 }
 
@@ -371,97 +385,21 @@ function RoutineLogsList({
       <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text)" }}>
         Recent runs ({logs.length})
       </h2>
-      <div className="flex flex-col gap-2">
-        {logs.map((l) => (
-          <div
-            key={l.id}
-            className="rounded-lg border"
-            style={{ background: "var(--surface)", borderColor: "var(--border)" }}
-          >
-            {l.output ? (
-              <details>
-                <summary
-                  className="flex items-center gap-3 px-4 py-3 cursor-pointer list-none select-none"
-                  style={{ color: "var(--text)" }}
-                >
-                  <span className="text-xs font-mono shrink-0" style={{ color: "var(--muted)" }}>
-                    <LocalTime date={l.timestamp} />
-                  </span>
-                  <span
-                    className="rounded-full px-2 py-0.5 text-xs font-medium font-mono shrink-0"
-                    style={{ background: "var(--bg)", color: "var(--text)", border: "1px solid var(--border)" }}
-                  >
-                    {l.routine}
-                  </span>
-                  <span className="text-sm flex-1 truncate" style={{ color: "var(--text)" }}>
-                    {l.summary}
-                  </span>
-                  <span className="text-xs shrink-0" style={{ color: "var(--muted)" }}>
-                    ▶ output
-                  </span>
-                </summary>
-                <div
-                  className="px-4 pb-4 pt-1 border-t"
-                  style={{ borderColor: "var(--border)" }}
-                >
-                  <div
-                    className="text-xs overflow-auto max-h-[500px] p-3 rounded prose prose-invert prose-xs max-w-none"
-                    style={{ background: "var(--bg)", color: "var(--text)", lineHeight: 1.5 }}
-                  >
-                    <ReactMarkdown
-                      components={{
-                        code: ({ children, className }) => {
-                          const isBlock = className?.includes("language-");
-                          return isBlock ? (
-                            <pre className="font-mono text-xs whitespace-pre-wrap break-words rounded p-2 my-1" style={{ background: "var(--card)", color: "var(--text)" }}>
-                              <code>{children}</code>
-                            </pre>
-                          ) : (
-                            <code className="font-mono px-1 rounded text-xs" style={{ background: "var(--card)", color: "var(--text)" }}>{children}</code>
-                          );
-                        },
-                        pre: ({ children }) => <>{children}</>,
-                        p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
-                        ul: ({ children }) => <ul className="list-disc pl-4 mb-1">{children}</ul>,
-                        ol: ({ children }) => <ol className="list-decimal pl-4 mb-1">{children}</ol>,
-                        li: ({ children }) => <li className="mb-0.5">{children}</li>,
-                        h1: ({ children }) => <h1 className="text-sm font-bold mb-1">{children}</h1>,
-                        h2: ({ children }) => <h2 className="text-sm font-semibold mb-1">{children}</h2>,
-                        h3: ({ children }) => <h3 className="text-xs font-semibold mb-1">{children}</h3>,
-                        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                        em: ({ children }) => <em className="italic">{children}</em>,
-                        hr: () => <hr className="my-2 border-t" style={{ borderColor: "var(--border)" }} />,
-                        blockquote: ({ children }) => (
-                          <blockquote className="border-l-2 pl-2 my-1 italic" style={{ borderColor: "var(--muted)", color: "var(--muted)" }}>
-                            {children}
-                          </blockquote>
-                        ),
-                      }}
-                    >
-                      {l.output}
-                    </ReactMarkdown>
-                  </div>
-                </div>
-              </details>
-            ) : (
-              <div className="flex items-center gap-3 px-4 py-3">
-                <span className="text-xs font-mono shrink-0" style={{ color: "var(--muted)" }}>
-                  <LocalTime date={l.timestamp} />
-                </span>
-                <span
-                  className="rounded-full px-2 py-0.5 text-xs font-medium font-mono shrink-0"
-                  style={{ background: "var(--bg)", color: "var(--text)", border: "1px solid var(--border)" }}
-                >
-                  {l.routine}
-                </span>
-                <span className="text-sm truncate" style={{ color: "var(--text)" }}>
-                  {l.summary}
-                </span>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+      <TableContainer>
+        <TableHead cols={["Time", "Routine", "Summary", ""]} />
+        <tbody>
+          {logs.map((l) => (
+            <LogRow
+              key={l.id}
+              id={l.id}
+              routine={l.routine}
+              summary={l.summary}
+              output={l.output}
+              timestamp={l.timestamp.toISOString()}
+            />
+          ))}
+        </tbody>
+      </TableContainer>
     </section>
   );
 }
@@ -487,45 +425,33 @@ function CommitList({
       <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text)" }}>
         Recent commits ({commits.length})
       </h2>
-      <div className="flex flex-col gap-2">
-        {commits.map((c) => {
-          const shortSha = c.sha.slice(0, 7);
-          const shaEl = (
-            <span className="text-xs font-mono shrink-0" style={{ color: "var(--accent)" }}>
-              {shortSha}
-            </span>
-          );
-          return (
-            <div
-              key={c.id}
-              className="flex items-center gap-3 rounded-lg border px-4 py-3"
-              style={{ background: "var(--surface)", borderColor: "var(--border)" }}
-            >
-              {c.url ? (
-                <a
-                  href={c.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline shrink-0"
-                >
-                  {shaEl}
-                </a>
-              ) : (
-                shaEl
-              )}
-              <span className="text-sm truncate flex-1" style={{ color: "var(--text)" }}>
+      <TableContainer>
+        <TableHead cols={["SHA", "Message", "Author", "Date"]} />
+        <tbody>
+          {commits.map((c) => (
+            <tr key={c.id} className="project-row" style={{ borderBottom: "1px solid var(--border)" }}>
+              <td className="py-3 px-4 font-mono text-xs" style={{ color: "var(--accent)", width: "5rem" }}>
+                {c.url ? (
+                  <a href={c.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                    {c.sha.slice(0, 7)}
+                  </a>
+                ) : (
+                  c.sha.slice(0, 7)
+                )}
+              </td>
+              <td className="py-3 px-4 max-w-md truncate" style={{ color: "var(--text)" }}>
                 {c.message}
-              </span>
-              <span className="text-xs shrink-0 hidden sm:inline" style={{ color: "var(--muted)" }}>
+              </td>
+              <td className="py-3 px-4 text-xs" style={{ color: "var(--muted)" }}>
                 {c.author}
-              </span>
-              <span className="text-xs font-mono shrink-0" style={{ color: "var(--muted)" }}>
+              </td>
+              <td className="py-3 px-4 text-xs" style={{ color: "var(--muted)" }}>
                 <LocalTime date={c.committedAt} />
-              </span>
-            </div>
-          );
-        })}
-      </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </TableContainer>
     </section>
   );
 }
@@ -556,48 +482,41 @@ function RoutineConfigList({
       <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text)" }}>
         Routines ({configs.length})
       </h2>
-      <div className="flex flex-col gap-2">
-        {configs.map((c) => (
-          <div
-            key={c.id}
-            className="rounded-lg border p-4"
-            style={{ background: "var(--surface)", borderColor: "var(--border)" }}
-          >
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="font-mono font-semibold" style={{ color: "var(--text)" }}>
+      <TableContainer>
+        <TableHead cols={["Name", "Status", "Model", "Cron", "Permission", "Updated"]} />
+        <tbody>
+          {configs.map((c) => (
+            <tr key={c.id} className="project-row" style={{ borderBottom: "1px solid var(--border)" }}>
+              <td className="py-3 px-4 font-mono font-semibold" style={{ color: "var(--text)" }}>
                 {c.name}
-              </span>
-              <span
-                className="rounded-full px-2 py-0.5 text-xs font-medium"
-                style={{
-                  background: c.enabled ? "#1a3a1a" : "#1a1a1a",
-                  color: c.enabled ? "var(--green)" : "var(--muted)",
-                }}
-              >
-                {c.enabled ? "enabled" : "disabled"}
-              </span>
-              {c.model && (
-                <span className="text-xs" style={{ color: "var(--muted)" }}>
-                  model: <span className="font-mono" style={{ color: "var(--text)" }}>{c.model}</span>
+              </td>
+              <td className="py-3 px-4">
+                <span
+                  className="rounded-full px-2 py-0.5 text-xs font-medium"
+                  style={{
+                    background: c.enabled ? "#1a3a1a" : "#1a1a1a",
+                    color: c.enabled ? "var(--green)" : "var(--muted)",
+                  }}
+                >
+                  {c.enabled ? "enabled" : "disabled"}
                 </span>
-              )}
-              {c.cron && (
-                <span className="text-xs" style={{ color: "var(--muted)" }}>
-                  cron: <span className="font-mono" style={{ color: "var(--text)" }}>{c.cron}</span>
-                </span>
-              )}
-              {c.permissionMode && (
-                <span className="text-xs" style={{ color: "var(--muted)" }}>
-                  permission: <span className="font-mono" style={{ color: "var(--text)" }}>{c.permissionMode}</span>
-                </span>
-              )}
-            </div>
-            <div className="text-xs mt-2" style={{ color: "var(--muted)" }}>
-              Updated: <LocalTime date={c.updatedAt} />
-            </div>
-          </div>
-        ))}
-      </div>
+              </td>
+              <td className="py-3 px-4 font-mono text-xs" style={{ color: "var(--text)" }}>
+                {c.model ?? "—"}
+              </td>
+              <td className="py-3 px-4 font-mono text-xs" style={{ color: "var(--text)" }}>
+                {c.cron ?? "—"}
+              </td>
+              <td className="py-3 px-4 font-mono text-xs" style={{ color: "var(--text)" }}>
+                {c.permissionMode ?? "—"}
+              </td>
+              <td className="py-3 px-4 text-xs" style={{ color: "var(--muted)" }}>
+                <LocalTime date={c.updatedAt} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </TableContainer>
     </section>
   );
 }
@@ -620,49 +539,44 @@ function AttentionTab({
       <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text)" }}>
         Needs attention ({alerts.length})
       </h2>
-      <div className="flex flex-col gap-2">
-        {sorted.map((alert) => {
-          const color = SEVERITY_COLOR[alert.severity] ?? "var(--muted)";
-          return (
-            <div
-              key={alert.id}
-              className="rounded-lg border overflow-hidden flex"
-              style={{ background: "var(--surface)", borderColor: "var(--border)" }}
-            >
-              <div
-                className="w-1 shrink-0"
-                style={{ background: color }}
-              />
-              <div className="flex-1 p-4">
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className="rounded-full px-2 py-0.5 text-xs font-medium uppercase tracking-wide"
-                      style={{ background: "transparent", color, border: `1px solid ${color}` }}
-                    >
-                      {alert.severity}
-                    </span>
-                    <span className="font-medium" style={{ color: "var(--text)" }}>
-                      {alert.title}
-                    </span>
-                  </div>
-                  <span className="text-xs shrink-0" style={{ color: "var(--muted)" }}>
-                    Detected <LocalTime date={alert.createdAt} />
-                  </span>
-                </div>
-                {alert.details && (
-                  <pre
-                    className="text-xs font-mono whitespace-pre-wrap break-words mt-3 p-3 rounded"
-                    style={{ background: "var(--bg)", color: "var(--text)", lineHeight: 1.6 }}
+      <TableContainer>
+        <TableHead cols={["Severity", "Title", "Details", "Detected"]} />
+        <tbody>
+          {sorted.map((alert) => {
+            const color = SEVERITY_COLOR[alert.severity] ?? "var(--muted)";
+            return (
+              <tr key={alert.id} className="project-row" style={{ borderBottom: "1px solid var(--border)" }}>
+                <td className="py-3 px-4" style={{ width: "7rem" }}>
+                  <span
+                    className="rounded-full px-2 py-0.5 text-xs font-medium uppercase tracking-wide"
+                    style={{ background: "transparent", color, border: `1px solid ${color}` }}
                   >
-                    {alert.details}
-                  </pre>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+                    {alert.severity}
+                  </span>
+                </td>
+                <td className="py-3 px-4 font-medium" style={{ color: "var(--text)" }}>
+                  {alert.title}
+                </td>
+                <td className="py-3 px-4 max-w-sm">
+                  {alert.details ? (
+                    <pre
+                      className="text-xs font-mono whitespace-pre-wrap break-words"
+                      style={{ color: "var(--muted)" }}
+                    >
+                      {alert.details}
+                    </pre>
+                  ) : (
+                    <span style={{ color: "var(--muted)" }}>—</span>
+                  )}
+                </td>
+                <td className="py-3 px-4 text-xs" style={{ color: "var(--muted)" }}>
+                  <LocalTime date={alert.createdAt} />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </TableContainer>
     </section>
   );
 }
