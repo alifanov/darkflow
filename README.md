@@ -16,6 +16,36 @@ Dark Flow installs:
 
 ---
 
+## Install
+
+Open Claude Code in your project directory and paste this message:
+
+```
+Install Dark Flow workflow from https://github.com/alifanov/darkflow
+
+Run the installer:
+curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh -o /tmp/darkflow-install.sh && bash /tmp/darkflow-install.sh
+
+Ask me which optional modules I want (analytics, observability, GSC, ads, Coolify, CLAUDE.md update),
+then run the installer with the appropriate flags.
+After install, show me the routines I need to set up in Claude Code → Routines.
+```
+
+The agent will fetch the installer, ask about your stack, run it with the right flags, and walk you through setting up Routines.
+
+### What the installer does
+
+1. Asks which optional modules apply to your project (analytics, observability, GSC, ads, Coolify, CLAUDE.md update, architecture review)
+2. Creates `docs/` folder structure with template files
+3. Creates `.github/ISSUE_TEMPLATE/recommendation.yml`
+4. Sets up GitHub issue labels via `gh` (if authenticated)
+5. Writes `.darkflow.d/claude.md` with the Dark Flow agent workflow and adds a single `@.darkflow.d/claude.md` reference to `CLAUDE.md`
+6. Installs `/darkflow` and `/darkflow:*` slash commands for Claude Code
+7. Creates (or updates) a `Makefile` with `df-*` shortcut targets
+8. Verifies the installation against `checklist.yml` and auto-fixes any missing artifacts
+
+---
+
 ## Web UI
 
 Dark Flow ships a built-in web dashboard for reviewing and triaging GitHub issues without leaving your terminal setup.
@@ -50,36 +80,6 @@ Open **http://localhost:5555** — you'll see all projects that have synced with
 4. Copy **App ID** and generate a **Private key** → paste into `.env`
 
 The worker registers projects automatically on first sync. No manual setup needed once the App is configured.
-
----
-
-## Install
-
-Open Claude Code in your project directory and paste this message:
-
-```
-Install Dark Flow workflow from https://github.com/alifanov/darkflow
-
-Run the installer:
-curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh -o /tmp/darkflow-install.sh && bash /tmp/darkflow-install.sh
-
-Ask me which optional modules I want (analytics, observability, GSC, ads, Coolify, CLAUDE.md update),
-then run the installer with the appropriate flags.
-After install, show me the routines I need to set up in Claude Code → Routines.
-```
-
-The agent will fetch the installer, ask about your stack, run it with the right flags, and walk you through setting up Routines.
-
-### What the installer does
-
-1. Asks which optional modules apply to your project (analytics, observability, GSC, ads, Coolify, CLAUDE.md update, architecture review)
-2. Creates `docs/` folder structure with template files
-3. Creates `.github/ISSUE_TEMPLATE/recommendation.yml`
-4. Sets up GitHub issue labels via `gh` (if authenticated)
-5. Writes `.darkflow.d/claude.md` with the Dark Flow agent workflow and adds a single `@.darkflow.d/claude.md` reference to `CLAUDE.md`
-6. Installs `/darkflow` and `/darkflow:*` slash commands for Claude Code
-7. Creates (or updates) a `Makefile` with `df-*` shortcut targets
-8. Verifies the installation against `checklist.yml` and auto-fixes any missing artifacts
 
 ---
 
