@@ -8,7 +8,18 @@ Read `.darkflow` in the project root. Extract:
 
 If `.darkflow` is missing, continue with the defaults.
 
-If `posthog_project_id` is set, switch the PostHog MCP to that project now — before any queries — using the `switch-project` tool. This prevents the routine from accidentally reading data from a different project that was active in a previous session.
+**If `posthog_project_id` is set:** switch the PostHog MCP to that project now — before any queries — using the `switch-project` tool.
+
+**If `posthog_project_id` is NOT set:** use the PostHog MCP to list all available projects. Find the one whose name best matches the `name=` value from `.darkflow` (case-insensitive, partial match is fine). Switch to that project. Then persist the discovered ID back into `.darkflow`:
+
+```bash
+# on macOS
+sed -i '' "s/^posthog_project_id=.*/posthog_project_id=<ID>/" .darkflow || echo "posthog_project_id=<ID>" >> .darkflow
+# on Linux
+grep -q "^posthog_project_id=" .darkflow && sed -i "s/^posthog_project_id=.*/posthog_project_id=<ID>/" .darkflow || echo "posthog_project_id=<ID>" >> .darkflow
+```
+
+This ensures that future runs always use the correct project without re-detection.
 
 ## Step 2 — Do the work
 
