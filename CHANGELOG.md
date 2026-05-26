@@ -14,6 +14,19 @@ Categories:
 
 ---
 
+## [2.22.3] — 2026-05-26
+
+### Dispatcher
+- **Routine/command consistency check in preflight** — on startup, `darkflow-run.sh` now verifies that every enabled routine in `routines.yml` has a matching command file at `.claude/commands/darkflow/<name>.md`. A mismatch prints a clear error and blocks the dispatcher from starting, preventing silent "routine defined but never executes" bugs.
+
+### Webapp
+- **Auto-expire stale `pendingStatus`** — optimistic UI states (approve/reject clicks) are now automatically cleared after 2 hours if the worker hasn't applied them to GitHub. Previously a crashed or paused worker could leave issues stuck in a phantom "pending" state indefinitely.
+
+### Docs
+- **Clarify VERSION mount in `docker-compose.yml`** — added inline comment explaining that the mounted `VERSION` file contains the darkflow release version used to flag outdated project installs, not the webapp's own version. Override via `DARKFLOW_LATEST_VERSION` env var if needed.
+
+---
+
 ## [2.20.0] — 2026-05-25
 
 ### Workflow
