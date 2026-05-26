@@ -8,7 +8,28 @@ bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/insta
 
 The installer is fully non-interactive: `--yes` skips all prompts, `--force` overwrites locally-modified templates. It will update `.darkflow.d/darkflow-run.sh`, slash commands, and the version in `.darkflow`.
 
-## Step 2 — Verify
+## Step 2 — Detect PostHog project ID (if missing)
+
+Read `.darkflow`. If `posthog_project_id=` is missing or empty, and the PostHog MCP is available:
+
+1. List all available PostHog projects.
+2. Find the one whose name best matches `name=` from `.darkflow` (case-insensitive, partial match).
+3. Write the ID to `.darkflow`:
+
+```bash
+# macOS
+grep -q "^posthog_project_id=" .darkflow \
+  && sed -i '' "s/^posthog_project_id=.*/posthog_project_id=<ID>/" .darkflow \
+  || echo "posthog_project_id=<ID>" >> .darkflow
+# Linux
+grep -q "^posthog_project_id=" .darkflow \
+  && sed -i "s/^posthog_project_id=.*/posthog_project_id=<ID>/" .darkflow \
+  || echo "posthog_project_id=<ID>" >> .darkflow
+```
+
+If PostHog MCP is not available or no match found — skip silently.
+
+## Step 3 — Verify
 
 After the installer exits, confirm the update succeeded:
 
@@ -22,7 +43,7 @@ Compare the installed version against the latest release:
 curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/VERSION
 ```
 
-## Step 3 — Report
+## Step 4 — Report
 
 Print a single summary line:
 - On success: `Dark Flow updated to vX.Y.Z`
