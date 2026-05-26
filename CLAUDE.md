@@ -62,6 +62,16 @@ pnpm exec prisma studio                              # visual DB browser
 
 Migrations live in `webapp/prisma/migrations/`. Never delete or truncate data — always ask before destructive migrations.
 
+## Deploying webapp changes
+
+After any change to the webapp (files under `webapp/`), rebuild and restart Docker Compose:
+
+```bash
+docker compose up -d --build
+```
+
+This is required for changes to take effect in the running container.
+
 ## Working on this repo
 
 When improving the workflow templates, edit files in `templates/docs/` — those are what gets installed into other projects.
