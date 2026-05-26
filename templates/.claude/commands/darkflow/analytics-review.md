@@ -4,8 +4,11 @@ Review analytics and recent commits, then create status:proposed GitHub issues.
 
 Read `.darkflow` in the project root. Extract:
 - `language=` → output/issue language (default: English)
+- `posthog_project_id=` → PostHog project to query (if set)
 
-If `.darkflow` is missing, continue with the default.
+If `.darkflow` is missing, continue with the defaults.
+
+If `posthog_project_id` is set, switch the PostHog MCP to that project now — before any queries — using the `switch-project` tool. This prevents the routine from accidentally reading data from a different project that was active in a previous session.
 
 ## Step 2 — Do the work
 
