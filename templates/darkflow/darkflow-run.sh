@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DF_VERSION: 2.20.2
+# DF_VERSION: 2.21.6
 # Dark Flow routine dispatcher
 # Lives at .darkflow.d/darkflow-run.sh — run from anywhere in the project.
 #
@@ -308,6 +308,9 @@ run_routine() {
   esac
 
   if [[ "$name" == "fix-issues" ]] && command -v gh &>/dev/null; then
+    # Flush any webapp-approved issues to GitHub labels before checking the count,
+    # otherwise issues approved via the web UI won't have the label yet and get skipped.
+    apply_pending_statuses
     local approved_count
     approved_count=$(gh issue list --state open --label "status:approved" \
                        --json number --jq 'length' 2>/dev/null || echo "")
