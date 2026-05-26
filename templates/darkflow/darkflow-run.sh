@@ -305,12 +305,12 @@ run_in_pgid() {
   _tmpout=$(mktemp)
   _pgid_ret=""
 
-  if command -v perl &>/dev/null; then
-    perl -e 'setpgrp(0,0); exec @ARGV' -- "$@" > "$_tmpout" 2>&1 &
+  if command -v python3 &>/dev/null; then
+    python3 -c 'import os,sys; os.setpgrp(); os.execvp(sys.argv[1], sys.argv[1:])' "$@" > "$_tmpout" 2>&1 &
     _bgpid=$!
     _pgid_ret=$_bgpid
-  elif command -v python3 &>/dev/null; then
-    python3 -c 'import os,sys; os.setpgrp(); os.execvp(sys.argv[1], sys.argv[1:])' "$@" > "$_tmpout" 2>&1 &
+  elif command -v perl &>/dev/null; then
+    perl -e 'setpgrp(0,0); exec @ARGV' -- "$@" > "$_tmpout" 2>&1 &
     _bgpid=$!
     _pgid_ret=$_bgpid
   else
