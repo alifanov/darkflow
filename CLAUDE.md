@@ -12,13 +12,40 @@ docker-compose.yml      ← runs the web UI + Postgres database
 webapp/                 ← Next.js web app (projects list, issue triage, approve/reject)
   prisma/               ← database schema and migrations (Postgres via Prisma)
   src/app/              ← App Router pages and API routes
+  src/components/       ← shared React components (ProjectRow, LogRow, etc.)
+  src/lib/              ← prisma client, darkflow-version helper
 templates/
-  darkflow/             ← worker dispatcher (darkflow-run.sh, routines.yml)
+  darkflow/             ← worker dispatcher (darkflow-run.sh, routines.yml, mailbox/)
   docs/                 ← generic docs structure templates
-  .github/              ← GitHub issue template
+  .github/              ← GitHub issue template (darkflow/recommendation.yml)
   .claude/commands/     ← slash commands installed into target projects
 README.md               ← user-facing documentation
+VERSION                 ← semver, bumped on every release
 ```
+
+## Running locally
+
+```bash
+docker compose up -d        # starts webapp + Postgres; UI at http://localhost:5555
+docker compose logs -f webapp  # tail logs
+```
+
+For webapp development (hot reload):
+```bash
+cd webapp
+pnpm install
+pnpm dev                    # http://localhost:3000
+```
+
+### Database / Prisma
+
+```bash
+cd webapp
+pnpm exec prisma migrate dev --name <description>   # create + apply migration
+pnpm exec prisma studio                              # visual DB browser
+```
+
+Migrations live in `webapp/prisma/migrations/`. Never delete or truncate data — always ask before destructive migrations.
 
 ## Working on this repo
 
@@ -26,7 +53,6 @@ When improving the workflow templates, edit files in `templates/docs/` — those
 
 When the installer logic changes, test it locally:
 ```bash
-# Test in a temp dir
 mkdir /tmp/test-project && cd /tmp/test-project && git init
 bash /path/to/darkflow/install.sh --name "Test Project" --no-labels
 ```
@@ -35,6 +61,6 @@ After changes, always verify the install script runs end-to-end without errors.
 
 ## Releases
 
-No build process — just commit and push. The install one-liner fetches from `master` branch raw files via GitHub CDN.
+No build process — just commit and push. The install one-liner fetches from `main` branch raw files via GitHub CDN.
 
 After every change, bump the version in `VERSION` (semver: patch for fixes/copy, minor for new features or template changes, major for breaking installer changes).
