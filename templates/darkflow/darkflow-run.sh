@@ -309,10 +309,6 @@ run_in_pgid() {
     python3 -c 'import os,sys; os.setpgrp(); os.execvp(sys.argv[1], sys.argv[1:])' "$@" > "$_tmpout" 2>&1 &
     _bgpid=$!
     _pgid_ret=$_bgpid
-  elif command -v perl &>/dev/null; then
-    perl -e 'setpgrp(0,0); exec @ARGV' -- "$@" > "$_tmpout" 2>&1 &
-    _bgpid=$!
-    _pgid_ret=$_bgpid
   else
     "$@" > "$_tmpout" 2>&1 &
     _bgpid=$!
