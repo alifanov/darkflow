@@ -9,6 +9,7 @@ interface ProjectRowProps {
   name: string;
   repoUrl: string | null;
   branch: string | null;
+  language: string;
   versionBadge: "current" | "outdated" | "missing";
   darkflowVersion: string | null;
   latestVersion: string;
@@ -25,6 +26,7 @@ export function ProjectRow({
   name,
   repoUrl,
   branch,
+  language,
   versionBadge,
   darkflowVersion,
   latestVersion,
@@ -70,6 +72,11 @@ export function ProjectRow({
       {/* Branch */}
       <td className="py-3 px-4 font-mono text-xs" style={{ color: "var(--muted)" }}>
         {branch ?? "—"}
+      </td>
+
+      {/* Language */}
+      <td className="py-3 px-4 text-xs" style={{ color: "var(--muted)" }}>
+        {language}
       </td>
 
       {/* Version */}
