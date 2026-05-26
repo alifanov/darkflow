@@ -306,15 +306,16 @@ run_in_pgid() {
   _pgid_ret=""
 
   if command -v perl &>/dev/null; then
-    # perl setpgrp makes the child a new process group leader;
-    # all grandchildren inherit that PGID.
     perl -e 'setpgrp(0,0); exec @ARGV' -- "$@" > "$_tmpout" 2>&1 &
     _bgpid=$!
-    _pgid_ret=$_bgpid   # PGID == PID of new group leader after setpgrp
+    _pgid_ret=$_bgpid
+  elif command -v python3 &>/dev/null; then
+    python3 -c 'import os,sys; os.setpgrp(); os.execvp(sys.argv[1], sys.argv[1:])' "$@" > "$_tmpout" 2>&1 &
+    _bgpid=$!
+    _pgid_ret=$_bgpid
   else
     "$@" > "$_tmpout" 2>&1 &
     _bgpid=$!
-    # No PGID isolation without perl — cleanup falls back to best-effort.
     _pgid_ret=""
   fi
 
