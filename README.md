@@ -280,5 +280,6 @@ After install, edit:
 
 - `git` — any version
 - `gh` (GitHub CLI) — for label setup and issue management; [install](https://cli.github.com/)
+- `yq` — YAML parser used by the routine dispatcher; `brew install yq` / [install](https://github.com/mikefarah/yq#install)
 - `python3` — used by the routine dispatcher to isolate process groups and clean up dev servers after each run
 - Claude Code — the workflow is designed around it, but works with any AI agent that follows markdown instructions
