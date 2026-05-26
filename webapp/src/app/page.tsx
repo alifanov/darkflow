@@ -9,7 +9,7 @@ export default async function ProjectsPage() {
     prisma.project.findMany({
       orderBy: { lastSyncedAt: "desc" },
       include: {
-        _count: { select: { issues: true } },
+        _count: { select: { issues: { where: { state: { in: ["OPEN", "open"] } } } } },
         issues: {
           where: { status: "proposed" },
           select: { id: true },
