@@ -122,14 +122,7 @@ export function ProjectRow({
 
       {/* Proposed */}
       <td className="py-3 px-4 text-right">
-        {proposedCount > 0 && (
-          <span
-            className="rounded-full px-2.5 py-0.5 text-xs font-medium"
-            style={{ background: "#1f3a5f", color: "var(--accent)" }}
-          >
-            {proposedCount} proposed
-          </span>
-        )}
+        {proposedCount > 0 ? proposedCount : ""}
       </td>
 
       {/* Issues */}
