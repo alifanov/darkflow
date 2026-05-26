@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DF_VERSION: 2.21.6
+# DF_VERSION: 2.21.7
 # Dark Flow routine dispatcher
 # Lives at .darkflow.d/darkflow-run.sh — run from anywhere in the project.
 #
@@ -379,7 +379,8 @@ revive_stuck_issues() {
 
   local stuck
   stuck=$(echo "$issues_json" | jq -r --arg cutoff "$threshold_iso" '
-    .[] | select(any(.labels[]; .name == "status:in-progress"))
+    .[] | select(.state == "OPEN")
+        | select(any(.labels[]; .name == "status:in-progress"))
         | select(.updatedAt < $cutoff)
         | .number
   ' 2>/dev/null) || return 0
