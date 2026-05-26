@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DF_VERSION: 2.22.0
+# DF_VERSION: 2.22.1
 # Dark Flow routine dispatcher
 # Lives at .darkflow.d/darkflow-run.sh — run from anywhere in the project.
 #
@@ -294,6 +294,46 @@ acquire_lock() {
   trap 'release_lock; stop_heartbeat_loop' EXIT
 }
 
+# ── Process group isolation ───────────────────────────────────────────────────
+# Run a command in a new process group so any background processes it spawns
+# (dev servers, watchers, etc.) can be killed after the command exits.
+# Prints output to stdout; sets caller's _pgid_ret to the new PGID.
+_pgid_ret=""
+
+run_in_pgid() {
+  local _tmpout _bgpid
+  _tmpout=$(mktemp)
+  _pgid_ret=""
+
+  if command -v perl &>/dev/null; then
+    # perl setpgrp makes the child a new process group leader;
+    # all grandchildren inherit that PGID.
+    perl -e 'setpgrp(0,0); exec @ARGV' -- "$@" > "$_tmpout" 2>&1 &
+    _bgpid=$!
+    _pgid_ret=$_bgpid   # PGID == PID of new group leader after setpgrp
+  else
+    "$@" > "$_tmpout" 2>&1 &
+    _bgpid=$!
+    # No PGID isolation without perl — cleanup falls back to best-effort.
+    _pgid_ret=""
+  fi
+
+  wait "$_bgpid" 2>/dev/null || true
+  local _rc=$?
+
+  # Kill any survivors in the process group (stray dev servers, file watchers, etc.)
+  if [[ -n "$_pgid_ret" ]] && pgrep -g "$_pgid_ret" &>/dev/null 2>/dev/null; then
+    log "CLEANUP stray processes in PGID ${_pgid_ret} (dev servers, watchers) — terminating"
+    kill -TERM -"$_pgid_ret" 2>/dev/null || true
+    sleep 1
+    kill -KILL -"$_pgid_ret" 2>/dev/null || true
+  fi
+
+  cat "$_tmpout"
+  rm -f "$_tmpout"
+  return $_rc
+}
+
 # ── Routine execution ─────────────────────────────────────────────────────────
 
 run_routine() {
@@ -337,7 +377,7 @@ run_routine() {
   start_heartbeat_loop "$name"
 
   local claude_output
-  claude_output=$(claude -p "/darkflow:${name}" --model "${model}" "${perm_args[@]}" 2>&1)
+  claude_output=$(run_in_pgid claude -p "/darkflow:${name}" --model "${model}" "${perm_args[@]}")
   exit_code=$?
 
   stop_heartbeat_loop
@@ -760,7 +800,7 @@ check_for_update() {
   # Fallback: if the slash command isn't installed yet (pre-2.20.0 projects),
   # run the installer directly instead of failing with "Unknown command".
   if [[ -f ".claude/commands/darkflow/self-update.md" ]]; then
-    claude_output=$(claude -p "/darkflow:self-update" --model sonnet --permission-mode bypassPermissions 2>&1) || exit_code=$?
+    claude_output=$(run_in_pgid claude -p "/darkflow:self-update" --model sonnet --permission-mode bypassPermissions) || exit_code=$?
   else
     log "UPDATE self-update.md not found, running installer directly"
     claude_output=$(bash <(curl -fsSL -m 30 "${DARKFLOW_REPO}/install.sh") --force --yes 2>&1) || exit_code=$?
