@@ -7,7 +7,6 @@ interface ProjectRowProps {
   index: number;
   id: string;
   name: string;
-  repoUrl: string | null;
   branch: string | null;
   language: string;
   versionBadge: "current" | "outdated" | "missing";
@@ -24,7 +23,6 @@ export function ProjectRow({
   index,
   id,
   name,
-  repoUrl,
   branch,
   language,
   versionBadge,
@@ -62,11 +60,6 @@ export function ProjectRow({
       {/* Name */}
       <td className="py-3 px-4 font-semibold" style={{ color: "var(--text)" }}>
         {name}
-      </td>
-
-      {/* Repo */}
-      <td className="py-3 px-4 max-w-xs truncate font-mono text-xs" style={{ color: "var(--muted)" }}>
-        {repoUrl ?? "—"}
       </td>
 
       {/* Branch */}
