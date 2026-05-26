@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DF_VERSION: 2.21.7
+# DF_VERSION: 2.21.8
 # Dark Flow routine dispatcher
 # Lives at .darkflow.d/darkflow-run.sh — run from anywhere in the project.
 #
@@ -358,6 +358,17 @@ run_routine() {
 
 STATUS_LABELS_ALL=(status:proposed status:approved status:rejected status:needs-info status:in-progress status:blocked)
 
+# ── GitHub auth guard ─────────────────────────────────────────────────────────
+# Returns 0 if gh is authenticated, 1 otherwise (with a log entry).
+check_gh_auth() {
+  local err
+  err=$(gh auth status 2>&1) || {
+    log "GH_AUTH gh not authenticated — run 'gh auth login'. Details: $(echo "$err" | head -3 | tr '\n' ' ')"
+    return 1
+  }
+  return 0
+}
+
 # ── Auto-revive stuck in-progress issues ──────────────────────────────────────
 # If an issue has been in status:in-progress for >1h (per updatedAt), treat it
 # as crashed/stalled, drop status:in-progress and set status:approved so the
@@ -386,15 +397,15 @@ revive_stuck_issues() {
   ' 2>/dev/null) || return 0
   [[ -z "$stuck" ]] && return 0
 
-  local num
+  local num gh_err
   while IFS= read -r num; do
     [[ -z "$num" ]] && continue
-    if gh issue edit "$num" \
+    if gh_err=$(gh issue edit "$num" \
          --remove-label "status:in-progress" \
-         --add-label "status:approved" >/dev/null 2>&1; then
+         --add-label "status:approved" 2>&1 >/dev/null); then
       log "REVIVE #${num} stuck >1h in-progress → approved"
     else
-      log "REVIVE #${num} failed to relabel"
+      log "REVIVE #${num} failed to relabel: $(echo "$gh_err" | head -2 | tr '\n' ' ')"
     fi
   done <<< "$stuck"
 }
@@ -428,7 +439,14 @@ apply_pending_statuses() {
   ! command -v jq   &>/dev/null && return 0
   ! command -v curl &>/dev/null && return 0
 
-  repo_url=$(gh repo view --json url -q .url 2>/dev/null || echo "")
+  check_gh_auth || return 0
+
+  local gh_err
+  repo_url=$(gh repo view --json url -q .url 2>/dev/null) || {
+    gh_err=$(gh repo view --json url -q .url 2>&1 || true)
+    log "PENDING skipped (gh repo view failed: $(echo "$gh_err" | head -2 | tr '\n' ' '))"
+    return 0
+  }
   [[ -z "$repo_url" ]] && return 0
 
   pending_json=$(curl -fsS -m 10 -G \
@@ -451,13 +469,13 @@ apply_pending_statuses() {
     num=$(echo "$pending_json" | jq -r ".pending[$i].number")
     target=$(echo "$pending_json" | jq -r ".pending[$i].pendingStatus")
     [[ -z "$num" || -z "$target" || "$target" == "null" ]] && continue
-    if gh issue edit "$num" "${remove_args[@]}" --add-label "status:${target}" >/dev/null 2>&1; then
+    if gh_err=$(gh issue edit "$num" "${remove_args[@]}" --add-label "status:${target}" 2>&1 >/dev/null); then
       log "PENDING #${num} → status:${target}"
       if [[ "$target" == "rejected" ]]; then
         gh issue close "$num" >/dev/null 2>&1 && log "PENDING #${num} closed (rejected)"
       fi
     else
-      log "PENDING #${num} failed to apply status:${target}"
+      log "PENDING #${num} failed to apply status:${target}: $(echo "$gh_err" | head -2 | tr '\n' ' ')"
     fi
   done
 }
@@ -481,10 +499,20 @@ sync_webapp() {
     return 0
   fi
 
+  if ! check_gh_auth; then
+    PENDING_LOGS=()
+    return 0
+  fi
+
   apply_pending_statuses
 
-  local repo_url issues now_iso
-  repo_url=$(gh repo view --json url -q .url 2>/dev/null || echo "")
+  local repo_url issues now_iso gh_err
+  repo_url=$(gh repo view --json url -q .url 2>/dev/null) || {
+    gh_err=$(gh repo view --json url -q .url 2>&1 || true)
+    log "WEBAPP skipped (gh repo view failed: $(echo "$gh_err" | head -2 | tr '\n' ' '))"
+    PENDING_LOGS=()
+    return 0
+  }
   if [[ -z "$repo_url" ]]; then
     log "WEBAPP skipped (could not determine repo URL)"
     PENDING_LOGS=()
@@ -492,7 +520,8 @@ sync_webapp() {
   fi
 
   issues=$(gh issue list --state all --json number,title,body,state,labels,url,updatedAt --limit 300 2>/dev/null) || {
-    log "WEBAPP skipped (gh issue list failed)"
+    gh_err=$(gh issue list --state all --json number,title,body,state,labels,url,updatedAt --limit 300 2>&1 || true)
+    log "WEBAPP skipped (gh issue list failed: $(echo "$gh_err" | head -2 | tr '\n' ' '))"
     PENDING_LOGS=()
     return 0
   }
