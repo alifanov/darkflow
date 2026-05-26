@@ -17,6 +17,7 @@ interface ProjectRowProps {
   proposedCount: number;
   totalIssues: number;
   lastSyncedAt: string | null;
+  lastRoutine: { routine: string; timestamp: string } | null;
 }
 
 export function ProjectRow({
@@ -33,6 +34,7 @@ export function ProjectRow({
   proposedCount,
   totalIssues,
   lastSyncedAt,
+  lastRoutine,
 }: ProjectRowProps) {
   const router = useRouter();
 
@@ -113,14 +115,23 @@ export function ProjectRow({
         )}
       </td>
 
-      {/* Proposed */}
-      <td className="py-3 px-4 text-right">
-        {proposedCount > 0 ? proposedCount : ""}
-      </td>
-
-      {/* Issues */}
+      {/* Open Issues */}
       <td className="py-3 px-4 text-right text-sm" style={{ color: "var(--muted)" }}>
         {totalIssues}
+        {proposedCount > 0 && (
+          <span className="ml-1 text-xs font-semibold" style={{ color: "var(--accent)" }}>
+            ({proposedCount})
+          </span>
+        )}
+      </td>
+
+      {/* Last routine */}
+      <td className="py-3 px-4 text-xs" style={{ color: "var(--muted)" }}>
+        {lastRoutine ? (
+          <span>
+            {lastRoutine.routine} · <LocalTime date={lastRoutine.timestamp} />
+          </span>
+        ) : "—"}
       </td>
 
       {/* Last synced */}

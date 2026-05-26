@@ -15,6 +15,11 @@ export default async function ProjectsPage() {
           select: { id: true },
         },
         workerStatus: true,
+        routineLogs: {
+          orderBy: { timestamp: "desc" },
+          take: 1,
+          select: { routine: true, timestamp: true },
+        },
       },
     }),
     Promise.resolve(getLatestDarkflowVersion()),
@@ -47,10 +52,10 @@ export default async function ProjectsPage() {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
-                {["#", "Name", "Branch", "Lang", "DF Version", "Worker", "Needs approval", "Open Issues", "Last synced"].map((col, i) => (
+                {["#", "Name", "Branch", "Lang", "DF Version", "Worker", "Open Issues", "Last routine", "Last synced"].map((col, i) => (
                   <th
                     key={col}
-                    className={`py-2 px-4 text-xs font-medium uppercase tracking-wider text-left${i >= 7 && i <= 8 ? " text-right" : ""}`}
+                    className={`py-2 px-4 text-xs font-medium uppercase tracking-wider text-left${i === 6 ? " text-right" : ""}`}
                     style={{ color: "var(--muted)" }}
                   >
                     {col}
@@ -73,6 +78,7 @@ export default async function ProjectsPage() {
                     : p.darkflowVersion === latestVersion
                     ? "current"
                     : "outdated";
+                const lastLog = p.routineLogs[0] ?? null;
 
                 return (
                   <ProjectRow
@@ -90,6 +96,7 @@ export default async function ProjectsPage() {
                     proposedCount={p.issues.length}
                     totalIssues={p._count.issues}
                     lastSyncedAt={p.lastSyncedAt?.toISOString() ?? null}
+                    lastRoutine={lastLog ? { routine: lastLog.routine, timestamp: lastLog.timestamp.toISOString() } : null}
                   />
                 );
               })}
