@@ -142,15 +142,9 @@ The real power comes from scheduling Claude agents that run the loop automatical
 
 Cron times are in the machine's local timezone. Schedule is defined in `.darkflow.d/routines.yml` — edit it to change frequency, model, or enable/disable a routine.
 
-### Scheduler setup
+### Running routines
 
-During installation `install.sh` asks whether to set up a system scheduler (single **launchd** job on macOS or **crontab** entry on Linux that fires the dispatcher every 15 min). You can also add it later:
-
-```bash
-bash install.sh --with-scheduler --force --target /path/to/your-project
-```
-
-Or run routines manually at any time:
+Run routines manually at any time:
 
 ```bash
 bash .darkflow.d/darkflow-run.sh fix-issues      # run one routine now
@@ -168,8 +162,6 @@ The installer creates (or updates) a `Makefile` with `df-*` targets so you don't
 make df-help                          # list all df-* targets
 make df-run                           # start the dispatcher loop (every 60s)
 make df-sync                          # push GitHub issues + project metadata to the web UI
-make df-scheduler-install             # install the system scheduler
-make df-scheduler-uninstall           # remove the system scheduler
 ```
 
 If your project already has a `Makefile`, the installer appends the `df-*` block between `# darkflow:start` / `# darkflow:end` markers — your existing targets are untouched. Running `install.sh` or `update.sh` again regenerates only that block.
@@ -202,7 +194,7 @@ Human
 
 ### Setup checklist
 
-- [ ] Run `install.sh` (or re-run with `--with-scheduler` to add automatic scheduling)
+- [ ] Run `install.sh`
 - [ ] Verify `gh auth status` works in the project folder
 - [ ] Configure required MCP servers (see each routine's page for details)
 - [ ] Run `bash .darkflow.d/darkflow-run.sh --dry-run` to confirm the dispatcher works

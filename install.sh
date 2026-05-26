@@ -32,7 +32,6 @@ MOD_COOLIFY=""
 MOD_CLAUDE_UPDATE=""
 MOD_ARCH_REVIEW=""
 MOD_MAILBOX=""
-SETUP_SCHEDULER=""
 
 OBS_TOOL=""
 OBS_URL=""
@@ -78,7 +77,7 @@ while [[ $# -gt 0 ]]; do
     --all)                NON_INTERACTIVE=true
                           MOD_ANALYTICS=true; MOD_OBSERVABILITY=true; MOD_GSC=true
                           MOD_ADS=true; MOD_COOLIFY=true; MOD_CLAUDE_UPDATE=true
-                          MOD_ARCH_REVIEW=true; MOD_MAILBOX=true; SETUP_SCHEDULER=true
+                          MOD_ARCH_REVIEW=true; MOD_MAILBOX=true
                           shift ;;
     --with-analytics)     MOD_ANALYTICS=true; shift ;;
     --with-observability) MOD_OBSERVABILITY=true; shift ;;
@@ -96,8 +95,6 @@ while [[ $# -gt 0 ]]; do
     --no-arch-review)     MOD_ARCH_REVIEW=false; shift ;;
     --with-mailbox)       MOD_MAILBOX=true; shift ;;
     --no-mailbox)         MOD_MAILBOX=false; shift ;;
-    --with-scheduler)     SETUP_SCHEDULER=true; shift ;;
-    --no-scheduler)       SETUP_SCHEDULER=false; shift ;;
     --obs-tool)           OBS_TOOL="$2"; shift 2 ;;
     --obs-url)            OBS_URL="$2"; shift 2 ;;
     --obs-api-key)        OBS_API_KEY="$2"; shift 2 ;;
@@ -127,8 +124,6 @@ while [[ $# -gt 0 ]]; do
       echo "  --with-coolify        Include Coolify deployment monitoring"
       echo "  --with-claude-update  Include auto CLAUDE.md regeneration routine"
       echo "  --with-arch-review    Install improve-codebase-architecture skill + weekly routine"
-      echo "  --with-scheduler      Install system scheduler (launchd on macOS / cron on Linux)"
-      echo "  --no-scheduler        Skip system scheduler setup"
       echo "  --branch NAME         Main branch name (default: main)"
       echo "  --merge-pr            Fix issues via pull requests (default)"
       echo "  --merge-direct        Fix issues by committing directly to main branch"
@@ -243,7 +238,6 @@ if [[ "$MODE" == "update" ]]; then
   [[ "$MODULES" == *"claude-update"* && -z "$MOD_CLAUDE_UPDATE" ]] && MOD_CLAUDE_UPDATE=true
   [[ "$MODULES" == *"arch-review"*   && -z "$MOD_ARCH_REVIEW"   ]] && MOD_ARCH_REVIEW=true
   [[ "$MODULES" == *"mailbox"*       && -z "$MOD_MAILBOX"       ]] && MOD_MAILBOX=true
-  [[ "$MODULES" == *"scheduler"*     && -z "$SETUP_SCHEDULER"   ]] && SETUP_SCHEDULER=true
 fi
 
 # ── Mode header ───────────────────────────────────────────────────────────────
@@ -466,31 +460,6 @@ if [[ "$MOD_MAILBOX" == true && -z "$MAILBOX_IMAP_HOST" && \
       ;;
     *) info "Skipping mailbox integration setup" ;;
   esac
-fi
-
-# ── Scheduler prompt ──────────────────────────────────────────────────────────
-
-if [[ -z "$SETUP_SCHEDULER" ]]; then
-  if [[ "$NON_INTERACTIVE" == true || ! -t 0 ]]; then
-    SETUP_SCHEDULER=false
-  elif [[ "$DETECTED_OS" == "other" ]]; then
-    warn "Unsupported OS for automatic scheduler — skipping"
-    SETUP_SCHEDULER=false
-  else
-    _sched_label="launchd job"
-    [[ "$DETECTED_OS" == "linux" ]] && _sched_label="crontab entry"
-    echo ""
-    echo -e "${BOLD}Routine scheduler${RESET}"
-    echo ""
-    echo "  Installs a single ${_sched_label} that fires the dispatcher every 15 min."
-    echo ""
-    read -rp "  Set up system scheduler? [Y/n]: " _sched_yn
-    case "${_sched_yn:-Y}" in
-      [Yy]*|"") SETUP_SCHEDULER=true ;;
-      *)         SETUP_SCHEDULER=false ;;
-    esac
-    echo ""
-  fi
 fi
 
 # ── Derived vars ──────────────────────────────────────────────────────────────
@@ -845,7 +814,6 @@ run_checklist() {
       coolify)       [[ "$MOD_COOLIFY"       == true ]] ;;
       claude-update) [[ "$MOD_CLAUDE_UPDATE" == true ]] ;;
       arch-review)   [[ "$MOD_ARCH_REVIEW"   == true ]] ;;
-      scheduler)     [[ "$SETUP_SCHEDULER"   == true ]] ;;
       *) return 1 ;;
     esac
   }
@@ -957,15 +925,6 @@ run_checklist() {
     success "  Added ${_key}=${_def} to ${_file}"
   }
 
-  _chk_install_scheduler() {
-    if [[ -x ".darkflow.d/install-scheduler.sh" ]]; then
-      bash ".darkflow.d/install-scheduler.sh"
-    else
-      warn "  .darkflow.d/install-scheduler.sh missing — re-run install.sh"
-      return 1
-    fi
-  }
-
   _chk_add_routine() {
     local _idx="$1"
     local _file="${_ipath[$_idx]}" _key="${_iroutine[$_idx]}"
@@ -1015,7 +974,6 @@ run_checklist() {
       copy-template)      _chk_copy_template "$_idx"   && _fixed=$((_fixed+1)) || _skipped=$((_skipped+1)) ;;
       mkdir)              _chk_mkdir "$_idx"            && _fixed=$((_fixed+1)) || _skipped=$((_skipped+1)) ;;
       append-config)      _chk_append_config "$_idx"   && _fixed=$((_fixed+1)) || _skipped=$((_skipped+1)) ;;
-      install-scheduler)  _chk_install_scheduler       && _fixed=$((_fixed+1)) || _skipped=$((_skipped+1)) ;;
       install-arch-skill) _chk_install_arch_skill      && _fixed=$((_fixed+1)) || _skipped=$((_skipped+1)) ;;
       add-routine)        _chk_add_routine "$_idx"     && _fixed=$((_fixed+1)) || _skipped=$((_skipped+1)) ;;
       regenerate-marker)  _chk_regenerate_marker "$_idx"  && _fixed=$((_fixed+1)) || _skipped=$((_skipped+1)) ;;
@@ -1051,7 +1009,7 @@ web_sync() {
 
 # ── 1. Directory structure ────────────────────────────────────────────────────
 
-header "1/5  Docs structure"
+header "1/4  Docs structure"
 
 make_dir "docs/product"
 make_dir "docs/spec/flows"
@@ -1069,7 +1027,7 @@ make_dir ".darkflow.d/state"
 
 # ── 2. Template files ─────────────────────────────────────────────────────────
 
-header "2/5  Template files"
+header "2/4  Template files"
 
 smart_update_template "docs/README.md"             "docs/README.md"
 smart_update_template "docs/agent-workflow.md"     "docs/agent-workflow.md"
@@ -1100,8 +1058,6 @@ smart_update_template ".claude/commands/darkflow/architecture-review.md"        
 smart_update_template ".claude/commands/darkflow/mailbox-check.md"                ".claude/commands/darkflow/mailbox-check.md"
 
 smart_update_template "darkflow/darkflow-run.sh"        ".darkflow.d/darkflow-run.sh"        "true" "true"
-smart_update_template "darkflow/install-scheduler.sh"   ".darkflow.d/install-scheduler.sh"   "true" "true"
-smart_update_template "darkflow/uninstall-scheduler.sh" ".darkflow.d/uninstall-scheduler.sh" "true" "true"
 
 if [[ "$MOD_MAILBOX" == true ]]; then
   smart_update_template "darkflow/mailbox/fetch.py" ".darkflow.d/mailbox/fetch.py" "true"
@@ -1110,7 +1066,7 @@ fi
 
 # ── 3. Config (.darkflow) ─────────────────────────────────────────────────────
 
-header "3/5  Config"
+header "3/4  Config"
 
 if [[ "$DRY_RUN" == false ]]; then
   if [[ "$MODE" == "fresh" ]]; then
@@ -1123,7 +1079,6 @@ if [[ "$DRY_RUN" == false ]]; then
     [[ "$MOD_CLAUDE_UPDATE" == true ]] && _local_mods="${_local_mods}claude-update,"
     [[ "$MOD_ARCH_REVIEW"   == true ]] && _local_mods="${_local_mods}arch-review,"
     [[ "$MOD_MAILBOX"       == true ]] && _local_mods="${_local_mods}mailbox,"
-    [[ "$SETUP_SCHEDULER"   == true ]] && _local_mods="${_local_mods}scheduler,"
     {
       echo "# Dark Flow project config — managed by install.sh"
       echo "version=${LATEST_VERSION}"
@@ -1305,55 +1260,32 @@ fi
 
 # ── 5. GitHub labels, CLAUDE.md, Makefile ────────────────────────────────────
 
-header "4/5  Labels, CLAUDE.md, Makefile"
+header "4/4  Labels, CLAUDE.md, Makefile"
 setup_labels
 sync_claude_md
 sync_makefile
 
-# ── Scheduler ─────────────────────────────────────────────────────────────────
+# ── Legacy scheduler cleanup ──────────────────────────────────────────────────
 
-if [[ "$SETUP_SCHEDULER" == true ]]; then
-  header "5/5  Scheduler"
-  if [[ "$DRY_RUN" == true ]]; then
-    info "Would install system scheduler (${DETECTED_OS})"
-  else
-    _project_abs="$(cd "$TARGET_DIR" && pwd)"
-    if [[ "$DETECTED_OS" == "macos" ]]; then
-      _plist="$HOME/Library/LaunchAgents/com.darkflow.${SLUG}.plist"
-      cat > "$_plist" << PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-  <key>Label</key><string>com.darkflow.${SLUG}</string>
-  <key>ProgramArguments</key>
-  <array>
-    <string>/bin/bash</string>
-    <string>${_project_abs}/.darkflow.d/darkflow-run.sh</string>
-    <string>--once</string>
-  </array>
-  <key>WorkingDirectory</key><string>${_project_abs}</string>
-  <key>StartInterval</key><integer>900</integer>
-  <key>RunAtLoad</key><true/>
-  <key>StandardOutPath</key><string>${_project_abs}/.darkflow.d/launchd.out.log</string>
-  <key>StandardErrorPath</key><string>${_project_abs}/.darkflow.d/launchd.err.log</string>
-  <key>EnvironmentVariables</key>
-  <dict><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string></dict>
-</dict></plist>
-PLIST
+if [[ "$MODULES" == *"scheduler"* && "$MODE" == "update" && "$DRY_RUN" == false ]]; then
+  if [[ "$DETECTED_OS" == "macos" ]]; then
+    _plist="$HOME/Library/LaunchAgents/com.darkflow.${SLUG}.plist"
+    if [[ -f "$_plist" ]]; then
       launchctl unload "$_plist" 2>/dev/null || true
-      launchctl load "$_plist"
-      success "Installed launchd job: com.darkflow.${SLUG} (every 15 min)"
-      info "Logs: ${_project_abs}/.darkflow.d/launchd.{out,err}.log"
-    elif [[ "$DETECTED_OS" == "linux" ]]; then
-      _cron_line="*/15 * * * * cd ${_project_abs} && /bin/bash .darkflow.d/darkflow-run.sh --once >> .darkflow.d/cron.log 2>&1  # darkflow:${SLUG}"
-      (crontab -l 2>/dev/null | grep -v "# darkflow:${SLUG}"; echo "$_cron_line") | crontab -
-      success "Added crontab entry: darkflow:${SLUG} (every 15 min)"
+      rm -f "$_plist"
+      success "Removed legacy launchd job: com.darkflow.${SLUG}"
     fi
-    command -v yq     >/dev/null 2>&1 || warn "yq not found — dispatcher needs it: brew install yq"
-    command -v claude >/dev/null 2>&1 || warn "claude CLI not found — install Claude Code: https://claude.ai/code"
+  elif [[ "$DETECTED_OS" == "linux" ]]; then
+    if crontab -l 2>/dev/null | grep -q "# darkflow:${SLUG}"; then
+      (crontab -l 2>/dev/null | grep -v "# darkflow:${SLUG}") | crontab -
+      success "Removed legacy crontab entry: darkflow:${SLUG}"
+    fi
   fi
-else
-  [[ "$DETECTED_OS" != "other" ]] && info "Scheduler not installed. To install later: bash .darkflow.d/install-scheduler.sh"
+  if [[ "$(uname)" == "Darwin" ]]; then
+    sed -i '' "s/,scheduler//g; s/scheduler,//g; s/^modules=scheduler$/modules=/" .darkflow
+  else
+    sed -i "s/,scheduler//g; s/scheduler,//g; s/^modules=scheduler$/modules=/" .darkflow
+  fi
 fi
 
 # ── Architecture review skill ─────────────────────────────────────────────────
@@ -1371,7 +1303,7 @@ fi
 
 # ── Verification ──────────────────────────────────────────────────────────────
 
-header "5/5  Verification"
+header "Verification"
 run_checklist --fix || true
 
 # ── Web UI sync ───────────────────────────────────────────────────────────────

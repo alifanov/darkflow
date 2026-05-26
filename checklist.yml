@@ -10,7 +10,7 @@ schema: 1
 
 # Item fields:
 #   id           unique slug (for logs)
-#   group        nice grouping in output (core | docs | commands | dispatcher | scheduler | config | module-X)
+#   group        nice grouping in output (core | docs | commands | dispatcher | config | module-X)
 #   type         file | dir | marker | config-key | command
 #   path         where to check
 #   template     (file) source under templates/ (defaults to mirror of `path` if omitted)
@@ -19,7 +19,7 @@ schema: 1
 #   key          (config-key) key=… that must exist in `path`
 #   default      (config-key) value to append if missing
 #   check        (command) shell expression — exit 0 = present
-#   fix          named handler in check.sh (copy-template | mkdir | append-config | install-scheduler | install-arch-skill | add-routine | update-force)
+#   fix          named handler in check.sh (copy-template | mkdir | append-config | install-arch-skill | add-routine | update-force)
 #                Marker types use `update-force` to re-run update.sh --force (executes at most once per check.sh run).
 #   when         module.<name> | platform.macos | platform.linux
 #   desc         one-line description
@@ -60,8 +60,6 @@ items:
 
   # ── Dispatcher ───────────────────────────────────────────────────────────────
   - { id: dispatcher-run,          group: dispatcher, type: file, path: .darkflow.d/darkflow-run.sh,        template: darkflow/darkflow-run.sh,        executable: true, fix: copy-template, desc: "Routine dispatcher" }
-  - { id: dispatcher-install,      group: dispatcher, type: file, path: .darkflow.d/install-scheduler.sh,   template: darkflow/install-scheduler.sh,   executable: true, fix: copy-template, desc: "Scheduler installer helper" }
-  - { id: dispatcher-uninstall,    group: dispatcher, type: file, path: .darkflow.d/uninstall-scheduler.sh, template: darkflow/uninstall-scheduler.sh, executable: true, fix: copy-template, desc: "Scheduler uninstaller helper" }
   - { id: dispatcher-routines,     group: dispatcher, type: file, path: .darkflow.d/routines.yml,           template: darkflow/routines.yml,                              fix: copy-template, desc: "Routine schedule (project-specific — copy of generic template if missing)" }
 
   # ── Dark Flow instruction file + CLAUDE.md reference ────────────────────────
@@ -73,22 +71,6 @@ items:
   - { id: cfg-webapp-url,          group: config,     type: config-key, path: .darkflow, key: webapp_url,     default: "http://localhost:5555", fix: append-config, desc: "webapp_url" }
   - { id: cfg-slug,                group: config,     type: config-key, path: .darkflow, key: slug,                                            fix: append-config, desc: "project slug (re-run update.sh if missing)" }
   - { id: cfg-name,                group: config,     type: config-key, path: .darkflow, key: name,                                            fix: append-config, desc: "project name (re-run update.sh if missing)" }
-
-  # ── Scheduler (platform-specific) ────────────────────────────────────────────
-  # Scheduler check — only applies if the user opted into scheduler at install time
-  # (recorded as `scheduler` in the `modules=` line of .darkflow).
-  - id: scheduler
-    group: scheduler
-    type: command
-    when: module.scheduler
-    check: |
-      case "$(uname)" in
-        Darwin) test -f "$HOME/Library/LaunchAgents/com.darkflow.${SLUG}.plist" ;;
-        Linux)  crontab -l 2>/dev/null | grep -q "# darkflow:${SLUG}" ;;
-        *) true ;;
-      esac
-    fix: install-scheduler
-    desc: "system scheduler (launchd on macOS / cron on Linux)"
 
   # ── Per-module dirs ──────────────────────────────────────────────────────────
   - { id: mod-analytics-dir, group: module-analytics, type: dir, path: docs/insights/analytics,      when: module.analytics, fix: mkdir, desc: "Analytics snapshots dir" }

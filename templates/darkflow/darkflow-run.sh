@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# DF_VERSION: 2.21.9
+# DF_VERSION: 2.22.0
 # Dark Flow routine dispatcher
 # Lives at .darkflow.d/darkflow-run.sh — run from anywhere in the project.
 #
 # Usage:
 #   bash .darkflow.d/darkflow-run.sh              # loop every 60s — checks for due routines (default)
-#   bash .darkflow.d/darkflow-run.sh --once       # single dispatch and exit (for system scheduler)
 #   bash .darkflow.d/darkflow-run.sh <name>       # manual: run one routine immediately
 #   bash .darkflow.d/darkflow-run.sh --sync       # push issues + metadata to the web UI
 #   bash .darkflow.d/darkflow-run.sh --list       # show routine status table
@@ -1026,13 +1025,6 @@ case "${1:-}" in
     acquire_lock
     mode_dispatch true
     ;;
-  --once)
-    preflight || exit 1
-    acquire_lock
-    check_for_update
-    mode_dispatch false
-    sync_webapp
-    ;;
   --self-test)
     mode_self_test
     ;;
@@ -1045,7 +1037,7 @@ case "${1:-}" in
     mode_watch 60
     ;;
   -*)
-    echo "Usage: darkflow-run.sh [<routine-name> | --once | --sync | --list | --dry-run | --self-test]" >&2
+    echo "Usage: darkflow-run.sh [<routine-name> | --sync | --list | --dry-run | --self-test]" >&2
     exit 1
     ;;
   *)
