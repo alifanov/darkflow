@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DF_VERSION: 2.21.8
+# DF_VERSION: 2.21.9
 # Dark Flow routine dispatcher
 # Lives at .darkflow.d/darkflow-run.sh — run from anywhere in the project.
 #
@@ -31,6 +31,13 @@ DARKFLOW_REPO="https://raw.githubusercontent.com/alifanov/darkflow/main"
 PENDING_LOGS=()
 
 cd "$PROJECT_ROOT"
+
+# ── GitHub token bootstrap ────────────────────────────────────────────────────
+# If GH_TOKEN is not set (e.g. running from launchd or a bare Makefile target),
+# pull it from the gh CLI so all subsequent gh calls are authenticated.
+if [[ -z "${GH_TOKEN:-}" ]] && command -v gh &>/dev/null; then
+  _tok=$(gh auth token 2>/dev/null) && export GH_TOKEN="$_tok" || true
+fi
 
 # ── OS detection ──────────────────────────────────────────────────────────────
 
