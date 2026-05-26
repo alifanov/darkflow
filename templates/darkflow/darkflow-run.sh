@@ -399,6 +399,27 @@ revive_stuck_issues() {
   done <<< "$stuck"
 }
 
+close_rejected_issues() {
+  local issues_json="$1"
+  [[ -z "$issues_json" ]] && return 0
+  ! command -v gh &>/dev/null && return 0
+  ! command -v jq &>/dev/null && return 0
+
+  local rejected
+  rejected=$(echo "$issues_json" | jq -r '
+    .[] | select(.state == "OPEN")
+        | select(any(.labels[]; .name == "status:rejected"))
+        | .number
+  ' 2>/dev/null) || return 0
+  [[ -z "$rejected" ]] && return 0
+
+  local num
+  while IFS= read -r num; do
+    [[ -z "$num" ]] && continue
+    gh issue close "$num" >/dev/null 2>&1 && log "CLOSE #${num} closed (status:rejected)"
+  done <<< "$rejected"
+}
+
 apply_pending_statuses() {
   local webapp_url repo_url pending_json count
   webapp_url=$(darkflow_val "webapp_url" "")
@@ -477,6 +498,7 @@ sync_webapp() {
   }
 
   revive_stuck_issues "$issues"
+  close_rejected_issues "$issues"
 
   now_iso=$(date -u +%FT%TZ)
 
