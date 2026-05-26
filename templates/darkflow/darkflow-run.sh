@@ -428,6 +428,9 @@ apply_pending_statuses() {
     [[ -z "$num" || -z "$target" || "$target" == "null" ]] && continue
     if gh issue edit "$num" "${remove_args[@]}" --add-label "status:${target}" >/dev/null 2>&1; then
       log "PENDING #${num} → status:${target}"
+      if [[ "$target" == "rejected" ]]; then
+        gh issue close "$num" >/dev/null 2>&1 && log "PENDING #${num} closed (rejected)"
+      fi
     else
       log "PENDING #${num} failed to apply status:${target}"
     fi
