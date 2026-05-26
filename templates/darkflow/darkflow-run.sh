@@ -248,6 +248,12 @@ preflight() {
     echo "  Install Claude Code: https://claude.ai/code" >&2
     ok=false
   fi
+  if ! command -v python3 &>/dev/null; then
+    echo "darkflow-run: python3 not found." >&2
+    echo "  macOS:  brew install python3" >&2
+    echo "  Linux:  apt install python3 / dnf install python3" >&2
+    ok=false
+  fi
   if [[ ! -f "$YAML" ]]; then
     echo "darkflow-run: ${YAML} not found. Run install.sh to reinstall Dark Flow." >&2
     ok=false
@@ -305,15 +311,15 @@ run_in_pgid() {
   _tmpout=$(mktemp)
   _pgid_ret=""
 
-  if command -v python3 &>/dev/null; then
-    python3 -c 'import os,sys; os.setpgrp(); os.execvp(sys.argv[1], sys.argv[1:])' "$@" > "$_tmpout" 2>&1 &
-    _bgpid=$!
-    _pgid_ret=$_bgpid
-  else
-    "$@" > "$_tmpout" 2>&1 &
-    _bgpid=$!
-    _pgid_ret=""
+  if ! command -v python3 &>/dev/null; then
+    echo "darkflow-run: python3 not found — required for process group isolation" >&2
+    rm -f "$_tmpout"
+    return 1
   fi
+
+  python3 -c 'import os,sys; os.setpgrp(); os.execvp(sys.argv[1], sys.argv[1:])' "$@" > "$_tmpout" 2>&1 &
+  _bgpid=$!
+  _pgid_ret=$_bgpid
 
   wait "$_bgpid" 2>/dev/null || true
   local _rc=$?
