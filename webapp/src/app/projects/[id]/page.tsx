@@ -92,7 +92,7 @@ export default async function ProjectPage({
   const project = await prisma.project.findUnique({
     where: { id },
     include: {
-      issues: { orderBy: [{ status: "asc" }, { number: "desc" }] },
+      issues: { where: { state: { in: ["OPEN", "open"] } }, orderBy: [{ status: "asc" }, { number: "desc" }] },
       securityStatus: true,
       architectureStatus: true,
       workerStatus: true,
