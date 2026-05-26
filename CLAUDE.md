@@ -9,6 +9,9 @@ install.sh              ← main installer (copies templates, sets up labels)
 update.sh               ← upgrader
 setup-labels.sh         ← standalone GitHub labels setup
 docker-compose.yml      ← runs the web UI + Postgres database
+checklist.yml           ← issue acceptance checklist used by darkflow-run.sh
+docs/                   ← project documentation
+routines/               ← scheduled routines run by the worker
 webapp/                 ← Next.js web app (projects list, issue triage, approve/reject)
   prisma/               ← database schema and migrations (Postgres via Prisma)
   src/app/              ← App Router pages and API routes
@@ -25,9 +28,21 @@ VERSION                 ← semver, bumped on every release
 
 ## Running locally
 
+Copy `.env.example` to `.env` before first run.
+
 ```bash
 docker compose up -d        # starts webapp + Postgres; UI at http://localhost:5555
 docker compose logs -f webapp  # tail logs
+```
+
+### Make targets (shorthand for docker compose)
+
+```bash
+make up          # = docker compose up -d
+make down        # stop all services
+make logs        # tail all logs
+make db-shell    # open psql shell in Postgres container
+make help        # list all targets
 ```
 
 For webapp development (hot reload):
