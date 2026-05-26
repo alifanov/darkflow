@@ -497,7 +497,7 @@ function RoutineConfigList({
         Routines ({configs.length})
       </h2>
       <TableContainer>
-        <TableHead cols={["Name", "Status", "Model", "Cron", "Permission"]} />
+        <TableHead cols={["Name", "Status", "Model", "Cron"]} />
         <tbody>
           {configs.map((c) => (
             <tr key={c.id} className="project-row" style={{ borderBottom: "1px solid var(--border)" }}>
@@ -521,10 +521,6 @@ function RoutineConfigList({
               <td className="py-3 px-4 font-mono text-xs" style={{ color: "var(--text)" }}>
                 {c.cron ?? "—"}
               </td>
-              <td className="py-3 px-4 font-mono text-xs" style={{ color: "var(--text)" }}>
-                {c.permissionMode ?? "—"}
-              </td>
-
             </tr>
           ))}
         </tbody>
