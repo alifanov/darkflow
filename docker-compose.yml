@@ -23,6 +23,8 @@ services:
       db:
         condition: service_healthy
     volumes:
+      # VERSION = this darkflow release; webapp uses it to flag outdated project installs.
+      # Override via DARKFLOW_LATEST_VERSION env var if you need a custom comparison value.
       - ./VERSION:/app/VERSION:ro
     environment:
       DATABASE_URL: postgresql://darkflow:${POSTGRES_PASSWORD:-darkflow}@db:5432/darkflow

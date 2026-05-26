@@ -258,6 +258,21 @@ preflight() {
     echo "darkflow-run: ${YAML} not found. Run install.sh to reinstall Dark Flow." >&2
     ok=false
   fi
+  # Verify that each enabled routine has a corresponding command file.
+  # A mismatch means routines.yml and .claude/commands/darkflow/ are out of sync.
+  if [[ -f "$YAML" ]] && command -v yq &>/dev/null; then
+    local _cmd_dir="${PROJECT_ROOT}/.claude/commands/darkflow"
+    local _rname _enabled
+    while IFS= read -r _rname; do
+      _enabled=$(yq ".routines[\"${_rname}\"].enabled // true" "$YAML" 2>/dev/null || echo "true")
+      [[ "$_enabled" == "false" ]] && continue
+      if [[ ! -f "${_cmd_dir}/${_rname}.md" ]]; then
+        echo "darkflow-run: routine '${_rname}' is enabled in routines.yml but missing command file: .claude/commands/darkflow/${_rname}.md" >&2
+        echo "  Run install.sh to repair, or disable the routine in routines.yml." >&2
+        ok=false
+      fi
+    done < <(routine_names)
+  fi
   [[ "$ok" == true ]]
 }
 

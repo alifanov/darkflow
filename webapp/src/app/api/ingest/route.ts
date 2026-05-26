@@ -133,10 +133,14 @@ export async function POST(req: NextRequest) {
         data: body.issues.map((i) => {
           const newStatus = i.status ?? "none";
           const prevPending = pendingByNumber.get(i.number);
-          // If the synced GitHub status now matches the pending target, the
-          // worker successfully applied it — drop the pending marker.
+          // Keep pendingStatus only if GitHub hasn't applied it yet AND it isn't
+          // stale (> 2 h old means the worker likely never ran — clear it).
+          const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+          const pendingFresh =
+            prevPending?.pendingStatusAt &&
+            Date.now() - prevPending.pendingStatusAt.getTime() < TWO_HOURS_MS;
           const stillPending =
-            prevPending && prevPending.pendingStatus !== newStatus
+            prevPending && prevPending.pendingStatus !== newStatus && pendingFresh
               ? prevPending
               : null;
           return {
