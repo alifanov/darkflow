@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DF_VERSION: 2.22.3
+# DF_VERSION: 2.25.0
 # Dark Flow routine dispatcher
 # Lives at .darkflow.d/darkflow-run.sh — run from anywhere in the project.
 #
@@ -352,6 +352,38 @@ run_in_pgid() {
   return $_rc
 }
 
+# ── Claude stream formatter ───────────────────────────────────────────────────
+# Reads stream-json NDJSON from stdin (claude --output-format stream-json),
+# extracts assistant text + tool_use + tool_result events, outputs Markdown.
+# Skips thinking blocks, system init, and duplicate final result events.
+
+format_claude_stream() {
+  jq -r '
+    if .type == "assistant" then
+      (.message.content // [])[] | (
+        if .type == "text" and (.text | length) > 0 then
+          "\n" + .text + "\n"
+        elif .type == "tool_use" then
+          if .name == "Bash" then
+            "\n**Tool: Bash**\n\n```bash\n" + (.input.command // "") + "\n```\n"
+          else
+            "\n**Tool: " + .name + "**\n\n```json\n" + (.input | tojson) + "\n```\n"
+          end
+        else empty end
+      )
+    elif .type == "user" then
+      (.message.content // [])[] | (
+        if .type == "tool_result" then
+          "\n**Result" + (if (.is_error // false) then " (error)" else "" end) + ":**\n\n```\n"
+            + (if (.content | type) == "string" then .content
+               else (.content // [] | map(.text // "") | join("\n")) end)
+            + "\n```\n"
+        else empty end
+      )
+    else empty end
+  '
+}
+
 # ── Routine execution ─────────────────────────────────────────────────────────
 
 run_routine() {
@@ -394,9 +426,12 @@ run_routine() {
   send_heartbeat "running" "$name"
   start_heartbeat_loop "$name"
 
-  local claude_output
-  claude_output=$(run_in_pgid claude -p "/darkflow:${name}" --model "${model}" "${perm_args[@]}")
-  exit_code=$?
+  local claude_output _stream_file
+  _stream_file=$(mktemp)
+  run_in_pgid claude -p "/darkflow:${name}" --model "${model}" "${perm_args[@]}" \
+    --output-format stream-json --verbose > "$_stream_file" || exit_code=$?
+  claude_output=$(format_claude_stream < "$_stream_file")
+  rm -f "$_stream_file"
 
   stop_heartbeat_loop
   send_heartbeat "idle"
@@ -824,7 +859,12 @@ check_for_update() {
   # Fallback: if the slash command isn't installed yet (pre-2.20.0 projects),
   # run the installer directly instead of failing with "Unknown command".
   if [[ -f ".claude/commands/darkflow/self-update.md" ]]; then
-    claude_output=$(run_in_pgid claude -p "/darkflow:self-update" --model sonnet --permission-mode bypassPermissions) || exit_code=$?
+    local _su_stream
+    _su_stream=$(mktemp)
+    run_in_pgid claude -p "/darkflow:self-update" --model sonnet --permission-mode bypassPermissions \
+      --output-format stream-json --verbose > "$_su_stream" || exit_code=$?
+    claude_output=$(format_claude_stream < "$_su_stream")
+    rm -f "$_su_stream"
   else
     log "UPDATE self-update.md not found, running installer directly"
     claude_output=$(bash <(curl -fsSL -m 30 "${DARKFLOW_REPO}/install.sh") --force --yes 2>&1) || exit_code=$?
