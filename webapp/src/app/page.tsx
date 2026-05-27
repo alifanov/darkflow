@@ -10,8 +10,8 @@ export default async function ProjectsPage() {
       include: {
         _count: { select: { issues: { where: { state: { in: ["OPEN", "open"] } } } } },
         issues: {
-          where: { status: "proposed" },
-          select: { id: true },
+          where: { state: { in: ["OPEN", "open"] } },
+          select: { id: true, status: true, needsHuman: true },
         },
         workerStatus: true,
         routineLogs: {
@@ -25,8 +25,8 @@ export default async function ProjectsPage() {
   ]);
 
   const projects = [...rawProjects].sort((a, b) => {
-    const aProposed = a.issues.length > 0 ? 1 : 0;
-    const bProposed = b.issues.length > 0 ? 1 : 0;
+    const aProposed = a.issues.some((i) => i.status === "proposed") ? 1 : 0;
+    const bProposed = b.issues.some((i) => i.status === "proposed") ? 1 : 0;
     if (bProposed !== aProposed) return bProposed - aProposed;
     return b._count.issues - a._count.issues;
   });
@@ -99,7 +99,8 @@ export default async function ProjectsPage() {
                     latestVersion={latestVersion}
                     workerState={workerState}
                     routine={ws?.routine ?? null}
-                    proposedCount={p.issues.length}
+                    proposedCount={p.issues.filter((i) => i.status === "proposed").length}
+                    needsHumanCount={p.issues.filter((i) => i.needsHuman).length}
                     totalIssues={p._count.issues}
                     lastSyncedAt={p.lastSyncedAt?.toISOString() ?? null}
                     lastRoutine={lastLog ? { routine: lastLog.routine, timestamp: lastLog.timestamp.toISOString() } : null}

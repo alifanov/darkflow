@@ -50,6 +50,7 @@ interface ProjectRowProps {
   workerState: "running" | "online" | null;
   routine: string | null;
   proposedCount: number;
+  needsHumanCount: number;
   totalIssues: number;
   lastSyncedAt: string | null;
   lastRoutine: { routine: string; timestamp: string } | null;
@@ -67,6 +68,7 @@ export function ProjectRow({
   workerState,
   routine,
   proposedCount,
+  needsHumanCount,
   totalIssues,
   lastSyncedAt,
   lastRoutine,
@@ -159,6 +161,11 @@ export function ProjectRow({
         {proposedCount > 0 && (
           <span className="ml-1 text-xs font-semibold" style={{ color: "var(--accent)" }}>
             ({proposedCount})
+          </span>
+        )}
+        {needsHumanCount > 0 && (
+          <span className="ml-1 text-xs font-semibold" style={{ color: "#c084fc" }}>
+            ({needsHumanCount} 👤)
           </span>
         )}
       </td>
