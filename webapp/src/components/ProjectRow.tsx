@@ -4,28 +4,38 @@ import { useRouter } from "next/navigation";
 import { LocalTime } from "@/components/LocalTime";
 
 const LANG_EMOJI: Record<string, string> = {
-  typescript: "📘",
-  javascript: "🟨",
-  python: "🐍",
-  ruby: "💎",
-  go: "🐹",
-  rust: "🦀",
-  php: "🐘",
-  java: "☕",
-  kotlin: "🟣",
-  swift: "🐦",
-  dart: "🎯",
-  elixir: "💜",
-  html: "🌐",
-  css: "🎨",
-  shell: "🐚",
-  "c#": "🎵",
-  "c++": "⚙️",
-  c: "⚙️",
+  russian: "🇷🇺",
+  ru: "🇷🇺",
+  english: "🇺🇸",
+  en: "🇺🇸",
+  spanish: "🇪🇸",
+  es: "🇪🇸",
+  french: "🇫🇷",
+  fr: "🇫🇷",
+  german: "🇩🇪",
+  de: "🇩🇪",
+  chinese: "🇨🇳",
+  zh: "🇨🇳",
+  japanese: "🇯🇵",
+  ja: "🇯🇵",
+  portuguese: "🇵🇹",
+  pt: "🇵🇹",
+  italian: "🇮🇹",
+  it: "🇮🇹",
+  korean: "🇰🇷",
+  ko: "🇰🇷",
+  arabic: "🇸🇦",
+  ar: "🇸🇦",
+  turkish: "🇹🇷",
+  tr: "🇹🇷",
+  polish: "🇵🇱",
+  pl: "🇵🇱",
+  ukrainian: "🇺🇦",
+  uk: "🇺🇦",
 };
 
 function langEmoji(language: string): string {
-  return LANG_EMOJI[language.toLowerCase()] ?? "🔤";
+  return LANG_EMOJI[language.toLowerCase()] ?? "🌐";
 }
 
 interface ProjectRowProps {
