@@ -3,6 +3,31 @@
 import { useRouter } from "next/navigation";
 import { LocalTime } from "@/components/LocalTime";
 
+const LANG_EMOJI: Record<string, string> = {
+  typescript: "📘",
+  javascript: "🟨",
+  python: "🐍",
+  ruby: "💎",
+  go: "🐹",
+  rust: "🦀",
+  php: "🐘",
+  java: "☕",
+  kotlin: "🟣",
+  swift: "🐦",
+  dart: "🎯",
+  elixir: "💜",
+  html: "🌐",
+  css: "🎨",
+  shell: "🐚",
+  "c#": "🎵",
+  "c++": "⚙️",
+  c: "⚙️",
+};
+
+function langEmoji(language: string): string {
+  return LANG_EMOJI[language.toLowerCase()] ?? "🔤";
+}
+
 interface ProjectRowProps {
   index: number;
   id: string;
@@ -71,7 +96,10 @@ export function ProjectRow({
 
       {/* Language */}
       <td className="py-3 px-4 text-xs" style={{ color: "var(--muted)" }}>
-        {language}
+        <span className="flex items-center gap-1">
+          <span>{langEmoji(language)}</span>
+          <span>{language}</span>
+        </span>
       </td>
 
       {/* Version */}

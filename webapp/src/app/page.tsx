@@ -5,9 +5,8 @@ import { ProjectRow } from "@/components/ProjectRow";
 export const dynamic = "force-dynamic";
 
 export default async function ProjectsPage() {
-  const [projects, latestVersion] = await Promise.all([
+  const [rawProjects, latestVersion] = await Promise.all([
     prisma.project.findMany({
-      orderBy: { lastSyncedAt: "desc" },
       include: {
         _count: { select: { issues: { where: { state: { in: ["OPEN", "open"] } } } } },
         issues: {
@@ -24,6 +23,13 @@ export default async function ProjectsPage() {
     }),
     Promise.resolve(getLatestDarkflowVersion()),
   ]);
+
+  const projects = [...rawProjects].sort((a, b) => {
+    const aProposed = a.issues.length > 0 ? 1 : 0;
+    const bProposed = b.issues.length > 0 ? 1 : 0;
+    if (bProposed !== aProposed) return bProposed - aProposed;
+    return b._count.issues - a._count.issues;
+  });
 
   const now = Date.now();
   const ALIVE_MS = 75 * 1000;
