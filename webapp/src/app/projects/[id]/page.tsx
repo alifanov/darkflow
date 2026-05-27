@@ -245,7 +245,7 @@ function IssuesTab({
   return (
     <>
       {needsHumanIssues.length > 0 && (
-        <section className="mb-8">
+        <section id="needs-human" className="mb-8">
           <div className="flex items-center gap-2 mb-3">
             <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>
               Needs Human
@@ -274,7 +274,7 @@ function IssuesTab({
       )}
 
       {issues.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
           {CARDS.map((card) => {
             const count = issues.filter((i) => card.statuses.includes(i.status)).length;
             const isActive = !showAll && effectiveFilter === card.key;
@@ -298,6 +298,21 @@ function IssuesTab({
               </Link>
             );
           })}
+          <Link
+            href={needsHumanIssues.length > 0 ? `#needs-human` : `#`}
+            className="rounded-lg border p-4 flex flex-col gap-1 transition-colors"
+            style={{
+              background: needsHumanIssues.length > 0 ? "#3a1a3a" : "var(--surface)",
+              borderColor: needsHumanIssues.length > 0 ? "#c084fc" : "var(--border)",
+            }}
+          >
+            <span className="text-2xl font-bold" style={{ color: needsHumanIssues.length > 0 ? "#c084fc" : "var(--muted)" }}>
+              {needsHumanIssues.length}
+            </span>
+            <span className="text-xs" style={{ color: "var(--muted)" }}>
+              Needs Human
+            </span>
+          </Link>
         </div>
       )}
 
