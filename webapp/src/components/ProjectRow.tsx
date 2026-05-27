@@ -135,7 +135,14 @@ export function ProjectRow({
       </td>
 
       {/* Last synced */}
-      <td className="py-3 px-4 text-xs" style={{ color: "var(--muted)" }}>
+      <td
+        className="py-3 px-4 text-xs"
+        style={{
+          color: lastSyncedAt && Date.now() - new Date(lastSyncedAt).getTime() > 60 * 60 * 1000
+            ? "var(--red)"
+            : "var(--muted)",
+        }}
+      >
         {lastSyncedAt ? <LocalTime date={lastSyncedAt} /> : "—"}
       </td>
     </tr>
