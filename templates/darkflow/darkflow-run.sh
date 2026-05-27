@@ -533,7 +533,11 @@ apply_pending_statuses() {
     num=$(echo "$pending_json" | jq -r ".pending[$i].number")
     target=$(echo "$pending_json" | jq -r ".pending[$i].pendingStatus")
     [[ -z "$num" || -z "$target" || "$target" == "null" ]] && continue
-    if gh_err=$(gh issue edit "$num" "${remove_args[@]}" --add-label "status:${target}" 2>&1 >/dev/null); then
+    if [[ "$target" == "closed" ]]; then
+      gh issue edit "$num" "${remove_args[@]}" --remove-label "needs-human" >/dev/null 2>&1 || true
+      gh issue close "$num" >/dev/null 2>&1 && log "PENDING #${num} closed (needs-human resolved)" || \
+        log "PENDING #${num} failed to close"
+    elif gh_err=$(gh issue edit "$num" "${remove_args[@]}" --add-label "status:${target}" 2>&1 >/dev/null); then
       log "PENDING #${num} → status:${target}"
       if [[ "$target" == "rejected" ]]; then
         gh issue close "$num" >/dev/null 2>&1 && log "PENDING #${num} closed (rejected)"
@@ -599,15 +603,17 @@ sync_webapp() {
   local issues_json
   issues_json=$(printf '%s\n' "$issues" | jq '
     def label_prefix(p): [.labels[].name | select(startswith(p)) | ltrimstr(p)][0] // null;
+    def has_label(n): [.labels[].name] | index(n) != null;
     map({
       number,
       title,
       body,
       state,
       url,
-      status:   (label_prefix("status:")   // "none"),
-      priority: label_prefix("priority:"),
-      source:   label_prefix("source:")
+      status:     (label_prefix("status:")   // "none"),
+      priority:   label_prefix("priority:"),
+      source:     label_prefix("source:"),
+      needsHuman: has_label("needs-human")
     })
   ') || { log "WEBAPP skipped (jq parse error)"; PENDING_LOGS=(); return 0; }
 

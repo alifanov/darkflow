@@ -640,6 +640,7 @@ setup_labels() {
   _do_label "source:mailbox"         "5319e7" "From inbox email — incoming customer requests"
   _do_label "action:reply"           "0052cc" "Approved mailbox issue — agent will send email reply"
   _do_label "action:fix"             "0052cc" "Approved mailbox issue — agent will make a code change"
+  _do_label "needs-human"            "8b5cf6" "Agent blocked — requires human action (credentials, config, external service)"
   _do_label "priority:p0"            "b60205" "Breaks revenue or disables a feature right now"
   _do_label "priority:p1"            "d93f0b" "This week"
   _do_label "priority:p2"            "fbca04" "This month"

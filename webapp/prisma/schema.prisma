@@ -43,6 +43,7 @@ model Issue {
   pendingStatusAt DateTime?
   priority        String?
   source          String?
+  needsHuman      Boolean   @default(false)
   updatedAt       DateTime  @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)

@@ -10,6 +10,7 @@ interface IngestIssue {
   status?: string;
   priority?: string;
   source?: string;
+  needsHuman?: boolean;
 }
 
 interface IngestAnalytics {
@@ -155,6 +156,7 @@ export async function POST(req: NextRequest) {
             pendingStatusAt: stillPending?.pendingStatusAt ?? null,
             priority: i.priority ?? null,
             source: i.source ?? null,
+            needsHuman: i.needsHuman ?? false,
           };
         }),
       });
