@@ -7,24 +7,29 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "repoUrl is required" }, { status: 400 });
   }
 
-  const project = await prisma.project.findUnique({
-    where: { repoUrl },
-    select: { id: true },
-  });
-  if (!project) {
-    return NextResponse.json({ pending: [] });
+  try {
+    const project = await prisma.project.findUnique({
+      where: { repoUrl },
+      select: { id: true },
+    });
+    if (!project) {
+      return NextResponse.json({ pending: [] });
+    }
+
+    const issues = await prisma.issue.findMany({
+      where: { projectId: project.id, pendingStatus: { not: null } },
+      select: { number: true, pendingStatus: true, pendingStatusAt: true },
+    });
+
+    return NextResponse.json({
+      pending: issues.map((i) => ({
+        number: i.number,
+        pendingStatus: i.pendingStatus,
+        pendingStatusAt: i.pendingStatusAt?.toISOString() ?? null,
+      })),
+    });
+  } catch (err) {
+    console.error("pending-status:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const issues = await prisma.issue.findMany({
-    where: { projectId: project.id, pendingStatus: { not: null } },
-    select: { number: true, pendingStatus: true, pendingStatusAt: true },
-  });
-
-  return NextResponse.json({
-    pending: issues.map((i) => ({
-      number: i.number,
-      pendingStatus: i.pendingStatus,
-      pendingStatusAt: i.pendingStatusAt?.toISOString() ?? null,
-    })),
-  });
 }

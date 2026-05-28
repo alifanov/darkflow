@@ -49,6 +49,9 @@ model Issue {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, number])
+  @@index([state])
+  @@index([projectId, state])
+  @@index([projectId, needsHuman])
 }
 
 model AnalyticsSnapshot {
@@ -62,6 +65,8 @@ model AnalyticsSnapshot {
   capturedAt  DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, capturedAt(sort: Desc)])
 }
 
 model SecurityStatus {
@@ -94,6 +99,8 @@ model RoutineLog {
   timestamp DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, timestamp(sort: Desc)])
 }
 
 model RoutineConfig {

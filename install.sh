@@ -504,6 +504,10 @@ smart_update_template() {
   else
     latest=$(curl -fsSL "${DARKFLOW_REPO}/templates/${rel_path}?t=$(date +%s)" 2>/dev/null || echo "")
   fi
+  if [[ -z "$latest" ]]; then
+    warn "Skipped update for $dest (could not fetch upstream — network error or file missing)"
+    return
+  fi
   current=$(cat "$dest")
 
   if [[ "$current" == "$latest" ]]; then
@@ -1056,11 +1060,10 @@ smart_update_template ".claude/commands/darkflow/claude-md-update.md"           
 smart_update_template ".claude/commands/darkflow/security-audit.md"               ".claude/commands/darkflow/security-audit.md"
 smart_update_template ".claude/commands/darkflow/vulnerability-check.md"          ".claude/commands/darkflow/vulnerability-check.md"
 smart_update_template ".claude/commands/darkflow/architecture-review.md"          ".claude/commands/darkflow/architecture-review.md"
-smart_update_template ".claude/commands/darkflow/mailbox-check.md"                ".claude/commands/darkflow/mailbox-check.md"
-
 smart_update_template "darkflow/darkflow-run.sh"        ".darkflow.d/darkflow-run.sh"        "true" "true"
 
 if [[ "$MOD_MAILBOX" == true ]]; then
+  smart_update_template ".claude/commands/darkflow/mailbox-check.md" ".claude/commands/darkflow/mailbox-check.md"
   smart_update_template "darkflow/mailbox/fetch.py" ".darkflow.d/mailbox/fetch.py" "true"
   smart_update_template "darkflow/mailbox/send.py"  ".darkflow.d/mailbox/send.py"  "true"
 fi

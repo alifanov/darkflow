@@ -7,12 +7,17 @@ export async function DELETE(
 ) {
   const { id } = await params;
 
-  const project = await prisma.project.findUnique({ where: { id } });
-  if (!project) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  try {
+    const project = await prisma.project.findUnique({ where: { id } });
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    await prisma.project.delete({ where: { id } });
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("delete project:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  await prisma.project.delete({ where: { id } });
-
-  return NextResponse.json({ ok: true });
 }

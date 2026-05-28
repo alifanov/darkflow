@@ -57,6 +57,9 @@ items:
   - { id: cmd-claude-md-update,    group: commands,   type: file, path: .claude/commands/darkflow/claude-md-update.md,      template: .claude/commands/darkflow/claude-md-update.md,      fix: copy-template, desc: "/darkflow:claude-md-update" }
   - { id: cmd-security-audit,      group: commands,   type: file, path: .claude/commands/darkflow/security-audit.md,        template: .claude/commands/darkflow/security-audit.md,        fix: copy-template, desc: "/darkflow:security-audit" }
   - { id: cmd-architecture-review, group: commands,   type: file, path: .claude/commands/darkflow/architecture-review.md,   template: .claude/commands/darkflow/architecture-review.md,   fix: copy-template, desc: "/darkflow:architecture-review" }
+  - { id: cmd-self-update,         group: commands,   type: file, path: .claude/commands/darkflow/self-update.md,            template: .claude/commands/darkflow/self-update.md,            fix: copy-template, desc: "/darkflow:self-update" }
+  - { id: cmd-vulnerability-check, group: commands,   type: file, path: .claude/commands/darkflow/vulnerability-check.md,   template: .claude/commands/darkflow/vulnerability-check.md,   fix: copy-template, desc: "/darkflow:vulnerability-check" }
+  - { id: cmd-mailbox-check,       group: commands,   type: file, path: .claude/commands/darkflow/mailbox-check.md,          template: .claude/commands/darkflow/mailbox-check.md,          fix: copy-template, when: module.mailbox, desc: "/darkflow:mailbox-check" }
 
   # ── Dispatcher ───────────────────────────────────────────────────────────────
   - { id: dispatcher-run,          group: dispatcher, type: file, path: .darkflow.d/darkflow-run.sh,        template: darkflow/darkflow-run.sh,        executable: true, fix: copy-template, desc: "Routine dispatcher" }
