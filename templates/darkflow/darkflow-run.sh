@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DF_VERSION: 2.25.0
+# DF_VERSION: 2.27.0
 # Dark Flow routine dispatcher
 # Lives at .darkflow.d/darkflow-run.sh — run from anywhere in the project.
 #
@@ -25,6 +25,7 @@ LOG="${DARKFLOW_D}/darkflow-run.log"
 METRICS_DIR="${DARKFLOW_D}/state/metrics"
 DARKFLOW_CFG="${PROJECT_ROOT}/.darkflow"
 DARKFLOW_REPO="https://raw.githubusercontent.com/alifanov/darkflow/main"
+GLOBAL_SLOTS_DIR="/tmp/darkflow-slots"
 
 # Accumulated routine log entries for this dispatch cycle (JSON lines)
 PENDING_LOGS=()
@@ -308,6 +309,47 @@ release_lock() {
   rm -rf "$LOCK_DIR" 2>/dev/null || true
 }
 
+# ── Global concurrency semaphore ──────────────────────────────────────────────
+# Limits simultaneous claude processes across all projects on this machine.
+# Slots live in /tmp/darkflow-slots/; each slot file contains "PID:project-path".
+# Stale slots (dead PID) are reclaimed automatically.
+
+_acquired_slot=""  # slot index held by this process (empty = none)
+
+semaphore_acquire() {
+  local max_slots i slot_file owner_pid
+  max_slots=$(darkflow_val "max_concurrent" "3")
+  mkdir -p "$GLOBAL_SLOTS_DIR"
+
+  for (( i = 0; i < max_slots; i++ )); do
+    slot_file="${GLOBAL_SLOTS_DIR}/slot-${i}.lock"
+    if [[ ! -f "$slot_file" ]]; then
+      if ( set -o noclobber; echo "$$:${PROJECT_ROOT}" > "$slot_file" ) 2>/dev/null; then
+        _acquired_slot="$i"
+        return 0
+      fi
+    fi
+    # Slot exists — reclaim if owner PID is dead
+    owner_pid=$(cut -d: -f1 "$slot_file" 2>/dev/null || echo "")
+    if [[ -n "$owner_pid" ]] && ! kill -0 "$owner_pid" 2>/dev/null; then
+      rm -f "$slot_file"
+      if ( set -o noclobber; echo "$$:${PROJECT_ROOT}" > "$slot_file" ) 2>/dev/null; then
+        log "SEMA   reclaimed stale slot ${i} (dead PID ${owner_pid})"
+        _acquired_slot="$i"
+        return 0
+      fi
+    fi
+  done
+  return 1  # all slots busy
+}
+
+semaphore_release() {
+  if [[ -n "$_acquired_slot" ]]; then
+    rm -f "${GLOBAL_SLOTS_DIR}/slot-${_acquired_slot}.lock" 2>/dev/null || true
+    _acquired_slot=""
+  fi
+}
+
 acquire_lock() {
   if ! try_acquire_lock; then
     exit 0
@@ -421,6 +463,12 @@ run_routine() {
     fi
   fi
 
+  if ! semaphore_acquire; then
+    local _max_slots; _max_slots=$(darkflow_val "max_concurrent" "3")
+    log "DEFER  ${name} — all ${_max_slots} global slots busy, will retry next cycle"
+    return 0
+  fi
+
   log "START  ${name} (model=${model}, perm=${permission_mode})"
 
   send_heartbeat "running" "$name"
@@ -432,6 +480,7 @@ run_routine() {
     --output-format stream-json --verbose > "$_stream_file" || exit_code=$?
   claude_output=$(format_claude_stream < "$_stream_file")
   rm -f "$_stream_file"
+  semaphore_release
 
   stop_heartbeat_loop
   send_heartbeat "idle"
