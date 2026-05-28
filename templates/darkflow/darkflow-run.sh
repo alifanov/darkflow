@@ -32,13 +32,6 @@ PENDING_LOGS=()
 
 cd "$PROJECT_ROOT"
 
-# ── GitHub token bootstrap ────────────────────────────────────────────────────
-# If GH_TOKEN is not set (e.g. running from launchd or a bare Makefile target),
-# pull it from the gh CLI so all subsequent gh calls are authenticated.
-if [[ -z "${GH_TOKEN:-}" ]] && command -v gh &>/dev/null; then
-  _tok=$(gh auth token 2>/dev/null) && export GH_TOKEN="$_tok" || true
-fi
-
 # ── OS detection ──────────────────────────────────────────────────────────────
 
 OS="$(uname)"
@@ -88,6 +81,17 @@ darkflow_val() {
   fi
   echo "$default"
 }
+
+# ── GitHub token bootstrap ────────────────────────────────────────────────────
+# Priority: gh_token in .darkflow > GH_TOKEN env var > gh auth token
+if [[ -z "${GH_TOKEN:-}" ]]; then
+  _cfg_tok=$(darkflow_val "gh_token" "")
+  if [[ -n "$_cfg_tok" ]]; then
+    export GH_TOKEN="$_cfg_tok"
+  elif command -v gh &>/dev/null; then
+    _tok=$(gh auth token 2>/dev/null) && export GH_TOKEN="$_tok" || true
+  fi
+fi
 
 # ── Cron field matching ────────────────────────────────────────────────────────
 # Returns 0 if integer value matches cron field expression.
