@@ -152,3 +152,8 @@ model ProjectAlert {
   @@unique([projectId, key])
   @@index([projectId, severity])
 }
+
+model Settings {
+  id       String  @id @default("global")
+  ghToken  String?
+}

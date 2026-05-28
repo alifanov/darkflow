@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { getLatestDarkflowVersion } from "@/lib/darkflow-version";
 import { ProjectRow } from "@/components/ProjectRow";
+import { GhTokenForm } from "@/components/GhTokenForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProjectsPage() {
-  const [rawProjects, latestVersion] = await Promise.all([
+  const [rawProjects, latestVersion, settings] = await Promise.all([
     prisma.project.findMany({
       include: {
         _count: { select: { issues: { where: { state: { in: ["OPEN", "open"] } } } } },
@@ -22,6 +23,7 @@ export default async function ProjectsPage() {
       },
     }),
     Promise.resolve(getLatestDarkflowVersion()),
+    prisma.settings.findUnique({ where: { id: "global" } }),
   ]);
 
   const projects = [...rawProjects].sort((a, b) => {
@@ -36,6 +38,10 @@ export default async function ProjectsPage() {
 
   return (
     <div>
+      <div className="mb-5">
+        <GhTokenForm hasToken={!!settings?.ghToken} />
+      </div>
+
       <div className="flex items-center gap-3 mb-6">
         <h1 className="text-2xl font-bold" style={{ color: "var(--text)" }}>
           Projects
