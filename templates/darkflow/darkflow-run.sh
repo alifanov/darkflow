@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DF_VERSION: 2.29.0
+# DF_VERSION: 2.30.1
 # Dark Flow routine dispatcher
 # Lives at .darkflow.d/darkflow-run.sh — run from anywhere in the project.
 #
