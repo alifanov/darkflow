@@ -58,12 +58,12 @@ Also update any line that reads `→ PR → merge to <old-branch>` or `push dire
 Stage and commit the changed files:
 
 ```bash
-git add .darkflow .darkflow.d/claude.md
+git add .darkflow.d/claude.md
 git commit -m "chore: update darkflow config (lang=<NEW_LANG>, branch=<NEW_BRANCH>)"
 git push
 ```
 
-Only include values that actually changed in the commit message.
+Only include values that actually changed in the commit message. Note: `.darkflow` is gitignored and must not be staged — only `.darkflow.d/claude.md` is tracked.
 
 ## Step 6 — Report
 
