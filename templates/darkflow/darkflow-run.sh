@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DF_VERSION: 2.30.2
+# DF_VERSION: 2.30.3
 # Dark Flow routine dispatcher
 # Lives at .darkflow.d/darkflow-run.sh — run from anywhere in the project.
 #
@@ -456,7 +456,7 @@ run_in_pgid() {
 # Skips thinking blocks, system init, and duplicate final result events.
 
 format_claude_stream() {
-  jq -r '
+  local _jq_filter='
     if .type == "assistant" then
       (.message.content // [])[] | (
         if .type == "text" and (.text | length) > 0 then
@@ -480,6 +480,12 @@ format_claude_stream() {
       )
     else empty end
   '
+  # Process line-by-line so a single malformed event (e.g. NaN/Infinity in
+  # usage stats) does not abort the whole stream with a jq parse error.
+  while IFS= read -r _line; do
+    [[ -z "$_line" ]] && continue
+    printf '%s\n' "$_line" | jq -r "$_jq_filter" 2>/dev/null || true
+  done
 }
 
 # ── Routine execution ─────────────────────────────────────────────────────────
@@ -535,7 +541,7 @@ run_routine() {
   _CLEANUP_FILES+=("$_stream_file")
   run_in_pgid claude -p "/darkflow:${name}" --model "${model}" "${perm_args[@]}" \
     --output-format stream-json --verbose > "$_stream_file" || exit_code=$?
-  claude_output=$(format_claude_stream < "$_stream_file")
+  claude_output=$(format_claude_stream < "$_stream_file") || claude_output=""
   rm -f "$_stream_file"
   _CLEANUP_FILES=("${_CLEANUP_FILES[@]/$_stream_file}")
   semaphore_release
@@ -976,7 +982,7 @@ check_for_update() {
     _CLEANUP_FILES+=("$_su_stream")
     run_in_pgid claude -p "/darkflow:self-update" --model sonnet --permission-mode bypassPermissions \
       --output-format stream-json --verbose > "$_su_stream" || exit_code=$?
-    claude_output=$(format_claude_stream < "$_su_stream")
+    claude_output=$(format_claude_stream < "$_su_stream") || claude_output=""
     rm -f "$_su_stream"
     _CLEANUP_FILES=("${_CLEANUP_FILES[@]/$_su_stream}")
   else
