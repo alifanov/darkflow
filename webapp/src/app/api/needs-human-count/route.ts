@@ -6,8 +6,8 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const count = await prisma.issue.count({
     where: {
-      needsHuman: true,
       state: { in: ["OPEN", "open"] },
+      OR: [{ needsHuman: true }, { status: "proposed" }],
     },
   });
   return NextResponse.json({ count });
