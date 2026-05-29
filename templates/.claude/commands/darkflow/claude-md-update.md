@@ -1,4 +1,4 @@
-Scan the current codebase state and regenerate CLAUDE.md to keep it accurate.
+Scan the current codebase state and recent session history to regenerate CLAUDE.md.
 
 ## Step 1 — Read project config
 
@@ -16,7 +16,26 @@ git log --oneline $(git log --all --oneline -- CLAUDE.md | head -1 | cut -d' ' -
 
 If the output is empty (no commits since the last CLAUDE.md update), skip the run without committing — leave no comment.
 
-## Step 3 — Audit the codebase
+## Step 3 — Scan recent Claude sessions for user corrections
+
+Find transcripts from sessions that happened after the last CLAUDE.md update:
+```bash
+ls -t .claude/projects/*/transcripts/*.jsonl 2>/dev/null | head -20
+```
+
+For each transcript, look for patterns where the user corrected Claude's approach:
+- Messages where the user said "no", "don't", "stop", "use X instead", "wrong", "actually"
+- Follow-up messages that changed direction mid-task
+- Cases where Claude retried something after user feedback
+
+Identify **recurring patterns** — a correction that appears in multiple sessions is a strong signal. One-off fixes are noise; ignore them.
+
+For each recurring pattern found, decide:
+- Is it already documented in CLAUDE.md? → skip
+- Is it project-specific (not obvious from the code)? → add as a gotcha or rule
+- Is it a command/tool preference? → add to the relevant commands section
+
+## Step 4 — Audit the codebase
 
 Read the current CLAUDE.md. Then scan the project to find what has changed or is missing. Focus on:
 
@@ -39,7 +58,7 @@ Read the current CLAUDE.md. Then scan the project to find what has changed or is
 - Database or migration notes
 - Framework-specific constraints
 
-## Step 4 — Update CLAUDE.md
+## Step 5 — Update CLAUDE.md
 
 Rules:
 - Keep everything between `<!-- darkflow:start -->` and `<!-- darkflow:end -->` exactly as-is — do not touch it
@@ -48,7 +67,7 @@ Rules:
 - Keep CLAUDE.md under 300 lines — summarise, don't enumerate
 - All documented commands must be copy-paste ready
 
-## Step 5 — Commit and push
+## Step 6 — Commit and push
 
 Only if something actually changed:
 ```bash
