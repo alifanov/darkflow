@@ -1060,6 +1060,8 @@ smart_update_template ".claude/commands/darkflow/claude-md-update.md"           
 smart_update_template ".claude/commands/darkflow/security-audit.md"               ".claude/commands/darkflow/security-audit.md"
 smart_update_template ".claude/commands/darkflow/vulnerability-check.md"          ".claude/commands/darkflow/vulnerability-check.md"
 smart_update_template ".claude/commands/darkflow/architecture-review.md"          ".claude/commands/darkflow/architecture-review.md"
+smart_update_template ".claude/commands/darkflow/update-config.md"                ".claude/commands/darkflow/update-config.md"
+smart_update_template ".claude/commands/darkflow/ux-audit.md"                     ".claude/commands/darkflow/ux-audit.md"
 smart_update_template "darkflow/darkflow-run.sh"        ".darkflow.d/darkflow-run.sh"        "true" "true"
 
 if [[ "$MOD_MAILBOX" == true ]]; then
