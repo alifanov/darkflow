@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
     const issues = await prisma.issue.findMany({
       where: { projectId: project.id, pendingStatus: { not: null } },
-      select: { number: true, pendingStatus: true, pendingStatusAt: true },
+      select: { number: true, pendingStatus: true, pendingStatusAt: true, pendingComment: true },
     });
 
     return NextResponse.json({
@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
         number: i.number,
         pendingStatus: i.pendingStatus,
         pendingStatusAt: i.pendingStatusAt?.toISOString() ?? null,
+        pendingComment: i.pendingComment ?? null,
       })),
     });
   } catch (err) {

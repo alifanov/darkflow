@@ -41,6 +41,7 @@ model Issue {
   status          String    @default("none")
   pendingStatus   String?
   pendingStatusAt DateTime?
+  pendingComment  String?
   priority        String?
   source          String?
   needsHuman      Boolean   @default(false)

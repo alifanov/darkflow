@@ -11,6 +11,7 @@ const STATUS_COLORS: Record<string, string> = {
   approved: "#1a3a1a",
   rejected: "#3a1a1a",
   "in-progress": "#2a2a0a",
+  "needs-info": "#1f1f3a",
   blocked: "#3a2a0a",
   none: "#1a1a1a",
 };
@@ -20,6 +21,7 @@ const STATUS_TEXT: Record<string, string> = {
   approved: "var(--green)",
   rejected: "var(--red)",
   "in-progress": "#e3b341",
+  "needs-info": "#d4c5f9",
   blocked: "#d29922",
   none: "var(--muted)",
 };

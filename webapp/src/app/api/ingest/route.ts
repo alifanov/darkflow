@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
     // (worker hasn't yet applied them in GitHub).
     const existingPending = await prisma.issue.findMany({
       where: { projectId: project.id, pendingStatus: { not: null } },
-      select: { number: true, pendingStatus: true, pendingStatusAt: true },
+      select: { number: true, pendingStatus: true, pendingStatusAt: true, pendingComment: true },
     });
     const pendingByNumber = new Map(
       existingPending.map((i) => [i.number, i])
@@ -154,6 +154,7 @@ export async function POST(req: NextRequest) {
             status: newStatus,
             pendingStatus: stillPending?.pendingStatus ?? null,
             pendingStatusAt: stillPending?.pendingStatusAt ?? null,
+            pendingComment: stillPending?.pendingComment ?? null,
             priority: i.priority ?? null,
             source: i.source ?? null,
             needsHuman: i.needsHuman ?? false,
