@@ -1062,6 +1062,8 @@ smart_update_template ".claude/commands/darkflow/vulnerability-check.md"        
 smart_update_template ".claude/commands/darkflow/architecture-review.md"          ".claude/commands/darkflow/architecture-review.md"
 smart_update_template ".claude/commands/darkflow/update-config.md"                ".claude/commands/darkflow/update-config.md"
 smart_update_template ".claude/commands/darkflow/ux-audit.md"                     ".claude/commands/darkflow/ux-audit.md"
+smart_update_template ".claude/commands/darkflow/docs-audit.md"                   ".claude/commands/darkflow/docs-audit.md"
+smart_update_template ".claude/commands/darkflow/product-overview.md"             ".claude/commands/darkflow/product-overview.md"
 smart_update_template "darkflow/darkflow-run.sh"        ".darkflow.d/darkflow-run.sh"        "true" "true"
 
 if [[ "$MOD_MAILBOX" == true ]]; then
@@ -1243,6 +1245,16 @@ YAML
   vulnerability-check:
     cron: "0 6 * * *"
     model: sonnet
+    enabled: true
+
+  docs-audit:
+    cron: "0 5 * * 0"
+    model: opus
+    enabled: true
+
+  product-overview:
+    cron: "0 7 * * 1"
+    model: opus
     enabled: true
 YAML
 
