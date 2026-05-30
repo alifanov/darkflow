@@ -14,7 +14,7 @@ Categories:
 
 ---
 
-## [2.34.0] — 2026-05-30
+## [2.34.1] — 2026-05-30
 
 ### New routine
 - **`docs-audit`** — weekly check that the `docs/` knowledge base still matches the code. Compares `spec/data-model.md`, `spec/screens/inventory.md`, `spec/flows/`, `product/metrics.md`, `design/components.md`, `product/pricing.md`, documented commands, and `decisions/` against the real codebase, then creates `status:proposed` / `source:docs` / `area:docs` issues for each significant drift. Writes `docs/insights/docs-audit/YYYY-MM-DD.md` + `.darkflow.d/state/metrics/docs-audit.json`. Cron Sun 5:00, model opus, opt-in.
