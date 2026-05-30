@@ -32,6 +32,8 @@ MOD_COOLIFY=""
 MOD_CLAUDE_UPDATE=""
 MOD_ARCH_REVIEW=""
 MOD_MAILBOX=""
+MOD_DOCS_AUDIT=""
+MOD_PRODUCT_OVERVIEW=""
 
 OBS_TOOL=""
 OBS_URL=""
@@ -78,6 +80,7 @@ while [[ $# -gt 0 ]]; do
                           MOD_ANALYTICS=true; MOD_OBSERVABILITY=true; MOD_GSC=true
                           MOD_ADS=true; MOD_COOLIFY=true; MOD_CLAUDE_UPDATE=true
                           MOD_ARCH_REVIEW=true; MOD_MAILBOX=true
+                          MOD_DOCS_AUDIT=true; MOD_PRODUCT_OVERVIEW=true
                           shift ;;
     --with-analytics)     MOD_ANALYTICS=true; shift ;;
     --with-observability) MOD_OBSERVABILITY=true; shift ;;
@@ -95,6 +98,10 @@ while [[ $# -gt 0 ]]; do
     --no-arch-review)     MOD_ARCH_REVIEW=false; shift ;;
     --with-mailbox)       MOD_MAILBOX=true; shift ;;
     --no-mailbox)         MOD_MAILBOX=false; shift ;;
+    --with-docs-audit)       MOD_DOCS_AUDIT=true; shift ;;
+    --no-docs-audit)         MOD_DOCS_AUDIT=false; shift ;;
+    --with-product-overview) MOD_PRODUCT_OVERVIEW=true; shift ;;
+    --no-product-overview)   MOD_PRODUCT_OVERVIEW=false; shift ;;
     --obs-tool)           OBS_TOOL="$2"; shift 2 ;;
     --obs-url)            OBS_URL="$2"; shift 2 ;;
     --obs-api-key)        OBS_API_KEY="$2"; shift 2 ;;
@@ -124,6 +131,8 @@ while [[ $# -gt 0 ]]; do
       echo "  --with-coolify        Include Coolify deployment monitoring"
       echo "  --with-claude-update  Include auto CLAUDE.md regeneration routine"
       echo "  --with-arch-review    Install improve-codebase-architecture skill + weekly routine"
+      echo "  --with-docs-audit     Weekly docs <-> code drift check routine"
+      echo "  --with-product-overview  Weekly product overview digest routine"
       echo "  --branch NAME         Main branch name (default: main)"
       echo "  --merge-pr            Fix issues via pull requests (default)"
       echo "  --merge-direct        Fix issues by committing directly to main branch"
@@ -238,6 +247,8 @@ if [[ "$MODE" == "update" ]]; then
   [[ "$MODULES" == *"claude-update"* && -z "$MOD_CLAUDE_UPDATE" ]] && MOD_CLAUDE_UPDATE=true
   [[ "$MODULES" == *"arch-review"*   && -z "$MOD_ARCH_REVIEW"   ]] && MOD_ARCH_REVIEW=true
   [[ "$MODULES" == *"mailbox"*       && -z "$MOD_MAILBOX"       ]] && MOD_MAILBOX=true
+  [[ "$MODULES" == *"docs-audit"*       && -z "$MOD_DOCS_AUDIT"      ]] && MOD_DOCS_AUDIT=true
+  [[ "$MODULES" == *"product-overview"* && -z "$MOD_PRODUCT_OVERVIEW" ]] && MOD_PRODUCT_OVERVIEW=true
 fi
 
 # ── Mode header ───────────────────────────────────────────────────────────────
@@ -383,6 +394,8 @@ ask_module MOD_ADS            "Paid Ads"            "(Google Ads, Meta…) — i
 ask_module MOD_COOLIFY        "Coolify"             "deployment log monitoring — daily logs check routine"
 ask_module MOD_CLAUDE_UPDATE  "CLAUDE.md update"    "weekday routine that re-generates CLAUDE.md from codebase" false
 ask_module MOD_ARCH_REVIEW    "Architecture review" "installs improve-codebase-architecture skill + weekly routine" false
+ask_module MOD_DOCS_AUDIT     "Docs audit"          "weekly docs <-> code drift check -> GitHub issues" false
+ask_module MOD_PRODUCT_OVERVIEW "Product overview"  "weekly product digest: state + changes + bugs + hypotheses" false
 ask_module MOD_MAILBOX        "Mailbox"             "(IMAP+SMTP) — hourly inbox check → GitHub issues + automated replies" false
 
 # ── Observability integration ─────────────────────────────────────────────────
@@ -744,6 +757,8 @@ HEREDOC
   [[ "$MOD_COOLIFY"       == true ]] && echo "- \`/darkflow:coolify-logs\` — deployment log monitoring"
   [[ "$MOD_COOLIFY"       == true ]] && echo "- \`/darkflow:deployment-failure\` — diagnose and fix a failed deployment"
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- \`/darkflow:claude-md-update\` — regenerate CLAUDE.md from codebase"
+  [[ "$MOD_DOCS_AUDIT"        == true ]] && echo "- \`/darkflow:docs-audit\` — docs <-> code drift check → GitHub issues"
+  [[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && echo "- \`/darkflow:product-overview\` — product overview digest"
   [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- \`/darkflow:architecture-review\` — architectural analysis → GitHub issues"
   [[ "$MOD_MAILBOX"       == true ]] && echo "- \`/darkflow:mailbox-check\` — read new mail and send approved replies via SMTP"
   echo "- \`/darkflow:security-audit\` — full security review (static + runtime) → GitHub issues"
@@ -1087,6 +1102,8 @@ if [[ "$DRY_RUN" == false ]]; then
     [[ "$MOD_CLAUDE_UPDATE" == true ]] && _local_mods="${_local_mods}claude-update,"
     [[ "$MOD_ARCH_REVIEW"   == true ]] && _local_mods="${_local_mods}arch-review,"
     [[ "$MOD_MAILBOX"       == true ]] && _local_mods="${_local_mods}mailbox,"
+    [[ "$MOD_DOCS_AUDIT"        == true ]] && _local_mods="${_local_mods}docs-audit,"
+    [[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && _local_mods="${_local_mods}product-overview,"
     {
       echo "# Dark Flow project config — managed by install.sh"
       echo "version=${LATEST_VERSION}"
@@ -1227,6 +1244,22 @@ YAML
     enabled: true
 YAML
 
+      [[ "$MOD_DOCS_AUDIT" == true ]] && cat << 'YAML'
+
+  docs-audit:
+    cron: "0 5 * * 0"
+    model: opus
+    enabled: true
+YAML
+
+      [[ "$MOD_PRODUCT_OVERVIEW" == true ]] && cat << 'YAML'
+
+  product-overview:
+    cron: "0 7 * * 1"
+    model: opus
+    enabled: true
+YAML
+
       [[ "$MOD_MAILBOX" == true ]] && cat << 'YAML'
 
   mailbox-check:
@@ -1245,16 +1278,6 @@ YAML
   vulnerability-check:
     cron: "0 6 * * *"
     model: sonnet
-    enabled: true
-
-  docs-audit:
-    cron: "0 5 * * 0"
-    model: opus
-    enabled: true
-
-  product-overview:
-    cron: "0 7 * * 1"
-    model: opus
     enabled: true
 YAML
 
@@ -1365,6 +1388,8 @@ echo "  vulnerability-check  0 6 * * *      GitHub Dependabot + code scanning �
 [[ "$MOD_GSC"           == true ]] && echo "  gsc-check            0 8 * * 1      Google Search Console → GitHub issues"
 [[ "$MOD_COOLIFY"       == true ]] && echo "  coolify-logs         0 9 * * *      Deployment monitoring → fix errors"
 [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "  claude-md-update     0 9 * * 1-5    Re-generates CLAUDE.md from codebase"
+[[ "$MOD_DOCS_AUDIT"        == true ]] && echo "  docs-audit           0 5 * * 0      Docs <-> code drift → GitHub issues"
+[[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && echo "  product-overview     0 7 * * 1      Product overview digest"
 [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "  architecture-review  0 2 * * 0      Architectural analysis → GitHub issues"
 echo ""
 echo -e "  Run manually:  ${DIM}bash .darkflow.d/darkflow-run.sh <name>${RESET}"

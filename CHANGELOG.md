@@ -21,7 +21,7 @@ Categories:
 - **`product-overview`** — weekly product digest consolidating current state, recent product + technical improvements, recent bugs/fixes, and tracked hypotheses into `docs/insights/product-overview/YYYY-MM-DD.md`. A narrative report for a human — creates no issues. Cron Mon 7:00, model opus, opt-in.
 
 ### Installer
-- **Wired both into `install.sh`** — added `smart_update_template` copy lines for the two command templates and appended `docs-audit` (`0 5 * * 0`) + `product-overview` (`0 7 * * 1`), both `opus`, to the always-on block of the generated `routines.yml`.
+- **Wired both into `install.sh` as opt-in modules** — new `MOD_DOCS_AUDIT` / `MOD_PRODUCT_OVERVIEW` flags (off by default; enable via `--with-docs-audit` / `--with-product-overview`, `--all`, or the interactive module menu). Command templates always copy; the routine entries (`docs-audit` `0 5 * * 0`, `product-overview` `0 7 * * 1`, both `opus`) are written to `routines.yml` only when the module is enabled.
 
 ### Manifest
 - **Added `checklist.yml` entries** — command + routine items for both, so verify/repair (`darkflow-run.sh`, `/darkflow:install`) recognizes them and can self-heal a missing entry.
