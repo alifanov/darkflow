@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.38.0] — 2026-05-30
+
+- **Installer** — anchor the `.claude/` gitignore rule to the repo root (`/.claude/`) so it only ignores the repo's own working dir, not `templates/.claude/`. All `/darkflow:*` command templates are now tracked in git and ship to installs (previously only the working copy had them, so remote/curl installs couldn't fetch most commands).
+
 ## [2.37.1] — 2026-05-30
 
 - **Installer** — force-track the `coolify-check-logs` command template (it was caught by the `.claude/` gitignore rule), so the SSH-based per-container log workflow actually ships and can be fetched by remote installs.
