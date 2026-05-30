@@ -14,6 +14,11 @@ Categories:
 
 ---
 
+## [2.35.0] — 2026-05-30
+
+### Removed routine
+- **`deployment-failure`** — dropped the on-demand "diagnose → fix → redeploy" routine and its `/darkflow:deployment-failure` command template. Coolify deployment health is still covered by the passive `coolify-logs` routine, which surfaces failed deploys as `priority:p0` issues. Removed the command template, `routines/deployment-failure.md`, its `routines.yml` block (the only `MOD_COOLIFY`-gated routine entry), its `checklist.yml` manifest item, and all README / routine-doc references.
+
 ## [2.34.1] — 2026-05-30
 
 ### New routine

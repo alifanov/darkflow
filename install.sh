@@ -755,7 +755,6 @@ HEREDOC
   [[ "$MOD_OBSERVABILITY" == true ]] && echo "- \`/darkflow:observability-check\` — errors / slow queries / latency → GitHub issues"
   [[ "$MOD_GSC"           == true ]] && echo "- \`/darkflow:gsc-check\` — Google Search Console → GitHub issues"
   [[ "$MOD_COOLIFY"       == true ]] && echo "- \`/darkflow:coolify-logs\` — deployment log monitoring"
-  [[ "$MOD_COOLIFY"       == true ]] && echo "- \`/darkflow:deployment-failure\` — diagnose and fix a failed deployment"
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- \`/darkflow:claude-md-update\` — regenerate CLAUDE.md from codebase"
   [[ "$MOD_DOCS_AUDIT"        == true ]] && echo "- \`/darkflow:docs-audit\` — docs <-> code drift check → GitHub issues"
   [[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && echo "- \`/darkflow:product-overview\` — product overview digest"
@@ -1070,7 +1069,6 @@ smart_update_template ".claude/commands/darkflow/analytics-review.md"           
 smart_update_template ".claude/commands/darkflow/observability-check.md"          ".claude/commands/darkflow/observability-check.md"
 smart_update_template ".claude/commands/darkflow/gsc-check.md"                    ".claude/commands/darkflow/gsc-check.md"
 smart_update_template ".claude/commands/darkflow/coolify-logs.md"                 ".claude/commands/darkflow/coolify-logs.md"
-smart_update_template ".claude/commands/darkflow/deployment-failure.md"           ".claude/commands/darkflow/deployment-failure.md"
 smart_update_template ".claude/commands/darkflow/claude-md-update.md"             ".claude/commands/darkflow/claude-md-update.md"
 smart_update_template ".claude/commands/darkflow/security-audit.md"               ".claude/commands/darkflow/security-audit.md"
 smart_update_template ".claude/commands/darkflow/vulnerability-check.md"          ".claude/commands/darkflow/vulnerability-check.md"
@@ -1279,14 +1277,6 @@ YAML
     cron: "0 6 * * *"
     model: sonnet
     enabled: true
-YAML
-
-      [[ "$MOD_COOLIFY" == true ]] && cat << 'YAML'
-
-  deployment-failure:
-    cron: ""
-    model: sonnet
-    enabled: false
 YAML
 
       echo ""

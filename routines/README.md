@@ -33,7 +33,6 @@ All routines and their default cron expressions:
 | `product-overview` | `0 7 * * 1` | Weekly Mon 7:00 — product overview digest (writes snapshot, no issues) |
 | `vulnerability-check` | `0 6 * * *` | Daily 6:00 — GitHub Dependabot + code/secret scanning alerts → GitHub issues |
 | `ads-review` | `0 8 * * 1` | Weekly Mon 8:00 — paid ads performance → GitHub issues |
-| `deployment-failure` | *(none — manual/webhook)* | Diagnoses and fixes a failed deployment |
 
 Cron times are in the machine's local timezone.
 

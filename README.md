@@ -138,7 +138,6 @@ The real power comes from scheduling Claude agents that run the loop automatical
 | [Security audit](routines/security-audit.md) | `0 3 * * 0` | Weekly Sun 3:00 — full security review → issues |
 | [Vulnerability check](routines/vulnerability-check.md) | `0 6 * * *` | Daily 6:00 — GitHub Dependabot + code/secret scanning alerts → issues |
 | [Mailbox check](routines/mailbox-check.md) | `0 * * * *` | Hourly — IMAP inbox → issues; approved `action:reply` issues → SMTP reply *(optional)* |
-| [**Deployment failure fix**](routines/deployment-failure.md) | *(manual/webhook)* | Diagnoses → fixes → redeploys on failure |
 
 Cron times are in the machine's local timezone. Schedule is defined in `.darkflow.d/routines.yml` — edit it to change frequency, model, or enable/disable a routine.
 
@@ -175,9 +174,6 @@ Daily
   8:30  observability-check  → status:proposed issues
   9:00  coolify-logs         → verifies deploy, fixes errors
   9:00  claude-md-update     → keeps agent context in sync
-
-On-demand
-  deployment-failure         → diagnoses → fixes → redeploys
 
 Weekly
   Mon 8:00  gsc-check             → status:proposed issues
@@ -223,7 +219,6 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | `/darkflow:observability-check` | Errors / slow queries / latency → GitHub issues |
 | `/darkflow:gsc-check` | Google Search Console → GitHub issues |
 | `/darkflow:coolify-logs` | Deployment log monitoring → fix errors |
-| `/darkflow:deployment-failure` | Diagnose and fix a failed deployment |
 | `/darkflow:claude-md-update` | Regenerate CLAUDE.md from codebase |
 | `/darkflow:architecture-review` | Architectural analysis → GitHub issues + architecture snapshot |
 | `/darkflow:security-audit` | Full security review (static + runtime) → GitHub issues + security snapshot |
