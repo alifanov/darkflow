@@ -26,9 +26,9 @@ Daily check of Coolify deployment logs — finds errors, fixes them, waits for a
 
 ## Required integrations
 
-- **Coolify MCP** configured in project `.claude/settings.json`
-  - MCP server: `@alifanov/coolify-mcp` or equivalent
-  - Needs Coolify API token with deploy permissions
+- **Coolify CLI** installed and authenticated on the runner
+  - The official `coolify` CLI, config at `~/.config/coolify/config.json`
+  - Needs a Coolify API token with read (and deploy, for the reactive routine) permissions
 - **Git** with push access — the routine commits fixes to main before triggering redeploy
 
 ---
@@ -36,6 +36,6 @@ Daily check of Coolify deployment logs — finds errors, fixes them, waits for a
 ## Notes
 
 - Schedule after the analytics routine (9:00 vs 8:00) so deployment noise doesn't skew analytics data
-- The routine makes **real production changes** — verify the MCP has access only to the correct Coolify project
+- The routine makes **real production changes** — verify the `coolify` CLI is scoped to the correct Coolify project
 - If the fix requires more than a trivial change, the routine should create a GitHub issue instead of auto-fixing
 - Adapt step 1 if your deployment platform is different (Railway, Fly.io, etc.)

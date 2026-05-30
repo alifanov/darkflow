@@ -70,7 +70,7 @@ Store the webhook URL as a secret (`DARKFLOW_WEBHOOK_URL`) — it gives write ac
 
 ## Required integrations
 
-- **Deployment platform MCP** (Coolify, etc.) — to fetch logs and trigger redeploy
+- **Coolify CLI** (the official `coolify` CLI, config at `~/.config/coolify/config.json`) — to fetch logs and deployment status; other platforms use their own CLI
 - **`gh` CLI** authenticated — for creating GitHub issues if fix is unclear
 - **Git** with push access — for committing the fix
 

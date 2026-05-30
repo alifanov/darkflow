@@ -14,6 +14,16 @@ Categories:
 
 ---
 
+## [2.33.0] — 2026-05-30
+
+### Updated routine
+- **Coolify routines now use the `coolify` CLI instead of an MCP server** — the `coolify-logs` and `deployment-failure` command templates (`templates/.claude/commands/darkflow/`) now call the official `coolify` CLI (`coolify app list`, `coolify app deployments list`, `coolify deploy get`, `coolify app logs`, `coolify app get`) with concrete commands instead of abstract "check in Coolify" steps. Config lives at `~/.config/coolify/config.json`.
+
+### Docs
+- **Routine docs updated** — `routines/coolify-logs.md` and `routines/deployment-failure.md` now list the Coolify CLI as the required integration instead of `@alifanov/coolify-mcp` / a deployment-platform MCP.
+
+---
+
 ## [2.22.3] — 2026-05-26
 
 ### Dispatcher
