@@ -14,6 +14,21 @@ Categories:
 
 ---
 
+## [2.34.0] — 2026-05-30
+
+### New routine
+- **`docs-audit`** — weekly check that the `docs/` knowledge base still matches the code. Compares `spec/data-model.md`, `spec/screens/inventory.md`, `spec/flows/`, `product/metrics.md`, `design/components.md`, `product/pricing.md`, documented commands, and `decisions/` against the real codebase, then creates `status:proposed` / `source:docs` / `area:docs` issues for each significant drift. Writes `docs/insights/docs-audit/YYYY-MM-DD.md` + `.darkflow.d/state/metrics/docs-audit.json`. Cron Sun 5:00, model opus, opt-in.
+- **`product-overview`** — weekly product digest consolidating current state, recent product + technical improvements, recent bugs/fixes, and tracked hypotheses into `docs/insights/product-overview/YYYY-MM-DD.md`. A narrative report for a human — creates no issues. Cron Mon 7:00, model opus, opt-in.
+
+### Installer
+- **Registered both routines in `install.sh`** — added to `MENU_OPTIONS`, `MODULE_LABELS`, `MODULE_CRON` (`docs-audit` `0 5 * * 0`, `product-overview` `0 7 * * 1`) and `MODULE_MODEL` (both `opus`). Command templates auto-install via the existing recursive copy.
+
+### Docs
+- **Routine docs added** — `routines/docs-audit.md` and `routines/product-overview.md`; both added to the schedule table in `routines/README.md`.
+- **Snapshot source table updated** — `templates/docs/agent-workflow.md` now lists the `insights/docs-audit/` and `insights/product-overview/` snapshot folders.
+
+---
+
 ## [2.33.0] — 2026-05-30
 
 ### Updated routine
