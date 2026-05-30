@@ -14,6 +14,11 @@ Categories:
 
 ---
 
+## [2.37.0] — 2026-05-30
+
+- **Updated routine** — `coolify-check-logs` now reads per-container logs over SSH (`docker logs`) instead of the `coolify` CLI, which cannot target a specific container. It requires explicit permission before opening any SSH connection: interactive runs ask the user and abort if denied; unattended runs need `coolify_ssh=` configured in `.darkflow` or they skip log fetching. The CLI is still used for app discovery.
+- **Docs** — README and the `coolify-check-logs` routine doc updated for the SSH log workflow.
+
 ## [2.36.0] — 2026-05-30
 
 ### Renamed routine
