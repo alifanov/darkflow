@@ -391,7 +391,7 @@ ask_module MOD_ANALYTICS     "Analytics"           "(PostHog, Mixpanel, Amplitud
 ask_module MOD_OBSERVABILITY  "Observability"       "(SigNoz, Datadog, Grafana…) — daily error/latency monitoring routine"
 ask_module MOD_GSC            "Search Console"      "(Google Search Console) — weekly GSC check routine + insights/search-console/"
 ask_module MOD_ADS            "Paid Ads"            "(Google Ads, Meta…) — insights/ads/ folder"              false
-ask_module MOD_COOLIFY        "Coolify"             "deployment log monitoring — daily logs check routine"
+ask_module MOD_COOLIFY        "Coolify"             "deployment status + runtime log checks (all containers) — two daily routines"
 ask_module MOD_CLAUDE_UPDATE  "CLAUDE.md update"    "weekday routine that re-generates CLAUDE.md from codebase" false
 ask_module MOD_ARCH_REVIEW    "Architecture review" "installs improve-codebase-architecture skill + weekly routine" false
 ask_module MOD_DOCS_AUDIT     "Docs audit"          "weekly docs <-> code drift check -> GitHub issues" false
@@ -734,7 +734,8 @@ HEREDOC
     echo "- **Observability check** (Daily 8:30) — ${_obs_label}: errors / slow queries / latency → GitHub issues"
   fi
   [[ "$MOD_GSC"           == true ]] && echo "- **GSC check** (Weekly Mon 8:00) — Google Search Console → GitHub issues"
-  [[ "$MOD_COOLIFY"       == true ]] && echo "- **Coolify logs** (Daily 9:00) — deployment monitoring → fix errors"
+  [[ "$MOD_COOLIFY"       == true ]] && echo "- **Coolify check deployment** (Daily 9:00) — deploy status → p0 issue on failure"
+  [[ "$MOD_COOLIFY"       == true ]] && echo "- **Coolify check logs** (Daily 9:30) — runtime logs across all containers → issues"
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- **CLAUDE.md update** (Weekdays 9:00) — re-generates this file from codebase"
   [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Architecture review** (Weekly Sun 2:00) — \`/improve-codebase-architecture\` → GitHub issues"
   [[ "$MOD_MAILBOX"       == true ]] && echo "- **Mailbox check** (Hourly) — IMAP inbox → GitHub issues with \`action:reply\` / \`action:fix\` choice; approved replies sent via SMTP"
@@ -754,7 +755,8 @@ HEREDOC
   [[ "$MOD_ANALYTICS"     == true ]] && echo "- \`/darkflow:analytics-review\` — PostHog + commits → GitHub issues"
   [[ "$MOD_OBSERVABILITY" == true ]] && echo "- \`/darkflow:observability-check\` — errors / slow queries / latency → GitHub issues"
   [[ "$MOD_GSC"           == true ]] && echo "- \`/darkflow:gsc-check\` — Google Search Console → GitHub issues"
-  [[ "$MOD_COOLIFY"       == true ]] && echo "- \`/darkflow:coolify-logs\` — deployment log monitoring"
+  [[ "$MOD_COOLIFY"       == true ]] && echo "- \`/darkflow:coolify-check-deployment\` — deployment status check"
+  [[ "$MOD_COOLIFY"       == true ]] && echo "- \`/darkflow:coolify-check-logs\` — runtime log monitoring (all containers)"
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- \`/darkflow:claude-md-update\` — regenerate CLAUDE.md from codebase"
   [[ "$MOD_DOCS_AUDIT"        == true ]] && echo "- \`/darkflow:docs-audit\` — docs <-> code drift check → GitHub issues"
   [[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && echo "- \`/darkflow:product-overview\` — product overview digest"
@@ -1068,7 +1070,8 @@ smart_update_template ".claude/commands/darkflow/fix-issues.md"                 
 smart_update_template ".claude/commands/darkflow/analytics-review.md"             ".claude/commands/darkflow/analytics-review.md"
 smart_update_template ".claude/commands/darkflow/observability-check.md"          ".claude/commands/darkflow/observability-check.md"
 smart_update_template ".claude/commands/darkflow/gsc-check.md"                    ".claude/commands/darkflow/gsc-check.md"
-smart_update_template ".claude/commands/darkflow/coolify-logs.md"                 ".claude/commands/darkflow/coolify-logs.md"
+smart_update_template ".claude/commands/darkflow/coolify-check-deployment.md"     ".claude/commands/darkflow/coolify-check-deployment.md"
+smart_update_template ".claude/commands/darkflow/coolify-check-logs.md"           ".claude/commands/darkflow/coolify-check-logs.md"
 smart_update_template ".claude/commands/darkflow/claude-md-update.md"             ".claude/commands/darkflow/claude-md-update.md"
 smart_update_template ".claude/commands/darkflow/security-audit.md"               ".claude/commands/darkflow/security-audit.md"
 smart_update_template ".claude/commands/darkflow/vulnerability-check.md"          ".claude/commands/darkflow/vulnerability-check.md"
@@ -1220,8 +1223,13 @@ YAML
 
       [[ "$MOD_COOLIFY" == true ]] && cat << 'YAML'
 
-  coolify-logs:
+  coolify-check-deployment:
     cron: "0 9 * * *"
+    model: sonnet
+    enabled: true
+
+  coolify-check-logs:
+    cron: "30 9 * * *"
     model: sonnet
     enabled: true
 YAML
@@ -1376,7 +1384,8 @@ echo "  vulnerability-check  0 6 * * *      GitHub Dependabot + code scanning �
 [[ "$MOD_ANALYTICS"     == true ]] && echo "  analytics-review     0 8 * * *      PostHog + commits → GitHub issues"
 [[ "$MOD_OBSERVABILITY" == true ]] && echo "  observability-check  30 8 * * *     Errors / latency → GitHub issues"
 [[ "$MOD_GSC"           == true ]] && echo "  gsc-check            0 8 * * 1      Google Search Console → GitHub issues"
-[[ "$MOD_COOLIFY"       == true ]] && echo "  coolify-logs         0 9 * * *      Deployment monitoring → fix errors"
+[[ "$MOD_COOLIFY"       == true ]] && echo "  coolify-check-deploy 0 9 * * *      Deployment status → p0 issue on failure"
+[[ "$MOD_COOLIFY"       == true ]] && echo "  coolify-check-logs   30 9 * * *     Runtime logs (all containers) → issues"
 [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "  claude-md-update     0 9 * * 1-5    Re-generates CLAUDE.md from codebase"
 [[ "$MOD_DOCS_AUDIT"        == true ]] && echo "  docs-audit           0 5 * * 0      Docs <-> code drift → GitHub issues"
 [[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && echo "  product-overview     0 7 * * 1      Product overview digest"

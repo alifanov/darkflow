@@ -132,7 +132,8 @@ The real power comes from scheduling Claude agents that run the loop automatical
 | [Analytics review](routines/analytics-review.md) | `0 8 * * *` | Daily 8:00 — PostHog + commits → `status:proposed` issues |
 | [Observability check](routines/observability-check.md) | `30 8 * * *` | Daily 8:30 — SigNoz/errors/slow URLs → issues |
 | [GSC check](routines/gsc-check.md) | `0 8 * * 1` | Weekly Mon 8:00 — Google Search Console → issues |
-| [Coolify logs](routines/coolify-logs.md) | `0 9 * * *` | Daily 9:00 — deployment logs → fixes errors → verifies |
+| [Coolify check deployment](routines/coolify-check-deployment.md) | `0 9 * * *` | Daily 9:00 — deployment status → `p0` issue on failed deploy |
+| [Coolify check logs](routines/coolify-check-logs.md) | `30 9 * * *` | Daily 9:30 — runtime logs across all containers → issues |
 | [CLAUDE.md update](routines/claude-md-update.md) | `0 9 * * 1-5` | Weekdays 9:00 — re-generates CLAUDE.md from codebase |
 | [Architecture review](routines/architecture-review.md) | `0 2 * * 0` | Weekly Sun 2:00 — `/improve-codebase-architecture` → issues |
 | [Security audit](routines/security-audit.md) | `0 3 * * 0` | Weekly Sun 3:00 — full security review → issues |
@@ -172,7 +173,8 @@ Daily
   6:00  vulnerability-check  → status:proposed issues from GitHub Dependabot / code / secret scanning
   8:00  analytics-review     → status:proposed issues + analytics snapshot → syncs to web UI
   8:30  observability-check  → status:proposed issues
-  9:00  coolify-logs         → verifies deploy, fixes errors
+  9:00  coolify-check-deployment → deploy status, p0 issue on failure
+  9:30  coolify-check-logs       → runtime logs (all containers) → issues
   9:00  claude-md-update     → keeps agent context in sync
 
 Weekly
@@ -218,7 +220,8 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | `/darkflow:analytics-review` | PostHog + commits → GitHub issues + analytics snapshot |
 | `/darkflow:observability-check` | Errors / slow queries / latency → GitHub issues |
 | `/darkflow:gsc-check` | Google Search Console → GitHub issues |
-| `/darkflow:coolify-logs` | Deployment log monitoring → fix errors |
+| `/darkflow:coolify-check-deployment` | Deployment status check → `p0` issue on failed deploy |
+| `/darkflow:coolify-check-logs` | Runtime log monitoring across all containers → issues |
 | `/darkflow:claude-md-update` | Regenerate CLAUDE.md from codebase |
 | `/darkflow:architecture-review` | Architectural analysis → GitHub issues + architecture snapshot |
 | `/darkflow:security-audit` | Full security review (static + runtime) → GitHub issues + security snapshot |

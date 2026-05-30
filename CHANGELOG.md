@@ -14,7 +14,13 @@ Categories:
 
 ---
 
-## [2.35.0] — 2026-05-30
+## [2.36.0] — 2026-05-30
+
+### Renamed routine
+- **`coolify-logs` split into `coolify-check-deployment` + `coolify-check-logs`** — the single combined command did both deployment-status checking and log review under a name that only hinted at logs. It is now two explicitly-named commands/routines:
+  - **`/darkflow:coolify-check-deployment`** (`0 9 * * *`) — checks the deployment pipeline only; opens a `priority:p0` issue on a failed/red deploy.
+  - **`/darkflow:coolify-check-logs`** (`30 9 * * *`) — reviews runtime logs only. **Now explicitly handles multi-container apps:** it first determines how many containers/replicas the app runs (`coolify app get`), raises `-n` so every container is represented in the log window, and scans the aggregated output per-container instead of stopping at the first one.
+- **Fixed stale `checklist.yml` entries** — the manifest referenced a non-existent `coolify-check` command/routine; replaced with the two real `coolify-check-*` items.
 
 ### Removed routine
 - **`deployment-failure`** — dropped the on-demand "diagnose → fix → redeploy" routine and its `/darkflow:deployment-failure` command template. Coolify deployment health is still covered by the passive `coolify-logs` routine, which surfaces failed deploys as `priority:p0` issues. Removed the command template, `routines/deployment-failure.md`, its `routines.yml` block (the only `MOD_COOLIFY`-gated routine entry), its `checklist.yml` manifest item, and all README / routine-doc references.
