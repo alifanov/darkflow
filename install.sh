@@ -655,6 +655,7 @@ setup_labels() {
   _do_label "source:user-feedback"   "5319e7" "From insights/qualitative/*"
   _do_label "source:manual"          "5319e7" "Hypothesis without data source"
   _do_label "source:mailbox"         "5319e7" "From inbox email — incoming customer requests"
+  _do_label "source:build"           "5319e7" "From build/deploy optimization audit"
   _do_label "action:reply"           "0052cc" "Approved mailbox issue — agent will send email reply"
   _do_label "action:fix"             "0052cc" "Approved mailbox issue — agent will make a code change"
   _do_label "needs-human"            "8b5cf6" "Agent blocked — requires human action (credentials, config, external service)"
@@ -739,6 +740,7 @@ HEREDOC
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- **CLAUDE.md update** (Weekdays 9:00) — re-generates this file from codebase"
   [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Architecture review** (Weekly Sun 2:00) — \`/improve-codebase-architecture\` → GitHub issues"
   [[ "$MOD_MAILBOX"       == true ]] && echo "- **Mailbox check** (Hourly) — IMAP inbox → GitHub issues with \`action:reply\` / \`action:fix\` choice; approved replies sent via SMTP"
+  echo "- **Build optimization** (Weekly Sun 4:00) — build + deploy pipeline analysis → GitHub issues"
   echo ""
   echo "Schedule: \`.darkflow.d/routines.yml\`  |  Dispatcher: \`bash .darkflow.d/darkflow-run.sh\`"
   echo "Run any routine manually: \`bash .darkflow.d/darkflow-run.sh <name>\`"
@@ -763,6 +765,7 @@ HEREDOC
   [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- \`/darkflow:architecture-review\` — architectural analysis → GitHub issues"
   [[ "$MOD_MAILBOX"       == true ]] && echo "- \`/darkflow:mailbox-check\` — read new mail and send approved replies via SMTP"
   echo "- \`/darkflow:security-audit\` — full security review (static + runtime) → GitHub issues"
+  echo "- \`/darkflow:build-optimization\` — build + deploy optimization analysis → GitHub issues"
 }
 
 # Writes .darkflow.d/claude.md with full Dark Flow instructions, then ensures
@@ -1080,6 +1083,7 @@ smart_update_template ".claude/commands/darkflow/update-config.md"              
 smart_update_template ".claude/commands/darkflow/ux-audit.md"                     ".claude/commands/darkflow/ux-audit.md"
 smart_update_template ".claude/commands/darkflow/docs-audit.md"                   ".claude/commands/darkflow/docs-audit.md"
 smart_update_template ".claude/commands/darkflow/product-overview.md"             ".claude/commands/darkflow/product-overview.md"
+smart_update_template ".claude/commands/darkflow/build-optimization.md"          ".claude/commands/darkflow/build-optimization.md"
 smart_update_template "darkflow/darkflow-run.sh"        ".darkflow.d/darkflow-run.sh"        "true" "true"
 
 if [[ "$MOD_MAILBOX" == true ]]; then
@@ -1281,6 +1285,11 @@ YAML
     model: opus
     enabled: true
 
+  build-optimization:
+    cron: "0 4 * * 0"
+    model: opus
+    enabled: true
+
   vulnerability-check:
     cron: "0 6 * * *"
     model: sonnet
@@ -1380,6 +1389,7 @@ else
   echo "  fix-issues           0 * * * *      Picks up status:approved → PR → merge into ${MAIN_BRANCH}"
 fi
 echo "  security-audit       0 3 * * 0      Full security review → GitHub issues"
+echo "  build-optimization   0 4 * * 0      Build + deploy pipeline analysis → GitHub issues"
 echo "  vulnerability-check  0 6 * * *      GitHub Dependabot + code scanning → GitHub issues"
 [[ "$MOD_ANALYTICS"     == true ]] && echo "  analytics-review     0 8 * * *      PostHog + commits → GitHub issues"
 [[ "$MOD_OBSERVABILITY" == true ]] && echo "  observability-check  30 8 * * *     Errors / latency → GitHub issues"

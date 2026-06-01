@@ -137,6 +137,7 @@ The real power comes from scheduling Claude agents that run the loop automatical
 | [CLAUDE.md update](routines/claude-md-update.md) | `0 9 * * 1-5` | Weekdays 9:00 — re-generates CLAUDE.md from codebase |
 | [Architecture review](routines/architecture-review.md) | `0 2 * * 0` | Weekly Sun 2:00 — `/improve-codebase-architecture` → issues |
 | [Security audit](routines/security-audit.md) | `0 3 * * 0` | Weekly Sun 3:00 — full security review → issues |
+| [Build optimization](routines/build-optimization.md) | `0 4 * * 0` | Weekly Sun 4:00 — build + deploy pipeline analysis → issues |
 | [Vulnerability check](routines/vulnerability-check.md) | `0 6 * * *` | Daily 6:00 — GitHub Dependabot + code/secret scanning alerts → issues |
 | [Mailbox check](routines/mailbox-check.md) | `0 * * * *` | Hourly — IMAP inbox → issues; approved `action:reply` issues → SMTP reply *(optional)* |
 
@@ -181,6 +182,7 @@ Weekly
   Mon 8:00  gsc-check             → status:proposed issues
   Sun 2:00  architecture-review   → status:proposed issues (Opus) + arch snapshot → syncs to web UI
   Sun 3:00  security-audit        → status:proposed issues (Opus) + security snapshot → syncs to web UI
+  Sun 4:00  build-optimization   → status:proposed issues (Opus) + build snapshot
 
 Continuous
   :00/:15/:30/:45  fix-issues (every 15 min)   → picks up status:approved → PR → merge
@@ -226,6 +228,7 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | `/darkflow:architecture-review` | Architectural analysis → GitHub issues + architecture snapshot |
 | `/darkflow:security-audit` | Full security review (static + runtime) → GitHub issues + security snapshot |
 | `/darkflow:vulnerability-check` | GitHub Dependabot + code/secret scanning alerts → GitHub issues |
+| `/darkflow:build-optimization` | Build + deploy pipeline analysis → optimization issues |
 
 Routine commands read `language=`, `branch=`, and `merge_strategy=` from `.darkflow` automatically — no configuration needed at invocation time. They can also be run interactively at any time, not just on a schedule.
 

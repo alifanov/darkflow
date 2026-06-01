@@ -57,6 +57,7 @@ Rule is universal — only the folder changes by data source:
 | Observability — errors, latency, DB performance | `insights/observability/YYYY-MM-DD.md` | SigNoz/Datadog checks, latency alerts |
 | Security audit — vulnerabilities, code scanning | `insights/security/YYYY-MM-DD.md` | `/darkflow:security-audit`, Dependabot alerts |
 | UX audit — layout, accessibility, component review | `insights/ux-audit/YYYY-MM-DD.md` | `/darkflow:ux-audit`, session recording review |
+| Build optimization — build + deploy pipeline efficiency | `insights/build-optimization/YYYY-MM-DD.md` | `/darkflow:build-optimization` |
 | Interviews, feedback, session recordings | `insights/qualitative/YYYY-MM-DD-{topic}.md` | Session recording review, email/chat feedback analysis |
 
 ### Snapshot format (any source)

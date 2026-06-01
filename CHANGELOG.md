@@ -14,6 +14,28 @@ Categories:
 
 ---
 
+## [2.39.0] — 2026-06-01
+
+### New routine
+- **`build-optimization`** — weekly Sunday 4:00 audit of the project's build and deploy pipeline. Maps the full toolchain (Docker, CI, bundler, package manager), finds bottlenecks and inefficiencies (layer ordering, missing caches, bloated images, redundant install steps), and creates `status:proposed` GitHub issues with measurable acceptance criteria. Proposal-only: does not apply changes; implementation goes through the standard approve → `fix-issues` path.
+
+### New label
+- **`source:build`** — added to `setup_labels` for issues created by the `build-optimization` routine.
+
+### Installer
+- `build-optimization` routine added to the always-on routines.yml block (cron `0 4 * * 0`, model opus), alongside `security-audit` and `vulnerability-check`.
+- `smart_update_template` call added so the command template ships to all installed projects.
+- Active Routines and Dark Flow command list in the generated `.darkflow.d/claude.md` now include `build-optimization`.
+
+### Manifest
+- `checklist.yml`: added `cmd-build-optimization` (copy-template) and `routine-build-optimization` (add-routine, cron `0 4 * * 0`) so existing installs catch the new command + routine on next `self-update`.
+
+### Docs
+- `README.md`: routine table, Weekly loop diagram, and routine commands table updated.
+- `routines/build-optimization.md`: new routine reference page.
+- `routines/README.md`: schedule table updated.
+- `templates/docs/agent-workflow.md` + `docs/agent-workflow.md`: snapshot routing table updated with `insights/build-optimization/YYYY-MM-DD.md`.
+
 ## [2.38.0] — 2026-05-30
 
 - **Installer** — anchor the `.claude/` gitignore rule to the repo root (`/.claude/`) so it only ignores the repo's own working dir, not `templates/.claude/`. All `/darkflow:*` command templates are now tracked in git and ship to installs (previously only the working copy had them, so remote/curl installs couldn't fetch most commands).
