@@ -34,6 +34,7 @@ MOD_ARCH_REVIEW=""
 MOD_MAILBOX=""
 MOD_DOCS_AUDIT=""
 MOD_PRODUCT_OVERVIEW=""
+MOD_IMPECCABLE=""
 
 OBS_TOOL=""
 OBS_URL=""
@@ -81,6 +82,7 @@ while [[ $# -gt 0 ]]; do
                           MOD_ADS=true; MOD_COOLIFY=true; MOD_CLAUDE_UPDATE=true
                           MOD_ARCH_REVIEW=true; MOD_MAILBOX=true
                           MOD_DOCS_AUDIT=true; MOD_PRODUCT_OVERVIEW=true
+                          MOD_IMPECCABLE=true
                           shift ;;
     --with-analytics)     MOD_ANALYTICS=true; shift ;;
     --with-observability) MOD_OBSERVABILITY=true; shift ;;
@@ -102,6 +104,8 @@ while [[ $# -gt 0 ]]; do
     --no-docs-audit)         MOD_DOCS_AUDIT=false; shift ;;
     --with-product-overview) MOD_PRODUCT_OVERVIEW=true; shift ;;
     --no-product-overview)   MOD_PRODUCT_OVERVIEW=false; shift ;;
+    --with-impeccable)       MOD_IMPECCABLE=true; shift ;;
+    --no-impeccable)         MOD_IMPECCABLE=false; shift ;;
     --obs-tool)           OBS_TOOL="$2"; shift 2 ;;
     --obs-url)            OBS_URL="$2"; shift 2 ;;
     --obs-api-key)        OBS_API_KEY="$2"; shift 2 ;;
@@ -133,6 +137,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --with-arch-review    Install improve-codebase-architecture skill + weekly routine"
       echo "  --with-docs-audit     Weekly docs <-> code drift check routine"
       echo "  --with-product-overview  Weekly product overview digest routine"
+      echo "  --with-impeccable     Weekly design quality routines (audit + critique + monthly harden)"
       echo "  --branch NAME         Main branch name (default: main)"
       echo "  --merge-pr            Fix issues via pull requests (default)"
       echo "  --merge-direct        Fix issues by committing directly to main branch"
@@ -249,6 +254,7 @@ if [[ "$MODE" == "update" ]]; then
   [[ "$MODULES" == *"mailbox"*       && -z "$MOD_MAILBOX"       ]] && MOD_MAILBOX=true
   [[ "$MODULES" == *"docs-audit"*       && -z "$MOD_DOCS_AUDIT"      ]] && MOD_DOCS_AUDIT=true
   [[ "$MODULES" == *"product-overview"* && -z "$MOD_PRODUCT_OVERVIEW" ]] && MOD_PRODUCT_OVERVIEW=true
+  [[ "$MODULES" == *"impeccable"*       && -z "$MOD_IMPECCABLE"       ]] && MOD_IMPECCABLE=true
 fi
 
 # ── Mode header ───────────────────────────────────────────────────────────────
@@ -396,6 +402,7 @@ ask_module MOD_CLAUDE_UPDATE  "CLAUDE.md update"    "weekday routine that re-gen
 ask_module MOD_ARCH_REVIEW    "Architecture review" "installs improve-codebase-architecture skill + weekly routine" false
 ask_module MOD_DOCS_AUDIT     "Docs audit"          "weekly docs <-> code drift check -> GitHub issues" false
 ask_module MOD_PRODUCT_OVERVIEW "Product overview"  "weekly product digest: state + changes + bugs + hypotheses" false
+ask_module MOD_IMPECCABLE     "Design quality"      "weekly design audit + critique (impeccable skill) + monthly harden" false
 ask_module MOD_MAILBOX        "Mailbox"             "(IMAP+SMTP) — hourly inbox check → GitHub issues + automated replies" false
 
 # ── Observability integration ─────────────────────────────────────────────────
@@ -656,6 +663,7 @@ setup_labels() {
   _do_label "source:manual"          "5319e7" "Hypothesis without data source"
   _do_label "source:mailbox"         "5319e7" "From inbox email — incoming customer requests"
   _do_label "source:build"           "5319e7" "From build/deploy optimization audit"
+  _do_label "source:design"          "5319e7" "From design quality routines (impeccable:audit/critique/harden)"
   _do_label "action:reply"           "0052cc" "Approved mailbox issue — agent will send email reply"
   _do_label "action:fix"             "0052cc" "Approved mailbox issue — agent will make a code change"
   _do_label "needs-human"            "8b5cf6" "Agent blocked — requires human action (credentials, config, external service)"
@@ -742,6 +750,9 @@ HEREDOC
   [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Architecture review** (Weekly Sun 2:00) — \`/improve-codebase-architecture\` → GitHub issues"
   [[ "$MOD_MAILBOX"       == true ]] && echo "- **Mailbox check** (Hourly) — IMAP inbox → GitHub issues with \`action:reply\` / \`action:fix\` choice; approved replies sent via SMTP"
   echo "- **Build optimization** (Weekly Sun 4:00) — build + deploy pipeline analysis → GitHub issues"
+  [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design audit** (Weekly Sat 10:00) — \`/impeccable:audit\` five-dimension quality check → GitHub issues"
+  [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design critique** (Weekly Sat 11:00) — \`/impeccable:critique\` scored review + persona tests → GitHub issues"
+  [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design harden** (Monthly 1st 10:00) — \`/impeccable:harden\` edge cases, i18n, error states → GitHub issues"
   echo ""
   echo "Schedule: \`.darkflow.d/routines.yml\`  |  Dispatcher: \`bash .darkflow.d/darkflow-run.sh\`"
   echo "Run any routine manually: \`bash .darkflow.d/darkflow-run.sh <name>\`"
@@ -767,6 +778,9 @@ HEREDOC
   [[ "$MOD_MAILBOX"       == true ]] && echo "- \`/darkflow:mailbox-check\` — read new mail and send approved replies via SMTP"
   echo "- \`/darkflow:security-audit\` — full security review (static + runtime) → GitHub issues"
   echo "- \`/darkflow:build-optimization\` — build + deploy optimization analysis → GitHub issues"
+  [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-audit\` — five-dimension design quality check → GitHub issues"
+  [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-critique\` — scored design review with persona tests → GitHub issues"
+  [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-harden\` — production-readiness review (edge cases, i18n, error states) → GitHub issues"
 }
 
 # Writes .darkflow.d/claude.md with full Dark Flow instructions, then ensures
@@ -839,6 +853,7 @@ run_checklist() {
       coolify)       [[ "$MOD_COOLIFY"       == true ]] ;;
       claude-update) [[ "$MOD_CLAUDE_UPDATE" == true ]] ;;
       arch-review)   [[ "$MOD_ARCH_REVIEW"   == true ]] ;;
+      impeccable)    [[ "$MOD_IMPECCABLE"    == true ]] ;;
       *) return 1 ;;
     esac
   }
@@ -1086,6 +1101,9 @@ smart_update_template ".claude/commands/darkflow/ux-audit.md"                   
 smart_update_template ".claude/commands/darkflow/docs-audit.md"                   ".claude/commands/darkflow/docs-audit.md"
 smart_update_template ".claude/commands/darkflow/product-overview.md"             ".claude/commands/darkflow/product-overview.md"
 smart_update_template ".claude/commands/darkflow/build-optimization.md"          ".claude/commands/darkflow/build-optimization.md"
+smart_update_template ".claude/commands/darkflow/design-audit.md"                ".claude/commands/darkflow/design-audit.md"
+smart_update_template ".claude/commands/darkflow/design-critique.md"             ".claude/commands/darkflow/design-critique.md"
+smart_update_template ".claude/commands/darkflow/design-harden.md"               ".claude/commands/darkflow/design-harden.md"
 smart_update_template "darkflow/darkflow-run.sh"        ".darkflow.d/darkflow-run.sh"        "true" "true"
 
 if [[ "$MOD_MAILBOX" == true ]]; then
@@ -1111,6 +1129,7 @@ if [[ "$DRY_RUN" == false ]]; then
     [[ "$MOD_MAILBOX"       == true ]] && _local_mods="${_local_mods}mailbox,"
     [[ "$MOD_DOCS_AUDIT"        == true ]] && _local_mods="${_local_mods}docs-audit,"
     [[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && _local_mods="${_local_mods}product-overview,"
+    [[ "$MOD_IMPECCABLE"        == true ]] && _local_mods="${_local_mods}impeccable,"
     {
       echo "# Dark Flow project config — managed by install.sh"
       echo "version=${LATEST_VERSION}"
@@ -1272,6 +1291,24 @@ YAML
     enabled: true
 YAML
 
+      [[ "$MOD_IMPECCABLE" == true ]] && cat << 'YAML'
+
+  design-audit:
+    cron: "0 10 * * 6"
+    model: opus
+    enabled: true
+
+  design-critique:
+    cron: "0 11 * * 6"
+    model: opus
+    enabled: true
+
+  design-harden:
+    cron: "0 10 1 * *"
+    model: opus
+    enabled: true
+YAML
+
       [[ "$MOD_MAILBOX" == true ]] && cat << 'YAML'
 
   mailbox-check:
@@ -1402,6 +1439,9 @@ echo "  vulnerability-check  0 6 * * *      GitHub Dependabot + code scanning �
 [[ "$MOD_DOCS_AUDIT"        == true ]] && echo "  docs-audit           0 5 * * 0      Docs <-> code drift → GitHub issues"
 [[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && echo "  product-overview     0 7 * * 1      Product overview digest"
 [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "  architecture-review  0 2 * * 0      Architectural analysis → GitHub issues"
+[[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-audit         0 10 * * 6     Design quality check (impeccable:audit) → GitHub issues"
+[[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-critique      0 11 * * 6     Scored design review (impeccable:critique) → GitHub issues"
+[[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-harden        0 10 1 * *     Production-readiness review (impeccable:harden) → GitHub issues"
 echo ""
 echo -e "  Run manually:  ${DIM}bash .darkflow.d/darkflow-run.sh <name>${RESET}"
 echo -e "  Show status:   ${DIM}bash .darkflow.d/darkflow-run.sh --list${RESET}"

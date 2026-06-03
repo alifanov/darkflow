@@ -58,6 +58,9 @@ Rule is universal — only the folder changes by data source:
 | Security audit — vulnerabilities, code scanning | `insights/security/YYYY-MM-DD.md` | `/darkflow:security-audit`, Dependabot alerts |
 | UX audit — layout, accessibility, component review | `insights/ux-audit/YYYY-MM-DD.md` | `/darkflow:ux-audit`, session recording review |
 | Build optimization — build + deploy pipeline efficiency | `insights/build-optimization/YYYY-MM-DD.md` | `/darkflow:build-optimization` |
+| Design audit — five-dimension technical quality (impeccable:audit) | `insights/design-audit/YYYY-MM-DD.md` | `/darkflow:design-audit` |
+| Design critique — scored review, persona tests (impeccable:critique) | `insights/design-critique/YYYY-MM-DD.md` | `/darkflow:design-critique` |
+| Design harden — edge cases, i18n, error states (impeccable:harden) | `insights/design-harden/YYYY-MM-DD.md` | `/darkflow:design-harden` |
 | Interviews, feedback, session recordings | `insights/qualitative/YYYY-MM-DD-{topic}.md` | Session recording review, email/chat feedback analysis |
 
 ### Snapshot format (any source)

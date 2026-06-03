@@ -14,6 +14,26 @@ Categories:
 
 ---
 
+## [2.41.0] — 2026-06-03
+
+### New routine
+- **design-audit** — weekly (Sat 10:00, opus) design quality check via `impeccable:audit`; five-dimension technical review with P0–P3 severity findings → `source:design` GitHub issues + `insights/design-audit/` snapshot
+- **design-critique** — weekly (Sat 11:00, opus) scored design review via `impeccable:critique`; persona tests + automated detection → `source:design` GitHub issues + `insights/design-critique/` snapshot
+- **design-harden** — monthly (1st 10:00, opus) production-readiness review via `impeccable:harden`; edge cases, i18n, error states, overflow → `source:design` GitHub issues + `insights/design-harden/` snapshot
+
+### New label
+- **source:design** — `#5319e7` — "From design quality routines (impeccable:audit/critique/harden)"
+
+### Workflow
+- Added `design-audit`, `design-critique`, `design-harden` snapshot paths to data-sources routing table in `agent-workflow.md`
+
+### Installer
+- New `impeccable` module (`--with-impeccable` / `--no-impeccable`); all three routines are gated on this module
+- `_module_active()` handles `impeccable` module key
+- `checklist.yml` — added 3 `copy-template` entries and 3 `add-routine` entries for the new commands/routines
+
+---
+
 ## [2.40.0] — 2026-06-03
 
 ### Workflow
