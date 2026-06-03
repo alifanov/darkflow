@@ -675,6 +675,7 @@ generate_darkflow_md() {
 
 @docs/agent-workflow.md
 @docs/github-issues.md
+@docs/auto-approve.md
 
 HEREDOC
 
@@ -1056,6 +1057,7 @@ header "2/4  Template files"
 smart_update_template "docs/README.md"             "docs/README.md"
 smart_update_template "docs/agent-workflow.md"     "docs/agent-workflow.md"
 smart_update_template "docs/github-issues.md"      "docs/github-issues.md"
+smart_update_template "docs/auto-approve.md"       "docs/auto-approve.md"
 smart_update_template "docs/decisions/TEMPLATE.md" "docs/decisions/TEMPLATE.md"
 smart_update_template ".github/ISSUE_TEMPLATE/recommendation.yml" \
                       ".github/ISSUE_TEMPLATE/recommendation.yml"

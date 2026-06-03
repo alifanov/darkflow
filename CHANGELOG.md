@@ -14,6 +14,22 @@ Categories:
 
 ---
 
+## [2.40.0] — 2026-06-03
+
+### Workflow
+- **Auto-approve allowlist** — new `docs/auto-approve.md` defines categories of issues that the agent creates directly as `status:approved`, bypassing the manual triage step. Seed list: security fixes (`/darkflow:security-audit`) and Dependabot dependency updates (`/darkflow:vulnerability-check`, `area:deps`). Code-scanning and secret-scanning findings still require human review. `fix-issues` retains its full quality gate (lint → test → build) and `needs-human` escalation regardless.
+- **`github-issues.md`** updated: `status:approved` row notes that agents can set it directly for auto-approved categories; link to `auto-approve.md` added under the table.
+
+### Updated routine
+- **`security-audit`** — now creates issues as `status:approved` (was `status:proposed`). Findings go straight to the fix queue.
+- **`vulnerability-check`** — Dependabot `area:deps` issues now created as `status:approved`; `area:code` and `area:secrets` remain `status:proposed`.
+
+### Installer
+- `docs/auto-approve.md` added to `smart_update_template` install list and to the `@`-include chain in `.darkflow.d/claude.md`.
+- `checklist.yml`: added `file-auto-approve` copy-template entry (existing installs self-heal on next update) and `routine-vulnerability-check` add-routine entry (closes gap where existing installs never received the daily `vulnerability-check` routine via self-update).
+
+---
+
 ## [2.39.0] — 2026-06-01
 
 ### New routine

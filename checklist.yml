@@ -40,6 +40,7 @@ items:
   - { id: file-docs-readme,        group: docs,       type: file, path: docs/README.md,                                template: docs/README.md,                                fix: copy-template, desc: "Docs index" }
   - { id: file-agent-workflow,     group: docs,       type: file, path: docs/agent-workflow.md,                        template: docs/agent-workflow.md,                        fix: copy-template, desc: "Agent workflow doc" }
   - { id: file-github-issues,      group: docs,       type: file, path: docs/github-issues.md,                         template: docs/github-issues.md,                         fix: copy-template, desc: "GitHub issues guide" }
+  - { id: file-auto-approve,       group: docs,       type: file, path: docs/auto-approve.md,                          template: docs/auto-approve.md,                          fix: copy-template, desc: "Auto-approve allowlist" }
   - { id: file-adr-template,       group: docs,       type: file, path: docs/decisions/TEMPLATE.md,                    template: docs/decisions/TEMPLATE.md,                    fix: copy-template, desc: "ADR template" }
   - { id: file-issue-template,     group: docs,       type: file, path: .github/ISSUE_TEMPLATE/recommendation.yml,     template: .github/ISSUE_TEMPLATE/recommendation.yml,     fix: copy-template, desc: "Recommendation issue template" }
 
@@ -90,6 +91,7 @@ items:
   # it here via update.sh -> check.sh --fix. Cron/model values mirror install.sh.
   - { id: routine-fix-issues,          group: routines, type: routine, path: .darkflow.d/routines.yml, routine_key: fix-issues,          cron: "0 * * * *",   model: sonnet, enabled: true,  fix: add-routine, desc: "fix-issues (hourly)" }
   - { id: routine-security-audit,       group: routines, type: routine, path: .darkflow.d/routines.yml, routine_key: security-audit,       cron: "0 3 * * 0",   model: opus,   enabled: true,  fix: add-routine, desc: "security-audit (weekly Sun 3:00)" }
+  - { id: routine-vulnerability-check, group: routines, type: routine, path: .darkflow.d/routines.yml, routine_key: vulnerability-check, cron: "0 6 * * *",   model: sonnet, enabled: true,  fix: add-routine, desc: "vulnerability-check (daily 6:00)" }
   - { id: routine-build-optimization,  group: routines, type: routine, path: .darkflow.d/routines.yml, routine_key: build-optimization,  cron: "0 4 * * 0",   model: opus,   enabled: true,  fix: add-routine, desc: "build-optimization (weekly Sun 4:00)" }
   - { id: routine-docs-audit,          group: routines, type: routine, when: module.docs-audit,       path: .darkflow.d/routines.yml, routine_key: docs-audit,          cron: "0 5 * * 0",   model: opus,   enabled: true,  fix: add-routine, desc: "docs-audit (weekly Sun 5:00)" }
   - { id: routine-product-overview,    group: routines, type: routine, when: module.product-overview, path: .darkflow.d/routines.yml, routine_key: product-overview,    cron: "0 7 * * 1",   model: opus,   enabled: true,  fix: add-routine, desc: "product-overview (weekly Mon 7:00)" }

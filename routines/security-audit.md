@@ -34,9 +34,11 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 
 ## What gets created
 
-Issues with labels: `status:proposed`, `source:security-review`, `priority:p0`–`p3`
+Issues with labels: `status:approved`, `source:security-review`, `priority:p0`–`p3`
 
-Critical findings (`priority:p0`) should be reviewed immediately.
+Security findings are **auto-approved** — `fix-issues` picks them up without a manual review step. See [`docs/auto-approve.md`](../docs/auto-approve.md) for the full allowlist and how to extend it.
+
+`fix-issues` still runs all quality checks and escalates anything requiring human action (secret rotation, infrastructure changes) to `needs-human`.
 
 ---
 

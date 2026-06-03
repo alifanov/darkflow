@@ -118,6 +118,8 @@ Agent starts next session
   → closes via PR with "Closes #N"
 ```
 
+Some categories skip the human review step — security fixes and Dependabot dependency updates are created directly as `status:approved` and flow straight to `fix-issues`. See [`docs/auto-approve.md`](./docs/auto-approve.md) for the full allowlist.
+
 The loop runs automatically via **Claude Code Routines** — see [routines/README.md](./routines/README.md).
 
 ---
@@ -136,9 +138,9 @@ The real power comes from scheduling Claude agents that run the loop automatical
 | [Coolify check logs](routines/coolify-check-logs.md) | `30 9 * * *` | Daily 9:30 — per-container logs via SSH → issues |
 | [CLAUDE.md update](routines/claude-md-update.md) | `0 9 * * 1-5` | Weekdays 9:00 — re-generates CLAUDE.md from codebase |
 | [Architecture review](routines/architecture-review.md) | `0 2 * * 0` | Weekly Sun 2:00 — `/improve-codebase-architecture` → issues |
-| [Security audit](routines/security-audit.md) | `0 3 * * 0` | Weekly Sun 3:00 — full security review → issues |
+| [Security audit](routines/security-audit.md) | `0 3 * * 0` | Weekly Sun 3:00 — full security review → **auto-approved** issues |
 | [Build optimization](routines/build-optimization.md) | `0 4 * * 0` | Weekly Sun 4:00 — build + deploy pipeline analysis → issues |
-| [Vulnerability check](routines/vulnerability-check.md) | `0 6 * * *` | Daily 6:00 — GitHub Dependabot + code/secret scanning alerts → issues |
+| [Vulnerability check](routines/vulnerability-check.md) | `0 6 * * *` | Daily 6:00 — Dependabot → **auto-approved** issues; code/secret scanning → proposed |
 | [Mailbox check](routines/mailbox-check.md) | `0 * * * *` | Hourly — IMAP inbox → issues; approved `action:reply` issues → SMTP reply *(optional)* |
 
 Cron times are in the machine's local timezone. Schedule is defined in `.darkflow.d/routines.yml` — edit it to change frequency, model, or enable/disable a routine.
@@ -171,7 +173,7 @@ If your project already has a `Makefile`, the installer appends the `df-*` block
 
 ```
 Daily
-  6:00  vulnerability-check  → status:proposed issues from GitHub Dependabot / code / secret scanning
+  6:00  vulnerability-check  → status:approved (Dependabot deps); status:proposed (code/secret scanning)
   8:00  analytics-review     → status:proposed issues + analytics snapshot → syncs to web UI
   8:30  observability-check  → status:proposed issues
   9:00  coolify-check-deployment → deploy status, p0 issue on failure
@@ -181,7 +183,7 @@ Daily
 Weekly
   Mon 8:00  gsc-check             → status:proposed issues
   Sun 2:00  architecture-review   → status:proposed issues (Opus) + arch snapshot → syncs to web UI
-  Sun 3:00  security-audit        → status:proposed issues (Opus) + security snapshot → syncs to web UI
+  Sun 3:00  security-audit        → status:approved issues (Opus) + security snapshot → syncs to web UI
   Sun 4:00  build-optimization   → status:proposed issues (Opus) + build snapshot
 
 Continuous

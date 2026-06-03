@@ -2,6 +2,7 @@
 
 @docs/agent-workflow.md
 @docs/github-issues.md
+@docs/auto-approve.md
 
 **Language:** English — use this language for GitHub issues, comments, commit messages, and all agent-facing text.
 **Main branch:** `main`
