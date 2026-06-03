@@ -1,4 +1,4 @@
-Run a five-dimension technical design quality check, then create `status:proposed` GitHub issues for each finding.
+Run a five-dimension technical design quality check + UI performance audit, then create `status:proposed` GitHub issues for each finding.
 
 ## Step 1 — Read project config
 
@@ -7,7 +7,7 @@ Read `.darkflow` in the project root. Extract:
 
 If `.darkflow` is missing, continue with defaults.
 
-## Step 2 — Do the work
+## Step 2 — Design quality audit
 
 /impeccable:audit
 
@@ -36,21 +36,56 @@ After the audit is complete, create a GitHub issue for each significant finding:
 
 Language for all GitHub issues and output: the `language=` value from `.darkflow`.
 
-## Step 3 — Write snapshot
+## Step 3 — UI performance audit
+
+/impeccable:optimize
+
+After the performance audit is complete, create a GitHub issue for each significant finding:
+- Labels: `status:proposed`, `source:design`, `area:performance`, priority based on impact:
+  - `priority:p1` — LCP > 2.5s, CLS > 0.1, or bundle size regressions blocking interaction
+  - `priority:p2` — measurable slowdowns, large unoptimized assets, render-blocking resources
+  - `priority:p3` — minor improvements, nice-to-have optimizations
+- Do not create issues for findings already tracked in open GitHub issues or covered by `build-optimization`
+
+**Issue format (required):**
+
+- **Title**: action-oriented verb — "Reduce LCP on /landing from 4s to <2.5s", "Lazy-load hero image on /home", "Remove render-blocking font on checkout page" — never a bare observation
+- **Body**:
+  ```
+  ## Problem
+  <metric / current value / target — specific page and element>
+
+  ## What to do
+  <concrete change — specific file, asset, or config>
+
+  ## Acceptance criteria
+  - [ ] <measurable outcome, e.g. "LCP drops below 2.5s on Lighthouse mobile">
+  - [ ] <secondary check if needed>
+  ```
+
+## Step 4 — Write snapshot
 
 Write `docs/insights/design-audit/YYYY-MM-DD.md` (use today's date; append a new section if today's file already exists):
 
 ```markdown
 # Design Audit — YYYY-MM-DD
 
-**Tool:** impeccable:audit
+**Tools:** impeccable:audit + impeccable:optimize
 **Scope:** <pages / components checked>
 
-## Findings
+## Quality Findings
 
 | Dimension | Finding | Severity | Page / Component |
 |---|---|---|---|
 | | | P0 / P1 / P2 / P3 | |
+
+## Performance Findings
+
+| Metric | Current | Target | Page | Issue |
+|---|---|---|---|---|
+| LCP | | < 2.5s | | #N |
+| CLS | | < 0.1 | | |
+| Bundle | | | | |
 
 ## Recurring Issues
 
@@ -61,7 +96,7 @@ Write `docs/insights/design-audit/YYYY-MM-DD.md` (use today's date; append a new
 <each with: page/component → what to fix → acceptance criterion>
 ```
 
-## Step 4 — Write metrics
+## Step 5 — Write metrics
 
 Run `gh issue list --state open --json number,labels --limit 200`, then:
 - Count issues with label `source:design` → `openIssues`
