@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [2.41.1] — 2026-06-03
+
+### Updated routine
+- **design-audit** — added `impeccable:optimize` as Step 3 (UI performance: LCP, CLS, bundle size); perf findings get `area:performance` label; snapshot now covers both quality and performance dimensions
+
+---
+
 ## [2.41.0] — 2026-06-03
 
 ### New routine
