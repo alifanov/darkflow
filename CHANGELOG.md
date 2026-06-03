@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [2.41.2] — 2026-06-03
+
+### Webapp
+- **"+ Task" button** — issue rows in the *Needs approval* list and the *Needs Human* section now have a `+ Task` button in the Actions column; clicking opens `https://flow.chatindex.app/tasks?title=<issue title>` in a new tab, pre-filling the task manager with the issue title
+
+---
+
 ## [2.41.1] — 2026-06-03
 
 ### Updated routine

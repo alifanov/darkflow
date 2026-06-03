@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+
+const TASK_MANAGER_URL = "https://flow.chatindex.app/tasks";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { IssueActions } from "@/components/IssueActions";
@@ -40,9 +42,10 @@ interface IssueTableRowProps {
   };
   showActions?: boolean;
   showClose?: boolean;
+  showTaskLink?: boolean;
 }
 
-export function IssueTableRow({ issue, showActions, showClose }: IssueTableRowProps) {
+export function IssueTableRow({ issue, showActions, showClose, showTaskLink }: IssueTableRowProps) {
   const [open, setOpen] = useState(false);
   const bg = STATUS_COLORS[issue.status] ?? STATUS_COLORS.none;
   const color = STATUS_TEXT[issue.status] ?? "var(--muted)";
@@ -105,8 +108,22 @@ export function IssueTableRow({ issue, showActions, showClose }: IssueTableRowPr
           </div>
         </td>
         <td className="py-3 px-4">
-          {showActions && <IssueActions issueId={issue.id} />}
-          {showClose && <CloseIssueButton issueId={issue.id} />}
+          <div className="flex items-center gap-2">
+            {showActions && <IssueActions issueId={issue.id} />}
+            {showClose && <CloseIssueButton issueId={issue.id} />}
+            {showTaskLink && (
+              <a
+                href={`${TASK_MANAGER_URL}?title=${encodeURIComponent(issue.title)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="cursor-pointer rounded px-3 py-1 text-sm font-medium transition-opacity hover:opacity-80 inline-block"
+                style={{ background: "#1a1a2e", color: "var(--accent)", border: "1px solid var(--border)" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                + Task
+              </a>
+            )}
+          </div>
         </td>
       </tr>
       {open && hasBody && (

@@ -266,6 +266,7 @@ function IssuesTab({
                   issue={issue}
                   showActions={false}
                   showClose
+                  showTaskLink
                 />
               ))}
             </tbody>
@@ -330,6 +331,7 @@ function IssuesTab({
                     key={issue.id}
                     issue={issue}
                     showActions={issue.status === "proposed"}
+                    showTaskLink={issue.status === "proposed"}
                   />
                 ))}
               </tbody>
