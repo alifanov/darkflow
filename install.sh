@@ -1105,6 +1105,7 @@ smart_update_template ".claude/commands/darkflow/design-audit.md"               
 smart_update_template ".claude/commands/darkflow/design-critique.md"             ".claude/commands/darkflow/design-critique.md"
 smart_update_template ".claude/commands/darkflow/design-harden.md"               ".claude/commands/darkflow/design-harden.md"
 smart_update_template "darkflow/darkflow-run.sh"        ".darkflow.d/darkflow-run.sh"        "true" "true"
+smart_update_template "darkflow/get-config.sh"          ".darkflow.d/get-config.sh"          "true"
 
 if [[ "$MOD_MAILBOX" == true ]]; then
   smart_update_template ".claude/commands/darkflow/mailbox-check.md" ".claude/commands/darkflow/mailbox-check.md"
@@ -1144,6 +1145,7 @@ if [[ "$DRY_RUN" == false ]]; then
       echo "slug=${SLUG}"
       echo "name=${PROJECT_NAME}"
       echo "webapp_url=${WEBAPP_URL}"
+      echo "max_concurrent=3"
     } > .darkflow
     success "Created .darkflow (v${LATEST_VERSION})"
   else

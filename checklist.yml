@@ -72,6 +72,7 @@ items:
 
   # ── Dispatcher ───────────────────────────────────────────────────────────────
   - { id: dispatcher-run,          group: dispatcher, type: file, path: .darkflow.d/darkflow-run.sh,        template: darkflow/darkflow-run.sh,        executable: true, fix: copy-template, desc: "Routine dispatcher" }
+  - { id: dispatcher-get-config,   group: dispatcher, type: file, path: .darkflow.d/get-config.sh,          template: darkflow/get-config.sh,          executable: true, fix: copy-template, desc: "Fetch project settings from Web UI" }
   - { id: dispatcher-routines,     group: dispatcher, type: file, path: .darkflow.d/routines.yml,           template: darkflow/routines.yml,                              fix: copy-template, desc: "Routine schedule (project-specific — copy of generic template if missing)" }
 
   # ── Dark Flow instruction file + CLAUDE.md reference ────────────────────────
@@ -80,9 +81,10 @@ items:
   - { id: marker-makefile,         group: dispatcher, type: marker, path: Makefile,  marker_start: "# darkflow:start", fix: regenerate-marker, desc: "Dark Flow block in Makefile" }
 
   # ── .darkflow config keys ────────────────────────────────────────────────────
-  - { id: cfg-webapp-url,          group: config,     type: config-key, path: .darkflow, key: webapp_url,     default: "http://localhost:5555", fix: append-config, desc: "webapp_url" }
-  - { id: cfg-slug,                group: config,     type: config-key, path: .darkflow, key: slug,                                            fix: append-config, desc: "project slug (re-run update.sh if missing)" }
-  - { id: cfg-name,                group: config,     type: config-key, path: .darkflow, key: name,                                            fix: append-config, desc: "project name (re-run update.sh if missing)" }
+  - { id: cfg-webapp-url,          group: config,     type: config-key, path: .darkflow, key: webapp_url,      default: "http://localhost:5555", fix: append-config, desc: "webapp_url" }
+  - { id: cfg-slug,                group: config,     type: config-key, path: .darkflow, key: slug,                                             fix: append-config, desc: "project slug (re-run update.sh if missing)" }
+  - { id: cfg-name,                group: config,     type: config-key, path: .darkflow, key: name,                                             fix: append-config, desc: "project name (re-run update.sh if missing)" }
+  - { id: cfg-max-concurrent,      group: config,     type: config-key, path: .darkflow, key: max_concurrent,  default: "3",                    fix: append-config, desc: "max concurrent routines (default: 3)" }
 
   # ── Per-module dirs ──────────────────────────────────────────────────────────
   - { id: mod-analytics-dir, group: module-analytics, type: dir, path: docs/insights/analytics,      when: module.analytics, fix: mkdir, desc: "Analytics snapshots dir" }

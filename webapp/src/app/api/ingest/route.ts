@@ -107,11 +107,9 @@ export async function POST(req: NextRequest) {
       lastSyncedAt: new Date(),
     },
     update: {
-      name: body.name ?? undefined,
-      branch: body.branch ?? undefined,
-      language: body.language ?? undefined,
-      mergeStrategy: body.mergeStrategy ?? undefined,
-      modules: body.modules ?? undefined,
+      // Settings fields (branch, language, mergeStrategy, modules) are intentionally
+      // NOT updated here — the Web UI is the source of truth for settings after
+      // initial seeding. Only operational fields are updated on each sync.
       darkflowVersion: body.darkflowVersion || undefined,
       lastSyncedAt: new Date(),
     },
@@ -206,8 +204,11 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.routines !== undefined) {
-    await prisma.routineConfig.deleteMany({ where: { projectId: project.id } });
-    if (body.routines.length > 0) {
+    // Seed-only: only write routineConfigs if the project has none yet.
+    // Once seeded, routine configs are managed exclusively via the Web UI Settings tab
+    // so that user edits aren't clobbered on every worker sync.
+    const existingCount = await prisma.routineConfig.count({ where: { projectId: project.id } });
+    if (existingCount === 0 && body.routines.length > 0) {
       await prisma.routineConfig.createMany({
         data: body.routines.map((r) => ({
           projectId: project.id,

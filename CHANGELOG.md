@@ -14,6 +14,31 @@ Categories:
 
 ---
 
+## [2.43.0] — 2026-06-04
+
+### Feature: Centralized project settings in the Web UI
+
+**DB is now the source of truth for project settings.** The `.darkflow` file becomes a local cache; all settings are editable from the Web UI and fetched by the worker/commands before each run.
+
+#### Web UI (webapp)
+- **New Settings tab** on the project detail page — edit all project settings in one place: name, slug, branch, language, merge strategy, modules (checkboxes), integrations (PostHog, observability), max concurrent routines, and per-routine schedule (enabled, model, cron)
+- **New `GET /api/projects/by-repo?repoUrl=...`** endpoint — returns the full settings+routines snapshot for a given project; used by `get-config.sh`
+- **New `PATCH /api/projects/[id]`** endpoint — saves settings and routine configs from the UI
+- **`POST /api/ingest`** no longer overwrites settings fields (`branch`, `language`, `mergeStrategy`, `modules`) on update — only seeds them on first project creation. Routine configs are also seeded once and then managed exclusively by the UI
+- **New DB columns** on `Project`: `slug`, `maxConcurrent` (default 3), `posthogProjectId`, `obsTool`, `obsUrl`, `settingsUpdatedAt`
+
+#### Worker + commands
+- **New `templates/darkflow/get-config.sh`** (installed to `.darkflow.d/get-config.sh`) — fetches latest settings from the Web UI and refreshes `.darkflow` + `routines.yml`; silently no-ops if the server is unreachable
+- **`darkflow-run.sh`** calls `get-config.sh` before every routine so the worker always uses fresh settings
+- **All 21 slash commands** now run `get-config.sh` as the first action in "Step 1 — Read project config", ensuring they always see the latest DB-backed settings
+
+#### Installer
+- `install.sh` copies `get-config.sh` alongside `darkflow-run.sh`
+- `.darkflow` now includes `max_concurrent=3` on fresh installs
+- `checklist.yml` includes `dispatcher-get-config` and `cfg-max-concurrent` checks so existing projects pick up `get-config.sh` on `darkflow:update`
+
+---
+
 ## [2.42.0] — 2026-06-04
 
 ### Updated commands

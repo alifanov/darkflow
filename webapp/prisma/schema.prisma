@@ -10,13 +10,19 @@ datasource db {
 model Project {
   id            String    @id @default(cuid())
   name          String
+  slug          String?
   repoUrl       String    @unique
   branch        String    @default("main")
   language      String    @default("English")
   mergeStrategy String    @default("pr")
   modules            String[]
+  maxConcurrent      Int       @default(3)
+  posthogProjectId   String?
+  obsTool            String?
+  obsUrl             String?
   darkflowVersion    String?
-  lastSyncedAt  DateTime?
+  lastSyncedAt       DateTime?
+  settingsUpdatedAt  DateTime?
   createdAt     DateTime  @default(now())
 
   issues             Issue[]

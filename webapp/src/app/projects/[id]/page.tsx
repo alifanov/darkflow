@@ -5,6 +5,7 @@ import { IssueTableRow } from "@/components/IssueTableRow";
 import { DeleteProjectButton } from "@/components/DeleteProjectButton";
 import { LocalTime } from "@/components/LocalTime";
 import { LogRow } from "@/components/LogRow";
+import { ProjectSettingsForm } from "@/components/ProjectSettingsForm";
 
 export const dynamic = "force-dynamic";
 
@@ -33,17 +34,18 @@ const CARDS: { key: string; label: string; statuses: string[] }[] = [
   { key: "rejected", label: "Rejected", statuses: ["rejected", "blocked"] },
 ];
 
-const TABS: { key: "issues" | "logs" | "routines" | "commits"; label: string }[] = [
+const TABS: { key: "issues" | "logs" | "routines" | "commits" | "settings"; label: string }[] = [
   { key: "issues", label: "Issues" },
   { key: "logs", label: "Logs" },
   { key: "routines", label: "Routines" },
   { key: "commits", label: "Commits" },
+  { key: "settings", label: "Settings" },
 ];
 
 type TabKey = (typeof TABS)[number]["key"];
 
 function isTab(v: string | undefined): v is TabKey {
-  return v === "issues" || v === "logs" || v === "routines" || v === "commits";
+  return v === "issues" || v === "logs" || v === "routines" || v === "commits" || v === "settings";
 }
 
 function TableContainer({ children }: { children: React.ReactNode }) {
@@ -211,6 +213,26 @@ export default async function ProjectPage({
       {activeTab === "routines" && <RoutineConfigList configs={project.routineConfigs} />}
 
       {activeTab === "commits" && <CommitList commits={project.commits} />}
+
+      {activeTab === "settings" && (
+        <ProjectSettingsForm
+          projectId={project.id}
+          initialValues={{
+            name: project.name,
+            slug: project.slug ?? null,
+            branch: project.branch,
+            language: project.language,
+            mergeStrategy: project.mergeStrategy,
+            modules: project.modules,
+            maxConcurrent: project.maxConcurrent,
+            posthogProjectId: project.posthogProjectId ?? null,
+            obsTool: project.obsTool ?? null,
+            obsUrl: project.obsUrl ?? null,
+            settingsUpdatedAt: project.settingsUpdatedAt ?? null,
+          }}
+          routineConfigs={project.routineConfigs}
+        />
+      )}
     </div>
   );
 }
