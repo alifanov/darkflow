@@ -3,24 +3,58 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const ALL_MODULES = [
-  { id: "analytics", label: "Analytics" },
-  { id: "observability", label: "Observability" },
-  { id: "gsc", label: "Google Search Console" },
-  { id: "ads", label: "Paid Ads" },
-  { id: "coolify", label: "Coolify" },
-  { id: "claude-update", label: "Claude MD auto-update" },
-  { id: "arch-review", label: "Architecture Review" },
-  { id: "mailbox", label: "Mailbox" },
-  { id: "docs-audit", label: "Docs Audit" },
-  { id: "product-overview", label: "Product Overview" },
-  { id: "impeccable", label: "Impeccable (design audits)" },
+// Every routine with its default schedule and the module it belongs to (null = core, always-on)
+const ALL_ROUTINES: {
+  name: string;
+  defaultCron: string;
+  defaultModel: string;
+  module: string | null;  // null = core (fix-issues, security-audit, etc.)
+  label: string;          // human-readable description
+}[] = [
+  // Core — always-on, no optional module
+  { name: "fix-issues",          defaultCron: "0 * * * *",   defaultModel: "sonnet", module: null,               label: "Pick up approved issues → fix → merge" },
+  { name: "security-audit",      defaultCron: "0 3 * * 0",   defaultModel: "opus",   module: null,               label: "Full security review (weekly)" },
+  { name: "vulnerability-check", defaultCron: "0 6 * * *",   defaultModel: "sonnet", module: null,               label: "Dependabot + code scanning (daily)" },
+  { name: "build-optimization",  defaultCron: "0 4 * * 0",   defaultModel: "opus",   module: null,               label: "Build + deploy pipeline audit (weekly)" },
+  // Optional modules
+  { name: "analytics-review",         defaultCron: "0 8 * * *",   defaultModel: "sonnet", module: "analytics",        label: "PostHog + commits → issues (daily)" },
+  { name: "observability-check",      defaultCron: "30 8 * * *",  defaultModel: "sonnet", module: "observability",    label: "Errors / latency → issues (daily)" },
+  { name: "gsc-check",                defaultCron: "0 8 * * 1",   defaultModel: "sonnet", module: "gsc",              label: "Google Search Console (weekly Mon)" },
+  { name: "ads-review",               defaultCron: "0 9 * * 1",   defaultModel: "sonnet", module: "ads",              label: "Paid ads performance (weekly Mon)" },
+  { name: "coolify-check-deployment", defaultCron: "0 9 * * *",   defaultModel: "sonnet", module: "coolify",          label: "Deployment status (daily)" },
+  { name: "coolify-check-logs",       defaultCron: "30 9 * * *",  defaultModel: "sonnet", module: "coolify",          label: "Runtime logs (daily)" },
+  { name: "claude-md-update",         defaultCron: "0 9 * * 1-5", defaultModel: "sonnet", module: "claude-update",    label: "Regenerate CLAUDE.md (weekdays)" },
+  { name: "architecture-review",      defaultCron: "0 2 * * 0",   defaultModel: "opus",   module: "arch-review",      label: "Architectural analysis (weekly)" },
+  { name: "mailbox-check",            defaultCron: "0 10 * * *",  defaultModel: "sonnet", module: "mailbox",          label: "IMAP inbox → issues (daily)" },
+  { name: "docs-audit",               defaultCron: "0 5 * * 0",   defaultModel: "opus",   module: "docs-audit",       label: "Docs ↔ code drift (weekly)" },
+  { name: "product-overview",         defaultCron: "0 7 * * 1",   defaultModel: "opus",   module: "product-overview", label: "Product state digest (weekly Mon)" },
+  { name: "design-audit",             defaultCron: "0 10 * * 6",  defaultModel: "opus",   module: "impeccable",       label: "Design quality audit (weekly Sat)" },
+  { name: "design-critique",          defaultCron: "0 11 * * 6",  defaultModel: "opus",   module: "impeccable",       label: "Scored design review (weekly Sat)" },
+  { name: "design-harden",            defaultCron: "0 10 1 * *",  defaultModel: "opus",   module: "impeccable",       label: "Production-readiness check (monthly)" },
 ];
+
+// Derive modules array from the set of enabled module routines
+function modulesFromRoutines(routines: RoutineState[]): string[] {
+  const mods = new Set<string>();
+  for (const r of routines) {
+    const def = ALL_ROUTINES.find((d) => d.name === r.name);
+    if (def?.module && r.enabled) mods.add(def.module);
+  }
+  return Array.from(mods);
+}
 
 interface RoutineConfig {
   name: string;
   cron: string | null;
   model: string | null;
+  enabled: boolean;
+  permissionMode: string | null;
+}
+
+interface RoutineState {
+  name: string;
+  cron: string;
+  model: string;
   enabled: boolean;
   permissionMode: string | null;
 }
@@ -82,38 +116,59 @@ function InputField({
   );
 }
 
+// Build the initial merged routine state:
+// - Start from ALL_ROUTINES as the canonical list
+// - Override with any existing DB RoutineConfig rows
+// - For module routines with no DB row: enabled = module is in the modules[] array
+function buildInitialRoutines(configs: RoutineConfig[], modules: string[]): RoutineState[] {
+  const configMap = new Map(configs.map((c) => [c.name, c]));
+  return ALL_ROUTINES.map((def) => {
+    const existing = configMap.get(def.name);
+    if (existing) {
+      return {
+        name: def.name,
+        cron: existing.cron ?? def.defaultCron,
+        model: existing.model ?? def.defaultModel,
+        enabled: existing.enabled,
+        permissionMode: existing.permissionMode,
+      };
+    }
+    // No DB row yet — derive enabled from the modules array for module routines;
+    // core routines default to enabled.
+    const enabledDefault = def.module ? modules.includes(def.module) : true;
+    return {
+      name: def.name,
+      cron: def.defaultCron,
+      model: def.defaultModel,
+      enabled: enabledDefault,
+      permissionMode: null,
+    };
+  });
+}
+
 export function ProjectSettingsForm({ projectId, initialValues, routineConfigs }: ProjectSettingsFormProps) {
   const router = useRouter();
 
-  // Scalar settings
   const [name, setName] = useState(initialValues.name);
   const [slug, setSlug] = useState(initialValues.slug ?? "");
   const [branch, setBranch] = useState(initialValues.branch);
   const [language, setLanguage] = useState(initialValues.language);
   const [mergeStrategy, setMergeStrategy] = useState(initialValues.mergeStrategy);
-  const [modules, setModules] = useState<string[]>(initialValues.modules);
   const [maxConcurrent, setMaxConcurrent] = useState(String(initialValues.maxConcurrent));
   const [posthogProjectId, setPosthogProjectId] = useState(initialValues.posthogProjectId ?? "");
   const [obsTool, setObsTool] = useState(initialValues.obsTool ?? "");
   const [obsUrl, setObsUrl] = useState(initialValues.obsUrl ?? "");
 
-  // Routine configs
-  const [routines, setRoutines] = useState<RoutineConfig[]>(
-    routineConfigs.map((r) => ({ ...r }))
+  const [routines, setRoutines] = useState<RoutineState[]>(
+    buildInitialRoutines(routineConfigs, initialValues.modules)
   );
 
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const toggleModule = (id: string) => {
-    setModules((prev) =>
-      prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
-    );
-  };
-
-  const updateRoutine = (name: string, field: keyof RoutineConfig, value: string | boolean | null) => {
+  const updateRoutine = (routineName: string, field: keyof RoutineState, value: string | boolean | null) => {
     setRoutines((prev) =>
-      prev.map((r) => (r.name === name ? { ...r, [field]: value } : r))
+      prev.map((r) => (r.name === routineName ? { ...r, [field]: value } : r))
     );
   };
 
@@ -130,12 +185,18 @@ export function ProjectSettingsForm({ projectId, initialValues, routineConfigs }
           branch,
           language,
           mergeStrategy,
-          modules,
+          modules: modulesFromRoutines(routines),
           maxConcurrent: parseInt(maxConcurrent, 10) || 3,
           posthogProjectId: posthogProjectId || null,
           obsTool: obsTool || null,
           obsUrl: obsUrl || null,
-          routines,
+          routines: routines.map((r) => ({
+            name: r.name,
+            cron: r.cron || null,
+            model: r.model,
+            enabled: r.enabled,
+            permissionMode: r.permissionMode,
+          })),
         }),
       });
       if (!res.ok) {
@@ -150,6 +211,9 @@ export function ProjectSettingsForm({ projectId, initialValues, routineConfigs }
       setErrorMsg(e instanceof Error ? e.message : "Save failed");
     }
   };
+
+  const coreRoutines = routines.filter((r) => ALL_ROUTINES.find((d) => d.name === r.name)?.module === null);
+  const moduleRoutines = routines.filter((r) => ALL_ROUTINES.find((d) => d.name === r.name)?.module !== null);
 
   return (
     <div className="flex flex-col gap-8 max-w-2xl">
@@ -239,116 +303,29 @@ export function ProjectSettingsForm({ projectId, initialValues, routineConfigs }
         <InputField label="Observability URL" value={obsUrl} onChange={setObsUrl} placeholder="https://..." />
       </section>
 
-      {/* Modules */}
+      {/* Routines — single unified section replaces both "Modules" and "Routine schedule" */}
       <section className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--muted)" }}>
-          Modules
-        </h3>
-        <div className="flex flex-col gap-2">
-          {ALL_MODULES.map((mod) => {
-            const active = modules.includes(mod.id);
-            return (
-              <label key={mod.id} className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={active}
-                  onChange={() => toggleModule(mod.id)}
-                  className="cursor-pointer"
-                  style={{ accentColor: "var(--accent)" }}
-                />
-                <span
-                  className="text-sm font-mono"
-                  style={{ color: active ? "var(--text)" : "var(--muted)" }}
-                >
-                  {mod.id}
-                </span>
-                <span className="text-xs" style={{ color: "var(--muted)" }}>
-                  {mod.label}
-                </span>
-              </label>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Routines */}
-      {routines.length > 0 && (
-        <section className="flex flex-col gap-3">
+        <div>
           <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--muted)" }}>
-            Routine schedule
+            Routines
           </h3>
-          <div
-            className="rounded-lg overflow-hidden"
-            style={{ border: "1px solid var(--border)" }}
-          >
-            <table className="w-full text-sm border-collapse">
-              <thead>
-                <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
-                  {["Routine", "Enabled", "Model", "Cron"].map((col) => (
-                    <th
-                      key={col}
-                      className="py-2 px-3 text-xs font-medium uppercase tracking-wider text-left"
-                      style={{ color: "var(--muted)" }}
-                    >
-                      {col}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {routines.map((r) => (
-                  <tr key={r.name} style={{ borderBottom: "1px solid var(--border)" }}>
-                    <td className="py-2 px-3 font-mono font-semibold" style={{ color: "var(--text)" }}>
-                      {r.name}
-                    </td>
-                    <td className="py-2 px-3">
-                      <input
-                        type="checkbox"
-                        checked={r.enabled}
-                        onChange={(e) => updateRoutine(r.name, "enabled", e.target.checked)}
-                        className="cursor-pointer"
-                        style={{ accentColor: "var(--accent)" }}
-                      />
-                    </td>
-                    <td className="py-2 px-3">
-                      <select
-                        value={r.model ?? "sonnet"}
-                        onChange={(e) => updateRoutine(r.name, "model", e.target.value)}
-                        className="text-xs font-mono px-2 py-0.5 rounded cursor-pointer"
-                        style={{
-                          background: "var(--surface)",
-                          border: "1px solid var(--border)",
-                          color: "var(--text)",
-                          outline: "none",
-                        }}
-                      >
-                        <option value="sonnet">sonnet</option>
-                        <option value="opus">opus</option>
-                      </select>
-                    </td>
-                    <td className="py-2 px-3">
-                      <input
-                        type="text"
-                        value={r.cron ?? ""}
-                        onChange={(e) => updateRoutine(r.name, "cron", e.target.value || null)}
-                        placeholder="0 * * * *"
-                        className="text-xs font-mono px-2 py-0.5 rounded"
-                        style={{
-                          background: "var(--surface)",
-                          border: "1px solid var(--border)",
-                          color: "var(--text)",
-                          outline: "none",
-                          width: 130,
-                        }}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
+          <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>
+            Toggle a routine on/off to enable or disable that module. Core routines are always available.
+          </p>
+        </div>
+        <RoutineTable
+          label="Core"
+          rows={coreRoutines}
+          onChange={updateRoutine}
+          isCore
+        />
+        <RoutineTable
+          label="Optional modules"
+          rows={moduleRoutines}
+          onChange={updateRoutine}
+          isCore={false}
+        />
+      </section>
 
       {/* Save */}
       <div className="flex items-center gap-3">
@@ -376,6 +353,105 @@ export function ProjectSettingsForm({ projectId, initialValues, routineConfigs }
             Last saved {new Date(initialValues.settingsUpdatedAt).toLocaleString()}
           </span>
         )}
+      </div>
+    </div>
+  );
+}
+
+function RoutineTable({
+  label,
+  rows,
+  onChange,
+  isCore,
+}: {
+  label: string;
+  rows: RoutineState[];
+  onChange: (name: string, field: keyof RoutineState, value: string | boolean | null) => void;
+  isCore: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs" style={{ color: "var(--muted)" }}>{label}</span>
+      <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
+              {["Routine", "Enabled", "Model", "Cron"].map((col) => (
+                <th
+                  key={col}
+                  className="py-2 px-3 text-xs font-medium uppercase tracking-wider text-left"
+                  style={{ color: "var(--muted)" }}
+                >
+                  {col}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const def = ALL_ROUTINES.find((d) => d.name === r.name);
+              return (
+                <tr
+                  key={r.name}
+                  style={{
+                    borderBottom: "1px solid var(--border)",
+                    opacity: r.enabled ? 1 : 0.45,
+                  }}
+                >
+                  <td className="py-2 px-3" style={{ color: "var(--text)" }}>
+                    <span className="font-mono font-semibold">{r.name}</span>
+                    {def?.label && (
+                      <span className="block text-xs mt-0.5" style={{ color: "var(--muted)" }}>
+                        {def.label}
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-2 px-3">
+                    <input
+                      type="checkbox"
+                      checked={r.enabled}
+                      onChange={(e) => onChange(r.name, "enabled", e.target.checked)}
+                      className="cursor-pointer"
+                      style={{ accentColor: "var(--accent)" }}
+                    />
+                  </td>
+                  <td className="py-2 px-3">
+                    <select
+                      value={r.model}
+                      onChange={(e) => onChange(r.name, "model", e.target.value)}
+                      className="text-xs font-mono px-2 py-0.5 rounded cursor-pointer"
+                      style={{
+                        background: "var(--surface)",
+                        border: "1px solid var(--border)",
+                        color: "var(--text)",
+                        outline: "none",
+                      }}
+                    >
+                      <option value="sonnet">sonnet</option>
+                      <option value="opus">opus</option>
+                    </select>
+                  </td>
+                  <td className="py-2 px-3">
+                    <input
+                      type="text"
+                      value={r.cron}
+                      onChange={(e) => onChange(r.name, "cron", e.target.value)}
+                      placeholder="0 * * * *"
+                      className="text-xs font-mono px-2 py-0.5 rounded"
+                      style={{
+                        background: "var(--surface)",
+                        border: "1px solid var(--border)",
+                        color: "var(--text)",
+                        outline: "none",
+                        width: 130,
+                      }}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );
