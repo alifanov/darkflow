@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [2.42.0] — 2026-06-04
+
+### Updated commands
+- **fix-issues** — added Step 5 (update docs before merging when fix changes user-visible behavior) and expanded the closing issue comment to include a brief summary of what was changed and which files were updated
+
+---
+
 ## [2.41.4] — 2026-06-04
 
 ### Updated commands
