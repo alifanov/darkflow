@@ -84,6 +84,13 @@ bash /path/to/darkflow/install.sh --name "Test Project" --no-labels
 
 After changes, always verify the install script runs end-to-end without errors.
 
+**After every task — mandatory steps (in order):**
+1. Bump `VERSION` (patch for fixes/copy, minor for new features or template changes, major for breaking installer changes)
+2. Add a `CHANGELOG.md` entry under a new `## [X.Y.Z] — YYYY-MM-DD` heading
+3. Commit and push everything (VERSION, CHANGELOG.md, and all changed files) in one go
+
+Never skip the version bump — the install one-liner fetches raw files from `main`, so the version must always reflect the current state.
+
 ## Releases
 
 No build process — just commit and push. The install one-liner fetches from `main` branch raw files via GitHub CDN.
