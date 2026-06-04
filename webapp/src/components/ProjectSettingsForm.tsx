@@ -212,7 +212,30 @@ export function ProjectSettingsForm({ projectId, initialValues, routineConfigs }
           Integrations
         </h3>
         <InputField label="PostHog project ID" value={posthogProjectId} onChange={setPosthogProjectId} placeholder="phc_..." />
-        <InputField label="Observability tool" value={obsTool} onChange={setObsTool} placeholder="SigNoz / Datadog / Grafana" />
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--muted)" }}>
+            Observability tool
+          </label>
+          <select
+            value={obsTool}
+            onChange={(e) => setObsTool(e.target.value)}
+            className="text-sm px-3 py-1.5 rounded cursor-pointer"
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              color: obsTool ? "var(--text)" : "var(--muted)",
+              outline: "none",
+              width: "100%",
+            }}
+          >
+            <option value="">— none —</option>
+            <option value="SigNoz">SigNoz</option>
+            <option value="Datadog">Datadog</option>
+            <option value="Grafana">Grafana</option>
+          </select>
+        </div>
+
         <InputField label="Observability URL" value={obsUrl} onChange={setObsUrl} placeholder="https://..." />
       </section>
 
