@@ -212,9 +212,6 @@ export function ProjectSettingsForm({ projectId, initialValues, routineConfigs }
     }
   };
 
-  const coreRoutines = routines.filter((r) => ALL_ROUTINES.find((d) => d.name === r.name)?.module === null);
-  const moduleRoutines = routines.filter((r) => ALL_ROUTINES.find((d) => d.name === r.name)?.module !== null);
-
   return (
     <div className="flex flex-col gap-8 max-w-2xl">
       {/* Project basics */}
@@ -305,26 +302,10 @@ export function ProjectSettingsForm({ projectId, initialValues, routineConfigs }
 
       {/* Routines — single unified section replaces both "Modules" and "Routine schedule" */}
       <section className="flex flex-col gap-3">
-        <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--muted)" }}>
-            Routines
-          </h3>
-          <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>
-            Toggle a routine on/off to enable or disable that module. Core routines are always available.
-          </p>
-        </div>
-        <RoutineTable
-          label="Core"
-          rows={coreRoutines}
-          onChange={updateRoutine}
-          isCore
-        />
-        <RoutineTable
-          label="Optional modules"
-          rows={moduleRoutines}
-          onChange={updateRoutine}
-          isCore={false}
-        />
+        <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--muted)" }}>
+          Routines
+        </h3>
+        <RoutineTable rows={routines} onChange={updateRoutine} />
       </section>
 
       {/* Save */}
@@ -359,20 +340,14 @@ export function ProjectSettingsForm({ projectId, initialValues, routineConfigs }
 }
 
 function RoutineTable({
-  label,
   rows,
   onChange,
-  isCore,
 }: {
-  label: string;
   rows: RoutineState[];
   onChange: (name: string, field: keyof RoutineState, value: string | boolean | null) => void;
-  isCore: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-xs" style={{ color: "var(--muted)" }}>{label}</span>
-      <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+    <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
@@ -452,7 +427,6 @@ function RoutineTable({
             })}
           </tbody>
         </table>
-      </div>
     </div>
   );
 }
