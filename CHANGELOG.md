@@ -14,6 +14,14 @@ Categories:
 
 ---
 
+## [2.41.4] — 2026-06-04
+
+### Updated commands
+- **language support** — `add-issue`, `claude-md-update`, `coolify-check-deployment`, `coolify-check-logs`, `install`, `self-update` now all read `language=` from `.darkflow` and use it for all output and GitHub issues
+- **coolify-check-logs** — fixed hardcoded Russian SSH permission question; now uses `language=` like all other commands
+
+---
+
 ## [2.41.2] — 2026-06-03
 
 ### Webapp
