@@ -36,7 +36,7 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 
 ## What gets created
 
-Issues with labels: `status:proposed`, `source:docs`, `area:docs`, `priority:p1`–`p3`
+Issues with labels: `status:proposed`, `source:docs`, `area:docs`, `priority:high` / `medium` (cosmetic/minor drift is noted in the snapshot, not filed)
 
 A dated snapshot at `docs/insights/docs-audit/YYYY-MM-DD.md` and a metrics file at `.darkflow.d/state/metrics/docs-audit.json`.
 
@@ -59,4 +59,4 @@ Runs after the other Sunday audits with 1-hour gaps so they don't overlap.
 
 - Use **Opus** — comparing documented claims against real schema, routes, events, and components needs full-codebase reasoning; Sonnet misses subtle drift.
 - Stub/placeholder doc files are reported as "not yet written", not as drift — no issues are created for them.
-- Drift becomes an issue only when it is actively misleading; cosmetic staleness stays `priority:p3`.
+- Drift becomes an issue only when it is actively misleading; cosmetic staleness is `low` and is noted in the snapshot rather than filed as an issue.

@@ -98,7 +98,7 @@ export default async function ProjectPage({
 
   if (!project) notFound();
 
-  const PRIORITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
+  const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
   const activeTab: TabKey = isTab(tab) ? tab : "issues";
 
   const sortedIssues = [...project.issues].sort((a, b) => {

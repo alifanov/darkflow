@@ -26,6 +26,8 @@ For each finding:
 
 Create a GitHub issue for each significant finding. Use labels: `status:proposed`, `source:ads`, `priority:*`.
 
+Priority vocabulary: `priority:critical` / `priority:high` / `priority:medium` / `priority:low`. **Only create issues for `critical` / `high` / `medium`** — `low`-priority findings are skipped (record them under Hypotheses in the snapshot instead).
+
 **Issue format (required):**
 
 - **Title**: action-oriented verb — "Pause wasted-spend keyword X", "Increase budget on campaign Y", "Add negative keyword Z" — never just a description of the observation
@@ -91,7 +93,7 @@ Save an ads snapshot so the Dark Flow worker can forward it to the web UI.
 
 Run `gh issue list --state open --json number,labels --limit 200`, then:
 - Count issues with label `source:ads` → `openIssues`
-- Count those with `priority:p0` or `priority:p1` → `criticalOpen`
+- Count those with `priority:critical` or `priority:high` → `criticalOpen`
 - Derive `status`: `"warning"` if criticalOpen > 0, `"ok"` otherwise
 
 Write `.darkflow.d/state/metrics/ads.json` (create parent directories if needed):

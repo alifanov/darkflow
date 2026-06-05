@@ -15,10 +15,10 @@ If `.darkflow` is missing, continue with the defaults.
 
 Pick exactly **one** open issue with the `status:approved` label, choosing strictly by priority. Walk the priority labels in this order and stop at the first level that has any issues:
 
-1. `priority:p0`
-2. `priority:p1`
-3. `priority:p2`
-4. `priority:p3`
+1. `priority:critical`
+2. `priority:high`
+3. `priority:medium`
+4. `priority:low`
 5. `status:approved` without any `priority:*` label (treat as lowest)
 
 Within the chosen level, take the **oldest** issue (smallest issue number). Concretely:
@@ -26,7 +26,7 @@ Within the chosen level, take the **oldest** issue (smallest issue number). Conc
 Issues with `action:reply` are handled exclusively by `mailbox-check` — skip them here.
 
 ```bash
-for p in p0 p1 p2 p3; do
+for p in critical high medium low; do
   n=$(gh issue list --state open --label "status:approved" --label "priority:$p" \
         --json number,labels \
         --jq '[.[] | select(.labels | map(.name) | index("action:reply") | not)]

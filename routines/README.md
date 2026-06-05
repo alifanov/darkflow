@@ -25,7 +25,7 @@ All routines and their default cron expressions:
 | `analytics-review` | `0 8 * * *` | Daily 8:00 — PostHog + recent commits → GitHub issues |
 | `observability-check` | `30 8 * * *` | Daily 8:30 — errors / latency → GitHub issues |
 | `gsc-check` | `0 8 * * 1` | Weekly Mon 8:00 — Google Search Console → GitHub issues |
-| `coolify-check-deployment` | `0 9 * * *` | Daily 9:00 — deployment status → `p0` issue on failed deploy |
+| `coolify-check-deployment` | `0 9 * * *` | Daily 9:00 — deployment status → `critical` issue on failed deploy |
 | `coolify-check-logs` | `30 9 * * *` | Daily 9:30 — runtime logs across all containers → issues |
 | `claude-md-update` | `0 9 * * 1-5` | Weekdays 9:00 — regenerates CLAUDE.md from codebase |
 | `architecture-review` | `0 2 * * 0` | Weekly Sun 2:00 — architectural analysis → GitHub issues |

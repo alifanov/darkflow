@@ -47,7 +47,7 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 
 ## What gets created
 
-Issues with labels: `status:proposed`, `source:manual`, `priority:p2`–`p3` (architectural debt is rarely urgent)
+Issues with labels: `status:proposed`, `source:manual`, `priority:medium` (architectural debt is rarely urgent; `low`-level debt is noted in the snapshot, not filed as an issue)
 
 Large findings (multi-day work) should be broken into sub-issues before approving.
 
@@ -68,5 +68,5 @@ All three run on Sunday with 1-hour gaps so they don't overlap.
 ## Notes
 
 - Use **Opus** — this skill reads the entire codebase; Sonnet misses inter-module patterns
-- Architectural issues are typically `priority:p2`/`p3` — they compound over time but rarely block releases
+- Architectural issues are typically `priority:medium` — they compound over time but rarely block releases (`low`-level debt is recorded in the snapshot rather than filed)
 - If the codebase is large, add to instructions: "Focus on `src/` and ignore `node_modules/`, `dist/`, generated files"

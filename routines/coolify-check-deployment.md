@@ -1,6 +1,6 @@
 # Coolify Check Deployment
 
-Daily check of the Coolify deployment pipeline — detects failed/red deploys and opens a `priority:p0` GitHub issue. Passive: it never triggers a deploy or fixes anything.
+Daily check of the Coolify deployment pipeline — detects failed/red deploys and opens a `priority:critical` GitHub issue. Passive: it never triggers a deploy or fixes anything.
 
 ---
 
@@ -35,5 +35,5 @@ Daily check of the Coolify deployment pipeline — detects failed/red deploys an
 ## Notes
 
 - Pairs with `coolify-check-logs` (runtime logs). This routine only looks at the deployment pipeline status.
-- Passive check — it creates a `priority:p0` issue on a failed deploy rather than auto-fixing.
+- Passive check — it creates a `priority:critical` issue on a failed deploy rather than auto-fixing.
 - Adapt step 1 if your deployment platform is different (Railway, Fly.io, etc.)

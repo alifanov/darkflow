@@ -40,5 +40,5 @@ Daily check of Coolify runtime logs — scans the logs of **every container** th
 - Pairs with `coolify-check-deployment` (deploy status). This routine only looks at runtime container logs.
 - **Multi-container apps:** if the app runs more than one container (replicas or a compose stack), the routine reads `docker logs` for every matching container over SSH — not just one.
 - **SSH required:** per-container logs are fetched over SSH (`docker logs`), since the `coolify` CLI can't target a single container. The connection always needs explicit approval — see Required integrations.
-- Runs at 9:30, after `coolify-check-deployment` (9:00), so a failed-deploy p0 is filed before log noise is reviewed.
+- Runs at 9:30, after `coolify-check-deployment` (9:00), so a failed-deploy `critical` issue is filed before log noise is reviewed.
 - Adapt step 1 if your deployment platform is different (Railway, Fly.io, etc.)

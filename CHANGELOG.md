@@ -14,6 +14,30 @@ Categories:
 
 ---
 
+## [2.44.0] — 2026-06-05
+
+### Updated label: priority taxonomy renamed to words
+
+- Renamed the four priority labels from the numeric `p0`/`p1`/`p2`/`p3` scheme to words, keeping the same colors:
+  - `priority:p0` → `priority:critical` (`#b60205`)
+  - `priority:p1` → `priority:high` (`#d93f0b`)
+  - `priority:p2` → `priority:medium` (`#fbca04`)
+  - `priority:p3` → `priority:low` (`#cccccc`)
+- Updated `install.sh` label definitions and the `gh label create` setup snippets in `docs/github-issues.md` (and the template copy).
+
+### Workflow: routines no longer file `low`-priority issues
+
+- All routines and slash commands now create GitHub issues **only for `critical` / `high` / `medium`**. `low`-priority findings are recorded in the run snapshot (`docs/insights/*`) instead of being opened as issues.
+- The `priority:low` label remains valid for manually created issues (`/darkflow:add-issue`); only the automated routines skip it.
+- Updated every issue-creating command template (`security-audit`, `vulnerability-check`, `observability-check`, `ads-review`, `design-audit`/`critique`/`harden`, `docs-audit`, `ux-audit`, `build-optimization`, `coolify-check-deployment`/`logs`, `mailbox-check`, `fix-issues`, `add-issue`) and the matching routine reference docs.
+- `criticalOpen` metric counters now match on `priority:critical` / `priority:high`.
+
+### Web UI
+
+- `PRIORITY_ORDER` in the project issues view now sorts `critical → high → medium → low` (previously only `high/medium/low`, which left `critical`/legacy values unsorted).
+
+---
+
 ## [2.43.0] — 2026-06-04
 
 ### Feature: Centralized project settings in the Web UI

@@ -8,7 +8,7 @@ Application **discovery** uses the official `coolify` CLI (not an MCP server). C
 > container, so this command reads them over SSH with `docker logs`. **You MUST get explicit
 > permission before opening any SSH connection:**
 > - **Interactive run:** ask the user plainly in `language=` — *"May I open an SSH connection to the Coolify server (`<host>`) to read container logs?"* — and wait for an explicit "yes". If denied, **stop** and report that container logs cannot be inspected without SSH access.
-> - **Unattended / scheduled run:** SSH must be pre-approved (host/user/key configured in `.darkflow`). If it is not configured, **skip** log fetching, say so in the output, and open a `priority:p3` issue titled "Coolify SSH access not configured for log checks".
+> - **Unattended / scheduled run:** SSH must be pre-approved (host/user/key configured in `.darkflow`). If it is not configured, **skip** log fetching, say so in the output, and open a `priority:medium` issue titled "Coolify SSH access not configured for log checks" (this is a check-blocker, so it is filed rather than skipped).
 
 ## Step 1 — Read project config
 
@@ -58,7 +58,7 @@ ssh <coolify_ssh> 'docker logs --tail 200 <container-name>'
 - Repeat for every container belonging to the app; evaluate each one separately — do not stop at the first container's logs.
 
 For each container, identify errors, restarts, crash loops, OOM kills, port conflicts, or missing env vars. For each significant problem found, create a GitHub issue:
-- Labels: `status:proposed`, `source:infra`, `priority:p1` for active failures, `priority:p2` for recurring warnings
+- Labels: `status:proposed`, `source:infra`, `priority:high` for active failures, `priority:medium` for recurring warnings
 - Title: include the affected container/service name when the app is multi-container
 - Body: paste the relevant log excerpt (truncated to ~30 lines) + which container it came from + what likely caused it
 

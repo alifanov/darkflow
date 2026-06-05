@@ -36,7 +36,7 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 
 ## What gets created
 
-Issues with labels: `status:proposed`, `source:build`, `priority:p1`–`p3`
+Issues with labels: `status:proposed`, `source:build`, `priority:high` / `medium` (`low`-impact optimizations are noted in the snapshot, not filed)
 
 A dated snapshot at `docs/insights/build-optimization/YYYY-MM-DD.md` and a metrics file at `.darkflow.d/state/metrics/build-optimization.json`.
 

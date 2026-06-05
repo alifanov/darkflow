@@ -30,8 +30,8 @@ Check the deployment history for failed/red deploys:
 coolify app deployments list APP_UUID
 ```
 
-- If the latest deployment is in a **failed or error state**: create a `priority:p0` GitHub issue:
-  - Labels: `status:proposed`, `source:infra`, `priority:p0`, `area:infra`
+- If the latest deployment is in a **failed or error state**: create a `priority:critical` GitHub issue:
+  - Labels: `status:proposed`, `source:infra`, `priority:critical`, `area:infra`
   - Title: "Fix failed deployment: <error summary>"
   - Body: the deployment metadata + identified error. For details of the failed deploy:
     ```bash

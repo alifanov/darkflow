@@ -14,7 +14,7 @@ Weekly design review using `impeccable:critique` — scored review with persona 
 ## What it does
 
 1. Runs `/impeccable:critique` against the project's UI
-2. Creates `status:proposed` GitHub issues for each finding (labels: `source:design`, `priority:p1/p2/p3`)
+2. Creates `status:proposed` GitHub issues for each finding (labels: `source:design`, `priority:high` / `medium`; minor polish is noted in the snapshot, not filed)
 3. Writes a snapshot to `docs/insights/design-critique/YYYY-MM-DD.md`
 4. Writes metrics to `.darkflow.d/state/metrics/design-critique.json`
 
