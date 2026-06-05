@@ -123,7 +123,7 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "Options:"
       echo "  --name NAME           Project name (default: directory name)"
-      echo "  --lang LANGUAGE       Language for agent outputs and issues (default: English)"
+      echo "  --lang LANGUAGE       Communication language for issues/comments/chat; product stays English (default: English)"
       echo "  --all                 Enable all optional modules non-interactively"
       echo "  -y, --yes             Accept defaults non-interactively (no optional modules)"
       echo "  --dry-run             Show what would change without applying anything"
@@ -305,7 +305,7 @@ if [[ -z "$LANGUAGE" ]]; then
     LANGUAGE="English"
   else
     echo ""
-    echo -e "${BOLD}Language${RESET} — used in GitHub issues, agent outputs, and CLAUDE.md"
+    echo -e "${BOLD}Communication language${RESET} — for GitHub issues, comments, commits, and chat. The product itself always stays in English."
     echo ""
     echo "  1) English (default)"
     echo "  2) Russian"
@@ -687,7 +687,8 @@ generate_darkflow_md() {
 
 HEREDOC
 
-  echo "**Language:** ${LANGUAGE} — use this language for GitHub issues, comments, commit messages, and all agent-facing text."
+  echo "**Communication language:** ${LANGUAGE} — use it ONLY for human-facing text you write *about* the work: GitHub issues, comments, commit messages, PR descriptions, and console/chat output."
+  echo "**Product language:** English — everything shipped *inside* the product is always written in English, regardless of the communication language: source code, identifiers, code comments, UI copy, user-facing strings, logs, and in-product docs. Setting the communication language to anything other than English never changes this."
   echo "**Main branch:** \`${MAIN_BRANCH}\`"
   if [[ "$MERGE_STRATEGY" == "direct" ]]; then
     echo "**Fix Issues strategy:** commit and push directly to \`${MAIN_BRANCH}\` — no pull requests."

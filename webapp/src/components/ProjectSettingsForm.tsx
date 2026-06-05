@@ -222,7 +222,7 @@ export function ProjectSettingsForm({ projectId, initialValues, routineConfigs }
         <InputField label="Name" value={name} onChange={setName} placeholder="My App" />
         <InputField label="Slug" value={slug} onChange={setSlug} placeholder="my-app" hint="Lowercase, dash-separated identifier" />
         <InputField label="Main branch" value={branch} onChange={setBranch} placeholder="main" />
-        <InputField label="Language" value={language} onChange={setLanguage} placeholder="English" hint="Used for issue text and agent output" />
+        <InputField label="Communication language" value={language} onChange={setLanguage} placeholder="English" hint="For issues, comments, commits & chat only — the product itself always stays in English" />
 
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--muted)" }}>

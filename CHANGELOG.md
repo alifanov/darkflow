@@ -14,6 +14,15 @@ Categories:
 
 ---
 
+## [2.45.0] — 2026-06-05
+
+- **Updated template** — Split the single **Language** setting into two explicit buckets to stop agents from writing the communication language into the product. `.darkflow.d/claude.md` now states a **Communication language** (the configured language — for GitHub issues, comments, commits, PR descriptions, and chat only) and a **Product language** (always English — all source code, identifiers, code comments, UI copy, user-facing strings, logs, and in-product docs stay in English regardless of the communication language).
+- **Updated template** — `fix-issues` command now explicitly reminds the agent that product code/strings are always English even when `language=` is set to something else.
+- **Updated installer** — Reworded the interactive language prompt and `--lang` help text to "Communication language", clarifying the product itself stays English.
+- **Web UI** — Project settings field relabeled "Communication language" with a hint that the product always stays English.
+
+---
+
 ## [2.44.0] — 2026-06-05
 
 ### Updated label: priority taxonomy renamed to words

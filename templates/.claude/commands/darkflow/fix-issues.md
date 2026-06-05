@@ -62,6 +62,8 @@ Read the title, body, and all comments carefully. If the issue references other 
 
 Implement all the changes needed for it.
 
+**Product language is always English.** The `language=` setting is the *communication* language (issues, comments, commits, chat) — it never changes what you write inside the product. All source code, identifiers, code comments, UI copy, user-facing strings, and logs you add must be in English, even when `language=` is set to something else.
+
 **Before merging or pushing — run quality checks:**
 
 Detect the project's tech stack and run all available checks. Stop at the first failure.
@@ -117,5 +119,5 @@ After landing, leave a comment on the issue with a brief summary of what was don
 
 Then close the issue.
 
-Language for GitHub comments and output: the `language=` value from `.darkflow`.
+Language for GitHub comments and output: the `language=` value from `.darkflow`. Code and everything shipped inside the product stays in English regardless of this value.
 
