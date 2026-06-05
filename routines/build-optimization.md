@@ -2,7 +2,7 @@
 
 Weekly audit of the project's build and deploy pipeline — maps how the project actually builds and ships, finds bottlenecks and inefficiencies, and creates `status:proposed` GitHub issues with concrete optimization proposals.
 
-This is a **proposal-only** routine. It identifies opportunities and does not apply changes itself (implementation goes through the normal approve → `fix-issues` path). Pairs with `coolify-check-deployment` and `coolify-check-logs`, which monitor the live deploy; `build-optimization` focuses on making that deploy faster and cheaper.
+This is a **proposal-only** routine. It identifies opportunities and does not apply changes itself (implementation goes through the normal approve → `fix-issues` path). Pairs with `coolify-check-deployment`, which monitors the live deploy; `build-optimization` focuses on making that deploy faster and cheaper.
 
 ---
 

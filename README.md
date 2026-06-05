@@ -135,7 +135,6 @@ The real power comes from scheduling Claude agents that run the loop automatical
 | [Observability check](routines/observability-check.md) | `30 8 * * *` | Daily 8:30 — SigNoz/errors/slow URLs → issues |
 | [GSC check](routines/gsc-check.md) | `0 8 * * 1` | Weekly Mon 8:00 — Google Search Console → issues |
 | [Coolify check deployment](routines/coolify-check-deployment.md) | `0 9 * * *` | Daily 9:00 — deployment status → `critical` issue on failed deploy |
-| [Coolify check logs](routines/coolify-check-logs.md) | `30 9 * * *` | Daily 9:30 — per-container logs via SSH → issues |
 | [CLAUDE.md update](routines/claude-md-update.md) | `0 9 * * 1-5` | Weekdays 9:00 — re-generates CLAUDE.md from codebase |
 | [Architecture review](routines/architecture-review.md) | `0 2 * * 0` | Weekly Sun 2:00 — `/improve-codebase-architecture` → issues |
 | [Security audit](routines/security-audit.md) | `0 3 * * 0` | Weekly Sun 3:00 — full security review → **auto-approved** issues |
@@ -177,7 +176,6 @@ Daily
   8:00  analytics-review     → status:proposed issues + analytics snapshot → syncs to web UI
   8:30  observability-check  → status:proposed issues
   9:00  coolify-check-deployment → deploy status, critical issue on failure
-  9:30  coolify-check-logs       → runtime logs (all containers) → issues
   9:00  claude-md-update     → keeps agent context in sync
 
 Weekly
@@ -225,7 +223,6 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | `/darkflow:observability-check` | Errors / slow queries / latency → GitHub issues |
 | `/darkflow:gsc-check` | Google Search Console → GitHub issues |
 | `/darkflow:coolify-check-deployment` | Deployment status check → `critical` issue on failed deploy |
-| `/darkflow:coolify-check-logs` | Per-container runtime logs via SSH (asks permission first) → issues |
 | `/darkflow:claude-md-update` | Regenerate CLAUDE.md from codebase |
 | `/darkflow:architecture-review` | Architectural analysis → GitHub issues + architecture snapshot |
 | `/darkflow:security-audit` | Full security review (static + runtime) → GitHub issues + security snapshot |

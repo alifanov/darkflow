@@ -14,6 +14,16 @@ Categories:
 
 ---
 
+## [2.46.0] — 2026-06-05
+
+- **Removed routine** — dropped `coolify-check-logs` (and its `/darkflow:coolify-check-deployment` companion command stays). When SigNoz (or any observability tool) collects container stdout/stderr through its logs pipeline, the per-container `docker logs` over SSH was redundant — application errors, crashes, and OOM signals already land in the observability tool. Reading raw container logs over SSH added a fragile permission gate and SSH-key requirement for data we already have.
+- **Removed command** — deleted the `templates/.claude/commands/darkflow/coolify-check-logs.md` template and the `coolify_ssh=` project setting it relied on (the SSH config lived only inside this command/routine; no installer or web-UI field collected it).
+- **Installer** — removed the `coolify-check-logs` command copy, its `routines.yml` block, the post-install summary lines, and the `checklist.yml` `cmd-`/`routine-` manifest items. The Coolify module now installs a single daily routine (`coolify-check-deployment`).
+- **Web UI** — removed the `coolify-check-logs` entry from the project settings routine list.
+- **Docs** — README, `routines/README.md`, `coolify-check-deployment.md`, and `build-optimization.md` updated to drop all `coolify-check-logs` references.
+
+---
+
 ## [2.45.0] — 2026-06-05
 
 - **Updated template** — Split the single **Language** setting into two explicit buckets to stop agents from writing the communication language into the product. `.darkflow.d/claude.md` now states a **Communication language** (the configured language — for GitHub issues, comments, commits, PR descriptions, and chat only) and a **Product language** (always English — all source code, identifiers, code comments, UI copy, user-facing strings, logs, and in-product docs stay in English regardless of the communication language).

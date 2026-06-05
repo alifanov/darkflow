@@ -22,7 +22,6 @@ const ALL_ROUTINES: {
   { name: "gsc-check",                defaultCron: "0 8 * * 1",   defaultModel: "sonnet", module: "gsc",              label: "Google Search Console (weekly Mon)" },
   { name: "ads-review",               defaultCron: "0 9 * * 1",   defaultModel: "sonnet", module: "ads",              label: "Paid ads performance (weekly Mon)" },
   { name: "coolify-check-deployment", defaultCron: "0 9 * * *",   defaultModel: "sonnet", module: "coolify",          label: "Deployment status (daily)" },
-  { name: "coolify-check-logs",       defaultCron: "30 9 * * *",  defaultModel: "sonnet", module: "coolify",          label: "Runtime logs (daily)" },
   { name: "claude-md-update",         defaultCron: "0 9 * * 1-5", defaultModel: "sonnet", module: "claude-update",    label: "Regenerate CLAUDE.md (weekdays)" },
   { name: "architecture-review",      defaultCron: "0 2 * * 0",   defaultModel: "opus",   module: "arch-review",      label: "Architectural analysis (weekly)" },
   { name: "mailbox-check",            defaultCron: "0 10 * * *",  defaultModel: "sonnet", module: "mailbox",          label: "IMAP inbox → issues (daily)" },
