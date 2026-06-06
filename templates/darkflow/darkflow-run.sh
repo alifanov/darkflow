@@ -466,78 +466,6 @@ run_in_pgid() {
   return $_rc
 }
 
-# ── Claude stream formatter ───────────────────────────────────────────────────
-# Reads stream-json NDJSON from stdin (claude --output-format stream-json),
-# extracts assistant text + tool_use + tool_result events, outputs Markdown.
-# Skips thinking blocks, system init, and duplicate final result events.
-
-format_claude_stream() {
-  local _jq_filter='
-    if .type == "assistant" then
-      (.message.content // [])[] | (
-        if .type == "text" and (.text | length) > 0 then
-          "\n" + .text + "\n"
-        elif .type == "tool_use" then
-          if .name == "Bash" then
-            "\n**Tool: Bash**\n\n```bash\n" + (.input.command // "") + "\n```\n"
-          else
-            "\n**Tool: " + .name + "**\n\n```json\n" + (.input | tojson) + "\n```\n"
-          end
-        else empty end
-      )
-    elif .type == "user" then
-      (.message.content // [])[] | (
-        if .type == "tool_result" then
-          "\n**Result" + (if (.is_error // false) then " (error)" else "" end) + ":**\n\n```text\n"
-            + (if (.content | type) == "string" then .content
-               else (.content // [] | map(.text // "") | join("\n")) end)
-            + "\n```\n"
-        else empty end
-      )
-    else empty end
-  '
-  # Process line-by-line so a single malformed event (e.g. NaN/Infinity in
-  # usage stats) does not abort the whole stream with a jq parse error.
-  while IFS= read -r _line; do
-    [[ -z "$_line" ]] && continue
-    printf '%s\n' "$_line" | jq -r "$_jq_filter" 2>/dev/null || true
-  done
-}
-
-# ── Codex stream formatter ────────────────────────────────────────────────────
-# Reads JSONL from stdin (codex exec --json), extracts agent messages, command
-# executions, and their output, and renders Markdown — the Codex counterpart of
-# format_claude_stream so UI logs read the same for either engine.
-# Codex's --json event schema is still experimental, so this parser is lenient:
-# it handles the current item-based shape ({"type":"item.completed","item":{…}})
-# and the older msg-based shape, and skips anything it doesn't recognise rather
-# than aborting. Re-verify the filter if Codex changes its event format.
-
-format_codex_stream() {
-  local _jq_filter='
-    (.item // .msg // {}) as $it
-    | ($it.type // .type // "") as $t
-    | if ($t == "agent_message" or $t == "assistant_message") then
-        (($it.text // $it.message // "")
-          | if length > 0 then "\n" + . + "\n" else empty end)
-      elif $t == "command_execution" then
-        "\n**Tool: Shell**\n\n```bash\n" + ($it.command // "") + "\n```\n"
-          + (($it.aggregated_output // $it.output // "")
-             | if length > 0 then
-                 "\n**Result"
-                 + (if (($it.exit_code // 0) != 0) then " (error)" else "" end)
-                 + ":**\n\n```text\n" + . + "\n```\n"
-               else "" end)
-      elif ($t == "file_change" or $t == "patch_apply" or $t == "mcp_tool_call") then
-        "\n**Tool: " + $t + "**\n\n```json\n" + ($it | tojson) + "\n```\n"
-      else empty end
-  '
-  while IFS= read -r _line; do
-    [[ -z "$_line" ]] && continue
-    printf '%s\n' "$_line" | jq -r "$_jq_filter" 2>/dev/null || true
-  done
-}
-
 # ── Routine execution ─────────────────────────────────────────────────────────
 
 # Validates the active GH token by hitting a lightweight endpoint.
@@ -627,20 +555,23 @@ run_routine() {
     # markdown directly as the prompt (same file Claude resolves the command
     # from). Codex has no per-tool permission allowlist — map every permission
     # mode to autonomous, sandboxed, no-prompt execution.
+    # Codex's stdout is already human-readable, so we store it verbatim.
     local _cmd_file="${PROJECT_ROOT}/.claude/commands/darkflow/${name}.md"
     if [[ -f "$_cmd_file" ]]; then
       run_in_pgid codex exec --model "${model}" \
-        --sandbox workspace-write --ask-for-approval never --json \
+        --sandbox workspace-write --ask-for-approval never \
         "$(cat "$_cmd_file")" > "$_stream_file" || exit_code=$?
     else
       log "ERROR  ${name} — engine=codex but command file missing: ${_cmd_file}"
       exit_code=1
     fi
-    agent_output=$(format_codex_stream < "$_stream_file") || agent_output=""
+    agent_output=$(cat "$_stream_file") || agent_output=""
   else
+    # Claude's default (text) output is the final assistant message — stored
+    # verbatim, no transcript parsing.
     run_in_pgid claude -p "/darkflow:${name}" --model "${model}" "${perm_args[@]}" \
-      --output-format stream-json --verbose > "$_stream_file" || exit_code=$?
-    agent_output=$(format_claude_stream < "$_stream_file") || agent_output=""
+      > "$_stream_file" || exit_code=$?
+    agent_output=$(cat "$_stream_file") || agent_output=""
   fi
   rm -f "$_stream_file"
   _CLEANUP_FILES=("${_CLEANUP_FILES[@]/$_stream_file}")
@@ -1087,8 +1018,8 @@ check_for_update() {
     _su_stream=$(mktemp)
     _CLEANUP_FILES+=("$_su_stream")
     run_in_pgid claude -p "/darkflow:self-update" --model sonnet --permission-mode bypassPermissions \
-      --output-format stream-json --verbose > "$_su_stream" || exit_code=$?
-    claude_output=$(format_claude_stream < "$_su_stream") || claude_output=""
+      > "$_su_stream" || exit_code=$?
+    claude_output=$(cat "$_su_stream") || claude_output=""
     rm -f "$_su_stream"
     _CLEANUP_FILES=("${_CLEANUP_FILES[@]/$_su_stream}")
   else

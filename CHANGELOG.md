@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.47.1] — 2026-06-06
+
+- **Dispatcher** — dropped the routine transcript parsers for both engines. The Web UI log `output` now stores each run's final output verbatim: Claude runs via plain `claude -p` (default text output, no `--output-format stream-json --verbose`), Codex via plain `codex exec` (no `--json`). Removed `format_claude_stream` / `format_codex_stream` and the per-event Markdown rendering — the parsing was cosmetic only (it never affected what a routine did) and the engines' own output is already readable. Logs lose the step-by-step tool/result breakdown but keep the final result.
+
 ## [2.47.0] — 2026-06-06
 
 - **New feature** — per-routine **engine** switch (`claude` | `codex`). Each routine can now run via Claude Code (the default, unchanged) or OpenAI's Codex CLI, selectable from the Web UI routine-settings table next to the model dropdown. Default is `claude` everywhere, so existing installs are unaffected.
