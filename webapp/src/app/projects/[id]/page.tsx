@@ -6,6 +6,7 @@ import { DeleteProjectButton } from "@/components/DeleteProjectButton";
 import { LocalTime } from "@/components/LocalTime";
 import { LogRow } from "@/components/LogRow";
 import { ProjectSettingsForm } from "@/components/ProjectSettingsForm";
+import { RoutineConfigForm } from "@/components/RoutineConfigForm";
 
 export const dynamic = "force-dynamic";
 
@@ -210,7 +211,13 @@ export default async function ProjectPage({
 
       {activeTab === "logs" && <RoutineLogsList logs={project.routineLogs} />}
 
-      {activeTab === "routines" && <RoutineConfigList configs={project.routineConfigs} />}
+      {activeTab === "routines" && (
+        <RoutineConfigForm
+          projectId={project.id}
+          routineConfigs={project.routineConfigs}
+          modules={project.modules}
+        />
+      )}
 
       {activeTab === "commits" && <CommitList commits={project.commits} />}
 
@@ -223,14 +230,12 @@ export default async function ProjectPage({
             branch: project.branch,
             language: project.language,
             mergeStrategy: project.mergeStrategy,
-            modules: project.modules,
             maxConcurrent: project.maxConcurrent,
             posthogProjectId: project.posthogProjectId ?? null,
             obsTool: project.obsTool ?? null,
             obsUrl: project.obsUrl ?? null,
             settingsUpdatedAt: project.settingsUpdatedAt ?? null,
           }}
-          routineConfigs={project.routineConfigs}
         />
       )}
     </div>
@@ -447,65 +452,6 @@ function CommitList({
               </td>
               <td className="py-3 px-4 text-xs" style={{ color: "var(--muted)" }}>
                 <LocalTime date={c.committedAt} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </TableContainer>
-    </section>
-  );
-}
-
-function RoutineConfigList({
-  configs,
-}: {
-  configs: {
-    id: string;
-    name: string;
-    cron: string | null;
-    model: string | null;
-    enabled: boolean;
-    permissionMode: string | null;
-    updatedAt: Date;
-  }[];
-}) {
-  if (configs.length === 0) {
-    return (
-      <p style={{ color: "var(--muted)" }}>
-        Routine configs have not been received from the worker yet. They will appear after the first
-        sync with an updated version of <span className="font-mono">darkflow-run.sh</span>.
-      </p>
-    );
-  }
-  return (
-    <section>
-      <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text)" }}>
-        Routines ({configs.length})
-      </h2>
-      <TableContainer>
-        <TableHead cols={["Name", "Status", "Model", "Cron"]} />
-        <tbody>
-          {configs.map((c) => (
-            <tr key={c.id} className="project-row" style={{ borderBottom: "1px solid var(--border)" }}>
-              <td className="py-3 px-4 font-mono font-semibold" style={{ color: "var(--text)" }}>
-                {c.name}
-              </td>
-              <td className="py-3 px-4">
-                <span
-                  className="rounded-full px-2 py-0.5 text-xs font-medium"
-                  style={{
-                    background: c.enabled ? "#1a3a1a" : "#1a1a1a",
-                    color: c.enabled ? "var(--green)" : "var(--muted)",
-                  }}
-                >
-                  {c.enabled ? "enabled" : "disabled"}
-                </span>
-              </td>
-              <td className="py-3 px-4 font-mono text-xs" style={{ color: "var(--text)" }}>
-                {c.model ?? "—"}
-              </td>
-              <td className="py-3 px-4 font-mono text-xs" style={{ color: "var(--text)" }}>
-                {c.cron ?? "—"}
               </td>
             </tr>
           ))}

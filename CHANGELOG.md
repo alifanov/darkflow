@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.49.0] — 2026-06-06
+
+- **Web UI** — moved the per-routine settings table (enable/disable, engine, model, cron) out of the **Settings** tab and into the **Routines** tab, which was previously read-only. The Routines tab is now where routines are both viewed and edited, with its own **Save routines** button; it always shows the full canonical routine list rather than only the rows already synced from the worker. The Settings tab keeps Project + Integrations only. Extracted the routine logic into a new `RoutineConfigForm` component; `RoutineConfigList` was removed. Saving still uses the same `PATCH /api/projects/[id]` endpoint — the Routines form now owns the derived `modules` array, the Settings form no longer sends `modules`/`routines`.
+
 ## [2.48.0] — 2026-06-06
 
 - **Removed command** — dropped the `/darkflow:ux-audit` command. It was a manual, always-on UX review that called the bare `/impeccable` skill and overlapped almost entirely with the scheduled `impeccable`-module routines `design-audit` (`impeccable:audit`) and `design-critique` (`impeccable:critique`) — same engine, redundant coverage, but a separate `source:ux-audit` label that split the design backlog. UX/visual review now lives entirely in the `design-audit` / `design-critique` / `design-harden` routines (label `source:design`).

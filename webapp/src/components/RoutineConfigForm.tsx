@@ -1,0 +1,319 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+// Which models each engine offers. Used to populate the per-routine model
+// dropdown and to reset an out-of-range model when the engine is switched.
+const MODELS_BY_ENGINE: Record<string, string[]> = {
+  claude: ["sonnet", "opus"],
+  codex: ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini"],
+};
+
+function defaultModelFor(engine: string, fallback: string): string {
+  return engine === "codex" ? "gpt-5.5" : fallback;
+}
+
+// Every routine with its default schedule and the module it belongs to (null = core, always-on).
+// claudeOnly marks routines whose command prompt invokes Claude-only skills
+// (/security-review, /improve-codebase-architecture, /impeccable:*) — they run
+// under Codex but with degraded quality, so the UI warns when codex is selected.
+const ALL_ROUTINES: {
+  name: string;
+  defaultCron: string;
+  defaultModel: string;
+  module: string | null;  // null = core (fix-issues, security-audit, etc.)
+  label: string;          // human-readable description
+  claudeOnly?: boolean;   // command body depends on a Claude-only skill
+}[] = [
+  // Core — always-on, no optional module
+  { name: "fix-issues",          defaultCron: "0 * * * *",   defaultModel: "sonnet", module: null,               label: "Pick up approved issues → fix → merge" },
+  { name: "security-audit",      defaultCron: "0 3 * * 0",   defaultModel: "opus",   module: null,               label: "Full security review (weekly)", claudeOnly: true },
+  { name: "vulnerability-check", defaultCron: "0 6 * * *",   defaultModel: "sonnet", module: null,               label: "Dependabot + code scanning (daily)" },
+  { name: "build-optimization",  defaultCron: "0 4 * * 0",   defaultModel: "opus",   module: null,               label: "Build + deploy pipeline audit (weekly)" },
+  // Optional modules
+  { name: "analytics-review",         defaultCron: "0 8 * * *",   defaultModel: "sonnet", module: "analytics",        label: "PostHog + commits → issues (daily)" },
+  { name: "observability-check",      defaultCron: "30 8 * * *",  defaultModel: "sonnet", module: "observability",    label: "Errors / latency → issues (daily)" },
+  { name: "gsc-check",                defaultCron: "0 8 * * 1",   defaultModel: "sonnet", module: "gsc",              label: "Google Search Console (weekly Mon)" },
+  { name: "ads-review",               defaultCron: "0 9 * * 1",   defaultModel: "sonnet", module: "ads",              label: "Paid ads performance (weekly Mon)" },
+  { name: "coolify-check-deployment", defaultCron: "0 9 * * *",   defaultModel: "sonnet", module: "coolify",          label: "Deployment status (daily)" },
+  { name: "claude-md-update",         defaultCron: "0 9 * * 1-5", defaultModel: "sonnet", module: "claude-update",    label: "Regenerate CLAUDE.md (weekdays)" },
+  { name: "architecture-review",      defaultCron: "0 2 * * 0",   defaultModel: "opus",   module: "arch-review",      label: "Architectural analysis (weekly)", claudeOnly: true },
+  { name: "mailbox-check",            defaultCron: "0 10 * * *",  defaultModel: "sonnet", module: "mailbox",          label: "IMAP inbox → issues (daily)" },
+  { name: "docs-audit",               defaultCron: "0 5 * * 0",   defaultModel: "opus",   module: "docs-audit",       label: "Docs ↔ code drift (weekly)" },
+  { name: "product-overview",         defaultCron: "0 7 * * 1",   defaultModel: "opus",   module: "product-overview", label: "Product state digest (weekly Mon)" },
+  { name: "design-audit",             defaultCron: "0 10 * * 6",  defaultModel: "opus",   module: "impeccable",       label: "Design quality audit (weekly Sat)", claudeOnly: true },
+  { name: "design-critique",          defaultCron: "0 11 * * 6",  defaultModel: "opus",   module: "impeccable",       label: "Scored design review (weekly Sat)", claudeOnly: true },
+  { name: "design-harden",            defaultCron: "0 10 1 * *",  defaultModel: "opus",   module: "impeccable",       label: "Production-readiness check (monthly)", claudeOnly: true },
+];
+
+// Derive modules array from the set of enabled module routines
+function modulesFromRoutines(routines: RoutineState[]): string[] {
+  const mods = new Set<string>();
+  for (const r of routines) {
+    const def = ALL_ROUTINES.find((d) => d.name === r.name);
+    if (def?.module && r.enabled) mods.add(def.module);
+  }
+  return Array.from(mods);
+}
+
+interface RoutineConfig {
+  name: string;
+  cron: string | null;
+  model: string | null;
+  engine: string | null;
+  enabled: boolean;
+  permissionMode: string | null;
+}
+
+interface RoutineState {
+  name: string;
+  cron: string;
+  model: string;
+  engine: string;
+  enabled: boolean;
+  permissionMode: string | null;
+}
+
+// Build the initial merged routine state:
+// - Start from ALL_ROUTINES as the canonical list
+// - Override with any existing DB RoutineConfig rows
+// - For module routines with no DB row: enabled = module is in the modules[] array
+function buildInitialRoutines(configs: RoutineConfig[], modules: string[]): RoutineState[] {
+  const configMap = new Map(configs.map((c) => [c.name, c]));
+  return ALL_ROUTINES.map((def) => {
+    const existing = configMap.get(def.name);
+    if (existing) {
+      return {
+        name: def.name,
+        cron: existing.cron ?? def.defaultCron,
+        model: existing.model ?? def.defaultModel,
+        engine: existing.engine ?? "claude",
+        enabled: existing.enabled,
+        permissionMode: existing.permissionMode,
+      };
+    }
+    // No DB row yet — derive enabled from the modules array for module routines;
+    // core routines default to enabled.
+    const enabledDefault = def.module ? modules.includes(def.module) : true;
+    return {
+      name: def.name,
+      cron: def.defaultCron,
+      model: def.defaultModel,
+      engine: "claude",
+      enabled: enabledDefault,
+      permissionMode: null,
+    };
+  });
+}
+
+interface RoutineConfigFormProps {
+  projectId: string;
+  routineConfigs: RoutineConfig[];
+  modules: string[];
+}
+
+export function RoutineConfigForm({ projectId, routineConfigs, modules }: RoutineConfigFormProps) {
+  const router = useRouter();
+
+  const [routines, setRoutines] = useState<RoutineState[]>(
+    buildInitialRoutines(routineConfigs, modules)
+  );
+
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const updateRoutine = (routineName: string, field: keyof RoutineState, value: string | boolean | null) => {
+    setRoutines((prev) =>
+      prev.map((r) => (r.name === routineName ? { ...r, [field]: value } : r))
+    );
+  };
+
+  const save = async () => {
+    setStatus("saving");
+    setErrorMsg("");
+    try {
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          modules: modulesFromRoutines(routines),
+          routines: routines.map((r) => ({
+            name: r.name,
+            cron: r.cron || null,
+            model: r.model,
+            engine: r.engine,
+            enabled: r.enabled,
+            permissionMode: r.permissionMode,
+          })),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Save failed");
+      }
+      setStatus("saved");
+      router.refresh();
+      setTimeout(() => setStatus("idle"), 3000);
+    } catch (e) {
+      setStatus("error");
+      setErrorMsg(e instanceof Error ? e.message : "Save failed");
+    }
+  };
+
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>
+        Routines
+      </h2>
+      <RoutineTable rows={routines} onChange={updateRoutine} />
+
+      <div className="flex items-center gap-3 mt-1">
+        <button
+          onClick={save}
+          disabled={status === "saving"}
+          className="text-sm px-4 py-2 rounded cursor-pointer font-medium"
+          style={{
+            background: "var(--accent)",
+            color: "#fff",
+            border: "none",
+            opacity: status === "saving" ? 0.6 : 1,
+          }}
+        >
+          {status === "saving" ? "Saving…" : "Save routines"}
+        </button>
+        {status === "saved" && (
+          <span className="text-sm" style={{ color: "var(--green)" }}>Saved ✓</span>
+        )}
+        {status === "error" && (
+          <span className="text-sm" style={{ color: "var(--red)" }}>{errorMsg || "Failed to save"}</span>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function RoutineTable({
+  rows,
+  onChange,
+}: {
+  rows: RoutineState[];
+  onChange: (name: string, field: keyof RoutineState, value: string | boolean | null) => void;
+}) {
+  return (
+    <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
+              {["Routine", "Enabled", "Engine", "Model", "Cron"].map((col) => (
+                <th
+                  key={col}
+                  className="py-2 px-3 text-xs font-medium uppercase tracking-wider text-left"
+                  style={{ color: "var(--muted)" }}
+                >
+                  {col}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const def = ALL_ROUTINES.find((d) => d.name === r.name);
+              return (
+                <tr
+                  key={r.name}
+                  style={{
+                    borderBottom: "1px solid var(--border)",
+                    opacity: r.enabled ? 1 : 0.45,
+                  }}
+                >
+                  <td className="py-2 px-3" style={{ color: "var(--text)" }}>
+                    <span className="font-mono font-semibold">{r.name}</span>
+                    {r.engine === "codex" && def?.claudeOnly && (
+                      <span
+                        className="ml-1.5 cursor-help"
+                        title="This routine's command uses a Claude-only skill — it runs under Codex but with degraded quality."
+                      >
+                        ⚠️
+                      </span>
+                    )}
+                    {def?.label && (
+                      <span className="block text-xs mt-0.5" style={{ color: "var(--muted)" }}>
+                        {def.label}
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-2 px-3">
+                    <input
+                      type="checkbox"
+                      checked={r.enabled}
+                      onChange={(e) => onChange(r.name, "enabled", e.target.checked)}
+                      className="cursor-pointer"
+                      style={{ accentColor: "var(--accent)" }}
+                    />
+                  </td>
+                  <td className="py-2 px-3">
+                    <select
+                      value={r.engine}
+                      onChange={(e) => {
+                        const newEngine = e.target.value;
+                        onChange(r.name, "engine", newEngine);
+                        // Reset the model if it isn't valid for the new engine.
+                        const allowed = MODELS_BY_ENGINE[newEngine] ?? MODELS_BY_ENGINE.claude;
+                        if (!allowed.includes(r.model)) {
+                          onChange(r.name, "model", defaultModelFor(newEngine, def?.defaultModel ?? "sonnet"));
+                        }
+                      }}
+                      className="text-xs font-mono px-2 py-0.5 rounded cursor-pointer"
+                      style={{
+                        background: "var(--surface)",
+                        border: "1px solid var(--border)",
+                        color: "var(--text)",
+                        outline: "none",
+                      }}
+                    >
+                      <option value="claude">claude</option>
+                      <option value="codex">codex</option>
+                    </select>
+                  </td>
+                  <td className="py-2 px-3">
+                    <select
+                      value={r.model}
+                      onChange={(e) => onChange(r.name, "model", e.target.value)}
+                      className="text-xs font-mono px-2 py-0.5 rounded cursor-pointer"
+                      style={{
+                        background: "var(--surface)",
+                        border: "1px solid var(--border)",
+                        color: "var(--text)",
+                        outline: "none",
+                      }}
+                    >
+                      {(MODELS_BY_ENGINE[r.engine] ?? MODELS_BY_ENGINE.claude).map((m) => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="py-2 px-3">
+                    <input
+                      type="text"
+                      value={r.cron}
+                      onChange={(e) => onChange(r.name, "cron", e.target.value)}
+                      placeholder="0 * * * *"
+                      className="text-xs font-mono px-2 py-0.5 rounded"
+                      style={{
+                        background: "var(--surface)",
+                        border: "1px solid var(--border)",
+                        color: "var(--text)",
+                        outline: "none",
+                        width: 130,
+                      }}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+    </div>
+  );
+}
