@@ -1377,7 +1377,28 @@ YAML
 
       echo ""
     } > ".darkflow.d/routines.yml"
-    success "Created .darkflow.d/routines.yml"
+
+    # Stagger routine minutes per-project so independent projects don't all
+    # dispatch on the same minute (e.g. every fix-issues at :00) and saturate
+    # the global concurrency semaphore. Offset is deterministic from the slug,
+    # so the same project always lands on the same minute; relative spacing
+    # between a project's own routines is preserved.
+    _cron_offset=$(( $(printf '%s' "$SLUG" | cksum | cut -d' ' -f1) % 60 ))
+    _stagger_tmp=$(mktemp)
+    awk -v off="$_cron_offset" '
+      /^[[:space:]]+cron:[[:space:]]*"/ && match($0, /"[^"]*"/) {
+        q = substr($0, RSTART + 1, RLENGTH - 2)
+        n = split(q, f, " ")
+        if (f[1] ~ /^[0-9]+$/) {
+          f[1] = (f[1] + off) % 60
+          nq = f[1]; for (i = 2; i <= n; i++) nq = nq " " f[i]
+          sub(/"[^"]*"/, "\"" nq "\"", $0)
+        }
+      }
+      { print }
+    ' ".darkflow.d/routines.yml" > "$_stagger_tmp" && mv "$_stagger_tmp" ".darkflow.d/routines.yml"
+
+    success "Created .darkflow.d/routines.yml (minute offset +${_cron_offset})"
   else
     info "Would create: .darkflow.d/routines.yml"
   fi
@@ -1504,6 +1525,9 @@ echo "  vulnerability-check  0 6 * * *      GitHub Dependabot + code scanning �
 [[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-audit         0 10 * * 6     Design quality check (impeccable:audit) → GitHub issues"
 [[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-critique      0 11 * * 6     Scored design review (impeccable:critique) → GitHub issues"
 [[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-harden        0 10 1 * *     Production-readiness review (impeccable:harden) → GitHub issues"
+echo ""
+echo -e "  ${DIM}Minutes shown are baselines; this project's actual cron minute is offset by"
+echo -e "  +$(( $(printf '%s' "$SLUG" | cksum | cut -d' ' -f1) % 60 )) so independent projects don't all dispatch on the same minute. See routines.yml.${RESET}"
 echo ""
 echo -e "  Run manually:  ${DIM}bash .darkflow.d/darkflow-run.sh <name>${RESET}"
 echo -e "  Show status:   ${DIM}bash .darkflow.d/darkflow-run.sh --list${RESET}"

@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.52.0] — 2026-06-06
+
+- **Installer** — `routines.yml` cron minutes are now **staggered per-project**. On generation, every numeric cron minute is shifted by a deterministic offset derived from the project slug (`cksum(slug) % 60`), so independent projects on the same machine no longer all dispatch on minute `:00`. Relative spacing between a project's own routines is preserved (e.g. an `:00` and a `:30` routine stay 30 minutes apart). This prevents the global concurrency semaphore (`max_concurrent`, default 3) from being saturated every hour by ~all projects firing `fix-issues` simultaneously and thrashing through `DEFER`/retry cycles. The post-install Routines summary notes the project's offset.
+
+---
+
 ## [2.51.0] — 2026-06-06
 
 - **New routine** — added the optional **Code health** module (`fallow`): a weekly `code-health` routine (Sun 7:00, Sonnet) that runs [fallow](https://github.com/fallow-rs/fallow) — deterministic codebase intelligence for **TypeScript/JavaScript only** — to find dead code, duplication, circular dependencies, complexity hotspots, and dependency-hygiene problems, then files high-confidence `status:proposed` / `source:code-health` issues. Proposal-only; snapshots to `docs/insights/code-health/YYYY-MM-DD.md`, metrics to `.darkflow.d/state/metrics/code-health.json`. The model only triages fallow's deterministic JSON output and filters false positives (public API surface, framework entry points, dynamically-referenced symbols) — hence Sonnet, not Opus. Positioned to complement `architecture-review` without overlap: fallow owns dead code / dupes / deps / complexity, `architecture-review` owns coupling and structural judgment.
