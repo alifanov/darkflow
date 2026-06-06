@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [2.48.0] — 2026-06-06
+
+- **Removed command** — dropped the `/darkflow:ux-audit` command. It was a manual, always-on UX review that called the bare `/impeccable` skill and overlapped almost entirely with the scheduled `impeccable`-module routines `design-audit` (`impeccable:audit`) and `design-critique` (`impeccable:critique`) — same engine, redundant coverage, but a separate `source:ux-audit` label that split the design backlog. UX/visual review now lives entirely in the `design-audit` / `design-critique` / `design-harden` routines (label `source:design`).
+- **Removed label** — dropped the `source:ux-audit` GitHub label (from `install.sh` and the `github-issues.md` taxonomy + setup script). Existing issues keep the label; it is simply no longer created or referenced.
+- **Installer** — removed the `cmd-ux-audit` checklist entry, the `ux-audit.md` `smart_update_template` line, and the `source:ux-audit` label creation. Deleted `templates/.claude/commands/darkflow/ux-audit.md`.
+- **Workflow** — removed the UX-audit row from `agent-workflow.md` (data-sources table) in both the live docs and the templates.
+
 ## [2.47.2] — 2026-06-06
 
 - **Web UI** — refreshed the Codex model dropdown to the current Codex CLI lineup: `gpt-5.5` (default), `gpt-5.4`, `gpt-5.4-mini`. Dropped the deprecated `gpt-5` / `gpt-5-mini` slugs, and `defaultModelFor()` now returns `gpt-5.5` when switching a routine to Codex. `gpt-5.3-codex-spark` is intentionally omitted (ChatGPT Pro–only preview). Codex CLI still accepts any model the account can reach via `--model`; this only changes what the UI offers.
