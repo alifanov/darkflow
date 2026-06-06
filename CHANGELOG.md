@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.50.0] — 2026-06-06
+
+- **New command** — added `/darkflow:grill`, an interactive (human-in-the-loop) command adapted from Matt Pocock's `grill-with-docs` skill. It pressure-tests a plan against the existing domain model — asking one question at a time, exploring the codebase before asking, challenging terminology, stress-testing relationships with scenarios, and cross-referencing claims against code. Unlike the autonomous audit commands it creates no GitHub issues or snapshots; instead it updates documentation inline. Adapted to Dark Flow's existing doc schema rather than the skill's own files: the glossary maps to `docs/product/glossary.md` (kept strictly implementation-free) and ADRs to `docs/decisions/` using the existing `TEMPLATE.md` and `NNNN-slug.md` numbering. The skill's multi-context `CONTEXT-MAP.md` layer was dropped (Dark Flow uses a single `docs/` tree). Wired as an always-installed command (no module gate, no routine, no cron): `install.sh` template copy + claude.md command list, `checklist.yml` `cmd-grill` (copy-template, picked up by existing projects on `self-update`), and README under a new **Interactive commands** section.
+
 ## [2.49.0] — 2026-06-06
 
 - **Web UI** — moved the per-routine settings table (enable/disable, engine, model, cron) out of the **Settings** tab and into the **Routines** tab, which was previously read-only. The Routines tab is now where routines are both viewed and edited, with its own **Save routines** button; it always shows the full canonical routine list rather than only the rows already synced from the worker. The Settings tab keeps Project + Integrations only. Extracted the routine logic into a new `RoutineConfigForm` component; `RoutineConfigList` was removed. Saving still uses the same `PATCH /api/projects/[id]` endpoint — the Routines form now owns the derived `modules` array, the Settings form no longer sends `modules`/`routines`.

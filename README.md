@@ -229,6 +229,14 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | `/darkflow:vulnerability-check` | GitHub Dependabot + code/secret scanning alerts → GitHub issues |
 | `/darkflow:build-optimization` | Build + deploy pipeline analysis → optimization issues |
 
+### Interactive commands
+
+Human-in-the-loop, for planning/design — these ask questions and wait for answers; they do **not** create issues, snapshots, or run autonomously.
+
+| Command | What it does |
+|---|---|
+| `/darkflow:grill` | Pressure-test a plan against the domain model — sharpens terminology, updates `docs/product/glossary.md` and `docs/decisions/` (ADRs) inline |
+
 Routine commands automatically call `bash .darkflow.d/get-config.sh` before running — this fetches the latest project settings (branch, language, merge strategy, modules, routines) from the **Web UI Settings tab** and refreshes the local `.darkflow` cache. If the server is unreachable, commands fall back to the cached values silently.
 
 **To edit project settings:** open the Web UI → project detail → **Settings** tab. Changes take effect the next time a routine or command runs. The local `.darkflow` file is now a cache; the database is the source of truth.

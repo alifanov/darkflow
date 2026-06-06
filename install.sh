@@ -779,6 +779,9 @@ HEREDOC
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-audit\` — five-dimension design quality check → GitHub issues"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-critique\` — scored design review with persona tests → GitHub issues"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-harden\` — production-readiness review (edge cases, i18n, error states) → GitHub issues"
+  echo ""
+  echo "Interactive commands (planning/design, human-in-the-loop — no issues or snapshots):"
+  echo "- \`/darkflow:grill\` — pressure-test a plan against the domain model; updates glossary + ADRs inline"
 }
 
 # Writes .darkflow.d/claude.md with full Dark Flow instructions, then ensures
@@ -1099,6 +1102,7 @@ smart_update_template ".claude/commands/darkflow/update-config.md"              
 smart_update_template ".claude/commands/darkflow/docs-audit.md"                   ".claude/commands/darkflow/docs-audit.md"
 smart_update_template ".claude/commands/darkflow/product-overview.md"             ".claude/commands/darkflow/product-overview.md"
 smart_update_template ".claude/commands/darkflow/build-optimization.md"          ".claude/commands/darkflow/build-optimization.md"
+smart_update_template ".claude/commands/darkflow/grill.md"                       ".claude/commands/darkflow/grill.md"
 smart_update_template ".claude/commands/darkflow/design-audit.md"                ".claude/commands/darkflow/design-audit.md"
 smart_update_template ".claude/commands/darkflow/design-critique.md"             ".claude/commands/darkflow/design-critique.md"
 smart_update_template ".claude/commands/darkflow/design-harden.md"               ".claude/commands/darkflow/design-harden.md"
