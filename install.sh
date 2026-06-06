@@ -35,6 +35,7 @@ MOD_MAILBOX=""
 MOD_DOCS_AUDIT=""
 MOD_PRODUCT_OVERVIEW=""
 MOD_IMPECCABLE=""
+MOD_FALLOW=""
 
 OBS_TOOL=""
 OBS_URL=""
@@ -82,7 +83,7 @@ while [[ $# -gt 0 ]]; do
                           MOD_ADS=true; MOD_COOLIFY=true; MOD_CLAUDE_UPDATE=true
                           MOD_ARCH_REVIEW=true; MOD_MAILBOX=true
                           MOD_DOCS_AUDIT=true; MOD_PRODUCT_OVERVIEW=true
-                          MOD_IMPECCABLE=true
+                          MOD_IMPECCABLE=true; MOD_FALLOW=true
                           shift ;;
     --with-analytics)     MOD_ANALYTICS=true; shift ;;
     --with-observability) MOD_OBSERVABILITY=true; shift ;;
@@ -106,6 +107,8 @@ while [[ $# -gt 0 ]]; do
     --no-product-overview)   MOD_PRODUCT_OVERVIEW=false; shift ;;
     --with-impeccable)       MOD_IMPECCABLE=true; shift ;;
     --no-impeccable)         MOD_IMPECCABLE=false; shift ;;
+    --with-fallow)           MOD_FALLOW=true; shift ;;
+    --no-fallow)             MOD_FALLOW=false; shift ;;
     --obs-tool)           OBS_TOOL="$2"; shift 2 ;;
     --obs-url)            OBS_URL="$2"; shift 2 ;;
     --obs-api-key)        OBS_API_KEY="$2"; shift 2 ;;
@@ -138,6 +141,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --with-docs-audit     Weekly docs <-> code drift check routine"
       echo "  --with-product-overview  Weekly product overview digest routine"
       echo "  --with-impeccable     Weekly design quality routines (audit + critique + monthly harden)"
+      echo "  --with-fallow         Weekly code-health audit via fallow (TS/JS only) + skill"
       echo "  --branch NAME         Main branch name (default: main)"
       echo "  --merge-pr            Fix issues via pull requests (default)"
       echo "  --merge-direct        Fix issues by committing directly to main branch"
@@ -255,6 +259,7 @@ if [[ "$MODE" == "update" ]]; then
   [[ "$MODULES" == *"docs-audit"*       && -z "$MOD_DOCS_AUDIT"      ]] && MOD_DOCS_AUDIT=true
   [[ "$MODULES" == *"product-overview"* && -z "$MOD_PRODUCT_OVERVIEW" ]] && MOD_PRODUCT_OVERVIEW=true
   [[ "$MODULES" == *"impeccable"*       && -z "$MOD_IMPECCABLE"       ]] && MOD_IMPECCABLE=true
+  [[ "$MODULES" == *"fallow"*           && -z "$MOD_FALLOW"           ]] && MOD_FALLOW=true
 fi
 
 # ── Mode header ───────────────────────────────────────────────────────────────
@@ -403,6 +408,7 @@ ask_module MOD_ARCH_REVIEW    "Architecture review" "installs improve-codebase-a
 ask_module MOD_DOCS_AUDIT     "Docs audit"          "weekly docs <-> code drift check -> GitHub issues" false
 ask_module MOD_PRODUCT_OVERVIEW "Product overview"  "weekly product digest: state + changes + bugs + hypotheses" false
 ask_module MOD_IMPECCABLE     "Design quality"      "weekly design audit + critique (impeccable skill) + monthly harden" false
+ask_module MOD_FALLOW         "Code health"         "weekly fallow audit (dead code, dupes, cycles, complexity) — TS/JS only" false
 ask_module MOD_MAILBOX        "Mailbox"             "(IMAP+SMTP) — hourly inbox check → GitHub issues + automated replies" false
 
 # ── Observability integration ─────────────────────────────────────────────────
@@ -663,6 +669,7 @@ setup_labels() {
   _do_label "source:mailbox"         "5319e7" "From inbox email — incoming customer requests"
   _do_label "source:build"           "5319e7" "From build/deploy optimization audit"
   _do_label "source:design"          "5319e7" "From design quality routines (impeccable:audit/critique/harden)"
+  _do_label "source:code-health"     "5319e7" "From fallow code-health audit (dead code, dupes, cycles, complexity)"
   _do_label "action:reply"           "0052cc" "Approved mailbox issue — agent will send email reply"
   _do_label "action:fix"             "0052cc" "Approved mailbox issue — agent will make a code change"
   _do_label "needs-human"            "8b5cf6" "Agent blocked — requires human action (credentials, config, external service)"
@@ -749,6 +756,7 @@ HEREDOC
   [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Architecture review** (Weekly Sun 2:00) — \`/improve-codebase-architecture\` → GitHub issues"
   [[ "$MOD_MAILBOX"       == true ]] && echo "- **Mailbox check** (Hourly) — IMAP inbox → GitHub issues with \`action:reply\` / \`action:fix\` choice; approved replies sent via SMTP"
   echo "- **Build optimization** (Weekly Sun 4:00) — build + deploy pipeline analysis → GitHub issues"
+  [[ "$MOD_FALLOW"        == true ]] && echo "- **Code health** (Weekly Sun 7:00) — \`/darkflow:code-health\` fallow audit (dead code, dupes, cycles, complexity) → GitHub issues"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design audit** (Weekly Sat 10:00) — \`/impeccable:audit\` five-dimension quality check → GitHub issues"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design critique** (Weekly Sat 11:00) — \`/impeccable:critique\` scored review + persona tests → GitHub issues"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design harden** (Monthly 1st 10:00) — \`/impeccable:harden\` edge cases, i18n, error states → GitHub issues"
@@ -776,6 +784,7 @@ HEREDOC
   [[ "$MOD_MAILBOX"       == true ]] && echo "- \`/darkflow:mailbox-check\` — read new mail and send approved replies via SMTP"
   echo "- \`/darkflow:security-audit\` — full security review (static + runtime) → GitHub issues"
   echo "- \`/darkflow:build-optimization\` — build + deploy optimization analysis → GitHub issues"
+  [[ "$MOD_FALLOW"        == true ]] && echo "- \`/darkflow:code-health\` — fallow audit (dead code, dupes, cycles, complexity) → GitHub issues"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-audit\` — five-dimension design quality check → GitHub issues"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-critique\` — scored design review with persona tests → GitHub issues"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-harden\` — production-readiness review (edge cases, i18n, error states) → GitHub issues"
@@ -855,6 +864,7 @@ run_checklist() {
       claude-update) [[ "$MOD_CLAUDE_UPDATE" == true ]] ;;
       arch-review)   [[ "$MOD_ARCH_REVIEW"   == true ]] ;;
       impeccable)    [[ "$MOD_IMPECCABLE"    == true ]] ;;
+      fallow)        [[ "$MOD_FALLOW"        == true ]] ;;
       *) return 1 ;;
     esac
   }
@@ -1115,6 +1125,10 @@ if [[ "$MOD_MAILBOX" == true ]]; then
   smart_update_template "darkflow/mailbox/send.py"  ".darkflow.d/mailbox/send.py"  "true"
 fi
 
+if [[ "$MOD_FALLOW" == true ]]; then
+  smart_update_template ".claude/commands/darkflow/code-health.md" ".claude/commands/darkflow/code-health.md"
+fi
+
 # ── 3. Config (.darkflow) ─────────────────────────────────────────────────────
 
 header "3/4  Config"
@@ -1133,6 +1147,7 @@ if [[ "$DRY_RUN" == false ]]; then
     [[ "$MOD_DOCS_AUDIT"        == true ]] && _local_mods="${_local_mods}docs-audit,"
     [[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && _local_mods="${_local_mods}product-overview,"
     [[ "$MOD_IMPECCABLE"        == true ]] && _local_mods="${_local_mods}impeccable,"
+    [[ "$MOD_FALLOW"            == true ]] && _local_mods="${_local_mods}fallow,"
     {
       echo "# Dark Flow project config — managed by install.sh"
       echo "version=${LATEST_VERSION}"
@@ -1282,6 +1297,15 @@ YAML
     enabled: true
 YAML
 
+      [[ "$MOD_FALLOW" == true ]] && cat << 'YAML'
+
+  code-health:
+    cron: "0 7 * * 0"
+    model: sonnet
+    engine: claude
+    enabled: true
+YAML
+
       [[ "$MOD_DOCS_AUDIT" == true ]] && cat << 'YAML'
 
   docs-audit:
@@ -1404,6 +1428,28 @@ if [[ "$MOD_ARCH_REVIEW" == true && "$DRY_RUN" == false ]]; then
   fi
 fi
 
+# ── Code health (fallow) skill ────────────────────────────────────────────────
+
+if [[ "$MOD_FALLOW" == true && "$DRY_RUN" == false ]]; then
+  if ! command -v git &>/dev/null; then
+    warn "git not found — cannot install the fallow skill"
+  elif [[ -d "$HOME/.claude/skills/fallow" ]]; then
+    info "fallow skill already installed — skipping"
+  else
+    info "Installing fallow skill..."
+    _fallow_tmp="$(mktemp -d)"
+    if git clone --depth 1 https://github.com/fallow-rs/fallow-skills.git "$_fallow_tmp/fallow-skills" >/dev/null 2>&1; then
+      mkdir -p "$HOME/.claude/skills"
+      cp -R "$_fallow_tmp/fallow-skills/fallow/skills/fallow" "$HOME/.claude/skills/fallow" \
+        && success "fallow skill installed — code-health routine will use it" \
+        || warn "fallow skill copy failed. Install manually: see routines/code-health.md"
+    else
+      warn "fallow skill clone failed. Install manually: see routines/code-health.md"
+    fi
+    rm -rf "$_fallow_tmp"
+  fi
+fi
+
 # ── Verification ──────────────────────────────────────────────────────────────
 
 header "Verification"
@@ -1454,6 +1500,7 @@ echo "  vulnerability-check  0 6 * * *      GitHub Dependabot + code scanning �
 [[ "$MOD_DOCS_AUDIT"        == true ]] && echo "  docs-audit           0 5 * * 0      Docs <-> code drift → GitHub issues"
 [[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && echo "  product-overview     0 7 * * 1      Product overview digest"
 [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "  architecture-review  0 2 * * 0      Architectural analysis → GitHub issues"
+[[ "$MOD_FALLOW"        == true ]] && echo "  code-health          0 7 * * 0      fallow audit (dead code, dupes, cycles) → GitHub issues"
 [[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-audit         0 10 * * 6     Design quality check (impeccable:audit) → GitHub issues"
 [[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-critique      0 11 * * 6     Scored design review (impeccable:critique) → GitHub issues"
 [[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-harden        0 10 1 * *     Production-readiness review (impeccable:harden) → GitHub issues"

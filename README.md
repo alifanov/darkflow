@@ -140,6 +140,7 @@ The real power comes from scheduling Claude agents that run the loop automatical
 | [Security audit](routines/security-audit.md) | `0 3 * * 0` | Weekly Sun 3:00 — full security review → **auto-approved** issues |
 | [Build optimization](routines/build-optimization.md) | `0 4 * * 0` | Weekly Sun 4:00 — build + deploy pipeline analysis → issues |
 | [Vulnerability check](routines/vulnerability-check.md) | `0 6 * * *` | Daily 6:00 — Dependabot → **auto-approved** issues; code/secret scanning → proposed |
+| [Code health](routines/code-health.md) | `0 7 * * 0` | Weekly Sun 7:00 — fallow audit (dead code, dupes, cycles, complexity) → issues *(optional, TS/JS only)* |
 | [Mailbox check](routines/mailbox-check.md) | `0 * * * *` | Hourly — IMAP inbox → issues; approved `action:reply` issues → SMTP reply *(optional)* |
 
 Cron times are in the machine's local timezone. Schedule is defined in `.darkflow.d/routines.yml` — edit it to change frequency, model, or enable/disable a routine.
@@ -183,6 +184,7 @@ Weekly
   Sun 2:00  architecture-review   → status:proposed issues (Opus) + arch snapshot → syncs to web UI
   Sun 3:00  security-audit        → status:approved issues (Opus) + security snapshot → syncs to web UI
   Sun 4:00  build-optimization   → status:proposed issues (Opus) + build snapshot
+  Sun 7:00  code-health          → status:proposed issues (Sonnet) + code-health snapshot (optional, TS/JS)
 
 Continuous
   :00/:15/:30/:45  fix-issues (every 15 min)   → picks up status:approved → PR → merge
@@ -228,6 +230,7 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | `/darkflow:security-audit` | Full security review (static + runtime) → GitHub issues + security snapshot |
 | `/darkflow:vulnerability-check` | GitHub Dependabot + code/secret scanning alerts → GitHub issues |
 | `/darkflow:build-optimization` | Build + deploy pipeline analysis → optimization issues |
+| `/darkflow:code-health` | fallow audit (dead code, dupes, cycles, complexity) → GitHub issues *(optional, TS/JS only)* |
 
 ### Interactive commands
 

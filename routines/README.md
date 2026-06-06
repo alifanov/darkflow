@@ -31,6 +31,7 @@ All routines and their default cron expressions:
 | `security-audit` | `0 3 * * 0` | Weekly Sun 3:00 — full security review → GitHub issues |
 | `build-optimization` | `0 4 * * 0` | Weekly Sun 4:00 — build + deploy pipeline analysis → GitHub issues |
 | `docs-audit` | `0 5 * * 0` | Weekly Sun 5:00 — docs ↔ code drift check → GitHub issues |
+| `code-health` | `0 7 * * 0` | Weekly Sun 7:00 — fallow audit (dead code, dupes, cycles, complexity) → GitHub issues *(optional, TS/JS only)* |
 | `product-overview` | `0 7 * * 1` | Weekly Mon 7:00 — product overview digest (writes snapshot, no issues) |
 | `vulnerability-check` | `0 6 * * *` | Daily 6:00 — GitHub Dependabot + code/secret scanning alerts → GitHub issues |
 | `ads-review` | `0 8 * * 1` | Weekly Mon 8:00 — paid ads performance → GitHub issues |
