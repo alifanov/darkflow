@@ -116,6 +116,7 @@ model RoutineConfig {
   name           String
   cron           String?
   model          String?
+  engine         String?  @default("claude")
   enabled        Boolean  @default(true)
   permissionMode String?
   updatedAt      DateTime @updatedAt

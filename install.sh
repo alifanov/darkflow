@@ -859,7 +859,7 @@ run_checklist() {
 
   # Collect field arrays (bash 3-compatible via parallel indexed arrays)
   declare -a _itype _ipath _itemplate _iexec _imarker _ikey _idefault \
-             _icheck _ifix _iwhen _igroup _idesc _iroutine _icron _imodel _ienabled _iid
+             _icheck _ifix _iwhen _igroup _idesc _iroutine _icron _imodel _iengine _ienabled _iid
 
   local _i
   for (( _i = 0; _i < _items_count; _i++ )); do
@@ -879,6 +879,7 @@ run_checklist() {
     _iroutine[$_i]=$(_q ".items[$_i].routine_key")
     _icron[$_i]=$(_q ".items[$_i].cron")
     _imodel[$_i]=$(_q ".items[$_i].model")
+    _iengine[$_i]=$(_q ".items[$_i].engine")
     _ienabled[$_i]=$(_q ".items[$_i].enabled")
 
     local _when="${_iwhen[$_i]}"
@@ -968,11 +969,12 @@ run_checklist() {
     local _idx="$1"
     local _file="${_ipath[$_idx]}" _key="${_iroutine[$_idx]}"
     local _cron="${_icron[$_idx]}" _model="${_imodel[$_idx]:-sonnet}" _enabled="${_ienabled[$_idx]:-true}"
+    local _engine="${_iengine[$_idx]:-claude}"
     if [[ ! -f "$_file" ]]; then
       warn "  $_file missing — re-run install.sh"
       return 1
     fi
-    yq -i ".routines[\"${_key}\"] = {\"cron\": \"${_cron}\", \"model\": \"${_model}\", \"enabled\": ${_enabled}}" "$_file"
+    yq -i ".routines[\"${_key}\"] = {\"cron\": \"${_cron}\", \"model\": \"${_model}\", \"engine\": \"${_engine}\", \"enabled\": ${_enabled}}" "$_file"
     success "  Added routine ${_key} to ${_file}"
   }
 
@@ -1213,12 +1215,14 @@ if [[ ! -f ".darkflow.d/routines.yml" || "$FORCE" == true ]]; then
 # List routines and status: bash .darkflow.d/darkflow-run.sh --list
 defaults:
   model: sonnet
+  engine: claude
   permission_mode: bypassPermissions
 
 routines:
   fix-issues:
     cron: "0 * * * *"
     model: sonnet
+    engine: claude
     enabled: true
 YAML
 
@@ -1227,6 +1231,7 @@ YAML
   analytics-review:
     cron: "0 8 * * *"
     model: sonnet
+    engine: claude
     enabled: true
 YAML
 
@@ -1235,6 +1240,7 @@ YAML
   observability-check:
     cron: "30 8 * * *"
     model: sonnet
+    engine: claude
     enabled: true
 YAML
 
@@ -1243,6 +1249,7 @@ YAML
   gsc-check:
     cron: "0 8 * * 1"
     model: sonnet
+    engine: claude
     enabled: true
 YAML
 
@@ -1251,6 +1258,7 @@ YAML
   coolify-check-deployment:
     cron: "0 9 * * *"
     model: sonnet
+    engine: claude
     enabled: true
 YAML
 
@@ -1259,6 +1267,7 @@ YAML
   claude-md-update:
     cron: "0 9 * * 1-5"
     model: sonnet
+    engine: claude
     enabled: true
 YAML
 
@@ -1267,6 +1276,7 @@ YAML
   architecture-review:
     cron: "0 2 * * 0"
     model: opus
+    engine: claude
     enabled: true
 YAML
 
@@ -1275,6 +1285,7 @@ YAML
   docs-audit:
     cron: "0 5 * * 0"
     model: opus
+    engine: claude
     enabled: true
 YAML
 
@@ -1283,6 +1294,7 @@ YAML
   product-overview:
     cron: "0 7 * * 1"
     model: opus
+    engine: claude
     enabled: true
 YAML
 
@@ -1291,16 +1303,19 @@ YAML
   design-audit:
     cron: "0 10 * * 6"
     model: opus
+    engine: claude
     enabled: true
 
   design-critique:
     cron: "0 11 * * 6"
     model: opus
+    engine: claude
     enabled: true
 
   design-harden:
     cron: "0 10 1 * *"
     model: opus
+    engine: claude
     enabled: true
 YAML
 
@@ -1309,6 +1324,7 @@ YAML
   mailbox-check:
     cron: "0 * * * *"
     model: sonnet
+    engine: claude
     enabled: true
 YAML
 
@@ -1317,16 +1333,19 @@ YAML
   security-audit:
     cron: "0 3 * * 0"
     model: opus
+    engine: claude
     enabled: true
 
   build-optimization:
     cron: "0 4 * * 0"
     model: opus
+    engine: claude
     enabled: true
 
   vulnerability-check:
     cron: "0 6 * * *"
     model: sonnet
+    engine: claude
     enabled: true
 YAML
 

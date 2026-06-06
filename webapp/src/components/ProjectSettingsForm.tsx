@@ -3,17 +3,32 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-// Every routine with its default schedule and the module it belongs to (null = core, always-on)
+// Which models each engine offers. Used to populate the per-routine model
+// dropdown and to reset an out-of-range model when the engine is switched.
+const MODELS_BY_ENGINE: Record<string, string[]> = {
+  claude: ["sonnet", "opus"],
+  codex: ["gpt-5", "gpt-5-mini"],
+};
+
+function defaultModelFor(engine: string, fallback: string): string {
+  return engine === "codex" ? "gpt-5" : fallback;
+}
+
+// Every routine with its default schedule and the module it belongs to (null = core, always-on).
+// claudeOnly marks routines whose command prompt invokes Claude-only skills
+// (/security-review, /improve-codebase-architecture, /impeccable:*) — they run
+// under Codex but with degraded quality, so the UI warns when codex is selected.
 const ALL_ROUTINES: {
   name: string;
   defaultCron: string;
   defaultModel: string;
   module: string | null;  // null = core (fix-issues, security-audit, etc.)
   label: string;          // human-readable description
+  claudeOnly?: boolean;   // command body depends on a Claude-only skill
 }[] = [
   // Core — always-on, no optional module
   { name: "fix-issues",          defaultCron: "0 * * * *",   defaultModel: "sonnet", module: null,               label: "Pick up approved issues → fix → merge" },
-  { name: "security-audit",      defaultCron: "0 3 * * 0",   defaultModel: "opus",   module: null,               label: "Full security review (weekly)" },
+  { name: "security-audit",      defaultCron: "0 3 * * 0",   defaultModel: "opus",   module: null,               label: "Full security review (weekly)", claudeOnly: true },
   { name: "vulnerability-check", defaultCron: "0 6 * * *",   defaultModel: "sonnet", module: null,               label: "Dependabot + code scanning (daily)" },
   { name: "build-optimization",  defaultCron: "0 4 * * 0",   defaultModel: "opus",   module: null,               label: "Build + deploy pipeline audit (weekly)" },
   // Optional modules
@@ -23,13 +38,13 @@ const ALL_ROUTINES: {
   { name: "ads-review",               defaultCron: "0 9 * * 1",   defaultModel: "sonnet", module: "ads",              label: "Paid ads performance (weekly Mon)" },
   { name: "coolify-check-deployment", defaultCron: "0 9 * * *",   defaultModel: "sonnet", module: "coolify",          label: "Deployment status (daily)" },
   { name: "claude-md-update",         defaultCron: "0 9 * * 1-5", defaultModel: "sonnet", module: "claude-update",    label: "Regenerate CLAUDE.md (weekdays)" },
-  { name: "architecture-review",      defaultCron: "0 2 * * 0",   defaultModel: "opus",   module: "arch-review",      label: "Architectural analysis (weekly)" },
+  { name: "architecture-review",      defaultCron: "0 2 * * 0",   defaultModel: "opus",   module: "arch-review",      label: "Architectural analysis (weekly)", claudeOnly: true },
   { name: "mailbox-check",            defaultCron: "0 10 * * *",  defaultModel: "sonnet", module: "mailbox",          label: "IMAP inbox → issues (daily)" },
   { name: "docs-audit",               defaultCron: "0 5 * * 0",   defaultModel: "opus",   module: "docs-audit",       label: "Docs ↔ code drift (weekly)" },
   { name: "product-overview",         defaultCron: "0 7 * * 1",   defaultModel: "opus",   module: "product-overview", label: "Product state digest (weekly Mon)" },
-  { name: "design-audit",             defaultCron: "0 10 * * 6",  defaultModel: "opus",   module: "impeccable",       label: "Design quality audit (weekly Sat)" },
-  { name: "design-critique",          defaultCron: "0 11 * * 6",  defaultModel: "opus",   module: "impeccable",       label: "Scored design review (weekly Sat)" },
-  { name: "design-harden",            defaultCron: "0 10 1 * *",  defaultModel: "opus",   module: "impeccable",       label: "Production-readiness check (monthly)" },
+  { name: "design-audit",             defaultCron: "0 10 * * 6",  defaultModel: "opus",   module: "impeccable",       label: "Design quality audit (weekly Sat)", claudeOnly: true },
+  { name: "design-critique",          defaultCron: "0 11 * * 6",  defaultModel: "opus",   module: "impeccable",       label: "Scored design review (weekly Sat)", claudeOnly: true },
+  { name: "design-harden",            defaultCron: "0 10 1 * *",  defaultModel: "opus",   module: "impeccable",       label: "Production-readiness check (monthly)", claudeOnly: true },
 ];
 
 // Derive modules array from the set of enabled module routines
@@ -46,6 +61,7 @@ interface RoutineConfig {
   name: string;
   cron: string | null;
   model: string | null;
+  engine: string | null;
   enabled: boolean;
   permissionMode: string | null;
 }
@@ -54,6 +70,7 @@ interface RoutineState {
   name: string;
   cron: string;
   model: string;
+  engine: string;
   enabled: boolean;
   permissionMode: string | null;
 }
@@ -128,6 +145,7 @@ function buildInitialRoutines(configs: RoutineConfig[], modules: string[]): Rout
         name: def.name,
         cron: existing.cron ?? def.defaultCron,
         model: existing.model ?? def.defaultModel,
+        engine: existing.engine ?? "claude",
         enabled: existing.enabled,
         permissionMode: existing.permissionMode,
       };
@@ -139,6 +157,7 @@ function buildInitialRoutines(configs: RoutineConfig[], modules: string[]): Rout
       name: def.name,
       cron: def.defaultCron,
       model: def.defaultModel,
+      engine: "claude",
       enabled: enabledDefault,
       permissionMode: null,
     };
@@ -193,6 +212,7 @@ export function ProjectSettingsForm({ projectId, initialValues, routineConfigs }
             name: r.name,
             cron: r.cron || null,
             model: r.model,
+            engine: r.engine,
             enabled: r.enabled,
             permissionMode: r.permissionMode,
           })),
@@ -350,7 +370,7 @@ function RoutineTable({
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
-              {["Routine", "Enabled", "Model", "Cron"].map((col) => (
+              {["Routine", "Enabled", "Engine", "Model", "Cron"].map((col) => (
                 <th
                   key={col}
                   className="py-2 px-3 text-xs font-medium uppercase tracking-wider text-left"
@@ -374,6 +394,14 @@ function RoutineTable({
                 >
                   <td className="py-2 px-3" style={{ color: "var(--text)" }}>
                     <span className="font-mono font-semibold">{r.name}</span>
+                    {r.engine === "codex" && def?.claudeOnly && (
+                      <span
+                        className="ml-1.5 cursor-help"
+                        title="This routine's command uses a Claude-only skill — it runs under Codex but with degraded quality."
+                      >
+                        ⚠️
+                      </span>
+                    )}
                     {def?.label && (
                       <span className="block text-xs mt-0.5" style={{ color: "var(--muted)" }}>
                         {def.label}
@@ -391,6 +419,30 @@ function RoutineTable({
                   </td>
                   <td className="py-2 px-3">
                     <select
+                      value={r.engine}
+                      onChange={(e) => {
+                        const newEngine = e.target.value;
+                        onChange(r.name, "engine", newEngine);
+                        // Reset the model if it isn't valid for the new engine.
+                        const allowed = MODELS_BY_ENGINE[newEngine] ?? MODELS_BY_ENGINE.claude;
+                        if (!allowed.includes(r.model)) {
+                          onChange(r.name, "model", defaultModelFor(newEngine, def?.defaultModel ?? "sonnet"));
+                        }
+                      }}
+                      className="text-xs font-mono px-2 py-0.5 rounded cursor-pointer"
+                      style={{
+                        background: "var(--surface)",
+                        border: "1px solid var(--border)",
+                        color: "var(--text)",
+                        outline: "none",
+                      }}
+                    >
+                      <option value="claude">claude</option>
+                      <option value="codex">codex</option>
+                    </select>
+                  </td>
+                  <td className="py-2 px-3">
+                    <select
                       value={r.model}
                       onChange={(e) => onChange(r.name, "model", e.target.value)}
                       className="text-xs font-mono px-2 py-0.5 rounded cursor-pointer"
@@ -401,8 +453,9 @@ function RoutineTable({
                         outline: "none",
                       }}
                     >
-                      <option value="sonnet">sonnet</option>
-                      <option value="opus">opus</option>
+                      {(MODELS_BY_ENGINE[r.engine] ?? MODELS_BY_ENGINE.claude).map((m) => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
                     </select>
                   </td>
                   <td className="py-2 px-3">

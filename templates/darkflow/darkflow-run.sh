@@ -317,6 +317,22 @@ preflight() {
       fi
     done < <(routine_names)
   fi
+  # If any enabled routine runs on the codex engine, require the codex CLI too.
+  # (claude is always required above — the self-update path uses it.)
+  if [[ -f "$YAML" ]] && command -v yq &>/dev/null; then
+    local _uses_codex=false _crname _cenabled _cengine
+    while IFS= read -r _crname; do
+      _cenabled=$(yq ".routines[\"${_crname}\"].enabled // true" "$YAML" 2>/dev/null || echo "true")
+      [[ "$_cenabled" == "false" ]] && continue
+      _cengine=$(yq ".routines[\"${_crname}\"].engine // \"claude\"" "$YAML" 2>/dev/null || echo "claude")
+      [[ "$_cengine" == "codex" ]] && _uses_codex=true
+    done < <(routine_names)
+    if [[ "$_uses_codex" == true ]] && ! command -v codex &>/dev/null; then
+      echo "darkflow-run: codex not found, but a routine is set to engine: codex." >&2
+      echo "  Install Codex CLI (npm i -g @openai/codex) and authenticate it, or switch the routine back to claude." >&2
+      ok=false
+    fi
+  fi
   [[ "$ok" == true ]]
 }
 
@@ -488,6 +504,40 @@ format_claude_stream() {
   done
 }
 
+# ── Codex stream formatter ────────────────────────────────────────────────────
+# Reads JSONL from stdin (codex exec --json), extracts agent messages, command
+# executions, and their output, and renders Markdown — the Codex counterpart of
+# format_claude_stream so UI logs read the same for either engine.
+# Codex's --json event schema is still experimental, so this parser is lenient:
+# it handles the current item-based shape ({"type":"item.completed","item":{…}})
+# and the older msg-based shape, and skips anything it doesn't recognise rather
+# than aborting. Re-verify the filter if Codex changes its event format.
+
+format_codex_stream() {
+  local _jq_filter='
+    (.item // .msg // {}) as $it
+    | ($it.type // .type // "") as $t
+    | if ($t == "agent_message" or $t == "assistant_message") then
+        (($it.text // $it.message // "")
+          | if length > 0 then "\n" + . + "\n" else empty end)
+      elif $t == "command_execution" then
+        "\n**Tool: Shell**\n\n```bash\n" + ($it.command // "") + "\n```\n"
+          + (($it.aggregated_output // $it.output // "")
+             | if length > 0 then
+                 "\n**Result"
+                 + (if (($it.exit_code // 0) != 0) then " (error)" else "" end)
+                 + ":**\n\n```text\n" + . + "\n```\n"
+               else "" end)
+      elif ($t == "file_change" or $t == "patch_apply" or $t == "mcp_tool_call") then
+        "\n**Tool: " + $t + "**\n\n```json\n" + ($it | tojson) + "\n```\n"
+      else empty end
+  '
+  while IFS= read -r _line; do
+    [[ -z "$_line" ]] && continue
+    printf '%s\n' "$_line" | jq -r "$_jq_filter" 2>/dev/null || true
+  done
+}
+
 # ── Routine execution ─────────────────────────────────────────────────────────
 
 # Validates the active GH token by hitting a lightweight endpoint.
@@ -505,7 +555,7 @@ validate_gh_token() {
 }
 
 run_routine() {
-  local name="$1" model="$2" permission_mode="$3"
+  local name="$1" model="$2" permission_mode="$3" engine="${4:-claude}"
   local now exit_code=0
   local -a perm_args
 
@@ -559,9 +609,9 @@ run_routine() {
     return 0
   fi
 
-  log "START  ${name} (model=${model}, perm=${permission_mode})"
+  log "START  ${name} (engine=${engine}, model=${model}, perm=${permission_mode})"
 
-  # Refresh settings from Web UI before invoking Claude so both darkflow_val()
+  # Refresh settings from Web UI before invoking the agent so both darkflow_val()
   # reads below and the LLM command's "Step 1 — Read project config" see fresh values.
   # Falls back to the cached .darkflow silently if the server is offline.
   bash "${PROJECT_ROOT}/.darkflow.d/get-config.sh" 2>/dev/null || true
@@ -569,12 +619,29 @@ run_routine() {
   send_heartbeat "running" "$name"
   start_heartbeat_loop "$name"
 
-  local claude_output _stream_file
+  local agent_output _stream_file
   _stream_file=$(mktemp)
   _CLEANUP_FILES+=("$_stream_file")
-  run_in_pgid claude -p "/darkflow:${name}" --model "${model}" "${perm_args[@]}" \
-    --output-format stream-json --verbose > "$_stream_file" || exit_code=$?
-  claude_output=$(format_claude_stream < "$_stream_file") || claude_output=""
+  if [[ "$engine" == "codex" ]]; then
+    # Codex has no /darkflow:<name> slash command, so feed the routine's command
+    # markdown directly as the prompt (same file Claude resolves the command
+    # from). Codex has no per-tool permission allowlist — map every permission
+    # mode to autonomous, sandboxed, no-prompt execution.
+    local _cmd_file="${PROJECT_ROOT}/.claude/commands/darkflow/${name}.md"
+    if [[ -f "$_cmd_file" ]]; then
+      run_in_pgid codex exec --model "${model}" \
+        --sandbox workspace-write --ask-for-approval never --json \
+        "$(cat "$_cmd_file")" > "$_stream_file" || exit_code=$?
+    else
+      log "ERROR  ${name} — engine=codex but command file missing: ${_cmd_file}"
+      exit_code=1
+    fi
+    agent_output=$(format_codex_stream < "$_stream_file") || agent_output=""
+  else
+    run_in_pgid claude -p "/darkflow:${name}" --model "${model}" "${perm_args[@]}" \
+      --output-format stream-json --verbose > "$_stream_file" || exit_code=$?
+    agent_output=$(format_claude_stream < "$_stream_file") || agent_output=""
+  fi
   rm -f "$_stream_file"
   _CLEANUP_FILES=("${_CLEANUP_FILES[@]/$_stream_file}")
   semaphore_release
@@ -590,7 +657,7 @@ run_routine() {
   log "DONE   ${name} (${status_str})"
   local ts; ts=$(date -u +%FT%TZ)
   local output_json
-  output_json=$(jq -Rsa '.' <<< "$claude_output")
+  output_json=$(jq -Rsa '.' <<< "$agent_output")
   PENDING_LOGS+=("{\"routine\":\"${name}\",\"summary\":\"ran ${name} — ${status_str}\",\"output\":${output_json},\"timestamp\":\"${ts}\"}")
 
   return $exit_code
@@ -843,7 +910,7 @@ sync_webapp() {
   # Parse routines.yml into a JSON array snapshot
   local routines_json="[]"
   if [[ -f "$YAML" ]]; then
-    routines_json=$(yq -o=json '.routines | to_entries | map({"name": .key, "cron": .value.cron, "model": .value.model, "enabled": (.value.enabled // true), "permissionMode": .value.permission_mode})' "$YAML" 2>/dev/null | jq -c '.' 2>/dev/null || echo "[]")
+    routines_json=$(yq -o=json '.routines | to_entries | map({"name": .key, "cron": .value.cron, "model": .value.model, "engine": (.value.engine // "claude"), "enabled": (.value.enabled // true), "permissionMode": .value.permission_mode})' "$YAML" 2>/dev/null | jq -c '.' 2>/dev/null || echo "[]")
   fi
 
   # Last 50 commits via git log; tab-separated to dodge quoting issues in messages.
@@ -1066,12 +1133,13 @@ mode_list() {
 
 mode_dispatch() {
   local dry_run="${1:-false}"
-  local now name cron enabled model permission_mode last_run floor prev
-  local default_model default_perm
+  local now name cron enabled model permission_mode engine last_run floor prev
+  local default_model default_perm default_engine
 
   now=$(now_epoch)
   default_model=$(yaml_get '.defaults.model' "$YAML" "sonnet")
   default_perm=$(yaml_get '.defaults.permission_mode' "$YAML" "bypassPermissions")
+  default_engine=$(yaml_get '.defaults.engine' "$YAML" "claude")
 
   rotate_log
 
@@ -1086,6 +1154,7 @@ mode_dispatch() {
 
     model=$(yaml_get ".routines[\"${name}\"].model" "$YAML" "$default_model")
     permission_mode=$(yaml_get ".routines[\"${name}\"].permission_mode" "$YAML" "$default_perm")
+    engine=$(yaml_get ".routines[\"${name}\"].engine" "$YAML" "$default_engine")
 
     # Parse 5 cron fields
     read -r c_min c_hr c_dom c_month c_dow <<< "$cron"
@@ -1108,9 +1177,9 @@ mode_dispatch() {
     any_due=true
 
     if [[ "$dry_run" == true ]]; then
-      echo "  [due] ${name}  cron='${cron}'  model=${model}"
+      echo "  [due] ${name}  cron='${cron}'  engine=${engine}  model=${model}"
     else
-      run_routine "$name" "$model" "$permission_mode" || true
+      run_routine "$name" "$model" "$permission_mode" "$engine" || true
     fi
 
   done < <(routine_names)
@@ -1124,7 +1193,7 @@ mode_dispatch() {
 
 mode_manual() {
   local name="$1"
-  local model permission_mode default_model default_perm
+  local model permission_mode engine default_model default_perm default_engine
 
   if ! yq ".routines | has(\"${name}\")" "$YAML" 2>/dev/null | grep -q "true"; then
     echo "darkflow-run: unknown routine '${name}'" >&2
@@ -1134,11 +1203,13 @@ mode_manual() {
 
   default_model=$(yaml_get '.defaults.model' "$YAML" "sonnet")
   default_perm=$(yaml_get '.defaults.permission_mode' "$YAML" "bypassPermissions")
+  default_engine=$(yaml_get '.defaults.engine' "$YAML" "claude")
   model=$(yaml_get ".routines[\"${name}\"].model" "$YAML" "$default_model")
   permission_mode=$(yaml_get ".routines[\"${name}\"].permission_mode" "$YAML" "$default_perm")
+  engine=$(yaml_get ".routines[\"${name}\"].engine" "$YAML" "$default_engine")
 
   log "MANUAL ${name}"
-  run_routine "$name" "$model" "$permission_mode"
+  run_routine "$name" "$model" "$permission_mode" "$engine"
   sync_webapp
 }
 

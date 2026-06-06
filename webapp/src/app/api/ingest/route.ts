@@ -43,6 +43,7 @@ interface IngestRoutine {
   name: string;
   cron?: string | null;
   model?: string | null;
+  engine?: string | null;
   enabled?: boolean;
   permissionMode?: string | null;
 }
@@ -215,6 +216,7 @@ export async function POST(req: NextRequest) {
           name: r.name,
           cron: r.cron ?? null,
           model: r.model ?? null,
+          engine: r.engine ?? "claude",
           enabled: r.enabled ?? true,
           permissionMode: r.permissionMode ?? null,
         })),

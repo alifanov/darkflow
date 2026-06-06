@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
           name: true,
           cron: true,
           model: true,
+          engine: true,
           enabled: true,
           permissionMode: true,
         },

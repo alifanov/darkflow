@@ -14,6 +14,16 @@ Categories:
 
 ---
 
+## [2.47.0] — 2026-06-06
+
+- **New feature** — per-routine **engine** switch (`claude` | `codex`). Each routine can now run via Claude Code (the default, unchanged) or OpenAI's Codex CLI, selectable from the Web UI routine-settings table next to the model dropdown. Default is `claude` everywhere, so existing installs are unaffected.
+- **Dispatcher** — `darkflow-run.sh` reads a per-routine `engine` (and `defaults.engine`) from `routines.yml`. For `codex` it runs `codex exec --model <m> --sandbox workspace-write --ask-for-approval never --json`, feeding the routine's existing `.claude/commands/darkflow/<name>.md` as the prompt (Codex has no `/darkflow:<name>` slash command). A new `format_codex_stream` renders Codex's JSONL events into the same Markdown transcript the Web UI logs already show. The self-update path stays on Claude.
+- **Preflight** — the dispatcher now also requires the `codex` CLI when any enabled routine is set to `engine: codex`, with a clear install/auth hint (Claude is still always required for self-update).
+- **Web UI** — routine settings gain an **Engine** column; the **Model** dropdown is engine-aware (`sonnet`/`opus` for Claude, `gpt-5`/`gpt-5-mini` for Codex) and resets to the engine's default when switched. Routines whose prompt invokes a Claude-only skill (`security-audit`, `architecture-review`, `design-audit`, `design-critique`, `design-harden`) show a ⚠️ badge when set to Codex — they still run, but with degraded quality.
+- **Database** — added `RoutineConfig.engine` (`String?`, default `"claude"`); migration `20260606000000_add_routine_engine` (additive, non-destructive). API `PATCH /api/projects/[id]`, `/api/ingest`, and `/api/projects/by-repo` now read/write/return `engine`, and `get-config.sh` emits it into the regenerated `routines.yml`.
+- **Installer** — `install.sh` and `checklist.yml` write `engine: claude` into generated/repaired routines so existing projects pick up the field on `darkflow:update`.
+- **Note** — Codex's `--json` event schema is still experimental; `format_codex_stream` is lenient (skips unknown events) and should be re-verified against live `codex exec` output. Setting up and authenticating the `codex` CLI on the worker machine is left to the operator (no `~/.codex`/AGENTS.md scaffolding in this release).
+
 ## [2.46.0] — 2026-06-05
 
 - **Removed routine** — dropped `coolify-check-logs` (and its `/darkflow:coolify-check-deployment` companion command stays). When SigNoz (or any observability tool) collects container stdout/stderr through its logs pipeline, the per-container `docker logs` over SSH was redundant — application errors, crashes, and OOM signals already land in the observability tool. Reading raw container logs over SSH added a fragile permission gate and SSH-key requirement for data we already have.

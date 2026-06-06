@@ -26,6 +26,7 @@ interface RoutinePatch {
   name: string;
   cron?: string | null;
   model?: string | null;
+  engine?: string | null;
   enabled?: boolean;
   permissionMode?: string | null;
 }
@@ -91,12 +92,14 @@ export async function PATCH(
             name: r.name,
             cron: r.cron ?? null,
             model: r.model ?? null,
+            engine: r.engine ?? "claude",
             enabled: r.enabled ?? true,
             permissionMode: r.permissionMode ?? null,
           },
           update: {
             ...(r.cron !== undefined && { cron: r.cron }),
             ...(r.model !== undefined && { model: r.model }),
+            ...(r.engine !== undefined && { engine: r.engine }),
             ...(r.enabled !== undefined && { enabled: r.enabled }),
             ...(r.permissionMode !== undefined && { permissionMode: r.permissionMode }),
           },
