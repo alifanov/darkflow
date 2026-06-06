@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.47.2] — 2026-06-06
+
+- **Web UI** — refreshed the Codex model dropdown to the current Codex CLI lineup: `gpt-5.5` (default), `gpt-5.4`, `gpt-5.4-mini`. Dropped the deprecated `gpt-5` / `gpt-5-mini` slugs, and `defaultModelFor()` now returns `gpt-5.5` when switching a routine to Codex. `gpt-5.3-codex-spark` is intentionally omitted (ChatGPT Pro–only preview). Codex CLI still accepts any model the account can reach via `--model`; this only changes what the UI offers.
+
 ## [2.47.1] — 2026-06-06
 
 - **Dispatcher** — dropped the routine transcript parsers for both engines. The Web UI log `output` now stores each run's final output verbatim: Claude runs via plain `claude -p` (default text output, no `--output-format stream-json --verbose`), Codex via plain `codex exec` (no `--json`). Removed `format_claude_stream` / `format_codex_stream` and the per-event Markdown rendering — the parsing was cosmetic only (it never affected what a routine did) and the engines' own output is already readable. Logs lose the step-by-step tool/result breakdown but keep the final result.

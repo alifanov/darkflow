@@ -7,11 +7,11 @@ import { useRouter } from "next/navigation";
 // dropdown and to reset an out-of-range model when the engine is switched.
 const MODELS_BY_ENGINE: Record<string, string[]> = {
   claude: ["sonnet", "opus"],
-  codex: ["gpt-5", "gpt-5-mini"],
+  codex: ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini"],
 };
 
 function defaultModelFor(engine: string, fallback: string): string {
-  return engine === "codex" ? "gpt-5" : fallback;
+  return engine === "codex" ? "gpt-5.5" : fallback;
 }
 
 // Every routine with its default schedule and the module it belongs to (null = core, always-on).
