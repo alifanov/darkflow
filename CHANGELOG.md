@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.52.1] — 2026-06-07
+
+- **Dispatcher** — fixed `engine: codex` routines failing with `error: unexpected argument '--ask-for-approval' found`. Newer Codex CLIs (≥ 0.x with the reworked `exec`) removed `--ask-for-approval` from the `codex exec` subcommand — `exec` is already non-interactive. `darkflow-run.sh` now invokes `codex exec --model <m> --dangerously-bypass-approvals-and-sandbox <prompt>` instead of the old `--sandbox workspace-write --ask-for-approval never`. The bypass is also required for routines to actually work: the `workspace-write` sandbox blocks network, which broke `git push` / `gh` calls. This mirrors Claude's `bypassPermissions` autonomy (Darkflow routines run in an externally-controlled, opt-in autonomous context). Existing installs pick up the fix on next `darkflow:update`.
+
+---
+
 ## [2.52.0] — 2026-06-06
 
 - **Installer** — `routines.yml` cron minutes are now **staggered per-project**. On generation, every numeric cron minute is shifted by a deterministic offset derived from the project slug (`cksum(slug) % 60`), so independent projects on the same machine no longer all dispatch on minute `:00`. Relative spacing between a project's own routines is preserved (e.g. an `:00` and a `:30` routine stay 30 minutes apart). This prevents the global concurrency semaphore (`max_concurrent`, default 3) from being saturated every hour by ~all projects firing `fix-issues` simultaneously and thrashing through `DEFER`/retry cycles. The post-install Routines summary notes the project's offset.
