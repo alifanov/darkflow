@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.52.3] — 2026-06-08
+
+- **Webapp** — the header logo (`⚡ Dark Flow`) is now a link to the home page (`/`).
+
+---
+
 ## [2.52.2] — 2026-06-08
 
 - **Webapp** — the Routines tab now **auto-saves** on every change. Removed the separate "Save routines" button; toggling a routine, switching engine/model, or editing a cron expression persists immediately (debounced 600 ms so typing in the cron field doesn't fire a request per keystroke). A small inline `Saving… / Saved ✓` indicator replaces the button.

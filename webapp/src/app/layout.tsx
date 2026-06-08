@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "./globals.css";
 import { FaviconBadge } from "@/components/FaviconBadge";
 
@@ -20,7 +21,13 @@ export default function RootLayout({
           className="border-b px-6 py-4 flex items-center gap-3"
           style={{ borderColor: "var(--border)", background: "var(--surface)" }}
         >
-          <span className="text-lg font-semibold tracking-tight">⚡ Dark Flow</span>
+          <Link
+            href="/"
+            className="text-lg font-semibold tracking-tight no-underline cursor-pointer hover:opacity-80 transition-opacity"
+            style={{ color: "inherit" }}
+          >
+            ⚡ Dark Flow
+          </Link>
         </header>
         <main className="max-w-7xl mx-auto px-6 py-8">{children}</main>
       </body>
