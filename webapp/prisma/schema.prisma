@@ -98,12 +98,14 @@ model ArchitectureStatus {
 }
 
 model RoutineLog {
-  id        String   @id @default(cuid())
-  projectId String
-  routine   String
-  summary   String
-  output    String?
-  timestamp DateTime @default(now())
+  id          String   @id @default(cuid())
+  projectId   String
+  routine     String
+  summary     String
+  output      String?
+  costUsd     Float?
+  totalTokens Int?
+  timestamp   DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 

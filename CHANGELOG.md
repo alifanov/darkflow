@@ -14,6 +14,14 @@ Categories:
 
 ---
 
+## [2.55.0] — 2026-06-08
+
+- **Updated routine** — the worker now records **per-session cost and token usage** for every routine run. `darkflow-run.sh` invokes Claude with `--output-format json` and parses the result object: the final assistant text comes from `.result` (as before), while `.total_cost_usd` and the sum of `.usage.*` tokens are captured as `costUsd` and `totalTokens`. If the CLI output isn't valid JSON (crash/partial run), it falls back to storing the raw text with null metrics, so a run never breaks. The Codex engine and skipped runs simply emit no metrics (fields stay null).
+- **Web UI** — the project **Logs** tab now shows **Tokens** and **Cost** columns per run, plus a new **"Cost by routine"** summary panel that aggregates total spend/tokens/run-count across the full history and ranks routines by cost — so it's clear which routine eats the most of your limits.
+- **Schema** — added nullable `costUsd` (Float) and `totalTokens` (Int) columns to `RoutineLog` (`webapp/prisma/migrations/20260608000000_add_routine_log_usage`). `/api/ingest` accepts and persists the new fields. Non-destructive: existing rows keep null metrics.
+
+---
+
 ## [2.54.0] — 2026-06-08
 
 - **New routine** — `uptime-check`, an always-on core routine that runs **every 4 hours** (`0 */4 * * *`, Sonnet) to verify the project's public site is actually up: resolves DNS, hits the production URL, checks the HTTP status is healthy, and confirms the page really loads (not a blank/error/maintenance page). When the site is **down**, it files an **auto-approved** `priority:critical` issue (`status:approved`, `source:uptime`) so `fix-issues` restores it immediately and escalates to `needs-human` if the fix needs infra/credentials. Healthy runs only write a snapshot. The URL comes from `site_url=` in `.darkflow`, or is auto-discovered from Coolify / `vercel.json` / `netlify.toml` / `CNAME` / `package.json` and persisted. Duplicate-safe (comments on an existing open outage issue instead of refiling); slow-but-200 is recorded as `degraded`, not filed.

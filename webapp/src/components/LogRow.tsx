@@ -10,10 +10,12 @@ interface LogRowProps {
   routine: string;
   summary: string;
   output: string | null;
+  costUsd?: number | null;
+  totalTokens?: number | null;
   timestamp: string;
 }
 
-export function LogRow({ routine, summary, output, timestamp }: LogRowProps) {
+export function LogRow({ routine, summary, output, costUsd, totalTokens, timestamp }: LogRowProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -40,13 +42,19 @@ export function LogRow({ routine, summary, output, timestamp }: LogRowProps) {
         <td className="py-3 px-4 text-sm" style={{ color: "var(--text)" }}>
           {summary}
         </td>
+        <td className="py-3 px-4 text-xs text-right font-mono" style={{ color: "var(--muted)" }}>
+          {totalTokens != null ? totalTokens.toLocaleString() : "—"}
+        </td>
+        <td className="py-3 px-4 text-xs text-right font-mono" style={{ color: "var(--muted)" }}>
+          {costUsd != null ? `$${costUsd.toFixed(4)}` : "—"}
+        </td>
         <td className="py-3 px-4 text-xs text-right" style={{ color: "var(--muted)", width: "3rem" }}>
           {output && (open ? "▾" : "▶")}
         </td>
       </tr>
       {open && output && (
         <tr style={{ borderBottom: "1px solid var(--border)" }}>
-          <td colSpan={4} className="px-4 pb-4 pt-1">
+          <td colSpan={6} className="px-4 pb-4 pt-1">
             <div
               className="text-xs overflow-auto max-h-[500px] p-3 rounded prose prose-invert prose-xs max-w-none"
               style={{ background: "var(--bg)", color: "var(--text)", lineHeight: 1.5 }}
