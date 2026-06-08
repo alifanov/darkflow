@@ -140,6 +140,7 @@ The real power comes from scheduling Claude agents that run the loop automatical
 | [Architecture review](routines/architecture-review.md) | `0 2 * * 0` | Weekly Sun 2:00 — `/improve-codebase-architecture` → issues |
 | [Security audit](routines/security-audit.md) | `0 3 * * 0` | Weekly Sun 3:00 — full security review → **auto-approved** issues |
 | [Build optimization](routines/build-optimization.md) | `0 4 * * 0` | Weekly Sun 4:00 — build + deploy pipeline analysis → issues |
+| [Uptime check](routines/uptime-check.md) | `0 */4 * * *` | Every 4h — DNS + HTTP + page-load check → **auto-approved** `critical` issue if site down |
 | [Vulnerability check](routines/vulnerability-check.md) | `0 6 * * *` | Daily 6:00 — Dependabot → **auto-approved** issues; code/secret scanning → proposed |
 | [Code health](routines/code-health.md) | `0 7 * * 0` | Weekly Sun 7:00 — fallow audit (dead code, dupes, cycles, complexity) → issues *(optional, TS/JS only)* |
 | [Mailbox check](routines/mailbox-check.md) | `0 * * * *` | Hourly — IMAP inbox → issues; approved `action:reply` issues → SMTP reply *(optional)* |
@@ -179,6 +180,7 @@ Daily
   8:30  observability-check  → status:proposed issues
   9:00  coolify-check-deployment → deploy status, critical issue on failure
   9:00  claude-md-update     → keeps agent context in sync
+  */4h  uptime-check         → DNS + HTTP + page-load; site down → status:approved critical issue
 
 Weekly
   Mon 8:00  gsc-check             → status:proposed issues
@@ -232,6 +234,7 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | `/darkflow:security-audit` | Full security review (static + runtime) → GitHub issues + security snapshot |
 | `/darkflow:vulnerability-check` | GitHub Dependabot + code/secret scanning alerts → GitHub issues |
 | `/darkflow:build-optimization` | Build + deploy pipeline analysis → optimization issues |
+| `/darkflow:uptime-check` | DNS + HTTP + page-load check → **auto-approved** `critical` issue if the site is down |
 | `/darkflow:code-health` | fallow audit (dead code, dupes, cycles, complexity) → GitHub issues *(optional, TS/JS only)* |
 
 ### Interactive commands

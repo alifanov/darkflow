@@ -14,6 +14,16 @@ Categories:
 
 ---
 
+## [2.54.0] — 2026-06-08
+
+- **New routine** — `uptime-check`, an always-on core routine that runs **every 4 hours** (`0 */4 * * *`, Sonnet) to verify the project's public site is actually up: resolves DNS, hits the production URL, checks the HTTP status is healthy, and confirms the page really loads (not a blank/error/maintenance page). When the site is **down**, it files an **auto-approved** `priority:critical` issue (`status:approved`, `source:uptime`) so `fix-issues` restores it immediately and escalates to `needs-human` if the fix needs infra/credentials. Healthy runs only write a snapshot. The URL comes from `site_url=` in `.darkflow`, or is auto-discovered from Coolify / `vercel.json` / `netlify.toml` / `CNAME` / `package.json` and persisted. Duplicate-safe (comments on an existing open outage issue instead of refiling); slow-but-200 is recorded as `degraded`, not filed.
+- **New label** — `source:uptime` (violet `5319e7`) — "From uptime / site health check".
+- **Installer** — wired `uptime-check` across `install.sh` (label, command-template copy, `routines.yml` heredoc, `claude.md` Active Routines + command lists, post-install summary) and `checklist.yml` (`cmd-uptime-check`, `routine-uptime-check`), so `darkflow:update` + `check.sh --fix` install it into existing projects.
+- **New command** — `templates/.claude/commands/darkflow/uptime-check.md` (`/darkflow:uptime-check`) plus `routines/uptime-check.md` reference doc.
+- **Workflow** — added the uptime snapshot route (`insights/uptime/YYYY-MM-DD.md`) to `agent-workflow.md`.
+
+---
+
 ## [2.53.1] — 2026-06-08
 
 - **Installer** — the `claude.md` **Active Routines** list now includes `docs-audit` (Weekly Sun 5:00) when the `docs-audit` module is enabled; it was missing from that list while present in the command list. `product-overview` deliberately stays out of Active Routines (it's a reporting command, not a scheduled-into-the-loop audit) and remains in the command list.

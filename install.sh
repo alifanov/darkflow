@@ -668,6 +668,7 @@ setup_labels() {
   _do_label "source:manual"          "5319e7" "Hypothesis without data source"
   _do_label "source:mailbox"         "5319e7" "From inbox email — incoming customer requests"
   _do_label "source:build"           "5319e7" "From build/deploy optimization audit"
+  _do_label "source:uptime"          "5319e7" "From uptime / site health check"
   _do_label "source:design"          "5319e7" "From design quality routines (impeccable:audit/critique/harden)"
   _do_label "source:code-health"     "5319e7" "From fallow code-health audit (dead code, dupes, cycles, complexity)"
   _do_label "action:reply"           "0052cc" "Approved mailbox issue — agent will send email reply"
@@ -757,6 +758,7 @@ HEREDOC
   [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Architecture review** (Weekly Sun 2:00) — \`/improve-codebase-architecture\` → GitHub issues"
   [[ "$MOD_MAILBOX"       == true ]] && echo "- **Mailbox check** (Hourly) — IMAP inbox → GitHub issues with \`action:reply\` / \`action:fix\` choice; approved replies sent via SMTP"
   echo "- **Build optimization** (Weekly Sun 4:00) — build + deploy pipeline analysis → GitHub issues"
+  echo "- **Uptime check** (Every 4h) — DNS + HTTP + page-load check; site down → auto-approved critical issue"
   [[ "$MOD_DOCS_AUDIT"    == true ]] && echo "- **Docs audit** (Weekly Sun 5:00) — docs ↔ code drift → GitHub issues"
   [[ "$MOD_FALLOW"        == true ]] && echo "- **Code health** (Weekly Sun 7:00) — \`/darkflow:code-health\` fallow audit (dead code, dupes, cycles, complexity) → GitHub issues"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design audit** (Weekly Sat 10:00) — \`/impeccable:audit\` five-dimension quality check → GitHub issues"
@@ -787,6 +789,7 @@ HEREDOC
   [[ "$MOD_MAILBOX"       == true ]] && echo "- \`/darkflow:mailbox-check\` — read new mail and send approved replies via SMTP"
   echo "- \`/darkflow:security-audit\` — full security review (static + runtime) → GitHub issues"
   echo "- \`/darkflow:build-optimization\` — build + deploy optimization analysis → GitHub issues"
+  echo "- \`/darkflow:uptime-check\` — DNS + HTTP + page-load check; site down → auto-approved critical issue"
   [[ "$MOD_FALLOW"        == true ]] && echo "- \`/darkflow:code-health\` — fallow audit (dead code, dupes, cycles, complexity) → GitHub issues"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-audit\` — five-dimension design quality check → GitHub issues"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-critique\` — scored design review with persona tests → GitHub issues"
@@ -1116,6 +1119,7 @@ smart_update_template ".claude/commands/darkflow/update-config.md"              
 smart_update_template ".claude/commands/darkflow/docs-audit.md"                   ".claude/commands/darkflow/docs-audit.md"
 smart_update_template ".claude/commands/darkflow/product-overview.md"             ".claude/commands/darkflow/product-overview.md"
 smart_update_template ".claude/commands/darkflow/build-optimization.md"          ".claude/commands/darkflow/build-optimization.md"
+smart_update_template ".claude/commands/darkflow/uptime-check.md"                 ".claude/commands/darkflow/uptime-check.md"
 smart_update_template ".claude/commands/darkflow/grill.md"                       ".claude/commands/darkflow/grill.md"
 smart_update_template ".claude/commands/darkflow/design-audit.md"                ".claude/commands/darkflow/design-audit.md"
 smart_update_template ".claude/commands/darkflow/design-critique.md"             ".claude/commands/darkflow/design-critique.md"
@@ -1381,6 +1385,12 @@ YAML
     engine: claude
     enabled: true
 
+  uptime-check:
+    cron: "0 */4 * * *"
+    model: sonnet
+    engine: claude
+    enabled: true
+
   vulnerability-check:
     cron: "0 6 * * *"
     model: sonnet
@@ -1525,6 +1535,7 @@ else
 fi
 echo "  security-audit       0 3 * * 0      Full security review → GitHub issues"
 echo "  build-optimization   0 4 * * 0      Build + deploy pipeline analysis → GitHub issues"
+echo "  uptime-check         0 */4 * * *    DNS + HTTP + page-load check → critical issue if site down"
 echo "  vulnerability-check  0 6 * * *      GitHub Dependabot + code scanning → GitHub issues"
 [[ "$MOD_ANALYTICS"     == true ]] && echo "  analytics-review     0 8 * * *      PostHog + commits → GitHub issues"
 [[ "$MOD_OBSERVABILITY" == true ]] && echo "  observability-check  30 8 * * *     Errors / latency → GitHub issues"
