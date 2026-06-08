@@ -751,6 +751,7 @@ HEREDOC
     echo "- **Observability check** (Daily 8:30) — ${_obs_label}: errors / slow queries / latency → GitHub issues"
   fi
   [[ "$MOD_GSC"           == true ]] && echo "- **GSC check** (Weekly Mon 8:00) — Google Search Console → GitHub issues"
+  [[ "$MOD_ADS"           == true ]] && echo "- **Ads review** (Weekly Mon 8:00) — paid ads performance → GitHub issues"
   [[ "$MOD_COOLIFY"       == true ]] && echo "- **Coolify check deployment** (Daily 9:00) — deploy status → critical issue on failure"
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- **CLAUDE.md update** (Weekdays 9:00) — re-generates this file from codebase"
   [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Architecture review** (Weekly Sun 2:00) — \`/improve-codebase-architecture\` → GitHub issues"
@@ -776,6 +777,7 @@ HEREDOC
   [[ "$MOD_ANALYTICS"     == true ]] && echo "- \`/darkflow:analytics-review\` — PostHog + commits → GitHub issues"
   [[ "$MOD_OBSERVABILITY" == true ]] && echo "- \`/darkflow:observability-check\` — errors / slow queries / latency → GitHub issues"
   [[ "$MOD_GSC"           == true ]] && echo "- \`/darkflow:gsc-check\` — Google Search Console → GitHub issues"
+  [[ "$MOD_ADS"           == true ]] && echo "- \`/darkflow:ads-review\` — paid ads performance → GitHub issues"
   [[ "$MOD_COOLIFY"       == true ]] && echo "- \`/darkflow:coolify-check-deployment\` — deployment status check"
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- \`/darkflow:claude-md-update\` — regenerate CLAUDE.md from codebase"
   [[ "$MOD_DOCS_AUDIT"        == true ]] && echo "- \`/darkflow:docs-audit\` — docs <-> code drift check → GitHub issues"
@@ -1103,6 +1105,7 @@ smart_update_template ".claude/commands/darkflow/fix-issues.md"                 
 smart_update_template ".claude/commands/darkflow/analytics-review.md"             ".claude/commands/darkflow/analytics-review.md"
 smart_update_template ".claude/commands/darkflow/observability-check.md"          ".claude/commands/darkflow/observability-check.md"
 smart_update_template ".claude/commands/darkflow/gsc-check.md"                    ".claude/commands/darkflow/gsc-check.md"
+smart_update_template ".claude/commands/darkflow/ads-review.md"                   ".claude/commands/darkflow/ads-review.md"
 smart_update_template ".claude/commands/darkflow/coolify-check-deployment.md"     ".claude/commands/darkflow/coolify-check-deployment.md"
 smart_update_template ".claude/commands/darkflow/claude-md-update.md"             ".claude/commands/darkflow/claude-md-update.md"
 smart_update_template ".claude/commands/darkflow/security-audit.md"               ".claude/commands/darkflow/security-audit.md"
@@ -1264,6 +1267,15 @@ YAML
       [[ "$MOD_GSC" == true ]] && cat << 'YAML'
 
   gsc-check:
+    cron: "0 8 * * 1"
+    model: sonnet
+    engine: claude
+    enabled: true
+YAML
+
+      [[ "$MOD_ADS" == true ]] && cat << 'YAML'
+
+  ads-review:
     cron: "0 8 * * 1"
     model: sonnet
     engine: claude
@@ -1516,6 +1528,7 @@ echo "  vulnerability-check  0 6 * * *      GitHub Dependabot + code scanning �
 [[ "$MOD_ANALYTICS"     == true ]] && echo "  analytics-review     0 8 * * *      PostHog + commits → GitHub issues"
 [[ "$MOD_OBSERVABILITY" == true ]] && echo "  observability-check  30 8 * * *     Errors / latency → GitHub issues"
 [[ "$MOD_GSC"           == true ]] && echo "  gsc-check            0 8 * * 1      Google Search Console → GitHub issues"
+[[ "$MOD_ADS"           == true ]] && echo "  ads-review           0 8 * * 1      Paid ads performance → GitHub issues"
 [[ "$MOD_COOLIFY"       == true ]] && echo "  coolify-check-deploy 0 9 * * *      Deployment status → critical issue on failure"
 [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "  claude-md-update     0 9 * * 1-5    Re-generates CLAUDE.md from codebase"
 [[ "$MOD_DOCS_AUDIT"        == true ]] && echo "  docs-audit           0 5 * * 0      Docs <-> code drift → GitHub issues"

@@ -46,12 +46,13 @@ A dated snapshot at `docs/insights/docs-audit/YYYY-MM-DD.md` and a metrics file 
 
 ```
 Sun 2:00  Architecture review
-Sun 3:00  Security code audit
-Sun 4:00  UX/UI audit
+Sun 3:00  Security audit
+Sun 4:00  Build optimization
 Sun 5:00  Docs audit            ← this routine
+Sun 7:00  Code health
 ```
 
-Runs after the other Sunday audits with 1-hour gaps so they don't overlap.
+Runs after the other Sunday audits with gaps so they don't overlap.
 
 ---
 

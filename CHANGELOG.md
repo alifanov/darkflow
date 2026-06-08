@@ -14,6 +14,15 @@ Categories:
 
 ---
 
+## [2.53.0] — 2026-06-08
+
+- **Installer** — fully wired the `ads-review` routine (paid ads performance → GitHub issues, weekly Mon 8:00). It previously shipped as an orphan: the routine doc, command template, and a README row existed and `analytics-review` referenced it, but it was never added to the `routines.yml` generator or `checklist.yml` — so it never scheduled and existing projects never picked it up. Now gated behind the `ads` module across `install.sh` (routines.yml heredoc, command copy, `claude.md` routine/command lists, post-install summary) and `checklist.yml` (`cmd-ads-review`, `routine-ads-review`), so `darkflow:update` + `check.sh --fix` install it.
+- **Docs** — corrected the `fix-issues` cron everywhere it was documented as `*/15 * * * *` ("every 15 min"); the installer has generated `0 * * * *` (hourly) for some time, so the docs (`README.md`, `routines/README.md`, `routines/fix-issues.md`) now match reality.
+- **Docs** — refreshed stale Sunday-cluster schedule diagrams in `routines/architecture-review.md` and `routines/docs-audit.md` (the 4:00 slot has been `build-optimization` for a while, not the long-removed "Security runtime audit" / "UX/UI audit").
+- **New routine** — added the missing `routines/mailbox-check.md` reference doc; `mailbox-check` was the only routine without one.
+
+---
+
 ## [2.52.3] — 2026-06-08
 
 - **Webapp** — the header logo (`⚡ Dark Flow`) is now a link to the home page (`/`).

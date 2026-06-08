@@ -53,15 +53,17 @@ Large findings (multi-day work) should be broken into sub-issues before approvin
 
 ---
 
-## Schedule relative to other security/audit routines
+## Schedule relative to other weekly routines
 
 ```
-Sun 2:00  Architecture review  ← this routine
-Sun 3:00  Security code audit
-Sun 4:00  Security runtime audit
+Sun 2:00  Architecture review   ← this routine
+Sun 3:00  Security audit
+Sun 4:00  Build optimization
+Sun 5:00  Docs audit
+Sun 7:00  Code health
 ```
 
-All three run on Sunday with 1-hour gaps so they don't overlap.
+Runs first in the Sunday audit cluster, with gaps so routines don't overlap.
 
 ---
 

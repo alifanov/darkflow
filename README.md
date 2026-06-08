@@ -130,10 +130,11 @@ The real power comes from scheduling Claude agents that run the loop automatical
 
 | Routine | Cron | What it does |
 |---|---|---|
-| [**Fix issues**](routines/fix-issues.md) | `*/15 * * * *` | Every 15 min — picks up `status:approved` → PR → merge |
+| [**Fix issues**](routines/fix-issues.md) | `0 * * * *` | Hourly — picks up `status:approved` → PR → merge |
 | [Analytics review](routines/analytics-review.md) | `0 8 * * *` | Daily 8:00 — PostHog + commits → `status:proposed` issues |
 | [Observability check](routines/observability-check.md) | `30 8 * * *` | Daily 8:30 — SigNoz/errors/slow URLs → issues |
 | [GSC check](routines/gsc-check.md) | `0 8 * * 1` | Weekly Mon 8:00 — Google Search Console → issues |
+| [Ads review](routines/ads-review.md) | `0 8 * * 1` | Weekly Mon 8:00 — paid ads performance → issues *(optional)* |
 | [Coolify check deployment](routines/coolify-check-deployment.md) | `0 9 * * *` | Daily 9:00 — deployment status → `critical` issue on failed deploy |
 | [CLAUDE.md update](routines/claude-md-update.md) | `0 9 * * 1-5` | Weekdays 9:00 — re-generates CLAUDE.md from codebase |
 | [Architecture review](routines/architecture-review.md) | `0 2 * * 0` | Weekly Sun 2:00 — `/improve-codebase-architecture` → issues |
@@ -181,13 +182,14 @@ Daily
 
 Weekly
   Mon 8:00  gsc-check             → status:proposed issues
+  Mon 8:00  ads-review            → status:proposed issues + ads snapshot (optional)
   Sun 2:00  architecture-review   → status:proposed issues (Opus) + arch snapshot → syncs to web UI
   Sun 3:00  security-audit        → status:approved issues (Opus) + security snapshot → syncs to web UI
   Sun 4:00  build-optimization   → status:proposed issues (Opus) + build snapshot
   Sun 7:00  code-health          → status:proposed issues (Sonnet) + code-health snapshot (optional, TS/JS)
 
 Continuous
-  :00/:15/:30/:45  fix-issues (every 15 min)   → picks up status:approved → PR → merge
+  :00  fix-issues (hourly)   → picks up status:approved → PR → merge
 
 Human
        Reviews status:proposed in web UI (localhost:5555) → Approve / Reject

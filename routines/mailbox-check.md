@@ -1,0 +1,71 @@
+# Mailbox Check
+
+Hourly check of the project's IMAP inbox — turns new incoming emails into `status:proposed` GitHub issues, and sends approved email replies via SMTP. A two-way bridge between email and the Dark Flow issue loop.
+
+This is an **optional** routine, gated behind the `mailbox` module. Each incoming email becomes an issue with a choice of action (`action:reply` → the routine writes and sends a reply; `action:fix` → `fix-issues` treats it as a code/product task).
+
+---
+
+## Instructions
+
+```
+/darkflow:mailbox-check
+```
+
+The command reads `.darkflow` for the output language, branch, and merge strategy, and loads mailbox credentials from `.env.darkflow` — no placeholders to replace.
+
+---
+
+## Configuration
+
+| Setting | Value |
+|---|---|
+| Cron | `0 * * * *` (hourly) |
+| Folder | Project root (`/path/to/your-project`) |
+| Model | Sonnet (default) |
+| Module | `mailbox` |
+| Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
+| Run manually | `bash .darkflow.d/darkflow-run.sh mailbox-check` |
+
+Enable with `--with-mailbox` during install, or set `modules=...,mailbox,...` in `.darkflow`.
+
+Disable without removing: set `enabled: false` in `.darkflow.d/routines.yml`.
+
+---
+
+## Required integrations
+
+- **`gh` CLI** authenticated — for creating issues, commenting, closing
+- **Mailbox credentials** in `.env.darkflow` (git-ignored):
+  - `MAILBOX_IMAP_HOST` / `_PORT` / `_USER` / `_PASSWORD` — incoming
+  - `MAILBOX_SMTP_HOST` / `_PORT` / `_USER` / `_PASSWORD` — outgoing replies
+- **Python 3** — the routine drives `.darkflow.d/mailbox/fetch.py` (IMAP) and `send.py` (SMTP)
+
+If `MAILBOX_IMAP_HOST` is empty after sourcing `.env.darkflow`, the routine stops with "mailbox not configured".
+
+---
+
+## What gets created
+
+Issues with labels: `status:proposed`, `source:mailbox`, `priority:high` / `medium` (urgency keywords bump to `high`).
+
+Each issue carries the original email metadata (From, Date, Subject, Message-ID) so replies thread correctly. A human picks `action:reply` or `action:fix` and sets `status:approved` to trigger the action.
+
+---
+
+## How it fits the loop
+
+```
+Incoming email → mailbox-check → status:proposed issue (action choice)
+  ↓ human adds action:reply or action:fix + status:approved
+[action:reply]  mailbox-check (next run) → SMTP reply → closes issue
+[action:fix]    fix-issues → implements → PR → merge → closes issue
+```
+
+---
+
+## Notes
+
+- Messages are only marked **Seen** after their issue is created — a failed `gh issue create` leaves the mail unread for the next run.
+- Reply text comes from human comments on the issue if present; otherwise the routine writes a short acknowledgement in the project `language=`.
+- Never paste credentials into issue bodies — only email metadata and message text (truncated to 3000 chars).
