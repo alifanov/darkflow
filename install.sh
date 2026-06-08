@@ -757,6 +757,7 @@ HEREDOC
   [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Architecture review** (Weekly Sun 2:00) — \`/improve-codebase-architecture\` → GitHub issues"
   [[ "$MOD_MAILBOX"       == true ]] && echo "- **Mailbox check** (Hourly) — IMAP inbox → GitHub issues with \`action:reply\` / \`action:fix\` choice; approved replies sent via SMTP"
   echo "- **Build optimization** (Weekly Sun 4:00) — build + deploy pipeline analysis → GitHub issues"
+  [[ "$MOD_DOCS_AUDIT"    == true ]] && echo "- **Docs audit** (Weekly Sun 5:00) — docs ↔ code drift → GitHub issues"
   [[ "$MOD_FALLOW"        == true ]] && echo "- **Code health** (Weekly Sun 7:00) — \`/darkflow:code-health\` fallow audit (dead code, dupes, cycles, complexity) → GitHub issues"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design audit** (Weekly Sat 10:00) — \`/impeccable:audit\` five-dimension quality check → GitHub issues"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design critique** (Weekly Sat 11:00) — \`/impeccable:critique\` scored review + persona tests → GitHub issues"

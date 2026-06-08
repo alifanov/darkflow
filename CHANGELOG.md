@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.53.1] — 2026-06-08
+
+- **Installer** — the `claude.md` **Active Routines** list now includes `docs-audit` (Weekly Sun 5:00) when the `docs-audit` module is enabled; it was missing from that list while present in the command list. `product-overview` deliberately stays out of Active Routines (it's a reporting command, not a scheduled-into-the-loop audit) and remains in the command list.
+
+---
+
 ## [2.53.0] — 2026-06-08
 
 - **Installer** — fully wired the `ads-review` routine (paid ads performance → GitHub issues, weekly Mon 8:00). It previously shipped as an orphan: the routine doc, command template, and a README row existed and `analytics-review` referenced it, but it was never added to the `routines.yml` generator or `checklist.yml` — so it never scheduled and existing projects never picked it up. Now gated behind the `ads` module across `install.sh` (routines.yml heredoc, command copy, `claude.md` routine/command lists, post-install summary) and `checklist.yml` (`cmd-ads-review`, `routine-ads-review`), so `darkflow:update` + `check.sh --fix` install it.
