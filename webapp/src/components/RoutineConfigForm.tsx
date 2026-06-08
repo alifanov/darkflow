@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 // Which models each engine offers. Used to populate the per-routine model
@@ -123,13 +123,10 @@ export function RoutineConfigForm({ projectId, routineConfigs, modules }: Routin
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const updateRoutine = (routineName: string, field: keyof RoutineState, value: string | boolean | null) => {
-    setRoutines((prev) =>
-      prev.map((r) => (r.name === routineName ? { ...r, [field]: value } : r))
-    );
-  };
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const save = async () => {
+  const save = async (toSave: RoutineState[]) => {
     setStatus("saving");
     setErrorMsg("");
     try {
@@ -137,8 +134,8 @@ export function RoutineConfigForm({ projectId, routineConfigs, modules }: Routin
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          modules: modulesFromRoutines(routines),
-          routines: routines.map((r) => ({
+          modules: modulesFromRoutines(toSave),
+          routines: toSave.map((r) => ({
             name: r.name,
             cron: r.cron || null,
             model: r.model,
@@ -154,11 +151,27 @@ export function RoutineConfigForm({ projectId, routineConfigs, modules }: Routin
       }
       setStatus("saved");
       router.refresh();
-      setTimeout(() => setStatus("idle"), 3000);
+      if (savedTimer.current) clearTimeout(savedTimer.current);
+      savedTimer.current = setTimeout(() => setStatus("idle"), 2000);
     } catch (e) {
       setStatus("error");
       setErrorMsg(e instanceof Error ? e.message : "Save failed");
     }
+  };
+
+  // Debounced auto-save: applies the change to state and persists it shortly
+  // after, so typing in the cron field doesn't fire a request per keystroke.
+  const scheduleSave = (next: RoutineState[]) => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => save(next), 600);
+  };
+
+  const updateRoutine = (routineName: string, field: keyof RoutineState, value: string | boolean | null) => {
+    setRoutines((prev) => {
+      const next = prev.map((r) => (r.name === routineName ? { ...r, [field]: value } : r));
+      scheduleSave(next);
+      return next;
+    });
   };
 
   return (
@@ -168,25 +181,15 @@ export function RoutineConfigForm({ projectId, routineConfigs, modules }: Routin
       </h2>
       <RoutineTable rows={routines} onChange={updateRoutine} />
 
-      <div className="flex items-center gap-3 mt-1">
-        <button
-          onClick={save}
-          disabled={status === "saving"}
-          className="text-sm px-4 py-2 rounded cursor-pointer font-medium"
-          style={{
-            background: "var(--accent)",
-            color: "#fff",
-            border: "none",
-            opacity: status === "saving" ? 0.6 : 1,
-          }}
-        >
-          {status === "saving" ? "Saving…" : "Save routines"}
-        </button>
+      <div className="flex items-center gap-3 mt-1 h-5 text-sm">
+        {status === "saving" && (
+          <span style={{ color: "var(--muted)" }}>Saving…</span>
+        )}
         {status === "saved" && (
-          <span className="text-sm" style={{ color: "var(--green)" }}>Saved ✓</span>
+          <span style={{ color: "var(--green)" }}>Saved ✓</span>
         )}
         {status === "error" && (
-          <span className="text-sm" style={{ color: "var(--red)" }}>{errorMsg || "Failed to save"}</span>
+          <span style={{ color: "var(--red)" }}>{errorMsg || "Failed to save"}</span>
         )}
       </div>
     </section>

@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.52.2] — 2026-06-08
+
+- **Webapp** — the Routines tab now **auto-saves** on every change. Removed the separate "Save routines" button; toggling a routine, switching engine/model, or editing a cron expression persists immediately (debounced 600 ms so typing in the cron field doesn't fire a request per keystroke). A small inline `Saving… / Saved ✓` indicator replaces the button.
+
+---
+
 ## [2.52.1] — 2026-06-07
 
 - **Dispatcher** — fixed `engine: codex` routines failing with `error: unexpected argument '--ask-for-approval' found`. Newer Codex CLIs (≥ 0.x with the reworked `exec`) removed `--ask-for-approval` from the `codex exec` subcommand — `exec` is already non-interactive. `darkflow-run.sh` now invokes `codex exec --model <m> --dangerously-bypass-approvals-and-sandbox <prompt>` instead of the old `--sandbox workspace-write --ask-for-approval never`. The bypass is also required for routines to actually work: the `workspace-write` sandbox blocks network, which broke `git push` / `gh` calls. This mirrors Claude's `bypassPermissions` autonomy (Darkflow routines run in an externally-controlled, opt-in autonomous context). Existing installs pick up the fix on next `darkflow:update`.
