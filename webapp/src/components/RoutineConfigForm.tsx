@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ALL_ROUTINES } from "@/lib/routines";
 
 // Which models each engine offers. Used to populate the per-routine model
 // dropdown and to reset an out-of-range model when the engine is switched.
@@ -14,38 +15,8 @@ function defaultModelFor(engine: string, fallback: string): string {
   return engine === "codex" ? "gpt-5.5" : fallback;
 }
 
-// Every routine with its default schedule and the module it belongs to (null = core, always-on).
-// claudeOnly marks routines whose command prompt invokes Claude-only skills
-// (/security-review, /improve-codebase-architecture, /impeccable:*) — they run
-// under Codex but with degraded quality, so the UI warns when codex is selected.
-const ALL_ROUTINES: {
-  name: string;
-  defaultCron: string;
-  defaultModel: string;
-  module: string | null;  // null = core (fix-issues, security-audit, etc.)
-  label: string;          // human-readable description
-  claudeOnly?: boolean;   // command body depends on a Claude-only skill
-}[] = [
-  // Core — always-on, no optional module
-  { name: "fix-issues",          defaultCron: "0 * * * *",   defaultModel: "sonnet", module: null,               label: "Pick up approved issues → fix → merge" },
-  { name: "security-audit",      defaultCron: "0 3 * * 0",   defaultModel: "opus",   module: null,               label: "Full security review (weekly)", claudeOnly: true },
-  { name: "vulnerability-check", defaultCron: "0 6 * * *",   defaultModel: "sonnet", module: null,               label: "Dependabot + code scanning (daily)" },
-  { name: "build-optimization",  defaultCron: "0 4 * * 0",   defaultModel: "opus",   module: null,               label: "Build + deploy pipeline audit (weekly)" },
-  // Optional modules
-  { name: "analytics-review",         defaultCron: "0 8 * * *",   defaultModel: "sonnet", module: "analytics",        label: "PostHog + commits → issues (daily)" },
-  { name: "observability-check",      defaultCron: "30 8 * * *",  defaultModel: "sonnet", module: "observability",    label: "Errors / latency → issues (daily)" },
-  { name: "gsc-check",                defaultCron: "0 8 * * 1",   defaultModel: "sonnet", module: "gsc",              label: "Google Search Console (weekly Mon)" },
-  { name: "ads-review",               defaultCron: "0 9 * * 1",   defaultModel: "sonnet", module: "ads",              label: "Paid ads performance (weekly Mon)" },
-  { name: "coolify-check-deployment", defaultCron: "0 9 * * *",   defaultModel: "sonnet", module: "coolify",          label: "Deployment status (daily)" },
-  { name: "claude-md-update",         defaultCron: "0 9 * * 1-5", defaultModel: "sonnet", module: "claude-update",    label: "Regenerate CLAUDE.md (weekdays)" },
-  { name: "architecture-review",      defaultCron: "0 2 * * 0",   defaultModel: "opus",   module: "arch-review",      label: "Architectural analysis (weekly)", claudeOnly: true },
-  { name: "mailbox-check",            defaultCron: "0 10 * * *",  defaultModel: "sonnet", module: "mailbox",          label: "IMAP inbox → issues (daily)" },
-  { name: "docs-audit",               defaultCron: "0 5 * * 0",   defaultModel: "opus",   module: "docs-audit",       label: "Docs ↔ code drift (weekly)" },
-  { name: "product-overview",         defaultCron: "0 7 * * 1",   defaultModel: "opus",   module: "product-overview", label: "Product state digest (weekly Mon)" },
-  { name: "design-audit",             defaultCron: "0 10 * * 6",  defaultModel: "opus",   module: "impeccable",       label: "Design quality audit (weekly Sat)", claudeOnly: true },
-  { name: "design-critique",          defaultCron: "0 11 * * 6",  defaultModel: "opus",   module: "impeccable",       label: "Scored design review (weekly Sat)", claudeOnly: true },
-  { name: "design-harden",            defaultCron: "0 10 1 * *",  defaultModel: "opus",   module: "impeccable",       label: "Production-readiness check (monthly)", claudeOnly: true },
-];
+// The canonical routine catalog (name, default schedule, owning module) lives in
+// @/lib/routines so the by-repo config endpoint can share it. See that file.
 
 // Derive modules array from the set of enabled module routines
 function modulesFromRoutines(routines: RoutineState[]): string[] {

@@ -14,6 +14,14 @@ Categories:
 
 ---
 
+## [2.55.1] — 2026-06-08
+
+- **Fixed** — a routine removed from Dark Flow (e.g. `coolify-check-logs` in v2.46.0) left an orphaned `RoutineConfig` row in each existing project's database. The `/api/projects/by-repo` config endpoint emitted every row verbatim, so `get-config.sh` kept writing the dead routine into `routines.yml` — and the worker's preflight then **hard-failed on the missing command file, bricking _all_ routines** (`make df-run` aborted before anything ran). The endpoint now filters project routines against the canonical catalog, so orphaned rows are never served and clear from `routines.yml` on the next config refresh.
+- **Web UI / Worker** — extracted the canonical routine catalog to `webapp/src/lib/routines.ts` (shared by `RoutineConfigForm` and the by-repo endpoint) as the single source of truth for which routines exist; removing a routine there now also stops it being served to projects.
+- **Worker resilience** — `darkflow-run.sh` no longer aborts the whole dispatcher when an enabled routine has no command file. preflight now warns and the routine is skipped at dispatch (it can't run anyway), which also unblocks the `get-config.sh` refresh that self-heals `routines.yml`. Explicitly invoking a routine with no command file (`darkflow-run.sh <name>`) still errors clearly.
+
+---
+
 ## [2.55.0] — 2026-06-08
 
 - **Updated routine** — the worker now records **per-session cost and token usage** for every routine run. `darkflow-run.sh` invokes Claude with `--output-format json` and parses the result object: the final assistant text comes from `.result` (as before), while `.total_cost_usd` and the sum of `.usage.*` tokens are captured as `costUsd` and `totalTokens`. If the CLI output isn't valid JSON (crash/partial run), it falls back to storing the raw text with null metrics, so a run never breaks. The Codex engine and skipped runs simply emit no metrics (fields stay null).

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { KNOWN_ROUTINE_NAMES } from "@/lib/routines";
 
 export async function GET(req: NextRequest) {
   const repoUrl = req.nextUrl.searchParams.get("repoUrl");
@@ -40,6 +41,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
+  // Drop orphaned RoutineConfig rows for routines Dark Flow no longer ships.
+  // A removed routine (e.g. coolify-check-logs) leaves a stale enabled row in the
+  // DB; emitting it would write a `name: enabled: true` block into routines.yml
+  // whose command file is gone, bricking the worker's preflight check.
+  const routines = project.routineConfigs.filter((r) =>
+    KNOWN_ROUTINE_NAMES.has(r.name)
+  );
+
   return NextResponse.json({
     id: project.id,
     name: project.name,
@@ -53,6 +62,6 @@ export async function GET(req: NextRequest) {
     obsTool: project.obsTool,
     obsUrl: project.obsUrl,
     settingsUpdatedAt: project.settingsUpdatedAt?.toISOString() ?? null,
-    routines: project.routineConfigs,
+    routines,
   });
 }
