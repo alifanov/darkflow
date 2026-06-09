@@ -14,6 +14,14 @@ Categories:
 
 ---
 
+## [2.55.2] — 2026-06-09
+
+- **Fixed** — `fix-issues` got stuck in a loop on `needs-human` / `status:blocked` issues. The routine doc promised it "respects" those labels, but the **Step 2 selection query only excluded `action:reply`** — so an issue carrying both `status:approved` and `needs-human` (e.g. a fix that genuinely needs a human config change) was re-picked **every single run**. Each run re-derived the same "needs a human" verdict, posted another near-identical comment, and stopped — never fixing anything and jamming the whole approved queue behind it (observed live: 10+ duplicate bot comments on one issue, every ~20 min). The Step 2 query now excludes `needs-human` and `status:blocked` alongside `action:reply`.
+- **Fixed** — when `fix-issues` parks an issue as `needs-human` or `status:blocked`, it now **removes `status:approved`** (`gh issue edit … --remove-label status:approved`) so the issue leaves the queue cleanly instead of relying solely on the query filter, and is told to skip posting a duplicate comment if it already left an equivalent `needs-human` explanation.
+- **Worker** — `darkflow-run.sh`'s `fix-issues` preflight now counts only **actionable** approved issues (excluding `needs-human` / `status:blocked` / `action:reply`). A queue jammed with only non-actionable issues now logs `SKIP … no actionable status:approved issues` instead of launching a wasted codex/claude run every cycle.
+
+---
+
 ## [2.55.1] — 2026-06-08
 
 - **Fixed** — a routine removed from Dark Flow (e.g. `coolify-check-logs` in v2.46.0) left an orphaned `RoutineConfig` row in each existing project's database. The `/api/projects/by-repo` config endpoint emitted every row verbatim, so `get-config.sh` kept writing the dead routine into `routines.yml` — and the worker's preflight then **hard-failed on the missing command file, bricking _all_ routines** (`make df-run` aborted before anything ran). The endpoint now filters project routines against the canonical catalog, so orphaned rows are never served and clear from `routines.yml` on the next config refresh.
