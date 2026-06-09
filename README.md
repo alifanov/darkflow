@@ -96,6 +96,7 @@ docs/
 ├── insights/                ← time-stamped snapshots (analytics, GSC, ads) — daily
 │   ├── analytics/
 │   ├── search-console/
+│   ├── seo-audit/
 │   ├── ads/
 │   └── qualitative/
 └── decisions/               ← ADRs (context → decision → verification) — as needed
@@ -133,7 +134,7 @@ The real power comes from scheduling Claude agents that run the loop automatical
 | [**Fix issues**](routines/fix-issues.md) | `0 * * * *` | Hourly — picks up `status:approved` → PR → merge |
 | [Analytics review](routines/analytics-review.md) | `0 8 * * *` | Daily 8:00 — PostHog + commits → `status:proposed` issues |
 | [Observability check](routines/observability-check.md) | `30 8 * * *` | Daily 8:30 — SigNoz/errors/slow URLs → issues |
-| [GSC check](routines/gsc-check.md) | `0 8 * * 1` | Weekly Mon 8:00 — Google Search Console → issues |
+| [GSC check](routines/gsc-check.md) | `0 8 * * 1` | Weekly Mon 8:00 — Google Search Console + technical/on-page SEO audit → issues |
 | [Ads review](routines/ads-review.md) | `0 8 * * 1` | Weekly Mon 8:00 — paid ads performance → issues *(optional)* |
 | [Coolify check deployment](routines/coolify-check-deployment.md) | `0 9 * * *` | Daily 9:00 — deployment status → `critical` issue on failed deploy |
 | [CLAUDE.md update](routines/claude-md-update.md) | `0 9 * * 1-5` | Weekdays 9:00 — re-generates CLAUDE.md from codebase |
@@ -183,7 +184,7 @@ Daily
   */4h  uptime-check         → DNS + HTTP + page-load; site down → status:approved critical issue
 
 Weekly
-  Mon 8:00  gsc-check             → status:proposed issues
+  Mon 8:00  gsc-check (GSC + SEO) → status:proposed issues
   Mon 8:00  ads-review            → status:proposed issues + ads snapshot (optional)
   Sun 2:00  architecture-review   → status:proposed issues (Opus) + arch snapshot → syncs to web UI
   Sun 3:00  security-audit        → status:approved issues (Opus) + security snapshot → syncs to web UI
@@ -227,7 +228,7 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | `/darkflow:fix-issues` | Pick up one `status:approved` issue, implement, close |
 | `/darkflow:analytics-review` | PostHog + commits → GitHub issues + analytics snapshot |
 | `/darkflow:observability-check` | Errors / slow queries / latency → GitHub issues |
-| `/darkflow:gsc-check` | Google Search Console → GitHub issues |
+| `/darkflow:gsc-check` | Google Search Console + technical/on-page SEO audit → GitHub issues |
 | `/darkflow:coolify-check-deployment` | Deployment status check → `critical` issue on failed deploy |
 | `/darkflow:claude-md-update` | Regenerate CLAUDE.md from codebase |
 | `/darkflow:architecture-review` | Architectural analysis → GitHub issues + architecture snapshot |

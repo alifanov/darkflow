@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [2.56.0] — 2026-06-09
+
+- **Updated routine** — `gsc-check` now does **two halves**: the existing Google Search Console data review **plus** a technical + on-page SEO audit. The audit works primarily from the codebase (so it can propose exact fixes) with optional live-page spot-checks via `site_url=`, and covers crawlability/indexation (robots, sitemap, canonical, noindex, HTTPS), on-page (title/meta/H1 structure, alt text, OpenGraph, JSON-LD structured data, internal linking), and technical foundations (URL structure, mobile viewport, obvious CWV regressions). Includes the schema-detection caveat (JSON-LD is read from source, not raw `curl`/`web_fetch`). If the GSC MCP is absent the routine now **skips only the GSC half** and still runs the audit instead of aborting.
+- **New label** — `source:seo` for issues filed by the SEO-audit half of `gsc-check` (GSC-data findings keep `source:gsc`). The routine's `gsc.json` metric now counts open `source:gsc` **or** `source:seo` issues.
+- **Workflow** — `agent-workflow.md` snapshot-routing table and `github-issues.md` label tables gain a `docs/insights/seo-audit/` / `source:seo` row.
+- **Installer** — creates `docs/insights/seo-audit/`, registers the `source:seo` label, writes the new SEO snapshot guidance into the generated `claude.md`, and updates all GSC routine summaries to "Search Console + SEO audit".
+
 ## [2.55.2] — 2026-06-09
 
 - **Fixed** — `fix-issues` got stuck in a loop on `needs-human` / `status:blocked` issues. The routine doc promised it "respects" those labels, but the **Step 2 selection query only excluded `action:reply`** — so an issue carrying both `status:approved` and `needs-human` (e.g. a fix that genuinely needs a human config change) was re-picked **every single run**. Each run re-derived the same "needs a human" verdict, posted another near-identical comment, and stopped — never fixing anything and jamming the whole approved queue behind it (observed live: 10+ duplicate bot comments on one issue, every ~20 min). The Step 2 query now excludes `needs-human` and `status:blocked` alongside `action:reply`.

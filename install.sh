@@ -400,7 +400,7 @@ fi
 
 ask_module MOD_ANALYTICS     "Analytics"           "(PostHog, Mixpanel, Amplitude…) — daily review routine + insights/analytics/"
 ask_module MOD_OBSERVABILITY  "Observability"       "(SigNoz, Datadog, Grafana…) — daily error/latency monitoring routine"
-ask_module MOD_GSC            "Search Console"      "(Google Search Console) — weekly GSC check routine + insights/search-console/"
+ask_module MOD_GSC            "Search Console"      "(Google Search Console) — weekly GSC check + technical/on-page SEO audit routine + insights/search-console/ + insights/seo-audit/"
 ask_module MOD_ADS            "Paid Ads"            "(Google Ads, Meta…) — insights/ads/ folder"              false
 ask_module MOD_COOLIFY        "Coolify"             "deployment status check — one daily routine"
 ask_module MOD_CLAUDE_UPDATE  "CLAUDE.md update"    "weekday routine that re-generates CLAUDE.md from codebase" false
@@ -661,6 +661,7 @@ setup_labels() {
   _do_label "status:blocked"         "e99695" "Blocked by external factor"
   _do_label "source:posthog"         "5319e7" "From insights/analytics/* (PostHog/HogQL)"
   _do_label "source:gsc"             "5319e7" "From insights/search-console/* (GSC)"
+  _do_label "source:seo"             "5319e7" "From technical/on-page SEO audit (gsc-check)"
   _do_label "source:ads"             "5319e7" "From insights/ads/* (Google Ads)"
   _do_label "source:signoz"          "5319e7" "From SigNoz observability"
   _do_label "source:security-review" "5319e7" "From security audit"
@@ -723,7 +724,7 @@ HEREDOC
   echo "- **Product / marketing decisions** → \`docs/product/positioning.md\` + \`docs/product/audience.md\` + \`docs/product/pricing.md\`"
   [[ "$MOD_ANALYTICS" == true ]] && echo "- **Working with analytics events** → \`docs/product/metrics.md\` (not guessing event names)"
   [[ "$MOD_ANALYTICS" == true ]] && echo "- **Context on what's working now** → last 2–3 files from \`docs/insights/analytics/\`"
-  [[ "$MOD_GSC"       == true ]] && echo "- **SEO decisions** → last 2–3 files from \`docs/insights/search-console/\`"
+  [[ "$MOD_GSC"       == true ]] && echo "- **SEO decisions** → last 2–3 files from \`docs/insights/search-console/\` and \`docs/insights/seo-audit/\`"
   [[ "$MOD_ADS"       == true ]] && echo "- **Ads campaigns** → last 2–3 files from \`docs/insights/ads/\`"
   echo "- **Before architectural changes** → \`docs/decisions/\` (check for existing ADRs)"
 
@@ -738,6 +739,7 @@ HEREDOC
   echo "- **Made an architectural decision** → add ADR to \`docs/decisions/\` (context → decision → how to verify)"
   [[ "$MOD_ANALYTICS" == true ]] && echo "- **After analyzing analytics** → write snapshot to \`docs/insights/analytics/YYYY-MM-DD.md\`"
   [[ "$MOD_GSC"       == true ]] && echo "- **After checking GSC** → write snapshot to \`docs/insights/search-console/YYYY-MM-DD.md\`"
+  [[ "$MOD_GSC"       == true ]] && echo "- **After the SEO audit** → write snapshot to \`docs/insights/seo-audit/YYYY-MM-DD.md\`"
   [[ "$MOD_ADS"       == true ]] && echo "- **After checking ads** → write snapshot to \`docs/insights/ads/YYYY-MM-DD.md\`"
 
   echo ""
@@ -751,7 +753,7 @@ HEREDOC
     local _obs_label="${OBS_TOOL:-Observability tool}"
     echo "- **Observability check** (Daily 8:30) — ${_obs_label}: errors / slow queries / latency → GitHub issues"
   fi
-  [[ "$MOD_GSC"           == true ]] && echo "- **GSC check** (Weekly Mon 8:00) — Google Search Console → GitHub issues"
+  [[ "$MOD_GSC"           == true ]] && echo "- **GSC check** (Weekly Mon 8:00) — Google Search Console + technical/on-page SEO audit → GitHub issues"
   [[ "$MOD_ADS"           == true ]] && echo "- **Ads review** (Weekly Mon 8:00) — paid ads performance → GitHub issues"
   [[ "$MOD_COOLIFY"       == true ]] && echo "- **Coolify check deployment** (Daily 9:00) — deploy status → critical issue on failure"
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- **CLAUDE.md update** (Weekdays 9:00) — re-generates this file from codebase"
@@ -779,7 +781,7 @@ HEREDOC
   echo "- \`/darkflow:fix-issues\` — pick up one approved issue and close it"
   [[ "$MOD_ANALYTICS"     == true ]] && echo "- \`/darkflow:analytics-review\` — PostHog + commits → GitHub issues"
   [[ "$MOD_OBSERVABILITY" == true ]] && echo "- \`/darkflow:observability-check\` — errors / slow queries / latency → GitHub issues"
-  [[ "$MOD_GSC"           == true ]] && echo "- \`/darkflow:gsc-check\` — Google Search Console → GitHub issues"
+  [[ "$MOD_GSC"           == true ]] && echo "- \`/darkflow:gsc-check\` — Google Search Console + technical/on-page SEO audit → GitHub issues"
   [[ "$MOD_ADS"           == true ]] && echo "- \`/darkflow:ads-review\` — paid ads performance → GitHub issues"
   [[ "$MOD_COOLIFY"       == true ]] && echo "- \`/darkflow:coolify-check-deployment\` — deployment status check"
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- \`/darkflow:claude-md-update\` — regenerate CLAUDE.md from codebase"
@@ -1082,6 +1084,7 @@ make_dir ".darkflow.d/state"
 
 [[ "$MOD_ANALYTICS" == true ]] && make_dir "docs/insights/analytics"
 [[ "$MOD_GSC"       == true ]] && make_dir "docs/insights/search-console"
+[[ "$MOD_GSC"       == true ]] && make_dir "docs/insights/seo-audit"
 [[ "$MOD_ADS"       == true ]] && make_dir "docs/insights/ads"
 
 # ── 2. Template files ─────────────────────────────────────────────────────────
@@ -1539,7 +1542,7 @@ echo "  uptime-check         0 */4 * * *    DNS + HTTP + page-load check → cri
 echo "  vulnerability-check  0 6 * * *      GitHub Dependabot + code scanning → GitHub issues"
 [[ "$MOD_ANALYTICS"     == true ]] && echo "  analytics-review     0 8 * * *      PostHog + commits → GitHub issues"
 [[ "$MOD_OBSERVABILITY" == true ]] && echo "  observability-check  30 8 * * *     Errors / latency → GitHub issues"
-[[ "$MOD_GSC"           == true ]] && echo "  gsc-check            0 8 * * 1      Google Search Console → GitHub issues"
+[[ "$MOD_GSC"           == true ]] && echo "  gsc-check            0 8 * * 1      Google Search Console + SEO audit → GitHub issues"
 [[ "$MOD_ADS"           == true ]] && echo "  ads-review           0 8 * * 1      Paid ads performance → GitHub issues"
 [[ "$MOD_COOLIFY"       == true ]] && echo "  coolify-check-deploy 0 9 * * *      Deployment status → critical issue on failure"
 [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "  claude-md-update     0 9 * * 1-5    Re-generates CLAUDE.md from codebase"
