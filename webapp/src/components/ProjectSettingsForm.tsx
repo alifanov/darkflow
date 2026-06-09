@@ -3,6 +3,23 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+const LANGUAGES = [
+  "English",
+  "Russian",
+  "Spanish",
+  "German",
+  "French",
+  "Portuguese",
+  "Italian",
+  "Dutch",
+  "Polish",
+  "Ukrainian",
+  "Turkish",
+  "Chinese",
+  "Japanese",
+  "Korean",
+];
+
 interface ProjectSettingsFormProps {
   projectId: string;
   initialValues: {
@@ -116,7 +133,31 @@ export function ProjectSettingsForm({ projectId, initialValues }: ProjectSetting
         <InputField label="Name" value={name} onChange={setName} placeholder="My App" />
         <InputField label="Slug" value={slug} onChange={setSlug} placeholder="my-app" hint="Lowercase, dash-separated identifier" />
         <InputField label="Main branch" value={branch} onChange={setBranch} placeholder="main" />
-        <InputField label="Communication language" value={language} onChange={setLanguage} placeholder="English" hint="For issues, comments, commits & chat only — the product itself always stays in English" />
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--muted)" }}>
+            Communication language
+          </label>
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="text-sm px-3 py-1.5 rounded cursor-pointer"
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              color: "var(--text)",
+              outline: "none",
+              width: "100%",
+            }}
+          >
+            {(LANGUAGES.includes(language) ? LANGUAGES : [language, ...LANGUAGES]).map((l) => (
+              <option key={l} value={l}>{l}</option>
+            ))}
+          </select>
+          <span className="text-xs" style={{ color: "var(--muted)" }}>
+            For issues, comments, commits &amp; chat only — the product itself always stays in English
+          </span>
+        </div>
 
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--muted)" }}>

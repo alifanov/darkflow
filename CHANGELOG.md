@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.58.1] — 2026-06-09
+
+- **Web UI** — the **Communication language** field in project settings is now a dropdown (select) instead of a free-text input, with a curated list of common languages. Any previously-saved custom value is preserved as an extra option so nothing is lost.
+
 ## [2.58.0] — 2026-06-09
 
 - **Web UI** — the analytics page is now split into **tabs**: **Over time** (the daily cost/tokens chart) and **Breakdown**. The total cost/tokens/runs summary cards and the time-window selector (7d / 30d / 90d / all) stay above the tabs and apply to both.
