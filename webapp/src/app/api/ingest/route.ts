@@ -36,6 +36,7 @@ interface IngestLog {
   routine: string;
   summary: string;
   output?: string;
+  model?: string;
   costUsd?: number;
   totalTokens?: number;
   timestamp?: string;
@@ -201,6 +202,7 @@ export async function POST(req: NextRequest) {
         routine: l.routine,
         summary: l.summary,
         output: l.output ?? null,
+        model: l.model ?? null,
         costUsd: l.costUsd ?? null,
         totalTokens: l.totalTokens ?? null,
         timestamp: l.timestamp ? new Date(l.timestamp) : new Date(),

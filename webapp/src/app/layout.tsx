@@ -28,6 +28,22 @@ export default function RootLayout({
           >
             ⚡ Dark Flow
           </Link>
+          <nav className="flex items-center gap-4 ml-2 text-sm">
+            <Link
+              href="/"
+              className="no-underline cursor-pointer hover:opacity-80 transition-opacity"
+              style={{ color: "var(--muted)" }}
+            >
+              Projects
+            </Link>
+            <Link
+              href="/analytics"
+              className="no-underline cursor-pointer hover:opacity-80 transition-opacity"
+              style={{ color: "var(--muted)" }}
+            >
+              Analytics
+            </Link>
+          </nav>
         </header>
         <main className="max-w-7xl mx-auto px-6 py-8">{children}</main>
       </body>

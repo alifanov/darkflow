@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [2.57.0] — 2026-06-09
+
+- **Web UI** — new **Usage analytics** page (`/analytics`, linked from the header nav) that answers "where is the money going?" across **all** projects at once. Breaks cost and tokens down four ways — **over time** (daily area chart), **by project**, **by model**, and **by routine** (horizontal bar charts + exact-number tables) — with a 7d / 30d / 90d / all-time window selector and total cost/tokens/runs summary cards. Charts use `recharts`.
+- **Web UI** — the per-project **Logs** tab no longer shows its own "Cost by routine" rollup; that breakdown (and the cross-project ones) now live on the dedicated analytics page. The Logs tab keeps the "Recent runs" table.
+- **Database** — added a nullable `model` column to `RoutineLog` (migration `20260609000000_add_routine_log_model`) so spend can be attributed to the model actually used at run time. Existing rows have no model and bucket as `unknown`.
+- **Worker** — `darkflow-run.sh` now records the model used for each run (`model` field on the ingested log), captured from the `--model` it already passes to `claude` / `codex exec`. Existing projects pick this up on `darkflow:update`; new logs carry the model immediately.
+
 ## [2.56.0] — 2026-06-09
 
 - **Updated routine** — `gsc-check` now does **two halves**: the existing Google Search Console data review **plus** a technical + on-page SEO audit. The audit works primarily from the codebase (so it can propose exact fixes) with optional live-page spot-checks via `site_url=`, and covers crawlability/indexation (robots, sitemap, canonical, noindex, HTTPS), on-page (title/meta/H1 structure, alt text, OpenGraph, JSON-LD structured data, internal linking), and technical foundations (URL structure, mobile viewport, obvious CWV regressions). Includes the schema-detection caveat (JSON-LD is read from source, not raw `curl`/`web_fetch`). If the GSC MCP is absent the routine now **skips only the GSC half** and still runs the audit instead of aborting.

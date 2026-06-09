@@ -99,16 +99,8 @@ export default async function ProjectPage({
 
   if (!project) notFound();
 
-  // Per-routine spend rollup across all runs — answers "which routine eats the
-  // most of my limits". Aggregates over the full history, not just the 100
-  // logs loaded above.
-  const costByRoutine = await prisma.routineLog.groupBy({
-    by: ["routine"],
-    where: { projectId: project.id },
-    _sum: { costUsd: true, totalTokens: true },
-    _count: { _all: true },
-    orderBy: { _sum: { costUsd: "desc" } },
-  });
+  // Cross-project spend rollups (by day / project / model / routine) live on the
+  // dedicated /analytics page now.
 
   const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
   const activeTab: TabKey = isTab(tab) ? tab : "issues";
@@ -220,7 +212,7 @@ export default async function ProjectPage({
         />
       )}
 
-      {activeTab === "logs" && <RoutineLogsList logs={project.routineLogs} costByRoutine={costByRoutine} />}
+      {activeTab === "logs" && <RoutineLogsList logs={project.routineLogs} />}
 
       {activeTab === "routines" && (
         <RoutineConfigForm
@@ -390,54 +382,14 @@ function IssuesTab({
 
 function RoutineLogsList({
   logs,
-  costByRoutine,
 }: {
   logs: { id: string; routine: string; summary: string; output: string | null; costUsd: number | null; totalTokens: number | null; timestamp: Date }[];
-  costByRoutine: {
-    routine: string;
-    _sum: { costUsd: number | null; totalTokens: number | null };
-    _count: { _all: number };
-  }[];
 }) {
   if (logs.length === 0) {
     return <p style={{ color: "var(--muted)" }}>No logs yet.</p>;
   }
-  const ranked = costByRoutine.filter((r) => (r._sum.costUsd ?? 0) > 0 || (r._sum.totalTokens ?? 0) > 0);
   return (
     <section>
-      {ranked.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text)" }}>
-            Cost by routine
-          </h2>
-          <TableContainer>
-            <TableHead cols={["Routine", "Runs", "Tokens", "Cost"]} />
-            <tbody>
-              {ranked.map((r) => (
-                <tr key={r.routine} className="project-row" style={{ borderBottom: "1px solid var(--border)" }}>
-                  <td className="py-3 px-4">
-                    <span
-                      className="rounded-full px-2 py-0.5 text-xs font-medium font-mono"
-                      style={{ background: "var(--bg)", color: "var(--text)", border: "1px solid var(--border)" }}
-                    >
-                      {r.routine}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-xs text-right font-mono" style={{ color: "var(--muted)" }}>
-                    {r._count._all.toLocaleString()}
-                  </td>
-                  <td className="py-3 px-4 text-xs text-right font-mono" style={{ color: "var(--muted)" }}>
-                    {r._sum.totalTokens != null ? r._sum.totalTokens.toLocaleString() : "—"}
-                  </td>
-                  <td className="py-3 px-4 text-xs text-right font-mono" style={{ color: "var(--text)" }}>
-                    {r._sum.costUsd != null ? `$${r._sum.costUsd.toFixed(4)}` : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </TableContainer>
-        </div>
-      )}
       <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text)" }}>
         Recent runs ({logs.length})
       </h2>

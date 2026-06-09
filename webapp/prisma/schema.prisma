@@ -103,6 +103,7 @@ model RoutineLog {
   routine     String
   summary     String
   output      String?
+  model       String?
   costUsd     Float?
   totalTokens Int?
   timestamp   DateTime @default(now())
