@@ -13,9 +13,8 @@ import {
   Tooltip,
 } from "recharts";
 
-type Row = { label: string; cost: number; tokens: number; runs: number };
-type Daily = { day: string; cost: number; tokens: number; runs: number };
-type Totals = { cost: number; tokens: number; runs: number };
+export type Row = { label: string; cost: number; tokens: number; runs: number };
+export type Daily = { day: string; cost: number; tokens: number; runs: number };
 
 const ACCENT = "#58a6ff";
 const GREEN = "#3fb950";
@@ -39,105 +38,6 @@ const tooltipStyle = {
 };
 
 type Metric = "cost" | "tokens";
-
-export function AnalyticsCharts({
-  daily,
-  byProject,
-  byModel,
-  byRoutine,
-  totals,
-}: {
-  daily: Daily[];
-  byProject: Row[];
-  byModel: Row[];
-  byRoutine: Row[];
-  totals: Totals;
-}) {
-  const [metric, setMetric] = useState<Metric>("cost");
-
-  if (totals.runs === 0) {
-    return (
-      <p style={{ color: "var(--muted)" }}>
-        No usage logged for this period yet. Cost and token data appears once routines run with metrics enabled.
-      </p>
-    );
-  }
-
-  const fmt = metric === "cost" ? fmtCost : fmtTokens;
-
-  return (
-    <div className="flex flex-col gap-8">
-      {/* Totals */}
-      <div className="grid grid-cols-3 gap-4">
-        <StatCard label="Total cost" value={fmtCost(totals.cost)} accent={ACCENT} />
-        <StatCard label="Total tokens" value={fmtTokens(totals.tokens)} accent={GREEN} />
-        <StatCard label="Total runs" value={totals.runs.toLocaleString()} accent={MUTED} />
-      </div>
-
-      {/* By day */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>
-            Over time
-          </h2>
-          <MetricToggle metric={metric} setMetric={setMetric} />
-        </div>
-        <div style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 16, background: "var(--surface)" }}>
-          <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={daily} margin={{ top: 8, right: 12, left: 4, bottom: 0 }}>
-              <defs>
-                <linearGradient id="fillMetric" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={metric === "cost" ? ACCENT : GREEN} stopOpacity={0.35} />
-                  <stop offset="95%" stopColor={metric === "cost" ? ACCENT : GREEN} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke={BORDER} vertical={false} />
-              <XAxis dataKey="day" tick={{ fill: MUTED, fontSize: 11 }} stroke={BORDER} minTickGap={24} />
-              <YAxis
-                tick={{ fill: MUTED, fontSize: 11 }}
-                stroke={BORDER}
-                width={52}
-                tickFormatter={metric === "cost" ? fmtCostAxis : fmtTokensAxis}
-              />
-              <Tooltip
-                contentStyle={tooltipStyle}
-                labelStyle={{ color: MUTED }}
-                formatter={(value) => [fmt(Number(value ?? 0)), metric === "cost" ? "Cost" : "Tokens"]}
-              />
-              <Area
-                type="monotone"
-                dataKey={metric}
-                stroke={metric === "cost" ? ACCENT : GREEN}
-                strokeWidth={2}
-                fill="url(#fillMetric)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
-
-      {/* Breakdowns */}
-      <Breakdown title="By project" rows={byProject} metric={metric} color={ACCENT} dimLabel="Project" />
-      <Breakdown title="By model" rows={byModel} metric={metric} color={GREEN} dimLabel="Model" />
-      <Breakdown title="By routine" rows={byRoutine} metric={metric} color="#d29922" dimLabel="Routine" />
-    </div>
-  );
-}
-
-function StatCard({ label, value, accent }: { label: string; value: string; accent: string }) {
-  return (
-    <div
-      style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 16, background: "var(--surface)" }}
-    >
-      <div className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--muted)" }}>
-        {label}
-      </div>
-      <div className="text-2xl font-bold font-mono" style={{ color: accent }}>
-        {value}
-      </div>
-    </div>
-  );
-}
 
 function MetricToggle({ metric, setMetric }: { metric: Metric; setMetric: (m: Metric) => void }) {
   return (
@@ -164,30 +64,68 @@ function MetricToggle({ metric, setMetric }: { metric: Metric; setMetric: (m: Me
   );
 }
 
-function Breakdown({
-  title,
-  rows,
-  metric,
-  color,
-  dimLabel,
-}: {
-  title: string;
-  rows: Row[];
-  metric: Metric;
-  color: string;
-  dimLabel: string;
-}) {
-  if (rows.length === 0) return null;
-  const top = rows.slice(0, 12);
+export function OverTimeChart({ daily }: { daily: Daily[] }) {
+  const [metric, setMetric] = useState<Metric>("cost");
   const fmt = metric === "cost" ? fmtCost : fmtTokens;
+  const color = metric === "cost" ? ACCENT : GREEN;
+
+  if (daily.length === 0) {
+    return <EmptyState />;
+  }
 
   return (
     <section>
-      <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text)" }}>
-        {title}
-      </h2>
+      <div className="flex items-center justify-end mb-3">
+        <MetricToggle metric={metric} setMetric={setMetric} />
+      </div>
       <div style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 16, background: "var(--surface)" }}>
-        <ResponsiveContainer width="100%" height={Math.max(120, top.length * 32 + 24)}>
+        <ResponsiveContainer width="100%" height={320}>
+          <AreaChart data={daily} margin={{ top: 8, right: 12, left: 4, bottom: 0 }}>
+            <defs>
+              <linearGradient id="fillMetric" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={color} stopOpacity={0.35} />
+                <stop offset="95%" stopColor={color} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke={BORDER} vertical={false} />
+            <XAxis dataKey="day" tick={{ fill: MUTED, fontSize: 11 }} stroke={BORDER} minTickGap={24} />
+            <YAxis
+              tick={{ fill: MUTED, fontSize: 11 }}
+              stroke={BORDER}
+              width={52}
+              tickFormatter={metric === "cost" ? fmtCostAxis : fmtTokensAxis}
+            />
+            <Tooltip
+              contentStyle={tooltipStyle}
+              labelStyle={{ color: MUTED }}
+              formatter={(value) => [fmt(Number(value ?? 0)), metric === "cost" ? "Cost" : "Tokens"]}
+            />
+            <Area type="monotone" dataKey={metric} stroke={color} strokeWidth={2} fill="url(#fillMetric)" />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </section>
+  );
+}
+
+export function BreakdownChart({ rows, dimLabel }: { rows: Row[]; dimLabel: string }) {
+  const [metric, setMetric] = useState<Metric>("cost");
+  const fmt = metric === "cost" ? fmtCost : fmtTokens;
+  const color = metric === "cost" ? ACCENT : GREEN;
+
+  if (rows.length === 0) {
+    return <EmptyState />;
+  }
+
+  const top = rows.slice(0, 20);
+
+  return (
+    <section>
+      <div className="flex items-center justify-end mb-3">
+        <MetricToggle metric={metric} setMetric={setMetric} />
+      </div>
+      <div style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 16, background: "var(--surface)" }}>
+        <ResponsiveContainer width="100%" height={Math.max(140, top.length * 30 + 24)}>
           <BarChart data={top} layout="vertical" margin={{ top: 0, right: 16, left: 4, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={BORDER} horizontal={false} />
             <XAxis
@@ -196,13 +134,7 @@ function Breakdown({
               stroke={BORDER}
               tickFormatter={metric === "cost" ? fmtCostAxis : fmtTokensAxis}
             />
-            <YAxis
-              type="category"
-              dataKey="label"
-              tick={{ fill: MUTED, fontSize: 11 }}
-              stroke={BORDER}
-              width={140}
-            />
+            <YAxis type="category" dataKey="label" tick={{ fill: MUTED, fontSize: 11 }} stroke={BORDER} width={200} />
             <Tooltip
               cursor={{ fill: "rgba(255,255,255,0.04)" }}
               contentStyle={tooltipStyle}
@@ -253,5 +185,13 @@ function Breakdown({
         </table>
       </div>
     </section>
+  );
+}
+
+function EmptyState() {
+  return (
+    <p style={{ color: "var(--muted)" }}>
+      No usage logged for this period yet. Cost and token data appears once routines run with metrics enabled.
+    </p>
   );
 }

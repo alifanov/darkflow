@@ -14,6 +14,11 @@ Categories:
 
 ---
 
+## [2.58.0] — 2026-06-09
+
+- **Web UI** — the analytics page is now split into **tabs**: **Over time** (the daily cost/tokens chart) and **Breakdown**. The total cost/tokens/runs summary cards and the time-window selector (7d / 30d / 90d / all) stay above the tabs and apply to both.
+- **Web UI** — the Breakdown tab supports **multi-dimension grouping** via chip toggles for **Project / Model / Routine**. Selecting one behaves like before; selecting several groups by the combination (e.g. `project + routine` → rows like `scopegate / fix-issues`), so you can answer "which routine on which project eats the most". Tab, window, and grouping selection are all encoded in the URL (shareable/bookmarkable).
+
 ## [2.57.0] — 2026-06-09
 
 - **Web UI** — new **Usage analytics** page (`/analytics`, linked from the header nav) that answers "where is the money going?" across **all** projects at once. Breaks cost and tokens down four ways — **over time** (daily area chart), **by project**, **by model**, and **by routine** (horizontal bar charts + exact-number tables) — with a 7d / 30d / 90d / all-time window selector and total cost/tokens/runs summary cards. Charts use `recharts`.
