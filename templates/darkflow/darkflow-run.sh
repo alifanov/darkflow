@@ -564,7 +564,7 @@ uptime_preflight() {
       local body_size; body_size=$(wc -c < "$body_file" 2>/dev/null | tr -d ' '); body_size=${body_size:-0}
       if (( body_size < 200 )); then
         _UPTIME_ESCALATE_REASON="empty/short body (${body_size} bytes)"
-      elif grep -qiE '502 Bad Gateway|503 Service|504 Gateway|Application error|This site can.?t be reached|Welcome to nginx' "$body_file"; then
+      elif grep -qiE 'Bad Gateway|Gateway Time-?out|Service Unavailable|no (available )?server( available)?|Application error|This site can.?t be reached|Welcome to nginx' "$body_file"; then
         _UPTIME_ESCALATE_REASON="error marker in body"
       else
         local status="ok" latency_ms latency_s

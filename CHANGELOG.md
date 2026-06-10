@@ -18,6 +18,10 @@ Categories:
 
 - **Updated routine** — `/darkflow:analytics-review` now explicitly forbids creating PostHog alerts (or any PostHog artifacts). PostHog access is read-only; all recommendations go out as GitHub Issues only.
 
+## [2.59.1] — 2026-06-10
+
+- **Worker** — hardened the `uptime-check` pre-flight against **proxy soft-errors**. Coolify/Traefik/Caddy normally serve "Bad Gateway / no available server" with an HTTP **5xx**, which the status check already escalates — but they can also serve such a page with HTTP **200**. The body-marker grep now catches `Bad Gateway`, `Gateway Timeout`, `Service Unavailable`, and `no available server` / `no server available` (was only matching `502 Bad Gateway` with the leading code), so a backend-down page returned as 200 is correctly classified **down** and escalated to the agent instead of being reported healthy.
+
 ## [2.59.0] — 2026-06-10
 
 - **Worker** — `uptime-check` now has a **cheap bash pre-flight** in `darkflow-run.sh`. Before launching the Sonnet agent the dispatcher runs a plain `curl` probe (DNS → HTTP status → body sanity). When the site is healthy (2xx + real body) it writes the snapshot + metrics itself and **skips the agent entirely** (logged `SKIP uptime-check — uptime ok …`); slow-but-2xx is recorded as `degraded` and also skips. The agent is launched **only** when the probe finds the site down/broken or can't decide — no `site_url`, DNS failure, connection/TLS/timeout, 4xx/5xx, or empty/error body (logged `ESCALATE uptime-check — …`). On a healthy site this turns ~6 agent runs/day into zero LLM cost while keeping the every-4h cadence and unchanged snapshot/metrics output. The escalated agent still does the full check from scratch and files the auto-approved critical issue. Existing projects pick this up on `darkflow:update`.
