@@ -4,7 +4,9 @@ Hourly check of the project's IMAP inbox — turns new incoming emails into `sta
 
 This is an **optional** routine, gated behind the `mailbox` module. Each incoming email becomes an issue with a choice of action (`action:reply` → the routine writes and sends a reply; `action:fix` → `fix-issues` treats it as a code/product task).
 
-**Cost optimization — cheap pre-flight.** The dispatcher runs two cheap checks before spending a Sonnet agent run: a read-only IMAP `UNSEEN` count (`fetch.py --count`) and a `gh issue list` for approved `action:reply` issues. If there is **no new mail and no reply pending** (or the mailbox isn't configured), it **skips the agent** entirely (logged `SKIP mailbox-check — no new mail, no replies pending`). The agent is launched **only** when there's mail to triage, a reply to send, or the probe can't decide (IMAP error / missing python3) — logged `ESCALATE mailbox-check — …`. On a quiet inbox this turns 24 agent runs/day into near-zero LLM cost while keeping the hourly cadence.
+**Cost optimization — cheap pre-flight.** The dispatcher runs two cheap checks before spending a Sonnet agent run: a read-only IMAP `UNSEEN` count (`fetch.py --count`) and a `gh issue list` for approved `action:reply` issues. If there is **no new mail and no reply pending**, it **skips the agent** entirely (logged `SKIP mailbox-check — no new mail, no replies pending`). The agent is launched **only** when there's mail to triage, a reply to send, or the probe can't decide (IMAP error / missing python3) — logged `ESCALATE mailbox-check — …`. On a quiet inbox this turns 24 agent runs/day into near-zero LLM cost while keeping the hourly cadence.
+
+**Misconfiguration alert.** If the routine is **enabled but not configured** (`MAILBOX_IMAP_HOST` empty in `.env.darkflow`), the dispatcher logs it as an `ERROR` and files a single, deduped `needs-human` + `source:mailbox` + `priority:high` GitHub issue telling the human to add the `MAILBOX_*` credentials (or disable the routine). It does **not** open a second issue while the first is still open, and it does not launch the agent. This makes a forgotten setup visible instead of a silent every-hour no-op.
 
 ---
 
@@ -43,7 +45,7 @@ Disable without removing: set `enabled: false` in `.darkflow.d/routines.yml`.
   - `MAILBOX_SMTP_HOST` / `_PORT` / `_USER` / `_PASSWORD` — outgoing replies
 - **Python 3** — the routine drives `.darkflow.d/mailbox/fetch.py` (IMAP) and `send.py` (SMTP)
 
-If `MAILBOX_IMAP_HOST` is empty after sourcing `.env.darkflow`, the routine stops with "mailbox not configured".
+If `MAILBOX_IMAP_HOST` is empty after sourcing `.env.darkflow`, the dispatcher logs an `ERROR` and files a deduped `needs-human` issue asking the human to configure (or disable) the routine — see **Misconfiguration alert** above.
 
 ---
 

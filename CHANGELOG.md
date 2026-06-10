@@ -18,6 +18,10 @@ Categories:
 
 - **Updated routine** — `/darkflow:analytics-review` now explicitly forbids creating PostHog alerts (or any PostHog artifacts). PostHog access is read-only; all recommendations go out as GitHub Issues only.
 
+## [2.61.0] — 2026-06-10
+
+- **Worker** — `mailbox-check` no longer **silently** skips when the routine is enabled but unconfigured. If `MAILBOX_IMAP_HOST` is empty in `.env.darkflow`, the dispatcher now logs an `ERROR` and files a single, **deduped** `needs-human` + `source:mailbox` + `priority:high` GitHub issue telling the human to add the `MAILBOX_*` credentials (or disable the routine in `routines.yml`). It never opens a second issue while the first is still open, and still does not launch the agent (which can do nothing without config). A forgotten mailbox setup is now visible in triage instead of being a quiet hourly no-op.
+
 ## [2.60.0] — 2026-06-10
 
 - **Worker** — `mailbox-check` now has a **cheap pre-flight** in `darkflow-run.sh`, mirroring the `uptime-check` one. Before launching the Sonnet agent the dispatcher counts the actual work two cheap ways: a **read-only IMAP `UNSEEN` count** (new `fetch.py --count` mode — selects the inbox read-only, so it never changes `\Seen` flags) and a `gh issue list` for open `status:approved` + `source:mailbox` + `action:reply` issues. When there's **no new mail and no reply pending** (or the mailbox isn't configured) it writes the run state and **skips the agent** (logged `SKIP mailbox-check — no new mail, no replies pending`). The agent runs **only** when there's mail to triage, a reply to send, or the probe can't decide — IMAP error or missing python3 (logged `ESCALATE mailbox-check — …`). On a quiet inbox this turns 24 hourly agent runs/day into near-zero LLM cost while keeping the cadence and unchanged behaviour when there *is* work. The IMAP creds are sourced inside a subshell so they never leak into the dispatcher's environment. Existing projects pick this up on `darkflow:update`.

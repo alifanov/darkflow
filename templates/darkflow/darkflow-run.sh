@@ -594,13 +594,80 @@ uptime_preflight() {
 # Returns 0 (caller SKIPS the agent) only when both are zero or the mailbox is
 # not configured. Returns 1 to escalate: mail waiting, replies pending, or the
 # probe can't decide (IMAP error, missing python3). Sets _MAILBOX_SUMMARY /
-# _MAILBOX_ESCALATE_REASON.
+# _MAILBOX_ESCALATE_REASON, and _MAILBOX_CONFIG_ERROR when the routine is enabled
+# but unconfigured (a misconfiguration the caller logs as an error).
 _MAILBOX_SUMMARY=""
 _MAILBOX_ESCALATE_REASON=""
+_MAILBOX_CONFIG_ERROR=false
+
+# Files a single needs-human issue telling the human to configure (or disable)
+# the mailbox routine. Deduped: never opens a second one while the first is open.
+# Best-effort — silently degrades to just a summary when gh/jq are unavailable.
+# Sets _MAILBOX_SUMMARY.
+mailbox_file_config_issue() {
+  if ! command -v gh &>/dev/null || ! command -v jq &>/dev/null; then
+    _MAILBOX_SUMMARY="mailbox routine enabled but not configured (MAILBOX_* missing) — gh/jq unavailable to file a needs-human issue"
+    return 0
+  fi
+
+  local existing
+  existing=$(gh issue list --state open \
+               --label "needs-human" --label "source:mailbox" \
+               --search "Configure mailbox integration in:title" \
+               --json number --jq 'length' 2>/dev/null || echo "")
+  if [[ "$existing" =~ ^[1-9][0-9]*$ ]]; then
+    _MAILBOX_SUMMARY="mailbox routine enabled but not configured — needs-human issue already open"
+    return 0
+  fi
+
+  local url num
+  url=$(gh issue create \
+    --title "Configure mailbox integration (MAILBOX_* in .env.darkflow)" \
+    --label "needs-human,source:mailbox,priority:high" \
+    --body "$(cat <<'BODY'
+## Mailbox routine is enabled but not configured
+
+The `mailbox-check` routine is scheduled and running, but `MAILBOX_IMAP_HOST` is
+empty in `.env.darkflow` — so it can neither read incoming mail nor send replies.
+Every scheduled run is currently a no-op.
+
+## What to do
+
+Add the mailbox credentials to `.env.darkflow` (git-ignored) in the project root:
+
+```
+MAILBOX_IMAP_HOST=imap.example.com
+MAILBOX_IMAP_PORT=993
+MAILBOX_IMAP_USER=you@example.com
+MAILBOX_IMAP_PASSWORD=...
+MAILBOX_SMTP_HOST=smtp.example.com
+MAILBOX_SMTP_PORT=465
+MAILBOX_SMTP_USER=you@example.com
+MAILBOX_SMTP_PASSWORD=...
+```
+
+Or, if you don't want the mailbox integration, disable the routine instead: set
+`enabled: false` for `mailbox-check` in `.darkflow.d/routines.yml`.
+
+## Acceptance criteria
+
+- [ ] `.env.darkflow` has the `MAILBOX_*` vars **or** `mailbox-check` is disabled
+- [ ] `mailbox-check` no longer reports "not configured"
+BODY
+)" 2>/dev/null) || url=""
+
+  num=$(printf '%s' "$url" | grep -oE '[0-9]+$' || true)
+  if [[ -n "$num" ]]; then
+    _MAILBOX_SUMMARY="mailbox routine enabled but not configured — filed needs-human issue #${num}"
+  else
+    _MAILBOX_SUMMARY="mailbox routine enabled but not configured — failed to file needs-human issue (check gh auth)"
+  fi
+}
 
 mailbox_preflight() {
   _MAILBOX_SUMMARY=""
   _MAILBOX_ESCALATE_REASON=""
+  _MAILBOX_CONFIG_ERROR=false
 
   # 1. Approved reply issues waiting to be sent (cheap; needs no IMAP).
   if command -v gh &>/dev/null && command -v jq &>/dev/null; then
@@ -630,7 +697,11 @@ mailbox_preflight() {
 
   case "$probe" in
     UNCONFIGURED)
-      _MAILBOX_SUMMARY="mailbox not configured — nothing to do"
+      # Routine is enabled but has no credentials — a misconfiguration the human
+      # must fix. File a deduped needs-human issue and flag it as an error so the
+      # caller logs it loudly. Still skip the agent (it can do nothing here).
+      _MAILBOX_CONFIG_ERROR=true
+      mailbox_file_config_issue
       return 0
       ;;
     NOPY)
@@ -741,7 +812,11 @@ run_routine() {
       write_state "$name" "$(( mb_now - mb_now % 60 ))"
       local mb_ts; mb_ts=$(date -u +%FT%TZ)
       PENDING_LOGS+=("{\"routine\":\"${name}\",\"summary\":\"${_MAILBOX_SUMMARY} (cheap probe, no agent run)\",\"timestamp\":\"${mb_ts}\"}")
-      log "SKIP   ${name} — ${_MAILBOX_SUMMARY} (cheap probe, no agent run)"
+      if $_MAILBOX_CONFIG_ERROR; then
+        log "ERROR  ${name} — ${_MAILBOX_SUMMARY}"
+      else
+        log "SKIP   ${name} — ${_MAILBOX_SUMMARY} (cheap probe, no agent run)"
+      fi
       return 0
     fi
     log "ESCALATE ${name} — ${_MAILBOX_ESCALATE_REASON}; launching agent"
