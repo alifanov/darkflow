@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.58.2] — 2026-06-10
+
+- **Updated routine** — `/darkflow:analytics-review` now explicitly forbids creating PostHog alerts (or any PostHog artifacts). PostHog access is read-only; all recommendations go out as GitHub Issues only.
+
 ## [2.58.1] — 2026-06-09
 
 - **Web UI** — the **Communication language** field in project settings is now a dropdown (select) instead of a free-text input, with a curated list of common languages. Any previously-saved custom value is preserved as an extra option so nothing is lost.
