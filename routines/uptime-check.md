@@ -4,6 +4,8 @@ Every-4-hours health check of the project's public website — resolves DNS, hit
 
 This is an **active** routine: healthy runs only write a snapshot; broken runs create a critical, auto-approved issue. It complements `coolify-check-deployment` (which watches the *deploy pipeline* status) by checking the *live site from the outside* — a deploy can go green while the site still serves 502s.
 
+**Cost optimization — cheap pre-flight.** The dispatcher runs a fast bash `curl` probe before spending a Sonnet agent run. If the site responds 2xx with a real body, the dispatcher writes the snapshot + metrics itself and **skips the agent** (logged as `SKIP uptime-check — uptime ok …`). The agent is launched **only** when the probe finds the site down/broken or can't decide (no `site_url`, DNS failure, connection error, 4xx/5xx, empty/error body) — logged as `ESCALATE uptime-check — …`. On a healthy site this turns ~6 agent runs/day into zero LLM cost while keeping the every-4h cadence and the snapshot/metrics output.
+
 ---
 
 ## Instructions
