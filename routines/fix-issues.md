@@ -59,3 +59,4 @@ The routine skips issues it cannot handle and leaves a comment explaining why.
 - The routine only picks up `status:approved` — it respects `status:blocked`, `status:in-progress`, and `needs-human`
 - **PR strategy** is safer: leaves a merge trail, allows CI checks to run before merge
 - **Direct strategy** is faster but bypasses review; use only when you trust the agent fully
+- **No git worktree** — the routine always works in the project root. For PR strategy the feature branch is created in place with `git checkout -b` off the configured base branch (`branch=` in `.darkflow`); it never runs `git worktree add` or checks work out into a separate directory.

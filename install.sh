@@ -703,6 +703,7 @@ HEREDOC
   else
     echo "**Fix Issues strategy:** open a pull request, then merge into \`${MAIN_BRANCH}\` with \`Closes #N\`."
   fi
+  echo "**Workspace rule:** never create a git worktree (\`git worktree add\`) — always work in the project root on \`${MAIN_BRANCH}\`. If the PR strategy needs a feature branch, create it in place with \`git checkout -b\` based off \`${MAIN_BRANCH}\`."
   echo ""
 
   cat << 'HEREDOC'

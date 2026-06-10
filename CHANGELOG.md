@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.62.0] — 2026-06-10
+
+- **Updated routine** — routines no longer create git worktrees. `/darkflow:fix-issues` now works in the project root and, under the PR strategy, creates the feature branch in place with `git checkout -b` off the configured base branch (`branch=` in `.darkflow` — `main`, `master`, `dev`, …) instead of `git worktree add`.
+- **Installer** — generated `.darkflow.d/claude.md` now carries an explicit "never create a git worktree" workspace rule.
+- **Docs** — clarified the worktree note in `routines/README.md` and `routines/fix-issues.md`, and updated the `templates/darkflow/claude.md` reference copy.
+
 ## [2.58.2] — 2026-06-10
 
 - **Updated routine** — `/darkflow:analytics-review` now explicitly forbids creating PostHog alerts (or any PostHog artifacts). PostHog access is read-only; all recommendations go out as GitHub Issues only.

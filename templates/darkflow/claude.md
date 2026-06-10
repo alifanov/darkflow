@@ -8,6 +8,7 @@
 **Product language:** English — everything shipped *inside* the product is always written in English, regardless of the communication language: source code, identifiers, code comments, UI copy, user-facing strings, logs, and in-product docs. Setting the communication language to anything other than English never changes this.
 **Main branch:** `main`
 **Fix Issues strategy:** open a pull request, then merge into `main` with `Closes #N`.
+**Workspace rule:** never create a git worktree (`git worktree add`) — always work in the project root on `main`. If the PR strategy needs a feature branch, create it in place with `git checkout -b` based off `main`.
 
 ### Before each session
 

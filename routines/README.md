@@ -108,7 +108,7 @@ All routines need to act autonomously. The default `permission_mode: bypassPermi
 
 ## Worktree note
 
-Routines run in the project root. Branch isolation (for PR-strategy `fix-issues`) is handled by the slash-command prompt itself — it creates and pushes a branch, opens a PR, and merges. The dispatcher always uses `cwd = project root`.
+Routines **never** create a git worktree. They always run in the project root (`cwd = project root`, enforced by the dispatcher) and work directly on the configured base branch. For PR-strategy `fix-issues`, the feature branch is created **in place** with `git checkout -b` based off the configured `branch=` (`main`, `master`, `dev`, … — whatever the project is set to) — never `git worktree add`, never a separate checkout directory.
 
 ## Adding a new routine
 
