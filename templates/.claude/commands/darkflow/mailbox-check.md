@@ -1,5 +1,7 @@
 Check the project's IMAP inbox for new messages, create GitHub issues from them, and send approved email replies via SMTP.
 
+> **Note — cheap pre-flight.** The dispatcher (`darkflow-run.sh`) runs a read-only IMAP unseen-count (`fetch.py --count`) and a `gh issue list` for approved `action:reply` issues *before* launching this agent. If there's no new mail and no reply pending, it **skips this agent entirely** — so on a quiet inbox you are not invoked. When you *are* invoked there is real work (new mail and/or replies to send); proceed with the full steps below.
+
 ## Step 1 — Read config
 
 Run `bash .darkflow.d/get-config.sh` to pull the latest project settings from the Web UI and refresh the local `.darkflow` cache (silently falls back to cache if the server is unreachable).

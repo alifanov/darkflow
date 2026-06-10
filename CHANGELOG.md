@@ -18,6 +18,11 @@ Categories:
 
 - **Updated routine** — `/darkflow:analytics-review` now explicitly forbids creating PostHog alerts (or any PostHog artifacts). PostHog access is read-only; all recommendations go out as GitHub Issues only.
 
+## [2.60.0] — 2026-06-10
+
+- **Worker** — `mailbox-check` now has a **cheap pre-flight** in `darkflow-run.sh`, mirroring the `uptime-check` one. Before launching the Sonnet agent the dispatcher counts the actual work two cheap ways: a **read-only IMAP `UNSEEN` count** (new `fetch.py --count` mode — selects the inbox read-only, so it never changes `\Seen` flags) and a `gh issue list` for open `status:approved` + `source:mailbox` + `action:reply` issues. When there's **no new mail and no reply pending** (or the mailbox isn't configured) it writes the run state and **skips the agent** (logged `SKIP mailbox-check — no new mail, no replies pending`). The agent runs **only** when there's mail to triage, a reply to send, or the probe can't decide — IMAP error or missing python3 (logged `ESCALATE mailbox-check — …`). On a quiet inbox this turns 24 hourly agent runs/day into near-zero LLM cost while keeping the cadence and unchanged behaviour when there *is* work. The IMAP creds are sourced inside a subshell so they never leak into the dispatcher's environment. Existing projects pick this up on `darkflow:update`.
+- **Worker** — `mailbox/fetch.py` gains a `--count` flag (read-only unseen count) used by the pre-flight.
+
 ## [2.59.1] — 2026-06-10
 
 - **Worker** — hardened the `uptime-check` pre-flight against **proxy soft-errors**. Coolify/Traefik/Caddy normally serve "Bad Gateway / no available server" with an HTTP **5xx**, which the status check already escalates — but they can also serve such a page with HTTP **200**. The body-marker grep now catches `Bad Gateway`, `Gateway Timeout`, `Service Unavailable`, and `no available server` / `no server available` (was only matching `502 Bad Gateway` with the leading code), so a backend-down page returned as 200 is correctly classified **down** and escalated to the agent instead of being reported healthy.

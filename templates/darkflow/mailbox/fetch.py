@@ -10,6 +10,7 @@ Environment variables (required):
 
 Usage:
   python3 fetch.py                     # Print JSON array of unseen messages
+  python3 fetch.py --count             # Print only the unseen count (cheap, read-only)
   python3 fetch.py --mark-seen 1 2 3  # Mark UIDs as Seen, print nothing
 """
 
@@ -97,6 +98,13 @@ def fetch_unseen(imap):
     return messages
 
 
+def count_unseen(imap):
+    """Cheap count of unseen messages without altering any flags."""
+    imap.select("INBOX", readonly=True)
+    _, data = imap.uid("search", None, "UNSEEN")
+    return len(data[0].split()) if data[0] else 0
+
+
 def mark_seen(imap, uids):
     imap.select("INBOX", readonly=False)
     for uid in uids:
@@ -107,6 +115,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mark-seen", nargs="+", metavar="UID",
                         help="Mark given UIDs as \\Seen and exit")
+    parser.add_argument("--count", action="store_true",
+                        help="Print only the unseen-message count (read-only) and exit")
     args = parser.parse_args()
 
     try:
@@ -119,7 +129,9 @@ def main():
         sys.exit(1)
 
     try:
-        if args.mark_seen:
+        if args.count:
+            print(count_unseen(imap))
+        elif args.mark_seen:
             mark_seen(imap, [uid.encode() for uid in args.mark_seen])
         else:
             messages = fetch_unseen(imap)

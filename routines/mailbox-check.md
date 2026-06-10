@@ -4,6 +4,8 @@ Hourly check of the project's IMAP inbox — turns new incoming emails into `sta
 
 This is an **optional** routine, gated behind the `mailbox` module. Each incoming email becomes an issue with a choice of action (`action:reply` → the routine writes and sends a reply; `action:fix` → `fix-issues` treats it as a code/product task).
 
+**Cost optimization — cheap pre-flight.** The dispatcher runs two cheap checks before spending a Sonnet agent run: a read-only IMAP `UNSEEN` count (`fetch.py --count`) and a `gh issue list` for approved `action:reply` issues. If there is **no new mail and no reply pending** (or the mailbox isn't configured), it **skips the agent** entirely (logged `SKIP mailbox-check — no new mail, no replies pending`). The agent is launched **only** when there's mail to triage, a reply to send, or the probe can't decide (IMAP error / missing python3) — logged `ESCALATE mailbox-check — …`. On a quiet inbox this turns 24 agent runs/day into near-zero LLM cost while keeping the hourly cadence.
+
 ---
 
 ## Instructions

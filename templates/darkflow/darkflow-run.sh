@@ -587,6 +587,75 @@ uptime_preflight() {
   return $rc
 }
 
+# ── Mailbox cheap pre-flight ──────────────────────────────────────────────────
+# The mailbox-check agent only has work when there is incoming mail to triage OR
+# approved reply issues to send. Both are cheap to count without an LLM: a
+# read-only IMAP UNSEEN search (`fetch.py --count`) and a `gh issue list`.
+# Returns 0 (caller SKIPS the agent) only when both are zero or the mailbox is
+# not configured. Returns 1 to escalate: mail waiting, replies pending, or the
+# probe can't decide (IMAP error, missing python3). Sets _MAILBOX_SUMMARY /
+# _MAILBOX_ESCALATE_REASON.
+_MAILBOX_SUMMARY=""
+_MAILBOX_ESCALATE_REASON=""
+
+mailbox_preflight() {
+  _MAILBOX_SUMMARY=""
+  _MAILBOX_ESCALATE_REASON=""
+
+  # 1. Approved reply issues waiting to be sent (cheap; needs no IMAP).
+  if command -v gh &>/dev/null && command -v jq &>/dev/null; then
+    local reply_count
+    reply_count=$(gh issue list --state open \
+                    --label "status:approved" --label "source:mailbox" --label "action:reply" \
+                    --json number --jq 'length' 2>/dev/null || echo "")
+    if [[ "$reply_count" =~ ^[1-9][0-9]*$ ]]; then
+      _MAILBOX_ESCALATE_REASON="${reply_count} approved reply(ies) to send"
+      return 1
+    fi
+  fi
+
+  # 2. Probe the inbox in a subshell so sourced MAILBOX_* creds never leak into
+  #    the dispatcher's environment or other routines.
+  local probe
+  probe=$(
+    set +e
+    set -a
+    [[ -f "${PROJECT_ROOT}/.env.darkflow" ]] && . "${PROJECT_ROOT}/.env.darkflow" 2>/dev/null
+    set +a
+    if [[ -z "${MAILBOX_IMAP_HOST:-}" ]]; then echo "UNCONFIGURED"; exit 0; fi
+    command -v python3 >/dev/null 2>&1 || { echo "NOPY"; exit 0; }
+    out=$(python3 "${PROJECT_ROOT}/.darkflow.d/mailbox/fetch.py" --count 2>/dev/null)
+    if [[ "$out" =~ ^[0-9]+$ ]]; then echo "COUNT:${out}"; else echo "ERR"; fi
+  )
+
+  case "$probe" in
+    UNCONFIGURED)
+      _MAILBOX_SUMMARY="mailbox not configured — nothing to do"
+      return 0
+      ;;
+    NOPY)
+      _MAILBOX_ESCALATE_REASON="python3 unavailable — cannot probe inbox"
+      return 1
+      ;;
+    ERR)
+      _MAILBOX_ESCALATE_REASON="IMAP unseen-count failed (server/credentials)"
+      return 1
+      ;;
+    COUNT:0)
+      _MAILBOX_SUMMARY="no new mail, no replies pending"
+      return 0
+      ;;
+    COUNT:*)
+      _MAILBOX_ESCALATE_REASON="${probe#COUNT:} new message(s) in inbox"
+      return 1
+      ;;
+    *)
+      _MAILBOX_ESCALATE_REASON="inconclusive mailbox probe"
+      return 1
+      ;;
+  esac
+}
+
 run_routine() {
   local name="$1" model="$2" permission_mode="$3" engine="${4:-claude}"
   local now exit_code=0
@@ -661,6 +730,21 @@ run_routine() {
       return 0
     fi
     log "ESCALATE ${name} — ${_UPTIME_ESCALATE_REASON}; launching agent for diagnosis"
+  fi
+
+  # Mailbox cheap pre-flight: skip the agent when there's no incoming mail and no
+  # approved replies to send. Runs before semaphore_acquire so an idle skip never
+  # consumes a concurrency slot.
+  if [[ "$name" == "mailbox-check" ]]; then
+    if mailbox_preflight; then
+      local mb_now; mb_now=$(now_epoch)
+      write_state "$name" "$(( mb_now - mb_now % 60 ))"
+      local mb_ts; mb_ts=$(date -u +%FT%TZ)
+      PENDING_LOGS+=("{\"routine\":\"${name}\",\"summary\":\"${_MAILBOX_SUMMARY} (cheap probe, no agent run)\",\"timestamp\":\"${mb_ts}\"}")
+      log "SKIP   ${name} — ${_MAILBOX_SUMMARY} (cheap probe, no agent run)"
+      return 0
+    fi
+    log "ESCALATE ${name} — ${_MAILBOX_ESCALATE_REASON}; launching agent"
   fi
 
   if ! semaphore_acquire; then
