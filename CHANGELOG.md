@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.63.0] — 2026-06-11
+
+- **Updated routine** — `/darkflow:fix-issues` issue selection is now rank-based and tolerates the `p0/p1/p2/p3` priority scheme as aliases for `critical/high/medium/low`. Previously the selector only walked `critical → high → medium → low`, so any `status:approved` issue tagged `priority:p2` (etc.) by an agent that ignored the canonical labels was silently skipped — even the no-priority fallback excluded it because a `priority:*` label was present. A repo full of approved `p2` issues would report "no issues" and stall. Selection now ranks every selectable issue in one query and never strands an approved issue over a vocabulary mismatch.
+
 ## [2.62.0] — 2026-06-10
 
 - **Updated routine** — routines no longer create git worktrees. `/darkflow:fix-issues` now works in the project root and, under the PR strategy, creates the feature branch in place with `git checkout -b` off the configured base branch (`branch=` in `.darkflow` — `main`, `master`, `dev`, …) instead of `git worktree add`.
