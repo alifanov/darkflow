@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.64.0] — 2026-06-12
+
+- **Updated routine** — routine logs now record the model as `engine:model` (e.g. `claude:sonnet`, `codex:gpt-5`) instead of the bare model name. The analytics page groups spend by this field; without the engine prefix, same-named models from different engines collapsed together and the breakdown couldn't tell Claude apart from Codex. New runs carry the prefix; existing log rows keep their old bare value.
+
 ## [2.63.0] — 2026-06-11
 
 - **Updated routine** — `/darkflow:fix-issues` issue selection is now rank-based and tolerates the `p0/p1/p2/p3` priority scheme as aliases for `critical/high/medium/low`. Previously the selector only walked `critical → high → medium → low`, so any `status:approved` issue tagged `priority:p2` (etc.) by an agent that ignored the canonical labels was silently skipped — even the no-priority fallback excluded it because a `priority:*` label was present. A repo full of approved `p2` issues would report "no issues" and stall. Selection now ranks every selectable issue in one query and never strands an approved issue over a vocabulary mismatch.
