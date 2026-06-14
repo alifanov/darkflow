@@ -14,6 +14,11 @@ Categories:
 
 ---
 
+## [2.66.0] — 2026-06-14
+
+- **Dispatcher** — the worker now *enforces* the long-standing "routines file only `critical`/`high`/`medium`" rule instead of trusting the prompt. `darkflow-run.sh` gained `close_routine_low_issues()`, which runs before every sync and auto-closes (with an explanatory comment) any OPEN issue that carries `priority:low` **and** a routine `source:*` label (i.e. not `source:manual`). Manually-filed low issues (`source:manual` or no source label), anything already `status:in-progress`, and `needs-human` issues are left untouched. Background: an audit of installed projects found ~50 routine-created `priority:low` issues across qabot/Vargi/mailmonitor/adsynex that had leaked into the approval queue despite the documented rule — the rule existed only as prompt text and agents didn't reliably obey it. Existing projects pick this up on next `self-update` (dispatcher is `copy-template`).
+- **Workflow** — `github-issues.md` (root + template) documents the enforcement and its exclusions.
+
 ## [2.65.0] — 2026-06-14
 
 - **Updated routine** — `/darkflow:observability-check` now auto-approves additive database index additions. A finding that purely adds an index (no schema/data change, no query rewrite) is created directly as `status:approved` with `area:db`, so `fix-issues` picks it up without waiting for a human. Query rewrites, N+1 fixes, caching, and denormalization still go through the `status:proposed` human-review gate. The `fix-issues` quality gate (lint → test → build) and `needs-human` escalation remain in force.
