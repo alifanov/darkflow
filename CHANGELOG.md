@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.65.0] — 2026-06-14
+
+- **Updated routine** — `/darkflow:observability-check` now auto-approves additive database index additions. A finding that purely adds an index (no schema/data change, no query rewrite) is created directly as `status:approved` with `area:db`, so `fix-issues` picks it up without waiting for a human. Query rewrites, N+1 fixes, caching, and denormalization still go through the `status:proposed` human-review gate. The `fix-issues` quality gate (lint → test → build) and `needs-human` escalation remain in force.
+- **New label** — `area:db` (`#006b75`) marks database findings; index additions under this label are auto-approved.
+- **Docs** — added the new category to `docs/auto-approve.md` / `templates/docs/auto-approve.md` allowlist, updated `routines/observability-check.md` and the README auto-approve note.
+
 ## [2.64.0] — 2026-06-12
 
 - **Updated routine** — routine logs now record the model as `engine:model` (e.g. `claude:sonnet`, `codex:gpt-5`) instead of the bare model name. The analytics page groups spend by this field; without the engine prefix, same-named models from different engines collapsed together and the breakdown couldn't tell Claude apart from Codex. New runs carry the prefix; existing log rows keep their old bare value.

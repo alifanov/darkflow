@@ -119,7 +119,7 @@ Agent starts next session
   → closes via PR with "Closes #N"
 ```
 
-Some categories skip the human review step — security fixes and Dependabot dependency updates are created directly as `status:approved` and flow straight to `fix-issues`. See [`docs/auto-approve.md`](./docs/auto-approve.md) for the full allowlist.
+Some categories skip the human review step — security fixes, Dependabot dependency updates, and additive database index additions are created directly as `status:approved` and flow straight to `fix-issues`. See [`docs/auto-approve.md`](./docs/auto-approve.md) for the full allowlist.
 
 The loop runs automatically via **Claude Code Routines** — see [routines/README.md](./routines/README.md).
 

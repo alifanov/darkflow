@@ -672,6 +672,7 @@ setup_labels() {
   _do_label "source:uptime"          "5319e7" "From uptime / site health check"
   _do_label "source:design"          "5319e7" "From design quality routines (impeccable:audit/critique/harden)"
   _do_label "source:code-health"     "5319e7" "From fallow code-health audit (dead code, dupes, cycles, complexity)"
+  _do_label "area:db"                "006b75" "Database finding — index additions are auto-approved (see docs/auto-approve.md)"
   _do_label "action:reply"           "0052cc" "Approved mailbox issue — agent will send email reply"
   _do_label "action:fix"             "0052cc" "Approved mailbox issue — agent will make a code change"
   _do_label "needs-human"            "8b5cf6" "Agent blocked — requires human action (credentials, config, external service)"
