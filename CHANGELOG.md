@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.68.2] — 2026-06-14
+
+- **Web UI** — split `status:blocked` into its own **"Blocked"** filter card on the project detail page, separate from **"Rejected"**. Previously the "Rejected" group merged `["rejected", "blocked"]` (`projects/[id]/page.tsx`), so legitimately-open blocked issues (auto-fix attempts whose `lint → test → build` failed, or external blockers) appeared under "Rejected" and looked like declined-but-still-open issues. They are conceptually different — rejected = declined (closed), blocked = waiting on a human/external factor (open by design). A direct GitHub audit of all installed repos confirmed **0** open `status:rejected` and **44** open `status:blocked` (pageradar 14, adsynex 10, scopegate 9, baraholka 4, qabot 3, vargi 3, next-flow 1) — the blocked ones are correct to stay open. Colors/labels for `blocked` already existed; only the card grouping changed.
+
 ## [2.68.1] — 2026-06-14
 
 - **Web UI** — rejecting an issue now closes it immediately, and the projects-table "Open Issues" count no longer includes rejected issues. Previously the reject handler (`/api/issues/[id]/reject`) only set `status:"rejected"` + `pendingStatus` and left `state:"open"`, deferring the actual close to the dispatcher; meanwhile the main-page count (`page.tsx`) filtered by `state` alone, so a rejected-but-not-yet-closed issue kept inflating the count during the window between reject and the dispatcher's `gh issue close`. **Two changes:** (1) the reject handler now also sets `state:"closed"` so the issue drops off the dashboard instantly; (2) the main-page `_count`/`issues` queries now filter `status: { not: "rejected" }` in addition to the `state` filter — a durable guard that survives ingest (which restores `state` from GitHub but preserves `status:"rejected"` from the `status:rejected` label). Existing rejected issues were already `CLOSED` by the dispatcher, so no backfill was needed. The project detail page, which intentionally groups rejected/blocked issues, is unchanged.

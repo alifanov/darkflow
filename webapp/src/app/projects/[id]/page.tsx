@@ -32,7 +32,8 @@ const CARDS: { key: string; label: string; statuses: string[] }[] = [
   { key: "proposed", label: "Needs approval", statuses: ["proposed"] },
   { key: "approved", label: "Approved", statuses: ["approved"] },
   { key: "in-progress", label: "In progress", statuses: ["in-progress"] },
-  { key: "rejected", label: "Rejected", statuses: ["rejected", "blocked"] },
+  { key: "rejected", label: "Rejected", statuses: ["rejected"] },
+  { key: "blocked", label: "Blocked", statuses: ["blocked"] },
 ];
 
 const TABS: { key: "issues" | "logs" | "routines" | "commits" | "settings"; label: string }[] = [
