@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.68.1] — 2026-06-14
+
+- **Web UI** — rejecting an issue now closes it immediately, and the projects-table "Open Issues" count no longer includes rejected issues. Previously the reject handler (`/api/issues/[id]/reject`) only set `status:"rejected"` + `pendingStatus` and left `state:"open"`, deferring the actual close to the dispatcher; meanwhile the main-page count (`page.tsx`) filtered by `state` alone, so a rejected-but-not-yet-closed issue kept inflating the count during the window between reject and the dispatcher's `gh issue close`. **Two changes:** (1) the reject handler now also sets `state:"closed"` so the issue drops off the dashboard instantly; (2) the main-page `_count`/`issues` queries now filter `status: { not: "rejected" }` in addition to the `state` filter — a durable guard that survives ingest (which restores `state` from GitHub but preserves `status:"rejected"` from the `status:rejected` label). Existing rejected issues were already `CLOSED` by the dispatcher, so no backfill was needed. The project detail page, which intentionally groups rejected/blocked issues, is unchanged.
+
 ## [2.68.0] — 2026-06-14
 
 - **New module `ci-gate`** (opt-in, `--with-ci-gate`) — ships a GitHub Actions workflow at `.github/workflows/darkflow-ci-gate.yml` that runs lint/tests on every push and, on failure, opens (or reuses) a `source:ci` issue describing the break. The local `fix-issues` worker then picks it up and fixes it, closing the loop `red CI → issue → fix-issues → green CI`. No AI runs in CI (only the cheap deterministic checks + `gh issue create`), so there's no per-token API cost. Issues are de-duplicated by title so a persistently red branch won't spam the queue; `ISSUE_STATUS` in the workflow toggles auto-fix (`status:approved`, default) vs human approval (`status:proposed`). The workflow auto-detects Node (pnpm/npm) and Python (ruff/pytest) stacks; edit it to match other stacks or chain off an existing build workflow via `workflow_run`.

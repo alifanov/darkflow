@@ -10,6 +10,7 @@ export async function POST(
     const result = await prisma.issue.updateMany({
       where: { id },
       data: {
+        state: "closed",
         status: "rejected",
         pendingStatus: "rejected",
         pendingStatusAt: new Date(),
