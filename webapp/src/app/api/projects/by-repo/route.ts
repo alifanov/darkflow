@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { KNOWN_ROUTINE_NAMES } from "@/lib/routines";
+import { ALL_ROUTINES } from "@/lib/routines";
 
 export async function GET(req: NextRequest) {
   const repoUrl = req.nextUrl.searchParams.get("repoUrl");
@@ -41,13 +41,30 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  // Drop orphaned RoutineConfig rows for routines Dark Flow no longer ships.
-  // A removed routine (e.g. coolify-check-logs) leaves a stale enabled row in the
-  // DB; emitting it would write a `name: enabled: true` block into routines.yml
-  // whose command file is gone, bricking the worker's preflight check.
-  const routines = project.routineConfigs.filter((r) =>
-    KNOWN_ROUTINE_NAMES.has(r.name)
-  );
+  // Merge the canonical catalog (ALL_ROUTINES) with the project's DB overrides.
+  // Iterating the catalog — instead of only emitting existing RoutineConfig rows —
+  // means a newly-shipped routine (e.g. uptime-check) auto-propagates to every
+  // project's routines.yml without requiring a manual Save in the settings UI.
+  // It also drops orphaned rows for routines Dark Flow no longer ships, since a
+  // name absent from ALL_ROUTINES is never emitted.
+  //
+  // Default enabled: core routines (module === null) are on; module routines are
+  // on only when their module is active for the project. A DB row always wins.
+  const overrides = new Map(project.routineConfigs.map((r) => [r.name, r]));
+  const routines = ALL_ROUTINES.map((def) => {
+    const row = overrides.get(def.name);
+    const enabledDefault = def.module
+      ? project.modules.includes(def.module)
+      : true;
+    return {
+      name: def.name,
+      cron: row?.cron ?? def.defaultCron,
+      model: row?.model ?? def.defaultModel,
+      engine: row?.engine ?? "claude",
+      enabled: row ? row.enabled : enabledDefault,
+      permissionMode: row?.permissionMode ?? null,
+    };
+  });
 
   return NextResponse.json({
     id: project.id,
