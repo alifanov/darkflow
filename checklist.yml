@@ -71,6 +71,7 @@ items:
   - { id: cmd-mailbox-check,       group: commands,   type: file, path: .claude/commands/darkflow/mailbox-check.md,          template: .claude/commands/darkflow/mailbox-check.md,          fix: copy-template, when: module.mailbox, desc: "/darkflow:mailbox-check" }
   - { id: mailbox-fetch-py,        group: commands,   type: file, path: .darkflow.d/mailbox/fetch.py,                        template: darkflow/mailbox/fetch.py,                           fix: copy-template, when: module.mailbox, desc: "Mailbox IMAP fetch script" }
   - { id: mailbox-send-py,         group: commands,   type: file, path: .darkflow.d/mailbox/send.py,                         template: darkflow/mailbox/send.py,                            fix: copy-template, when: module.mailbox, desc: "Mailbox SMTP send script" }
+  - { id: wf-ci-gate,              group: commands,   type: file, path: .github/workflows/darkflow-ci-gate.yml,               template: .github/workflows/darkflow-ci-gate.yml,              fix: copy-template, when: module.ci-gate, desc: "CI gate GitHub Actions workflow" }
 
   # ── Dispatcher ───────────────────────────────────────────────────────────────
   - { id: dispatcher-run,          group: dispatcher, type: file, path: .darkflow.d/darkflow-run.sh,        template: darkflow/darkflow-run.sh,        executable: true, fix: copy-template, desc: "Routine dispatcher" }

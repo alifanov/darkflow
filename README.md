@@ -160,6 +160,26 @@ bash .darkflow.d/darkflow-run.sh --dry-run        # preview what's due
 
 See [routines/README.md](./routines/README.md) for full dispatcher docs.
 
+### CI gate (GitHub Actions, optional)
+
+Install with `--with-ci-gate` to drop a GitHub Actions workflow at
+`.github/workflows/darkflow-ci-gate.yml`. On every push it runs your lint/tests
+in CI and, **if they fail**, opens (or reuses) a `source:ci` issue describing the
+failure. The local `fix-issues` worker then picks it up and fixes it — closing
+the loop without you filing anything:
+
+```
+red CI  →  source:ci issue  →  fix-issues worker  →  green CI
+```
+
+No AI runs in CI — GitHub only runs the cheap checks and files the issue, so there
+is no per-token API cost. Issues are de-duplicated by title (one open issue per
+failure type) so a persistently red branch won't spam the queue. Switch
+`ISSUE_STATUS` in the workflow to `status:proposed` if you want human approval
+before the worker acts (default `status:approved` = auto-fix). To run after an
+existing build workflow instead of on every push, swap the `on:` block for the
+commented `workflow_run` example in the file.
+
 ### Makefile shortcuts
 
 The installer creates (or updates) a `Makefile` with `df-*` targets so you don't have to remember the full command paths:
