@@ -6,8 +6,8 @@ help: ## Show available targets
 up: ## Start Postgres in the background (webapp runs on the host — see `make web`)
 	docker compose up -d
 
-web: ## Build and run the webapp as a host process (http://localhost:3000)
-	cd webapp && pnpm build && pnpm start
+web: ## Build and run the webapp as a host process (http://localhost:5555)
+	cd webapp && pnpm build && PORT=5555 pnpm start
 
 docker-up: ## Start Postgres + webapp in Docker (no cmux launch button; http://localhost:5555)
 	docker compose --profile docker up -d

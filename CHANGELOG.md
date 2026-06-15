@@ -18,7 +18,15 @@ Categories:
 
 - **Webapp** — add a **Fix in cmux** button to needs-human issue rows. It calls the new `POST /api/issues/[id]/launch` route, which shells out to the host's `cmux new-workspace --cwd <localPath> --command "claude '…'"` to open a cmux workspace with an interactive Claude session focused on that specific issue (passes the issue number into the prompt).
 - **Webapp** — add an optional **`localPath`** field to the Project model (Prisma migration `add_project_local_path`, non-destructive) and a "Local path" input in project Settings. The launch button uses it as the cmux working directory. New `CMUX_BIN` env var overrides the cmux binary name/path.
-- **Infra** — the webapp now runs as a **host process** (`make web` → `pnpm build && pnpm start`, port 3000) instead of in Docker, so it can launch host-side cmux/Claude sessions. `docker-compose.yml` now starts **Postgres only** (published on `localhost:5432`); the webapp service moved behind the `docker` profile (`make docker-up`, port 5555). Updated `Makefile`, `README.md`, `CLAUDE.md`, and added `webapp/.env.example`.
+- **Infra** — the webapp now runs as a **host process** (`make web`) instead of in Docker, so it can launch host-side cmux/Claude sessions. `docker-compose.yml` now starts **Postgres only** (published on `localhost:5432`); the webapp service moved behind the `docker` profile (`make docker-up`). Updated `Makefile`, `README.md`, `CLAUDE.md`, and added `webapp/.env.example`.
+
+---
+
+## [2.76.0] — 2026-06-15
+
+- **Webapp** — show the **Fix in cmux** button on Untriaged issue rows too (previously only on needs-human), so any untriaged issue can be opened in an interactive cmux/Claude session.
+- **Infra** — `make web` now serves on **port 5555** (matching the previous Docker setup) via `PORT=5555 pnpm start`. Updated docs accordingly.
+- **Infra (fix)** — gate `output: "standalone"` in `next.config.ts` behind a `DOCKER_BUILD` env var. Standalone output is incompatible with `next start` (the host run mode) and printed a warning; the Dockerfile now sets `DOCKER_BUILD=1` so the container image still gets standalone output.
 
 ---
 

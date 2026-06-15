@@ -36,7 +36,7 @@ The webapp now runs as a **host process** (not in Docker) so it can launch host-
 ```bash
 docker compose up -d        # starts Postgres only (port 5432 published to host)
 cd webapp && pnpm install
-pnpm build && pnpm start    # UI at http://localhost:3000 (reads DATABASE_URL → localhost:5432)
+pnpm build && PORT=5555 pnpm start   # UI at http://localhost:5555 (reads DATABASE_URL → localhost:5432)
 ```
 
 The webapp reads `DATABASE_URL` from `webapp/.env` (defaults to
@@ -81,7 +81,7 @@ The webapp runs on the host, so after any change to files under `webapp/` rebuil
 restart the host process:
 
 ```bash
-cd webapp && pnpm build && pnpm start
+cd webapp && pnpm build && PORT=5555 pnpm start
 ```
 
 (If you run the webapp via the `docker` profile instead, use

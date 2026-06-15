@@ -12,6 +12,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm exec prisma generate
+# Enables `output: standalone` in next.config.ts (host runs use plain `next start`).
+ENV DOCKER_BUILD=1
 RUN pnpm build
 
 FROM base AS runner

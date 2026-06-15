@@ -65,18 +65,18 @@ cp webapp/.env.example webapp/.env
 make up
 
 # 3. Build and run the webapp on the host
-make web          # http://localhost:3000
+make web          # http://localhost:5555
 ```
 
-Open **http://localhost:3000** — you'll see all projects that have synced with the worker.
+Open **http://localhost:5555** — you'll see all projects that have synced with the worker.
 
 Prefer everything in Docker (no `cmux` launch button)? Run `make docker-up` →
-the webapp comes up at **http://localhost:5555**.
+the webapp comes up in a container on the same **http://localhost:5555**.
 
 | Make target | What it does |
 |---|---|
 | `make up` | Start Postgres in the background |
-| `make web` | Build & run the webapp on the host (port 3000) |
+| `make web` | Build & run the webapp on the host (port 5555) |
 | `make docker-up` | Start Postgres + webapp in Docker (port 5555) |
 | `make down` | Stop Docker services |
 | `make logs` | Stream Docker logs (Ctrl-C to stop) |

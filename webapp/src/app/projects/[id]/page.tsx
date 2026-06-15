@@ -380,13 +380,14 @@ function IssuesTab({
                   }
                   // Untriaged issues without notes get quick Approve/Close actions so
                   // they can be triaged inline; proposed issues keep the full action set.
-                  const untriagedNoNotes =
-                    issue.status === "none" && (issue.comments ?? []).length === 0;
+                  const isUntriaged = issue.status === "none";
+                  const untriagedNoNotes = isUntriaged && (issue.comments ?? []).length === 0;
                   return (
                     <IssueTableRow
                       key={issue.id}
                       issue={issue}
                       showActions={issue.status === "proposed" || untriagedNoNotes}
+                      showLaunch={isUntriaged}
                       showTaskLink={issue.status === "proposed"}
                     />
                   );
