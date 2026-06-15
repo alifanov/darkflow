@@ -22,6 +22,12 @@ Categories:
 
 ---
 
+## [2.76.3] — 2026-06-15
+
+- **Webapp** — name the cmux workspace launched by "Fix in cmux" as `[<project>] #<issue>` (e.g. `[adbrief] #250`) via `--name`, so launched sessions are identifiable in the cmux sidebar.
+
+---
+
 ## [2.76.2] — 2026-06-15
 
 - **Docs (fix)** — clarify `CMUX_BIN` in `webapp/.env.example`: the macOS cmux app ships the real CLI at `Contents/Resources/bin/cmux`. The GUI binary at `Contents/MacOS/cmux` creates a workspace but silently ignores `--command`, so the "Fix in cmux" button opened an empty workspace and never launched Claude. Point `CMUX_BIN` at the Resources/bin CLI.

@@ -39,11 +39,14 @@ export async function POST(
     const safePrompt = prompt.replace(/'/g, "");
     const command = `claude '${safePrompt}'`;
 
+    // Workspace title: "[project] #123"
+    const wsName = `[${issue.project.name}] #${n}`;
+
     // Override with CMUX_BIN if the cmux CLI shim isn't named `cmux` on PATH.
     const cmuxBin = process.env.CMUX_BIN?.trim() || "cmux";
     const child = spawn(
       cmuxBin,
-      ["new-workspace", "--cwd", localPath, "--command", command],
+      ["new-workspace", "--name", wsName, "--cwd", localPath, "--command", command],
       { detached: true, stdio: "ignore" }
     );
 
