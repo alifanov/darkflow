@@ -148,11 +148,12 @@ model Commit {
 }
 
 model WorkerStatus {
-  id        String   @id @default(cuid())
-  projectId String   @unique
-  routine   String?
-  status    String   @default("idle")
-  updatedAt DateTime @updatedAt
+  id             String    @id @default(cuid())
+  projectId      String    @unique
+  routine        String?
+  status         String    @default("idle")
+  configSyncedAt DateTime?
+  updatedAt      DateTime  @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }

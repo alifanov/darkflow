@@ -90,6 +90,12 @@ export default async function ProjectsPage() {
                     : p.darkflowVersion === latestVersion
                     ? "current"
                     : "outdated";
+                // Settings were saved in the UI after the worker last pulled config
+                // (or it never has) → the running worker hasn't applied them yet.
+                const settingsPending =
+                  p.settingsUpdatedAt != null &&
+                  (!ws?.configSyncedAt ||
+                    new Date(ws.configSyncedAt).getTime() < new Date(p.settingsUpdatedAt).getTime());
                 const lastLog = p.routineLogs[0] ?? null;
 
                 return (
@@ -105,6 +111,7 @@ export default async function ProjectsPage() {
                     darkflowVersion={p.darkflowVersion}
                     latestVersion={latestVersion}
                     workerState={workerState}
+                    settingsPending={settingsPending}
                     routine={ws?.routine ?? null}
                     proposedCount={p.issues.filter((i) => i.status === "proposed").length}
                     needsHumanCount={p.issues.filter((i) => i.needsHuman).length}

@@ -14,6 +14,16 @@ Categories:
 
 ---
 
+## [2.73.0] — 2026-06-15
+
+Make the Web UI the authoritative source of truth for project config and close the divergence gaps between the web DB and per-project files.
+
+- **Installer** — `get-config.sh` now mirrors the Web UI verbatim: any field present in the API response (including an explicit `null`/empty — meaning "cleared in the UI") is written to `.darkflow`, instead of the old behaviour that silently kept a stale local value when the server sent blank. Only fields entirely absent from the response are left untouched (forward-compat). Fixes config drift where clearing a setting in the UI never reached the project.
+- **Installer** — `routines.yml` is now always regenerated from the response when it includes a `routines` array, **even an empty one**, so disabling/removing routines in the UI actually stops the worker running them. Previously a 0-routine response left the old schedule in place.
+- **Installer** — `get-config.sh` now hard-requires `jq`: without it a sync could update `.darkflow` but not `routines.yml` (or vice-versa), leaving the two out of step. It now logs to `state/config-sync.log` and skips entirely rather than doing a partial, inconsistent sync.
+- **Webapp** — config-sync staleness is now visible. `get-config.sh` records `state/config-synced-at`, the worker reports it on each `/api/worker/heartbeat`, and the UI shows a **"settings pending"** badge (project list + project header) when `settingsUpdatedAt` is newer than the worker's last config sync — i.e. the running worker hasn't picked up the latest settings yet. Requires migration `20260615130000_add_worker_config_synced_at` (new nullable `WorkerStatus.configSyncedAt`).
+- **Webapp** — `/api/ingest` no longer drops a pending approval after a fixed 2-hour window. A human's approval recorded in the DB is authoritative and now survives an offline worker indefinitely; it clears only when GitHub's status actually reflects it (the real "applied" signal).
+
 ## [2.72.0] — 2026-06-15
 
 - **Webapp** — added a `domain` project state prop (production deployment URL). Editable in Settings → Project, shown as a clickable link in the project list and project header. Requires migration `20260615120000_add_project_domain`.

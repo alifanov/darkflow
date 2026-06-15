@@ -121,6 +121,12 @@ export default async function ProjectPage({
   const ALIVE_MS = 75 * 1000;
   const ws = project.workerStatus;
   const workerAlive = ws && now - new Date(ws.updatedAt).getTime() < ALIVE_MS;
+  // Settings saved in the UI after the worker last pulled config (or never) → the
+  // worker is still running on stale settings until its next get-config.sh sync.
+  const settingsPending =
+    project.settingsUpdatedAt != null &&
+    (!ws?.configSyncedAt ||
+      new Date(ws.configSyncedAt).getTime() < new Date(project.settingsUpdatedAt).getTime());
 
   return (
     <div>
@@ -182,6 +188,16 @@ export default async function ProjectPage({
                   style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", display: "inline-block", flexShrink: 0, opacity: 0.55 }}
                 />
                 Worker online
+              </div>
+            )}
+            {settingsPending && (
+              <div className="mt-1">
+                <span
+                  className="inline-block text-xs font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200"
+                  title="Settings changed in the UI but the worker hasn't pulled them yet"
+                >
+                  settings pending — worker hasn&apos;t synced latest config
+                </span>
               </div>
             )}
           </div>

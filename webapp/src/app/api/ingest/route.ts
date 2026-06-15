@@ -143,14 +143,14 @@ export async function POST(req: NextRequest) {
           const newStatus = isBlocked ? "none" : (i.status ?? "none");
           const needsHuman = isBlocked || (i.needsHuman ?? false);
           const prevPending = pendingByNumber.get(i.number);
-          // Keep pendingStatus only if GitHub hasn't applied it yet AND it isn't
-          // stale (> 2 h old means the worker likely never ran — clear it).
-          const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
-          const pendingFresh =
-            prevPending?.pendingStatusAt &&
-            Date.now() - prevPending.pendingStatusAt.getTime() < TWO_HOURS_MS;
+          // Keep pendingStatus until GitHub actually reflects it (i.e. the worker
+          // applied it). We deliberately do NOT expire it on a timer: a human's
+          // approval recorded in the DB is the source of truth and must survive a
+          // worker that's offline for hours/days, not get silently dropped. It
+          // clears the moment GitHub's status matches the pending target. The UI
+          // surfaces age via pendingStatusAt so a genuinely stuck decision is visible.
           const stillPending =
-            prevPending && prevPending.pendingStatus !== newStatus && pendingFresh
+            prevPending && prevPending.pendingStatus !== newStatus
               ? prevPending
               : null;
           return {

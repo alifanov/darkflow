@@ -49,6 +49,7 @@ interface ProjectRowProps {
   darkflowVersion: string | null;
   latestVersion: string;
   workerState: "running" | "online" | null;
+  settingsPending?: boolean;
   routine: string | null;
   proposedCount: number;
   needsHumanCount: number;
@@ -68,6 +69,7 @@ export function ProjectRow({
   darkflowVersion,
   latestVersion,
   workerState,
+  settingsPending,
   routine,
   proposedCount,
   needsHumanCount,
@@ -155,6 +157,14 @@ export function ProjectRow({
 
       {/* Worker */}
       <td className="py-3 px-4">
+        {settingsPending && (
+          <span
+            className="inline-block mb-1 text-xs font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200"
+            title="Settings changed in the UI but the worker hasn't pulled them yet"
+          >
+            settings pending
+          </span>
+        )}
         {workerState === "running" && (
           <span className="flex items-center gap-1.5 text-xs" style={{ color: "var(--green)" }}>
             <span
