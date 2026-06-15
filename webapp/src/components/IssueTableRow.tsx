@@ -178,7 +178,7 @@ export function IssueTableRow({ issue, showActions, showClose, showTaskLink }: I
                 href={`${TASK_MANAGER_URL}?title=${encodeURIComponent(issue.title)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="cursor-pointer rounded px-3 py-1 text-sm font-medium transition-opacity hover:opacity-80 inline-block"
+                className="cursor-pointer rounded px-3 py-1 text-sm font-medium transition-opacity hover:opacity-80 inline-block whitespace-nowrap"
                 style={{ background: "#1a1a2e", color: "var(--accent)", border: "1px solid var(--border)" }}
               >
                 + Task

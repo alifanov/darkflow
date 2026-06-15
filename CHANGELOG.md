@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.69.1] — 2026-06-15
+
+- **Docs** — fix the `+ Task` action button wrapping onto two lines in the issues table. Added `whitespace-nowrap` to the link so it renders on a single line and matches the height of the adjacent Approve/?/Reject buttons.
+
+---
+
 ## [2.69.0] — 2026-06-15
 
 - **`status:blocked` retired → folded into `needs-human`.** An agent can do nothing with a "blocked" issue (failed `lint → test → build`, or an external blocker) — it always needs a person — so the separate status is gone and those issues now land in the single **Needs Human** bucket. Changes across the stack:
