@@ -188,18 +188,32 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.security) {
+    // Whitelist known schema fields — the worker LLM sometimes emits extra
+    // keys beyond the spec, and spreading raw JSON would crash the upsert.
+    const security = {
+      openIssues: body.security.openIssues ?? 0,
+      criticalOpen: body.security.criticalOpen ?? 0,
+      status: body.security.status ?? "ok",
+    };
     await prisma.securityStatus.upsert({
       where: { projectId: project.id },
-      create: { projectId: project.id, ...body.security },
-      update: body.security,
+      create: { projectId: project.id, ...security },
+      update: security,
     });
   }
 
   if (body.architecture) {
+    // Whitelist known schema fields — the worker LLM sometimes emits extra
+    // keys (e.g. lastReview, newIssues) beyond the spec, and spreading raw
+    // JSON would crash the upsert.
+    const architecture = {
+      openIssues: body.architecture.openIssues ?? 0,
+      status: body.architecture.status ?? "ok",
+    };
     await prisma.architectureStatus.upsert({
       where: { projectId: project.id },
-      create: { projectId: project.id, ...body.architecture },
-      update: body.architecture,
+      create: { projectId: project.id, ...architecture },
+      update: architecture,
     });
   }
 

@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.76.4] — 2026-06-15
+
+- **Webapp** — fix `POST /api/ingest` crashing with a `PrismaClientValidationError` (`Unknown argument`) when the worker LLM emits extra keys (e.g. `lastReview`, `lastReviewDate`, `newIssues`) in the architecture/security metrics JSON. The route now whitelists the known schema fields (`openIssues`/`status`, plus `criticalOpen` for security) instead of spreading raw worker JSON into the Prisma upsert.
+
+---
+
 ## [2.75.0] — 2026-06-15
 
 - **Webapp** — add a **Fix in cmux** button to needs-human issue rows. It calls the new `POST /api/issues/[id]/launch` route, which shells out to the host's `cmux new-workspace --cwd <localPath> --command "claude '…'"` to open a cmux workspace with an interactive Claude session focused on that specific issue (passes the issue number into the prompt).
