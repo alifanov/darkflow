@@ -25,6 +25,7 @@ const STATUS_TEXT: Record<string, string> = {
 };
 
 const CARDS: { key: string; label: string; statuses: string[] }[] = [
+  { key: "none", label: "Untriaged", statuses: ["none"] },
   { key: "proposed", label: "Needs approval", statuses: ["proposed"] },
   { key: "approved", label: "Approved", statuses: ["approved"] },
   { key: "in-progress", label: "In progress", statuses: ["in-progress"] },
@@ -334,7 +335,7 @@ function IssuesTab({
       )}
 
       {issues.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
           {CARDS.map((card) => {
             const count = issues.filter((i) => card.statuses.includes(i.status)).length;
             const isActive = !showAll && effectiveFilter === card.key;

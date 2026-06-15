@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [2.74.0] — 2026-06-15
+
+- **Webapp** — add an **Untriaged** stat card (`status:none`) to the project page so untriaged open issues are visible in the status breakdown. Previously `none`-status issues counted toward the project's Open Issues total but had no card, so the per-status cards never summed to the table count.
+- **Webapp / Installer / Workflow** — remove the vestigial `needs-info` status end-to-end. Deleted the unused `/api/issues/[id]/needs-info` route and its status badge colors; dropped the `status:needs-info` GitHub label from `install.sh`; removed it from the worker's `STATUS_LABELS_ALL` and the dead comment-posting branch in `darkflow-run.sh`; and cleaned the `needs-info` rows/flow from `github-issues.md` (both copies). The status had no UI entry point since v2.69.2 — `needsHuman` covers the "agent is blocked" case.
+
+---
+
 ## [2.73.1] — 2026-06-15
 
 Removed the **Reject** action button from the project page issue rows. Issues are now actioned with **Approve** or **Close** only, mirroring the earlier removal of the Rejected stat card.
