@@ -22,6 +22,12 @@ Categories:
 
 ---
 
+## [2.76.2] — 2026-06-15
+
+- **Docs (fix)** — clarify `CMUX_BIN` in `webapp/.env.example`: the macOS cmux app ships the real CLI at `Contents/Resources/bin/cmux`. The GUI binary at `Contents/MacOS/cmux` creates a workspace but silently ignores `--command`, so the "Fix in cmux" button opened an empty workspace and never launched Claude. Point `CMUX_BIN` at the Resources/bin CLI.
+
+---
+
 ## [2.76.1] — 2026-06-15
 
 - **Infra (fix)** — add explicit `binaryTargets = ["native", "darwin", "darwin-arm64"]` to the Prisma generator. When the host Node runs under Rosetta (reports `x64`) while the runtime needs the `arm64` query engine, `make web` crashed with `PrismaClientInitializationError: could not locate the Query Engine for runtime "darwin-arm64"`. Bundling both macOS engines fixes host runs; Docker (linux) still resolves via `native`.
