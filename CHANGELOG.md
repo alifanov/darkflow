@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.69.2] — 2026-06-15
+
+- **Webapp** — replace the `?` (needs-info) action button in the issues table with a **Close** button. Close marks the issue `pendingStatus: "closed"` via the existing `/api/issues/[id]/close` endpoint and clears `needsHuman`. The inline needs-info question flow was removed from `IssueActions`; the `needs-info` status badge colors and endpoint remain for existing issues.
+
+---
+
 ## [2.69.1] — 2026-06-15
 
 - **Docs** — fix the `+ Task` action button wrapping onto two lines in the issues table. Added `whitespace-nowrap` to the link so it renders on a single line and matches the height of the adjacent Approve/?/Reject buttons.
