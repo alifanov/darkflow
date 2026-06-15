@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.74.2] — 2026-06-15
+
+- **Webapp** — remove the always-on **Needs Human** list at the top of the project Issues tab. The Needs Human card is now a proper filter (`?filter=needs-human`) like the other status cards, so those issues only show when the card is clicked. This stops `needsHuman` issues from appearing twice (once at the top and again under Untriaged when their status is still `none`).
+
+---
+
 ## [2.74.1] — 2026-06-15
 
 - **Webapp** — show inline **Approve** and **Close** buttons on Untriaged (`status:none`) issue rows that have no notes/comments. Approve sets the approved status/label; Close just closes the issue. Issues with comments still expand for review without the quick actions.

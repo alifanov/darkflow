@@ -112,10 +112,14 @@ export default async function ProjectPage({
 
   const showAll = filter === "all";
   const effectiveFilter = showAll ? undefined : (filter ?? "proposed");
+  const isNeedsHuman = effectiveFilter === "needs-human";
   const activeCard = CARDS.find((c) => c.key === effectiveFilter);
-  const displayed = activeCard
-    ? sortedIssues.filter((i) => activeCard.statuses.includes(i.status))
-    : sortedIssues;
+  const displayed = isNeedsHuman
+    ? sortedIssues.filter((i) => i.needsHuman)
+    : activeCard
+      ? sortedIssues.filter((i) => activeCard.statuses.includes(i.status))
+      : sortedIssues;
+  const headingLabel = isNeedsHuman ? "Needs Human" : activeCard ? activeCard.label : "All issues";
 
   const now = Date.now();
   // Worker heartbeats every 30 s; 75 s tolerates one missed beat before flipping offline.
@@ -236,7 +240,8 @@ export default async function ProjectPage({
           effectiveFilter={effectiveFilter}
           showAll={showAll}
           displayed={displayed}
-          activeCard={activeCard}
+          isNeedsHuman={isNeedsHuman}
+          headingLabel={headingLabel}
         />
       )}
 
@@ -280,7 +285,8 @@ function IssuesTab({
   effectiveFilter,
   showAll,
   displayed,
-  activeCard,
+  isNeedsHuman,
+  headingLabel,
 }: {
   projectId: string;
   issues: {
@@ -298,42 +304,13 @@ function IssuesTab({
   effectiveFilter: string | undefined;
   showAll: boolean;
   displayed: typeof issues;
-  activeCard: (typeof CARDS)[number] | undefined;
+  isNeedsHuman: boolean;
+  headingLabel: string;
 }) {
   const needsHumanIssues = issues.filter((i) => i.needsHuman);
 
   return (
     <>
-      {needsHumanIssues.length > 0 && (
-        <section id="needs-human" className="mb-8">
-          <div className="flex items-center gap-2 mb-3">
-            <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>
-              Needs Human
-            </h2>
-            <span
-              className="rounded-full px-2 py-0.5 text-xs font-bold"
-              style={{ background: "#3a1a3a", color: "#c084fc" }}
-            >
-              {needsHumanIssues.length}
-            </span>
-          </div>
-          <TableContainer>
-            <TableHead cols={["#", "Title", "Priority", "Status", "Actions"]} />
-            <tbody>
-              {needsHumanIssues.map((issue) => (
-                <IssueTableRow
-                  key={issue.id}
-                  issue={issue}
-                  showActions={false}
-                  showClose
-                  showTaskLink
-                />
-              ))}
-            </tbody>
-          </TableContainer>
-        </section>
-      )}
-
       {issues.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
           {CARDS.map((card) => {
@@ -360,11 +337,11 @@ function IssuesTab({
             );
           })}
           <Link
-            href={needsHumanIssues.length > 0 ? `#needs-human` : `#`}
+            href={isNeedsHuman ? `/projects/${projectId}?filter=all` : `/projects/${projectId}?filter=needs-human`}
             className="rounded-lg border p-4 flex flex-col gap-1 transition-colors"
             style={{
-              background: needsHumanIssues.length > 0 ? "#3a1a3a" : "var(--surface)",
-              borderColor: needsHumanIssues.length > 0 ? "#c084fc" : "var(--border)",
+              background: isNeedsHuman ? "#3a1a3a" : "var(--surface)",
+              borderColor: isNeedsHuman || needsHumanIssues.length > 0 ? "#c084fc" : "var(--border)",
             }}
           >
             <span className="text-2xl font-bold" style={{ color: needsHumanIssues.length > 0 ? "#c084fc" : "var(--muted)" }}>
@@ -380,13 +357,25 @@ function IssuesTab({
       {issues.length > 0 && (
         <section>
           <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text)" }}>
-            {activeCard ? activeCard.label : "All issues"} ({displayed.length})
+            {headingLabel} ({displayed.length})
           </h2>
           {displayed.length > 0 ? (
             <TableContainer>
               <TableHead cols={["#", "Title", "Priority", "Status", "Actions"]} />
               <tbody>
                 {displayed.map((issue) => {
+                  // Needs Human view: offer Close + Task link, matching the old top section.
+                  if (isNeedsHuman) {
+                    return (
+                      <IssueTableRow
+                        key={issue.id}
+                        issue={issue}
+                        showActions={false}
+                        showClose
+                        showTaskLink
+                      />
+                    );
+                  }
                   // Untriaged issues without notes get quick Approve/Close actions so
                   // they can be triaged inline; proposed issues keep the full action set.
                   const untriagedNoNotes =
