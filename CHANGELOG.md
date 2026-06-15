@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.73.1] — 2026-06-15
+
+Removed the **Reject** action button from the project page issue rows. Issues are now actioned with **Approve** or **Close** only, mirroring the earlier removal of the Rejected stat card.
+
+---
+
 ## [2.73.0] — 2026-06-15
 
 Make the Web UI the authoritative source of truth for project config and close the divergence gaps between the web DB and per-project files.

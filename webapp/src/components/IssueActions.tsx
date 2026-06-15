@@ -5,10 +5,10 @@ import { useState } from "react";
 
 export function IssueActions({ issueId }: { issueId: string }) {
   const router = useRouter();
-  const [loading, setLoading] = useState<"approve" | "reject" | "close" | null>(null);
+  const [loading, setLoading] = useState<"approve" | "close" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function act(action: "approve" | "reject" | "close") {
+  async function act(action: "approve" | "close") {
     setLoading(action);
     setError(null);
     try {
@@ -48,14 +48,6 @@ export function IssueActions({ issueId }: { issueId: string }) {
         title="Close this issue"
       >
         {loading === "close" ? "…" : "Close"}
-      </button>
-      <button
-        onClick={() => act("reject")}
-        disabled={!!loading}
-        className="cursor-pointer rounded px-3 py-1 text-sm font-medium transition-opacity disabled:opacity-50"
-        style={{ background: "#3a1a1a", color: "var(--red)", border: "1px solid #5a2d2d" }}
-      >
-        {loading === "reject" ? "…" : "Reject"}
       </button>
     </div>
   );
