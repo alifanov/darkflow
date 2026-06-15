@@ -132,6 +132,7 @@ The real power comes from scheduling Claude agents that run the loop automatical
 | Routine | Cron | What it does |
 |---|---|---|
 | [**Fix issues**](routines/fix-issues.md) | `0 * * * *` | Hourly — picks up `status:approved` → PR → merge |
+| [Fix CI issue](routines/fix-ci-issue.md) | `*/15 * * * *` | Every 15 min — picks up `source:ci` → push fix; retries up to 3x, then `needs-human` *(optional, `ci-gate`)* |
 | [Analytics review](routines/analytics-review.md) | `0 8 * * *` | Daily 8:00 — PostHog + commits → `status:proposed` issues |
 | [Observability check](routines/observability-check.md) | `30 8 * * *` | Daily 8:30 — SigNoz/errors/slow URLs → issues |
 | [GSC check](routines/gsc-check.md) | `0 8 * * 1` | Weekly Mon 8:00 — Google Search Console + technical/on-page SEO audit → issues |
@@ -164,21 +165,24 @@ See [routines/README.md](./routines/README.md) for full dispatcher docs.
 
 Install with `--with-ci-gate` to drop a GitHub Actions workflow at
 `.github/workflows/darkflow-ci-gate.yml`. On every push it runs your lint/tests
-in CI and, **if they fail**, opens (or reuses) a `source:ci` issue describing the
-failure. The local `fix-issues` worker then picks it up and fixes it — closing
-the loop without you filing anything:
+in CI and, **if they fail**, opens (or reuses) one `source:ci` issue per branch
+describing the failure. The local `fix-ci-issue` worker (every 15 min) then picks
+it up and pushes a fix — **retrying up to 3 times**, then handing it to a human:
 
 ```
-red CI  →  source:ci issue  →  fix-issues worker  →  green CI
+red CI  →  source:ci issue  →  fix-ci-issue worker (≤3 retries)  →  green CI  →  issue auto-closed
 ```
 
 No AI runs in CI — GitHub only runs the cheap checks and files the issue, so there
-is no per-token API cost. Issues are de-duplicated by title (one open issue per
-failure type) so a persistently red branch won't spam the queue. Switch
-`ISSUE_STATUS` in the workflow to `status:proposed` if you want human approval
-before the worker acts (default `status:approved` = auto-fix). To run after an
-existing build workflow instead of on every push, swap the `on:` block for the
-commented `workflow_run` example in the file.
+is no per-token API cost. One open issue is kept per branch (stable title
+`CI failure on <branch>`), so a persistently red branch won't spam the queue. When
+CI passes again the workflow's **close-on-green** step closes the issue — that's
+what bounds the retry loop. If the fix doesn't take after 3 attempts the issue is
+labelled `needs-human` and dropped from the queue. PR runs only report status;
+issues are filed on `push` only. Switch `ISSUE_STATUS` in the workflow to
+`status:proposed` if you want human approval before the worker acts (default
+`status:approved` = auto-fix). To run after an existing build workflow instead of
+on every push, swap the `on:` block for the commented `workflow_run` example.
 
 ### Makefile shortcuts
 
@@ -212,7 +216,8 @@ Weekly
   Sun 7:00  code-health          → status:proposed issues (Sonnet) + code-health snapshot (optional, TS/JS)
 
 Continuous
-  :00  fix-issues (hourly)   → picks up status:approved → PR → merge
+  :00   fix-issues (hourly)       → picks up status:approved → PR → merge
+  */15  fix-ci-issue (15 min)     → picks up source:ci → push fix; ≤3 retries then needs-human (optional, ci-gate)
 
 Human
        Reviews status:proposed in web UI (localhost:5555) → Approve / Reject
@@ -246,6 +251,7 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | Command | What it does |
 |---|---|
 | `/darkflow:fix-issues` | Pick up one `status:approved` issue, implement, close |
+| `/darkflow:fix-ci-issue` | Pick up one `source:ci` issue, push a fix; retries up to 3x, then `needs-human` *(requires `ci-gate`)* |
 | `/darkflow:analytics-review` | PostHog + commits → GitHub issues + analytics snapshot |
 | `/darkflow:observability-check` | Errors / slow queries / latency → GitHub issues |
 | `/darkflow:gsc-check` | Google Search Console + technical/on-page SEO audit → GitHub issues |

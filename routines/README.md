@@ -22,6 +22,7 @@ All routines and their default cron expressions:
 | Routine | Cron | Description |
 |---|---|---|
 | `fix-issues` | `0 * * * *` | Hourly — picks up `status:approved` issues, implements, merges |
+| `fix-ci-issue` | `*/15 * * * *` | Every 15 min — picks up a `source:ci` issue, pushes a fix; retries up to 3x, then `needs-human` *(optional, `ci-gate` module)* |
 | `analytics-review` | `0 8 * * *` | Daily 8:00 — PostHog + recent commits → GitHub issues |
 | `observability-check` | `30 8 * * *` | Daily 8:30 — errors / latency → GitHub issues |
 | `gsc-check` | `0 8 * * 1` | Weekly Mon 8:00 — Google Search Console + technical/on-page SEO audit → GitHub issues |

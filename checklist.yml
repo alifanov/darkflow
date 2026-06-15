@@ -72,6 +72,7 @@ items:
   - { id: mailbox-fetch-py,        group: commands,   type: file, path: .darkflow.d/mailbox/fetch.py,                        template: darkflow/mailbox/fetch.py,                           fix: copy-template, when: module.mailbox, desc: "Mailbox IMAP fetch script" }
   - { id: mailbox-send-py,         group: commands,   type: file, path: .darkflow.d/mailbox/send.py,                         template: darkflow/mailbox/send.py,                            fix: copy-template, when: module.mailbox, desc: "Mailbox SMTP send script" }
   - { id: wf-ci-gate,              group: commands,   type: file, path: .github/workflows/darkflow-ci-gate.yml,               template: .github/workflows/darkflow-ci-gate.yml,              fix: copy-template, when: module.ci-gate, desc: "CI gate GitHub Actions workflow" }
+  - { id: cmd-fix-ci-issue,        group: commands,   type: file, path: .claude/commands/darkflow/fix-ci-issue.md,           template: .claude/commands/darkflow/fix-ci-issue.md,           fix: copy-template, when: module.ci-gate, desc: "/darkflow:fix-ci-issue" }
 
   # ── Dispatcher ───────────────────────────────────────────────────────────────
   - { id: dispatcher-run,          group: dispatcher, type: file, path: .darkflow.d/darkflow-run.sh,        template: darkflow/darkflow-run.sh,        executable: true, fix: copy-template, desc: "Routine dispatcher" }
@@ -98,6 +99,7 @@ items:
   # If a new routine is added in a later Dark Flow version, old installs catch
   # it here via update.sh -> check.sh --fix. Cron/model values mirror install.sh.
   - { id: routine-fix-issues,          group: routines, type: routine, path: .darkflow.d/routines.yml, routine_key: fix-issues,          cron: "0 * * * *",   model: sonnet, engine: claude, enabled: true,  fix: add-routine, desc: "fix-issues (hourly)" }
+  - { id: routine-fix-ci-issue,        group: routines, type: routine, when: module.ci-gate,         path: .darkflow.d/routines.yml, routine_key: fix-ci-issue,        cron: "*/15 * * * *", model: sonnet, engine: claude, enabled: true,  fix: add-routine, desc: "fix-ci-issue (every 15 min)" }
   - { id: routine-security-audit,       group: routines, type: routine, path: .darkflow.d/routines.yml, routine_key: security-audit,       cron: "0 3 * * 0",   model: opus,   engine: claude, enabled: true,  fix: add-routine, desc: "security-audit (weekly Sun 3:00)" }
   - { id: routine-vulnerability-check, group: routines, type: routine, path: .darkflow.d/routines.yml, routine_key: vulnerability-check, cron: "0 6 * * *",   model: sonnet, engine: claude, enabled: true,  fix: add-routine, desc: "vulnerability-check (daily 6:00)" }
   - { id: routine-build-optimization,  group: routines, type: routine, path: .darkflow.d/routines.yml, routine_key: build-optimization,  cron: "0 4 * * 0",   model: opus,   engine: claude, enabled: true,  fix: add-routine, desc: "build-optimization (weekly Sun 4:00)" }

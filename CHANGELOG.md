@@ -14,6 +14,15 @@ Categories:
 
 ---
 
+## [2.71.0] — 2026-06-15
+
+- **New routine** — `fix-ci-issue` (`*/15 * * * *`, optional `ci-gate` module): a dedicated worker for `source:ci` issues filed by the CI gate. It reproduces the failing lint/test, pushes a fix, and leaves an attempt marker — **retrying the same issue up to 3 times** before escalating to `needs-human`. This bounds the red-CI → issue → fix → red-CI loop that a single unconditional auto-fix could spin forever.
+- **New label** — `ci-retry` (`e99695`): marks a `source:ci` issue that is mid auto-fix; the attempt count is tracked via `<!-- darkflow:ci-attempt -->` marker comments on the issue.
+- **Workflow** — `darkflow-ci-gate.yml` reworked to make the retry cap reliable: stable per-branch issue title (`CI failure on <branch>`), issues filed on `push` only (PR runs just report status), and a new **close-on-green** step that auto-closes the branch's CI issue once checks pass again. A persistently red branch keeps one open issue and appends comments instead of spamming new ones.
+- **Updated routine** — `fix-issues` now **excludes** `source:ci` issues from its queue (they're owned by `fix-ci-issue` so the retry cap is never bypassed), and **skips the local `build` step when the `ci-gate` module is active** (the CI gate verifies the build on push).
+- **Installer** — `install.sh`: creates the `ci-retry` label; copies `fix-ci-issue.md` and registers the `fix-ci-issue` routine when `ci-gate` is enabled; updates the generated CLAUDE.md routine/command lists and the post-install summary. `checklist.yml`: `cmd-fix-ci-issue` + `routine-fix-ci-issue` (both `when: module.ci-gate`) so existing projects pick them up on `darkflow:update`.
+- **Docs** — README CI-gate section, routine/command tables, and timeline updated to describe the 3-retry loop and close-on-green.
+
 ## [2.70.0] — 2026-06-15
 
 - **Worker** — guarantee every open issue carries a `priority:*` label. Slash commands set priority from prose instructions, but LLM agents don't comply every time, so issues regularly landed with no priority — they sorted last and showed "—" in the Web UI approval queue (the "Needs approval" tab). The dispatcher (`darkflow-run.sh`) now runs a deterministic `backfill_missing_priority` step before each sync: any OPEN issue with no `priority:*` label gets `priority:medium` (the safe default — it stays in the queue, unlike `low` which routines auto-discard), both on GitHub and in the synced snapshot. Mirrors the existing low-priority auto-close enforcement.

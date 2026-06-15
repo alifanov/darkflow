@@ -1,12 +1,18 @@
 # Dark Flow — CI gate
 #
 # Runs cheap, deterministic checks (lint + tests) on every push. If a check
-# fails, it opens — or reuses — a GitHub issue describing the failure. The
-# Dark Flow `fix-issues` worker (running on your machine) then picks the issue
-# up, fixes it, and closes it. No AI runs here: GitHub only runs the checks and
+# fails, it opens — or reuses — a single GitHub issue (label `source:ci`) per
+# branch describing the failure. The Dark Flow `fix-ci-issue` worker (running on
+# your machine) then picks the issue up and pushes a fix, retrying up to 3 times
+# before escalating to a human. No AI runs here: GitHub only runs the checks and
 # files the issue, so there is no per-token API cost.
 #
-# Loop:  red CI  →  issue  →  fix-issues worker  →  green CI
+# Loop:  red CI  →  issue (source:ci)  →  fix-ci-issue worker (≤3 retries)  →  green CI  →  issue auto-closed
+#
+# One open issue is kept per branch (deduped by the stable title "CI failure on
+# <branch>"). The "Close issue on green" step closes it once CI passes again —
+# this is what bounds the retry loop. Issues are filed only on `push` events;
+# pull_request runs just report status (red/green check) without filing issues.
 #
 # Customise:
 #   - Edit the `checks` matrix below to match your stack / commands.
@@ -100,7 +106,8 @@ jobs:
           [ -z "$failed" ] || exit 1
 
       - name: Open issue on failure
-        if: ${{ failure() && steps.checks.outputs.failed != '' }}
+        # Only file issues for branch pushes — PR runs just report status.
+        if: ${{ failure() && steps.checks.outputs.failed != '' && github.event_name == 'push' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ github.ref_name }}
@@ -111,15 +118,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          TITLE="CI failure: ${FAILED} on ${BRANCH}"
+          # Stable per-branch title so dedup, retry-counting, and close-on-green
+          # all key on the same issue even as the failing-check set changes.
+          TITLE="CI failure on ${BRANCH}"
 
-          # Dedup: if an open issue with the same title already exists, skip.
+          # Dedup: keep ONE open issue per branch. If it already exists, just add
+          # a fresh comment with the latest failure instead of opening a new one.
           existing=$(gh issue list --state open --search "\"${TITLE}\" in:title" \
             --json number --jq '.[0].number' 2>/dev/null || true)
-          if [ -n "${existing:-}" ]; then
-            echo "Issue #${existing} already open for this failure — skipping."
-            exit 0
-          fi
 
           body=$(cat <<EOF
           Automated CI gate detected failing checks: **${FAILED}**
@@ -130,11 +136,37 @@ jobs:
           ${REPORT}
 
           ---
-          _Filed by \`darkflow-ci-gate\`. The \`fix-issues\` worker will pick this up._
+          _Filed by \`darkflow-ci-gate\`. The \`fix-ci-issue\` worker will pick this up (up to 3 retries, then a human)._
           EOF
           )
 
-          gh issue create \
-            --title "${TITLE}" \
-            --label "source:ci,${ISSUE_STATUS},${ISSUE_PRIORITY}" \
-            --body "${body}"
+          if [ -n "${existing:-}" ]; then
+            echo "Issue #${existing} already open for this branch — adding a comment."
+            gh issue comment "${existing}" --body "Still failing on \`${SHA}\`: **${FAILED}** — ${RUN_URL}"
+          else
+            gh issue create \
+              --title "${TITLE}" \
+              --label "source:ci,${ISSUE_STATUS},${ISSUE_PRIORITY}" \
+              --body "${body}"
+          fi
+
+      - name: Close issue on green
+        # When checks pass on a branch push, close any open CI-failure issue for
+        # this branch. This bounds the retry loop and clears the queue.
+        if: ${{ success() && github.event_name == 'push' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.ref_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TITLE="CI failure on ${BRANCH}"
+          open=$(gh issue list --state open --search "\"${TITLE}\" in:title" \
+            --json number --jq '.[].number' 2>/dev/null || true)
+          for n in ${open}; do
+            echo "CI green on ${BRANCH} — closing #${n}."
+            gh issue close "${n}" \
+              --comment "✅ CI is green again on \`${SHA}\` (${RUN_URL}) — closing."
+          done

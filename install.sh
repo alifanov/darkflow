@@ -678,6 +678,7 @@ setup_labels() {
   _do_label "source:design"          "5319e7" "From design quality routines (impeccable:audit/critique/harden)"
   _do_label "source:code-health"     "5319e7" "From fallow code-health audit (dead code, dupes, cycles, complexity)"
   _do_label "source:ci"              "5319e7" "From CI gate — failing lint/test in GitHub Actions"
+  _do_label "ci-retry"               "e99695" "CI auto-fix in progress — fix-ci-issue retries up to 3x before escalating to needs-human"
   _do_label "area:db"                "006b75" "Database finding — index additions are auto-approved (see docs/auto-approve.md)"
   _do_label "action:reply"           "0052cc" "Approved mailbox issue — agent will send email reply"
   _do_label "action:fix"             "0052cc" "Approved mailbox issue — agent will make a code change"
@@ -774,7 +775,8 @@ HEREDOC
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design audit** (Weekly Sat 10:00) — \`/impeccable:audit\` five-dimension quality check → GitHub issues"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design critique** (Weekly Sat 11:00) — \`/impeccable:critique\` scored review + persona tests → GitHub issues"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design harden** (Monthly 1st 10:00) — \`/impeccable:harden\` edge cases, i18n, error states → GitHub issues"
-  [[ "$MOD_CI_GATE"    == true ]] && echo "- **CI gate** (GitHub Actions, on push) — failing lint/test → auto-filed issue picked up by fix-issues"
+  [[ "$MOD_CI_GATE"    == true ]] && echo "- **CI gate** (GitHub Actions, on push) — failing lint/test → auto-filed \`source:ci\` issue"
+  [[ "$MOD_CI_GATE"    == true ]] && echo "- **Fix CI issue** (Every 15 min) — \`/darkflow:fix-ci-issue\` picks up a \`source:ci\` issue, pushes a fix; retries up to 3x, then escalates to \`needs-human\`"
   echo ""
   echo "Schedule: \`.darkflow.d/routines.yml\`  |  Dispatcher: \`bash .darkflow.d/darkflow-run.sh\`"
   echo "Run any routine manually: \`bash .darkflow.d/darkflow-run.sh <name>\`"
@@ -798,6 +800,7 @@ HEREDOC
   [[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && echo "- \`/darkflow:product-overview\` — product overview digest"
   [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- \`/darkflow:architecture-review\` — architectural analysis → GitHub issues"
   [[ "$MOD_MAILBOX"       == true ]] && echo "- \`/darkflow:mailbox-check\` — read new mail and send approved replies via SMTP"
+  [[ "$MOD_CI_GATE"       == true ]] && echo "- \`/darkflow:fix-ci-issue\` — pick up a \`source:ci\` issue and push a fix (retries up to 3x, then needs-human)"
   echo "- \`/darkflow:security-audit\` — full security review (static + runtime) → GitHub issues"
   echo "- \`/darkflow:build-optimization\` — build + deploy optimization analysis → GitHub issues"
   echo "- \`/darkflow:uptime-check\` — DNS + HTTP + page-load check; site down → auto-approved critical issue"
@@ -1153,6 +1156,7 @@ fi
 if [[ "$MOD_CI_GATE" == true ]]; then
   make_dir ".github/workflows"
   smart_update_template ".github/workflows/darkflow-ci-gate.yml" ".github/workflows/darkflow-ci-gate.yml"
+  smart_update_template ".claude/commands/darkflow/fix-ci-issue.md" ".claude/commands/darkflow/fix-ci-issue.md"
 fi
 
 # ── 3. Config (.darkflow) ─────────────────────────────────────────────────────
@@ -1390,6 +1394,15 @@ YAML
     enabled: true
 YAML
 
+      [[ "$MOD_CI_GATE" == true ]] && cat << 'YAML'
+
+  fix-ci-issue:
+    cron: "*/15 * * * *"
+    model: sonnet
+    engine: claude
+    enabled: true
+YAML
+
       cat << 'YAML'
 
   security-audit:
@@ -1569,6 +1582,7 @@ echo "  vulnerability-check  0 6 * * *      GitHub Dependabot + code scanning �
 [[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-audit         0 10 * * 6     Design quality check (impeccable:audit) → GitHub issues"
 [[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-critique      0 11 * * 6     Scored design review (impeccable:critique) → GitHub issues"
 [[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-harden        0 10 1 * *     Production-readiness review (impeccable:harden) → GitHub issues"
+[[ "$MOD_CI_GATE"       == true ]] && echo "  fix-ci-issue         */15 * * * *   Picks up source:ci issue → push fix; retries up to 3x, then needs-human"
 echo ""
 echo -e "  ${DIM}Minutes shown are baselines; this project's actual cron minute is offset by"
 echo -e "  +$(( $(printf '%s' "$SLUG" | cksum | cut -d' ' -f1) % 60 )) so independent projects don't all dispatch on the same minute. See routines.yml.${RESET}"
