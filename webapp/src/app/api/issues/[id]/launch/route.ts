@@ -46,7 +46,7 @@ export async function POST(
     const cmuxBin = process.env.CMUX_BIN?.trim() || "cmux";
     const child = spawn(
       cmuxBin,
-      ["new-workspace", "--name", wsName, "--cwd", localPath, "--command", command],
+      ["new-workspace", "--name", wsName, "--cwd", localPath, "--command", command, "--focus", "true"],
       { detached: true, stdio: "ignore" }
     );
 
@@ -57,6 +57,18 @@ export async function POST(
         resolve();
       });
     });
+
+    // Bring the cmux app to the foreground (macOS). `--focus true` selects the new
+    // workspace inside cmux, but the OS window still needs activating. Best-effort.
+    const appMatch = cmuxBin.match(/^(.*\.app)\//);
+    const openArgs = appMatch ? [appMatch[1]] : ["-a", "cmux"];
+    try {
+      const opener = spawn("open", openArgs, { detached: true, stdio: "ignore" });
+      opener.on("error", () => {});
+      opener.unref();
+    } catch {
+      // activation is non-critical — the workspace was already created
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {

@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.76.5] — 2026-06-15
+
+- **Webapp** — "Fix in cmux" now brings cmux to the foreground and focuses the new workspace: pass `--focus true` to `new-workspace`, and activate the app via `open` (deriving the `.app` path from `CMUX_BIN`, falling back to `open -a cmux`). Activation is best-effort and won't fail the request.
+
+---
+
 ## [2.76.4] — 2026-06-15
 
 - **Webapp** — fix `POST /api/ingest` crashing with a `PrismaClientValidationError` (`Unknown argument`) when the worker LLM emits extra keys (e.g. `lastReview`, `lastReviewDate`, `newIssues`) in the architecture/security metrics JSON. The route now whitelists the known schema fields (`openIssues`/`status`, plus `criticalOpen` for security) instead of spreading raw worker JSON into the Prisma upsert.
