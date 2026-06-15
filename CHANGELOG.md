@@ -22,6 +22,12 @@ Categories:
 
 ---
 
+## [2.76.1] — 2026-06-15
+
+- **Infra (fix)** — add explicit `binaryTargets = ["native", "darwin", "darwin-arm64"]` to the Prisma generator. When the host Node runs under Rosetta (reports `x64`) while the runtime needs the `arm64` query engine, `make web` crashed with `PrismaClientInitializationError: could not locate the Query Engine for runtime "darwin-arm64"`. Bundling both macOS engines fixes host runs; Docker (linux) still resolves via `native`.
+
+---
+
 ## [2.76.0] — 2026-06-15
 
 - **Webapp** — show the **Fix in cmux** button on Untriaged issue rows too (previously only on needs-human), so any untriaged issue can be opened in an interactive cmux/Claude session.

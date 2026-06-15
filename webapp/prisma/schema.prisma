@@ -1,5 +1,9 @@
 generator client {
   provider = "prisma-client-js"
+  // Host node may run under Rosetta (reports x64) while the runtime needs the
+  // arm64 engine — bundle both macOS engines so `make web` works either way.
+  // Docker (linux) build picks its engine via "native".
+  binaryTargets = ["native", "darwin", "darwin-arm64"]
 }
 
 datasource db {
