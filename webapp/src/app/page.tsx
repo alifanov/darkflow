@@ -64,10 +64,10 @@ export default async function ProjectsPage() {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
-                {["#", "Name", "Branch", "Lang", "DF Version", "Worker", "Open Issues", "Last routine", "Last synced"].map((col, i) => (
+                {["#", "Name", "Domain", "Branch", "Lang", "DF Version", "Worker", "Open Issues", "Last routine", "Last synced"].map((col, i) => (
                   <th
                     key={col}
-                    className={`py-2 px-4 text-xs font-medium uppercase tracking-wider text-left${i === 6 ? " text-right" : ""}`}
+                    className={`py-2 px-4 text-xs font-medium uppercase tracking-wider text-left${i === 7 ? " text-right" : ""}`}
                     style={{ color: "var(--muted)" }}
                   >
                     {col}
@@ -98,6 +98,7 @@ export default async function ProjectsPage() {
                     index={idx + 1}
                     id={p.id}
                     name={p.name}
+                    domain={p.domain}
                     branch={p.branch}
                     language={p.language}
                     versionBadge={versionBadge}

@@ -142,6 +142,20 @@ export default async function ProjectPage({
             >
               {project.repoUrl}
             </a>
+            {project.domain && (
+              <div className="text-sm mt-1" style={{ color: "var(--muted)" }}>
+                Domain:{" "}
+                <a
+                  href={project.domain.startsWith("http") ? project.domain : `https://${project.domain}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono"
+                  style={{ color: "var(--accent)" }}
+                >
+                  {project.domain.replace(/^https?:\/\//, "")}
+                </a>
+              </div>
+            )}
             <div className="text-sm mt-1" style={{ color: "var(--muted)" }}>
               Main branch:{" "}
               <span className="font-mono" style={{ color: "var(--text)" }}>
@@ -227,6 +241,7 @@ export default async function ProjectPage({
           initialValues={{
             name: project.name,
             slug: project.slug ?? null,
+            domain: project.domain ?? null,
             branch: project.branch,
             language: project.language,
             mergeStrategy: project.mergeStrategy,

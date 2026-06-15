@@ -42,6 +42,7 @@ interface ProjectRowProps {
   index: number;
   id: string;
   name: string;
+  domain: string | null;
   branch: string | null;
   language: string;
   versionBadge: "current" | "outdated" | "missing";
@@ -60,6 +61,7 @@ export function ProjectRow({
   index,
   id,
   name,
+  domain,
   branch,
   language,
   versionBadge,
@@ -99,6 +101,24 @@ export function ProjectRow({
       {/* Name */}
       <td className="py-3 px-4 font-semibold" style={{ color: "var(--text)" }}>
         {name}
+      </td>
+
+      {/* Domain */}
+      <td className="py-3 px-4 text-xs font-mono" style={{ color: "var(--muted)" }}>
+        {domain ? (
+          <a
+            href={domain.startsWith("http") ? domain : `https://${domain}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="hover:underline"
+            style={{ color: "var(--accent)" }}
+          >
+            {domain.replace(/^https?:\/\//, "")}
+          </a>
+        ) : (
+          "—"
+        )}
       </td>
 
       {/* Branch */}

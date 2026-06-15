@@ -14,6 +14,11 @@ Categories:
 
 ---
 
+## [2.72.0] — 2026-06-15
+
+- **Webapp** — added a `domain` project state prop (production deployment URL). Editable in Settings → Project, shown as a clickable link in the project list and project header. Requires migration `20260615120000_add_project_domain`.
+- **Installer** — `domain` now flows end-to-end like other settings: worker sends it on `/api/ingest`, the Web UI is the source of truth, and `get-config.sh` syncs it back into `.darkflow` (`domain=`).
+
 ## [2.71.1] — 2026-06-15
 
 - **Webapp** — removed the "Rejected" stat card from the project page. Rejecting an issue closes it, so a rejected count had no lasting meaning on the open-issues view. The issues stat grid is now four cards (Needs approval, Approved, In progress, Needs Human).

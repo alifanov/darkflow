@@ -71,6 +71,7 @@ interface IngestAlert {
 interface IngestBody {
   repoUrl: string;
   name?: string;
+  domain?: string;
   branch?: string;
   language?: string;
   mergeStrategy?: string;
@@ -104,6 +105,7 @@ export async function POST(req: NextRequest) {
     create: {
       repoUrl,
       name: body.name ?? repoUrl.split("/").pop() ?? repoUrl,
+      domain: body.domain || null,
       branch: body.branch ?? "main",
       language: body.language ?? "English",
       mergeStrategy: body.mergeStrategy ?? "pr",

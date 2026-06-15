@@ -34,6 +34,7 @@ interface RoutinePatch {
 interface SettingsPatchBody {
   name?: string;
   slug?: string;
+  domain?: string | null;
   branch?: string;
   language?: string;
   mergeStrategy?: string;
@@ -70,6 +71,7 @@ export async function PATCH(
       data: {
         ...(body.name !== undefined && { name: body.name }),
         ...(body.slug !== undefined && { slug: body.slug }),
+        ...(body.domain !== undefined && { domain: body.domain }),
         ...(body.branch !== undefined && { branch: body.branch }),
         ...(body.language !== undefined && { language: body.language }),
         ...(body.mergeStrategy !== undefined && { mergeStrategy: body.mergeStrategy }),
