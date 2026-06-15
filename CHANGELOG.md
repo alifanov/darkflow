@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [2.70.0] — 2026-06-15
+
+- **Worker** — guarantee every open issue carries a `priority:*` label. Slash commands set priority from prose instructions, but LLM agents don't comply every time, so issues regularly landed with no priority — they sorted last and showed "—" in the Web UI approval queue (the "Needs approval" tab). The dispatcher (`darkflow-run.sh`) now runs a deterministic `backfill_missing_priority` step before each sync: any OPEN issue with no `priority:*` label gets `priority:medium` (the safe default — it stays in the queue, unlike `low` which routines auto-discard), both on GitHub and in the synced snapshot. Mirrors the existing low-priority auto-close enforcement.
+- **Docs** — `templates/docs/github-issues.md`: mark `priority:*` as mandatory and document the new dispatcher-level enforcement.
+
+---
+
 ## [2.69.2] — 2026-06-15
 
 - **Webapp** — replace the `?` (needs-info) action button in the issues table with a **Close** button. Close marks the issue `pendingStatus: "closed"` via the existing `/api/issues/[id]/close` endpoint and clears `needsHuman`. The inline needs-info question flow was removed from `IssueActions`; the `needs-info` status badge colors and endpoint remain for existing issues.
