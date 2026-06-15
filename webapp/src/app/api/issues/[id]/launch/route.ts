@@ -37,7 +37,9 @@ export async function POST(
       `Посмотри его: gh issue view ${n}. ` +
       `Разберись, почему он заблокирован, и давай вместе доведём до решения.`;
     const safePrompt = prompt.replace(/'/g, "");
-    const command = `claude '${safePrompt}'`;
+    // --worktree isolates each fix in its own git worktree so several issues can be
+    // worked on in parallel without stepping on each other.
+    const command = `claude --worktree issue-${n} '${safePrompt}'`;
 
     // Workspace title: "[project] #123"
     const wsName = `[${issue.project.name}] #${n}`;

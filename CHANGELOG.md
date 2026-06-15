@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.76.6] — 2026-06-15
+
+- **Webapp** — "Fix in cmux" now launches Claude with `--worktree issue-<n>`, isolating each fix in its own git worktree so multiple issues can be worked on in parallel without conflicts. Uses Claude Code's built-in flag instead of instructing the model in the prompt.
+
+---
+
 ## [2.76.5] — 2026-06-15
 
 - **Webapp** — "Fix in cmux" now brings cmux to the foreground and focuses the new workspace: pass `--focus true` to `new-workspace`, and activate the app via `open` (deriving the `.app` path from `CMUX_BIN`, falling back to `open -a cmux`). Activation is best-effort and won't fail the request.
