@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.71.1] — 2026-06-15
+
+- **Webapp** — removed the "Rejected" stat card from the project page. Rejecting an issue closes it, so a rejected count had no lasting meaning on the open-issues view. The issues stat grid is now four cards (Needs approval, Approved, In progress, Needs Human).
+
 ## [2.71.0] — 2026-06-15
 
 - **New routine** — `fix-ci-issue` (`*/15 * * * *`, optional `ci-gate` module): a dedicated worker for `source:ci` issues filed by the CI gate. It reproduces the failing lint/test, pushes a fix, and leaves an attempt marker — **retrying the same issue up to 3 times** before escalating to `needs-human`. This bounds the red-CI → issue → fix → red-CI loop that a single unconditional auto-fix could spin forever.

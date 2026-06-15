@@ -13,7 +13,6 @@ export const dynamic = "force-dynamic";
 const STATUS_COLORS: Record<string, string> = {
   proposed: "#1f3a5f",
   approved: "#1a3a1a",
-  rejected: "#3a1a1a",
   "in-progress": "#2a2a0a",
   none: "#1a1a1a",
 };
@@ -21,7 +20,6 @@ const STATUS_COLORS: Record<string, string> = {
 const STATUS_TEXT: Record<string, string> = {
   proposed: "var(--accent)",
   approved: "var(--green)",
-  rejected: "var(--red)",
   "in-progress": "#e3b341",
   none: "var(--muted)",
 };
@@ -30,7 +28,6 @@ const CARDS: { key: string; label: string; statuses: string[] }[] = [
   { key: "proposed", label: "Needs approval", statuses: ["proposed"] },
   { key: "approved", label: "Approved", statuses: ["approved"] },
   { key: "in-progress", label: "In progress", statuses: ["in-progress"] },
-  { key: "rejected", label: "Rejected", statuses: ["rejected"] },
 ];
 
 const TABS: { key: "issues" | "logs" | "routines" | "commits" | "settings"; label: string }[] = [
@@ -306,7 +303,7 @@ function IssuesTab({
       )}
 
       {issues.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           {CARDS.map((card) => {
             const count = issues.filter((i) => card.statuses.includes(i.status)).length;
             const isActive = !showAll && effectiveFilter === card.key;
