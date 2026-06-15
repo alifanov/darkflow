@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { IssueTableRow } from "@/components/IssueTableRow";
+import { IssueTableRow, type IssueComment } from "@/components/IssueTableRow";
 import { DeleteProjectButton } from "@/components/DeleteProjectButton";
 import { LocalTime } from "@/components/LocalTime";
 import { LogRow } from "@/components/LogRow";
@@ -15,7 +15,6 @@ const STATUS_COLORS: Record<string, string> = {
   approved: "#1a3a1a",
   rejected: "#3a1a1a",
   "in-progress": "#2a2a0a",
-  blocked: "#3a2a0a",
   none: "#1a1a1a",
 };
 
@@ -24,7 +23,6 @@ const STATUS_TEXT: Record<string, string> = {
   approved: "var(--green)",
   rejected: "var(--red)",
   "in-progress": "#e3b341",
-  blocked: "#d29922",
   none: "var(--muted)",
 };
 
@@ -33,7 +31,6 @@ const CARDS: { key: string; label: string; statuses: string[] }[] = [
   { key: "approved", label: "Approved", statuses: ["approved"] },
   { key: "in-progress", label: "In progress", statuses: ["in-progress"] },
   { key: "rejected", label: "Rejected", statuses: ["rejected"] },
-  { key: "blocked", label: "Blocked", statuses: ["blocked"] },
 ];
 
 const TABS: { key: "issues" | "logs" | "routines" | "commits" | "settings"; label: string }[] = [
@@ -106,12 +103,14 @@ export default async function ProjectPage({
   const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
   const activeTab: TabKey = isTab(tab) ? tab : "issues";
 
-  const sortedIssues = [...project.issues].sort((a, b) => {
-    const pa = PRIORITY_ORDER[a.priority ?? ""] ?? 99;
-    const pb = PRIORITY_ORDER[b.priority ?? ""] ?? 99;
-    if (pa !== pb) return pa - pb;
-    return b.number - a.number;
-  });
+  const sortedIssues = project.issues
+    .map((i) => ({ ...i, comments: (i.comments ?? null) as IssueComment[] | null }))
+    .sort((a, b) => {
+      const pa = PRIORITY_ORDER[a.priority ?? ""] ?? 99;
+      const pb = PRIORITY_ORDER[b.priority ?? ""] ?? 99;
+      if (pa !== pb) return pa - pb;
+      return b.number - a.number;
+    });
 
   const showAll = filter === "all";
   const effectiveFilter = showAll ? undefined : (filter ?? "proposed");
@@ -265,6 +264,7 @@ function IssuesTab({
     priority: string | null;
     url: string | null;
     needsHuman: boolean;
+    comments?: IssueComment[] | null;
   }[];
   effectiveFilter: string | undefined;
   showAll: boolean;

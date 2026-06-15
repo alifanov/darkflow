@@ -11,6 +11,7 @@ interface IngestIssue {
   priority?: string;
   source?: string;
   needsHuman?: boolean;
+  comments?: { author?: string; body?: string; createdAt?: string }[] | null;
 }
 
 interface IngestAnalytics {
@@ -134,7 +135,11 @@ export async function POST(req: NextRequest) {
     if (body.issues.length > 0) {
       await prisma.issue.createMany({
         data: body.issues.map((i) => {
-          const newStatus = i.status ?? "none";
+          // "blocked" is deprecated — an agent can't act on it, so fold it into
+          // needs-human (a human must intervene) and drop the blocked status.
+          const isBlocked = i.status === "blocked";
+          const newStatus = isBlocked ? "none" : (i.status ?? "none");
+          const needsHuman = isBlocked || (i.needsHuman ?? false);
           const prevPending = pendingByNumber.get(i.number);
           // Keep pendingStatus only if GitHub hasn't applied it yet AND it isn't
           // stale (> 2 h old means the worker likely never ran — clear it).
@@ -159,7 +164,8 @@ export async function POST(req: NextRequest) {
             pendingComment: stillPending?.pendingComment ?? null,
             priority: i.priority ?? null,
             source: i.source ?? null,
-            needsHuman: i.needsHuman ?? false,
+            needsHuman,
+            comments: i.comments ?? undefined,
           };
         }),
       });

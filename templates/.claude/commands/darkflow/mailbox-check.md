@@ -60,7 +60,7 @@ For each such issue:
    gh issue close $number
    ```
 
-6. If send fails: label the issue `status:blocked`, leave a comment with the error. Continue to the next issue.
+6. If send fails: label the issue `needs-human`, leave a comment with the error. Continue to the next issue.
 
 ## Step 3 — Fetch new mail
 

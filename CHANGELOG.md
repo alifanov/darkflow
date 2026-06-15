@@ -14,6 +14,15 @@ Categories:
 
 ---
 
+## [2.69.0] — 2026-06-15
+
+- **`status:blocked` retired → folded into `needs-human`.** An agent can do nothing with a "blocked" issue (failed `lint → test → build`, or an external blocker) — it always needs a person — so the separate status is gone and those issues now land in the single **Needs Human** bucket. Changes across the stack:
+  - **Worker (`darkflow-run.sh`)** — on every sync, `convert_blocked_to_needs_human()` relabels each open `status:blocked` issue to `needs-human` directly in GitHub, so the change sticks and propagates to every installed project on its next run (no per-project manual step). The webapp payload also maps `blocked → needs-human` defensively, and `needsHuman` is now true for any issue carrying either label.
+  - **Comments shown** — needs-human issues carry an agent comment explaining what a human must do. The worker now fetches GitHub comments for needs-human issues (bounded — only those) via `enrich_needs_human_comments()` and ingests them into the new `Issue.comments` JSON column; the UI renders them under the issue body.
+  - **Web UI** — the **Blocked** filter card (added in 2.68.2) is removed. In the issues table, the title is now a direct link that opens the GitHub issue in a new tab, and a separate chevron button (with a 💬 comment count) toggles the collapsible body + comments — previously clicking anywhere on the row toggled the body and a small ↗ opened GitHub.
+  - **Commands / docs** — `fix-issues` and `mailbox-check` now set `needs-human` on failed checks / send failures instead of `status:blocked`; `auto-approve.md`, `github-issues.md`, and the routine docs updated; `install.sh` no longer creates the `status:blocked` label.
+  - **Migration** — `20260615000000_issue_comments_drop_blocked` adds `Issue.comments` and converts existing `status='blocked'` rows to `needsHuman=true, status='none'` in place (no data loss).
+
 ## [2.68.2] — 2026-06-14
 
 - **Web UI** — split `status:blocked` into its own **"Blocked"** filter card on the project detail page, separate from **"Rejected"**. Previously the "Rejected" group merged `["rejected", "blocked"]` (`projects/[id]/page.tsx`), so legitimately-open blocked issues (auto-fix attempts whose `lint → test → build` failed, or external blockers) appeared under "Rejected" and looked like declined-but-still-open issues. They are conceptually different — rejected = declined (closed), blocked = waiting on a human/external factor (open by design). A direct GitHub audit of all installed repos confirmed **0** open `status:rejected` and **44** open `status:blocked` (pageradar 14, adsynex 10, scopegate 9, baraholka 4, qabot 3, vargi 3, next-flow 1) — the blocked ones are correct to stay open. Colors/labels for `blocked` already existed; only the card grouping changed.

@@ -664,7 +664,6 @@ setup_labels() {
   _do_label "status:rejected"        "b60205" "Won't do — do not recreate without new data"
   _do_label "status:needs-info"      "d4c5f9" "Needs context — agent clarifies in comment"
   _do_label "status:in-progress"     "1d76db" "Agent started; comment has branch/PR link"
-  _do_label "status:blocked"         "e99695" "Blocked by external factor"
   _do_label "source:posthog"         "5319e7" "From insights/analytics/* (PostHog/HogQL)"
   _do_label "source:gsc"             "5319e7" "From insights/search-console/* (GSC)"
   _do_label "source:seo"             "5319e7" "From technical/on-page SEO audit (gsc-check)"

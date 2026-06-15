@@ -10,9 +10,11 @@ services:
       - darkflow-db:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U darkflow"]
-      interval: 5s
+      interval: 30s          # steady-state: quiet, was 5s (constant exec churn on the Docker VM)
       timeout: 5s
-      retries: 10
+      retries: 5
+      start_period: 30s      # startup window: poll fast (below) so webapp's depends_on unblocks quickly
+      start_interval: 3s
 
   webapp:
     build: ./webapp
