@@ -26,6 +26,7 @@ interface ProjectSettingsFormProps {
     name: string;
     slug: string | null;
     domain: string | null;
+    localPath: string | null;
     branch: string;
     language: string;
     mergeStrategy: string;
@@ -82,6 +83,7 @@ export function ProjectSettingsForm({ projectId, initialValues }: ProjectSetting
   const [name, setName] = useState(initialValues.name);
   const [slug, setSlug] = useState(initialValues.slug ?? "");
   const [domain, setDomain] = useState(initialValues.domain ?? "");
+  const [localPath, setLocalPath] = useState(initialValues.localPath ?? "");
   const [branch, setBranch] = useState(initialValues.branch);
   const [language, setLanguage] = useState(initialValues.language);
   const [mergeStrategy, setMergeStrategy] = useState(initialValues.mergeStrategy);
@@ -104,6 +106,7 @@ export function ProjectSettingsForm({ projectId, initialValues }: ProjectSetting
           name,
           slug: slug || null,
           domain: domain || null,
+          localPath: localPath || null,
           branch,
           language,
           mergeStrategy,
@@ -136,6 +139,7 @@ export function ProjectSettingsForm({ projectId, initialValues }: ProjectSetting
         <InputField label="Name" value={name} onChange={setName} placeholder="My App" />
         <InputField label="Slug" value={slug} onChange={setSlug} placeholder="my-app" hint="Lowercase, dash-separated identifier" />
         <InputField label="Domain" value={domain} onChange={setDomain} placeholder="app.example.com" hint="Production domain where the project is deployed" />
+        <InputField label="Local path" value={localPath} onChange={setLocalPath} placeholder="/Users/you/code/my-app" hint="Absolute path to this project's checkout on the host — used by the “Fix in cmux” button" />
         <InputField label="Main branch" value={branch} onChange={setBranch} placeholder="main" />
 
         <div className="flex flex-col gap-1">

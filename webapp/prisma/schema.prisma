@@ -12,6 +12,7 @@ model Project {
   name          String
   slug          String?
   domain        String?
+  localPath     String?
   repoUrl       String    @unique
   branch        String    @default("main")
   language      String    @default("English")

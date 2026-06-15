@@ -2,6 +2,11 @@ services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    # Port is published to the host so the webapp can run as a plain host process
+    # (`pnpm start`) instead of in Docker — required for the "Fix in cmux" launch
+    # button, which shells out to the host's `cmux` CLI.
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_DB: darkflow
       POSTGRES_USER: darkflow
@@ -16,8 +21,13 @@ services:
       start_period: 30s      # startup window: poll fast (below) so webapp's depends_on unblocks quickly
       start_interval: 3s
 
+  # The webapp now runs on the host by default (`cd webapp && pnpm build && pnpm start`)
+  # so it can launch host-side cmux/claude sessions. This containerised definition is
+  # kept behind the "docker" profile for environments that don't need the launch button:
+  #   docker compose --profile docker up -d
   webapp:
     build: ./webapp
+    profiles: ["docker"]
     restart: unless-stopped
     ports:
       - "5555:3000"

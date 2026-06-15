@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { IssueActions } from "@/components/IssueActions";
 import { CloseIssueButton } from "@/components/CloseIssueButton";
+import { LaunchInCmuxButton } from "@/components/LaunchInCmuxButton";
 
 const STATUS_COLORS: Record<string, string> = {
   proposed: "#1f3a5f",
@@ -46,6 +47,7 @@ interface IssueTableRowProps {
   showActions?: boolean;
   showClose?: boolean;
   showTaskLink?: boolean;
+  showLaunch?: boolean;
 }
 
 const MD_COMPONENTS = {
@@ -99,7 +101,7 @@ function Markdown({ children }: { children: string }) {
   );
 }
 
-export function IssueTableRow({ issue, showActions, showClose, showTaskLink }: IssueTableRowProps) {
+export function IssueTableRow({ issue, showActions, showClose, showTaskLink, showLaunch }: IssueTableRowProps) {
   const [open, setOpen] = useState(false);
   const bg = STATUS_COLORS[issue.status] ?? STATUS_COLORS.none;
   const color = STATUS_TEXT[issue.status] ?? "var(--muted)";
@@ -170,6 +172,7 @@ export function IssueTableRow({ issue, showActions, showClose, showTaskLink }: I
         <td className="py-3 px-4">
           <div className="flex items-center gap-2">
             {showActions && <IssueActions issueId={issue.id} />}
+            {showLaunch && <LaunchInCmuxButton issueId={issue.id} />}
             {showClose && <CloseIssueButton issueId={issue.id} />}
             {showTaskLink && (
               <a

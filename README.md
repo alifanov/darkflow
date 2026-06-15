@@ -50,25 +50,37 @@ The agent will fetch the installer, ask about your stack, run it with the right 
 
 Dark Flow ships a built-in web dashboard for reviewing and triaging GitHub issues without leaving your terminal setup.
 
+The webapp runs as a **host process** so it can launch host-side `cmux` + Claude
+sessions straight from the UI (the "Fix in cmux" button on needs-human issues).
+Only Postgres runs in Docker.
+
 **Start the server:**
 
 ```bash
-# 1. Copy the env template and fill in your GitHub App credentials
+# 1. Copy the env templates and fill in your GitHub App credentials
 cp .env.example .env
+cp webapp/.env.example webapp/.env
 
-# 2. Start Postgres + webapp
-make up          # docker compose up -d
+# 2. Start Postgres (published on localhost:5432)
+make up
+
+# 3. Build and run the webapp on the host
+make web          # http://localhost:3000
 ```
 
-Open **http://localhost:5555** — you'll see all projects that have synced with the worker.
+Open **http://localhost:3000** — you'll see all projects that have synced with the worker.
+
+Prefer everything in Docker (no `cmux` launch button)? Run `make docker-up` →
+the webapp comes up at **http://localhost:5555**.
 
 | Make target | What it does |
 |---|---|
-| `make up` | Start services in the background |
-| `make down` | Stop all services |
-| `make build` | Rebuild the webapp image |
-| `make logs` | Stream logs (Ctrl-C to stop) |
-| `make restart` | Restart all services |
+| `make up` | Start Postgres in the background |
+| `make web` | Build & run the webapp on the host (port 3000) |
+| `make docker-up` | Start Postgres + webapp in Docker (port 5555) |
+| `make down` | Stop Docker services |
+| `make logs` | Stream Docker logs (Ctrl-C to stop) |
+| `make restart` | Restart Docker services |
 | `make ps` | Show container status |
 | `make db-shell` | Open psql inside the Postgres container |
 

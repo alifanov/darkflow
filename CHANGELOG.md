@@ -14,6 +14,14 @@ Categories:
 
 ---
 
+## [2.75.0] — 2026-06-15
+
+- **Webapp** — add a **Fix in cmux** button to needs-human issue rows. It calls the new `POST /api/issues/[id]/launch` route, which shells out to the host's `cmux new-workspace --cwd <localPath> --command "claude '…'"` to open a cmux workspace with an interactive Claude session focused on that specific issue (passes the issue number into the prompt).
+- **Webapp** — add an optional **`localPath`** field to the Project model (Prisma migration `add_project_local_path`, non-destructive) and a "Local path" input in project Settings. The launch button uses it as the cmux working directory. New `CMUX_BIN` env var overrides the cmux binary name/path.
+- **Infra** — the webapp now runs as a **host process** (`make web` → `pnpm build && pnpm start`, port 3000) instead of in Docker, so it can launch host-side cmux/Claude sessions. `docker-compose.yml` now starts **Postgres only** (published on `localhost:5432`); the webapp service moved behind the `docker` profile (`make docker-up`, port 5555). Updated `Makefile`, `README.md`, `CLAUDE.md`, and added `webapp/.env.example`.
+
+---
+
 ## [2.74.2] — 2026-06-15
 
 - **Webapp** — remove the always-on **Needs Human** list at the top of the project Issues tab. The Needs Human card is now a proper filter (`?filter=needs-human`) like the other status cards, so those issues only show when the card is clicked. This stops `needsHuman` issues from appearing twice (once at the top and again under Untriaged when their status is still `none`).

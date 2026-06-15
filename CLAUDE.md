@@ -30,9 +30,22 @@ VERSION                 ← semver, bumped on every release
 
 Copy `.env.example` to `.env` before first run.
 
+The webapp now runs as a **host process** (not in Docker) so it can launch host-side
+`cmux` + Claude sessions from the UI. Only Postgres runs in Docker:
+
 ```bash
-docker compose up -d        # starts webapp + Postgres; UI at http://localhost:5555
-docker compose logs -f webapp  # tail logs
+docker compose up -d        # starts Postgres only (port 5432 published to host)
+cd webapp && pnpm install
+pnpm build && pnpm start    # UI at http://localhost:3000 (reads DATABASE_URL → localhost:5432)
+```
+
+The webapp reads `DATABASE_URL` from `webapp/.env` (defaults to
+`postgresql://darkflow:darkflow@localhost:5432/darkflow`).
+
+To run the webapp in Docker anyway (no `cmux` launch button), use the `docker` profile:
+
+```bash
+docker compose --profile docker up -d   # webapp at http://localhost:5555
 ```
 
 ### Make targets (shorthand for docker compose)
@@ -64,13 +77,15 @@ Migrations live in `webapp/prisma/migrations/`. Never delete or truncate data �
 
 ## Deploying webapp changes
 
-After any change to the webapp (files under `webapp/`), rebuild and restart Docker Compose:
+The webapp runs on the host, so after any change to files under `webapp/` rebuild and
+restart the host process:
 
 ```bash
-docker compose up -d --build
+cd webapp && pnpm build && pnpm start
 ```
 
-This is required for changes to take effect in the running container.
+(If you run the webapp via the `docker` profile instead, use
+`docker compose --profile docker up -d --build`.)
 
 ## Working on this repo
 

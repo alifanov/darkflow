@@ -264,6 +264,7 @@ export default async function ProjectPage({
             name: project.name,
             slug: project.slug ?? null,
             domain: project.domain ?? null,
+            localPath: project.localPath ?? null,
             branch: project.branch,
             language: project.language,
             mergeStrategy: project.mergeStrategy,
@@ -371,6 +372,7 @@ function IssuesTab({
                         key={issue.id}
                         issue={issue}
                         showActions={false}
+                        showLaunch
                         showClose
                         showTaskLink
                       />
