@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.74.1] — 2026-06-15
+
+- **Webapp** — show inline **Approve** and **Close** buttons on Untriaged (`status:none`) issue rows that have no notes/comments. Approve sets the approved status/label; Close just closes the issue. Issues with comments still expand for review without the quick actions.
+
+---
+
 ## [2.74.0] — 2026-06-15
 
 - **Webapp** — add an **Untriaged** stat card (`status:none`) to the project page so untriaged open issues are visible in the status breakdown. Previously `none`-status issues counted toward the project's Open Issues total but had no card, so the per-status cards never summed to the table count.

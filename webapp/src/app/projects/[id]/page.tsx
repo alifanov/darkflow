@@ -386,14 +386,20 @@ function IssuesTab({
             <TableContainer>
               <TableHead cols={["#", "Title", "Priority", "Status", "Actions"]} />
               <tbody>
-                {displayed.map((issue) => (
-                  <IssueTableRow
-                    key={issue.id}
-                    issue={issue}
-                    showActions={issue.status === "proposed"}
-                    showTaskLink={issue.status === "proposed"}
-                  />
-                ))}
+                {displayed.map((issue) => {
+                  // Untriaged issues without notes get quick Approve/Close actions so
+                  // they can be triaged inline; proposed issues keep the full action set.
+                  const untriagedNoNotes =
+                    issue.status === "none" && (issue.comments ?? []).length === 0;
+                  return (
+                    <IssueTableRow
+                      key={issue.id}
+                      issue={issue}
+                      showActions={issue.status === "proposed" || untriagedNoNotes}
+                      showTaskLink={issue.status === "proposed"}
+                    />
+                  );
+                })}
               </tbody>
             </TableContainer>
           ) : (
