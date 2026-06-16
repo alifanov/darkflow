@@ -14,6 +14,15 @@ Categories:
 
 ---
 
+## [2.78.0] — 2026-06-16
+
+- **Installer / Worker / Docs** — unified the credential convention: mailbox (and observability) credentials now **always live in the project's main `.env`**, not `.env.darkflow`.
+  - `install.sh` now **appends** `MAILBOX_*` / `OBSERVABILITY_*` to `.env` (creating it git-ignored), writing only keys that aren't already present so re-runs never clobber hand-edited values. It no longer creates `.env.darkflow`.
+  - `darkflow-run.sh` mailbox pre-flight and the `mailbox-check` command now source `.env` (with `.env.darkflow` kept as a **legacy fallback**, sourced first so `.env` wins). The misconfiguration issue text points at `.env`.
+  - Updated `routines/mailbox-check.md` accordingly.
+
+---
+
 ## [2.77.1] — 2026-06-16
 
 - **Webapp** — Mailbox tab now reads IMAP creds from the project's main `<localPath>/.env` (canonical location), falling back to `.env.darkflow` for legacy installs. Also accepts the short `MAILBOX_USER` / `MAILBOX_PASSWORD` names in addition to `MAILBOX_IMAP_USER` / `MAILBOX_IMAP_PASSWORD`, normalizing them for the fetcher. Matches how real installs (e.g. marketloop) are actually configured; v2.77.0 only looked in `.env.darkflow` and would have found nothing.

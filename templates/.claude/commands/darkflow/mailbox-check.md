@@ -11,12 +11,12 @@ Read `.darkflow` in the project root. Extract:
 - `branch=` → main branch name
 - `merge_strategy=` → `pr` or `direct`
 
-Load mailbox credentials from `.env.darkflow`:
+Load mailbox credentials from `.env` (the project's main env; `.env.darkflow` is a legacy fallback):
 ```bash
-set -a; source .env.darkflow; set +a
+set -a; [ -f .env.darkflow ] && source .env.darkflow; [ -f .env ] && source .env; set +a
 ```
 
-If `MAILBOX_IMAP_HOST` is empty after sourcing — stop and print "mailbox not configured — add MAILBOX_* vars to .env.darkflow".
+If `MAILBOX_IMAP_HOST` is empty after sourcing — stop and print "mailbox not configured — add MAILBOX_* vars to .env".
 
 ## Step 2 — Send approved replies
 

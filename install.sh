@@ -1215,34 +1215,40 @@ if [[ "$DRY_RUN" == false ]]; then
     success "Updated .darkflow to v${LATEST_VERSION}"
   fi
 
-  # Integration credentials
+  # Integration credentials — always live in the project's main .env. We append
+  # only the keys that aren't already there, so re-runs never clobber values the
+  # user edited by hand.
   if [[ -n "$OBS_URL" || -n "$OBS_API_KEY" || -n "$MAILBOX_IMAP_HOST" ]]; then
-    {
-      echo "# Dark Flow — integration credentials"
-      echo "# Copy to your main .env (do NOT commit if it contains real keys)"
-      if [[ -n "$OBS_TOOL" || -n "$OBS_URL" || -n "$OBS_API_KEY" ]]; then
-        echo ""
-        [[ -n "$OBS_TOOL"    ]] && echo "# ${OBS_TOOL}"
-        [[ -n "$OBS_URL"     ]] && echo "OBSERVABILITY_URL=${OBS_URL}"
-        [[ -n "$OBS_API_KEY" ]] && echo "OBSERVABILITY_API_KEY=${OBS_API_KEY}"
-      fi
-      if [[ -n "$MAILBOX_IMAP_HOST" ]]; then
-        echo ""
-        echo "# Mailbox — IMAP (incoming)"
-        echo "MAILBOX_IMAP_HOST=${MAILBOX_IMAP_HOST}"
-        echo "MAILBOX_IMAP_PORT=${MAILBOX_IMAP_PORT:-993}"
-        echo "MAILBOX_IMAP_USER=${MAILBOX_IMAP_USER}"
-        echo "MAILBOX_IMAP_PASSWORD=${MAILBOX_IMAP_PASSWORD}"
-        echo ""
-        echo "# Mailbox — SMTP (outgoing replies)"
-        echo "MAILBOX_SMTP_HOST=${MAILBOX_SMTP_HOST}"
-        echo "MAILBOX_SMTP_PORT=${MAILBOX_SMTP_PORT:-587}"
-        echo "MAILBOX_SMTP_USER=${MAILBOX_SMTP_USER}"
-        echo "MAILBOX_SMTP_PASSWORD=${MAILBOX_SMTP_PASSWORD}"
-      fi
-    } > ".env.darkflow"
-    grep -qF ".env.darkflow" .gitignore 2>/dev/null || echo ".env.darkflow" >> .gitignore
-    success "Credentials saved to .env.darkflow (git-ignored)"
+    touch .env
+    _env_new=""
+    _env_add() { # _env_add KEY VALUE [COMMENT]
+      local k="$1" v="$2" c="${3:-}"
+      [[ -z "$v" ]] && return
+      grep -q "^${k}=" .env 2>/dev/null && return  # keep existing value
+      [[ -n "$c" ]] && _env_new+="${c}"$'\n'
+      _env_new+="${k}=${v}"$'\n'
+    }
+    if [[ -n "$OBS_URL" || -n "$OBS_API_KEY" ]]; then
+      _env_add OBSERVABILITY_URL "$OBS_URL" "# ${OBS_TOOL:-Observability}"
+      _env_add OBSERVABILITY_API_KEY "$OBS_API_KEY"
+    fi
+    if [[ -n "$MAILBOX_IMAP_HOST" ]]; then
+      _env_add MAILBOX_IMAP_HOST "$MAILBOX_IMAP_HOST" "# Mailbox — IMAP (incoming)"
+      _env_add MAILBOX_IMAP_PORT "${MAILBOX_IMAP_PORT:-993}"
+      _env_add MAILBOX_IMAP_USER "$MAILBOX_IMAP_USER"
+      _env_add MAILBOX_IMAP_PASSWORD "$MAILBOX_IMAP_PASSWORD"
+      _env_add MAILBOX_SMTP_HOST "$MAILBOX_SMTP_HOST" "# Mailbox — SMTP (outgoing replies)"
+      _env_add MAILBOX_SMTP_PORT "${MAILBOX_SMTP_PORT:-587}"
+      _env_add MAILBOX_SMTP_USER "$MAILBOX_SMTP_USER"
+      _env_add MAILBOX_SMTP_PASSWORD "$MAILBOX_SMTP_PASSWORD"
+    fi
+    if [[ -n "$_env_new" ]]; then
+      { echo ""; echo "# Dark Flow — integration credentials"; printf '%s' "$_env_new"; } >> .env
+      success "Credentials appended to .env (git-ignored)"
+    else
+      success "Integration credentials already present in .env"
+    fi
+    grep -qxF ".env" .gitignore 2>/dev/null || echo ".env" >> .gitignore
   fi
 
   # .gitignore entries
