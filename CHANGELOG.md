@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.85.0] — 2026-06-16
+
+- **Tooling** — the maintainer-only `/self-checkup` command gains a new **Step 5 — Leftover git worktrees** audit. For every registered project with a `localPath`, it runs `git worktree list --porcelain` + `worktree prune --dry-run` and reports leftover worktrees (path, branch, HEAD), flagging **prunable** ones (directory gone) and **stale** ones (branch already merged into the project's default branch, or last commit older than 7 days), with concrete `worktree remove`/`worktree prune` cleanup suggestions. Dark Flow's `cmux` sessions run in worktrees that should be removed on exit, so leftovers signal crashed/abandoned sessions. The GitHub step renumbers to Step 6 and recommendations to Step 7; report output gains section 5 for worktrees. Read-only — never removes anything.
+
+---
+
 ## [2.84.0] — 2026-06-16
 
 - **Webapp** — new per-project **Minimum issue priority** slider in Settings (critical · high · medium · low). Routines won't file issues below the chosen level — lower-priority findings go to the run snapshot instead. Default `medium` preserves prior behavior. New `Project.minPriority` column (migration `20260616130000_add_project_min_priority`), persisted via the project PATCH route and exposed on `/api/projects/by-repo` for the worker.
