@@ -7,6 +7,9 @@ import { LocalTime } from "@/components/LocalTime";
 import { LogRow } from "@/components/LogRow";
 import { ProjectSettingsForm } from "@/components/ProjectSettingsForm";
 import { RoutineConfigForm } from "@/components/RoutineConfigForm";
+import { MailboxRow } from "@/components/MailboxRow";
+import { MailboxSyncButton } from "@/components/MailboxSyncButton";
+import { readMailboxEnv, isMailboxConfigured } from "@/lib/mailbox-config";
 
 export const dynamic = "force-dynamic";
 
@@ -31,18 +34,28 @@ const CARDS: { key: string; label: string; statuses: string[] }[] = [
   { key: "in-progress", label: "In progress", statuses: ["in-progress"] },
 ];
 
-const TABS: { key: "issues" | "logs" | "routines" | "commits" | "settings"; label: string }[] = [
+const TABS: { key: "issues" | "logs" | "routines" | "commits" | "mailbox" | "settings"; label: string }[] = [
   { key: "issues", label: "Issues" },
   { key: "logs", label: "Logs" },
   { key: "routines", label: "Routines" },
   { key: "commits", label: "Commits" },
+  { key: "mailbox", label: "Mailbox" },
   { key: "settings", label: "Settings" },
 ];
 
 type TabKey = (typeof TABS)[number]["key"];
 
+const MAILBOX_PAGE_SIZE = 25;
+
 function isTab(v: string | undefined): v is TabKey {
-  return v === "issues" || v === "logs" || v === "routines" || v === "commits" || v === "settings";
+  return (
+    v === "issues" ||
+    v === "logs" ||
+    v === "routines" ||
+    v === "commits" ||
+    v === "mailbox" ||
+    v === "settings"
+  );
 }
 
 function TableContainer({ children }: { children: React.ReactNode }) {
@@ -76,10 +89,10 @@ export default async function ProjectPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ filter?: string; tab?: string }>;
+  searchParams: Promise<{ filter?: string; tab?: string; page?: string }>;
 }) {
   const { id } = await params;
-  const { filter, tab } = await searchParams;
+  const { filter, tab, page } = await searchParams;
   const project = await prisma.project.findUnique({
     where: { id },
     include: {
@@ -100,6 +113,24 @@ export default async function ProjectPage({
 
   const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
   const activeTab: TabKey = isTab(tab) ? tab : "issues";
+
+  // Mailbox tab: load paginated emails + detect whether IMAP creds are configured.
+  // Only do this work when the tab is active so other tabs stay cheap.
+  const mailboxPage = Math.max(1, parseInt(page ?? "1", 10) || 1);
+  const mailboxConfigured =
+    activeTab === "mailbox" ? isMailboxConfigured(readMailboxEnv(project.localPath)) : false;
+  const [emails, totalEmails] =
+    activeTab === "mailbox"
+      ? await prisma.$transaction([
+          prisma.email.findMany({
+            where: { projectId: project.id },
+            orderBy: { sentAt: "desc" },
+            skip: (mailboxPage - 1) * MAILBOX_PAGE_SIZE,
+            take: MAILBOX_PAGE_SIZE,
+          }),
+          prisma.email.count({ where: { projectId: project.id } }),
+        ])
+      : [[], 0];
 
   const sortedIssues = project.issues
     .map((i) => ({ ...i, comments: (i.comments ?? null) as IssueComment[] | null }))
@@ -256,6 +287,16 @@ export default async function ProjectPage({
       )}
 
       {activeTab === "commits" && <CommitList commits={project.commits} />}
+
+      {activeTab === "mailbox" && (
+        <MailboxTab
+          projectId={project.id}
+          configured={mailboxConfigured}
+          emails={emails}
+          total={totalEmails}
+          page={mailboxPage}
+        />
+      )}
 
       {activeTab === "settings" && (
         <ProjectSettingsForm
@@ -490,6 +531,106 @@ function CommitList({
           ))}
         </tbody>
       </TableContainer>
+    </section>
+  );
+}
+
+function MailboxTab({
+  projectId,
+  configured,
+  emails,
+  total,
+  page,
+}: {
+  projectId: string;
+  configured: boolean;
+  emails: { id: string; fromAddr: string; subject: string; body: string; seen: boolean; sentAt: Date | null }[];
+  total: number;
+  page: number;
+}) {
+  // Empty + unconfigured → guide the user to set the mailbox up.
+  if (emails.length === 0 && !configured) {
+    return (
+      <section>
+        <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text)" }}>
+          Mailbox
+        </h2>
+        <div className="rounded-lg border p-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+          <p className="mb-2" style={{ color: "var(--text)" }}>
+            This project&apos;s mailbox isn&apos;t configured yet.
+          </p>
+          <ol className="list-decimal pl-5 text-sm space-y-1" style={{ color: "var(--muted)" }}>
+            <li>Set the project&apos;s <span className="font-mono">Local path</span> in the Settings tab.</li>
+            <li>
+              Enable the <span className="font-mono">mailbox</span> module and add{" "}
+              <span className="font-mono">MAILBOX_IMAP_HOST / PORT / USER / PASSWORD</span> to{" "}
+              <span className="font-mono">&lt;localPath&gt;/.env.darkflow</span>.
+            </li>
+            <li>Come back and hit <span className="font-mono">Sync</span>.</li>
+          </ol>
+        </div>
+      </section>
+    );
+  }
+
+  const totalPages = Math.max(1, Math.ceil(total / MAILBOX_PAGE_SIZE));
+  const hasPrev = page > 1;
+  const hasNext = page < totalPages;
+
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>
+          Mailbox ({total})
+        </h2>
+        <MailboxSyncButton projectId={projectId} />
+      </div>
+
+      {emails.length > 0 ? (
+        <>
+          <TableContainer>
+            <TableHead cols={["Time", "From", "Subject", ""]} />
+            <tbody>
+              {emails.map((e) => (
+                <MailboxRow
+                  key={e.id}
+                  fromAddr={e.fromAddr}
+                  subject={e.subject}
+                  body={e.body}
+                  seen={e.seen}
+                  sentAt={e.sentAt ? e.sentAt.toISOString() : null}
+                />
+              ))}
+            </tbody>
+          </TableContainer>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 text-sm">
+              {hasPrev ? (
+                <Link href={`/projects/${projectId}?tab=mailbox&page=${page - 1}`} style={{ color: "var(--accent)" }}>
+                  ← Newer
+                </Link>
+              ) : (
+                <span style={{ color: "var(--muted)" }}>← Newer</span>
+              )}
+              <span style={{ color: "var(--muted)" }}>
+                Page {page} of {totalPages}
+              </span>
+              {hasNext ? (
+                <Link href={`/projects/${projectId}?tab=mailbox&page=${page + 1}`} style={{ color: "var(--accent)" }}>
+                  Older →
+                </Link>
+              ) : (
+                <span style={{ color: "var(--muted)" }}>Older →</span>
+              )}
+            </div>
+          )}
+        </>
+      ) : (
+        <p style={{ color: "var(--muted)" }}>
+          No emails synced yet. Hit <span className="font-mono">Sync</span> to fetch the latest from the mailbox.
+        </p>
+      )}
     </section>
   );
 }

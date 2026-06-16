@@ -40,6 +40,24 @@ model Project {
   workerStatus       WorkerStatus?
   commits            Commit[]
   alerts             ProjectAlert[]
+  emails             Email[]
+}
+
+model Email {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uid       String?            // IMAP UID (volatile, informational only)
+  messageId String             // dedupe key: RFC Message-ID, or "uid:<uid>" if absent
+  fromAddr  String
+  subject   String
+  body      String   @db.Text
+  seen      Boolean  @default(false)
+  sentAt    DateTime?          // parsed Date header
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, messageId])
+  @@index([projectId, sentAt])
 }
 
 model Issue {

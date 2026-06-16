@@ -14,6 +14,15 @@ Categories:
 
 ---
 
+## [2.77.0] — 2026-06-16
+
+- **Webapp** — new **Mailbox** tab on the project page. Lists recent IMAP messages in a paginated table (Time · From · Subject); clicking a row expands the full body. Unread messages are marked with a dot. Emails are persisted to a new `Email` model and synced on demand via a **Sync** button.
+  - Sync reads the project's IMAP creds from `<localPath>/.env.darkflow` (`MAILBOX_IMAP_*`) and runs `webapp/scripts/mailbox-fetch.py` — a **read-only** lister (`readonly` SELECT + `BODY.PEEK`) that fetches the latest messages newest-first **without** marking anything seen.
+  - When `localPath` / `.env.darkflow` isn't configured, the tab shows setup guidance instead.
+  - Migration `add_email_model` (additive — new `Email` table only).
+
+---
+
 ## [2.76.6] — 2026-06-15
 
 - **Webapp** — "Fix in cmux" now launches Claude with `--worktree issue-<n>`, isolating each fix in its own git worktree so multiple issues can be worked on in parallel without conflicts. Uses Claude Code's built-in flag instead of instructing the model in the prompt.
