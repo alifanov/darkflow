@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.85.1] — 2026-06-16
+
+- **Tooling** — `/self-checkup` Step 6 now passes `--limit 200` to `gh label list`. By default `gh label list` caps at 30 labels, so the label-taxonomy diff silently reported every repo as missing `priority:*` / `needs-human` / `action:*` even when those labels exist — pure false positives. Documented the cap inline so the flag isn't dropped again.
+
+---
+
 ## [2.85.0] — 2026-06-16
 
 - **Tooling** — the maintainer-only `/self-checkup` command gains a new **Step 5 — Leftover git worktrees** audit. For every registered project with a `localPath`, it runs `git worktree list --porcelain` + `worktree prune --dry-run` and reports leftover worktrees (path, branch, HEAD), flagging **prunable** ones (directory gone) and **stale** ones (branch already merged into the project's default branch, or last commit older than 7 days), with concrete `worktree remove`/`worktree prune` cleanup suggestions. Dark Flow's `cmux` sessions run in worktrees that should be removed on exit, so leftovers signal crashed/abandoned sessions. The GitHub step renumbers to Step 6 and recommendations to Step 7; report output gains section 5 for worktrees. Read-only — never removes anything.
