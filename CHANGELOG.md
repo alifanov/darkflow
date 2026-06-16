@@ -14,6 +14,17 @@ Categories:
 
 ---
 
+## [2.79.0] — 2026-06-16
+
+- **Worker / Webapp** — the mailbox module now tolerates **three** credential naming conventions, normalizing them onto `MAILBOX_IMAP_*` / `MAILBOX_SMTP_*`:
+  - `MAILBOX_IMAP_*` (darkflow templates),
+  - `MAILBOX_USER` / `MAILBOX_PASSWORD` (e.g. marketloop),
+  - bare `IMAP_*` / `SMTP_*` (the process-emails skill convention, e.g. qabot).
+  - `fetch.py` and `send.py` self-normalize from `os.environ`; the `darkflow-run.sh` mailbox pre-flight and the `mailbox-check` command normalize in shell after sourcing `.env`, so the "configured" gate and the python scripts both see the creds.
+  - Webapp Mailbox tab (`mailbox-config.ts`) reads the same set of names, so projects configured via any convention now show their inbox.
+
+---
+
 ## [2.78.0] — 2026-06-16
 
 - **Installer / Worker / Docs** — unified the credential convention: mailbox (and observability) credentials now **always live in the project's main `.env`**, not `.env.darkflow`.

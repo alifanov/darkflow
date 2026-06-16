@@ -11,12 +11,22 @@ Read `.darkflow` in the project root. Extract:
 - `branch=` → main branch name
 - `merge_strategy=` → `pr` or `direct`
 
-Load mailbox credentials from `.env` (the project's main env; `.env.darkflow` is a legacy fallback):
+Load mailbox credentials from `.env` (the project's main env; `.env.darkflow` is a legacy fallback), then normalize the naming conventions onto `MAILBOX_IMAP_*` (some projects use bare `IMAP_*`/`SMTP_*` or `MAILBOX_USER`/`MAILBOX_PASSWORD`):
 ```bash
-set -a; [ -f .env.darkflow ] && source .env.darkflow; [ -f .env ] && source .env; set +a
+set -a
+[ -f .env.darkflow ] && source .env.darkflow; [ -f .env ] && source .env
+export MAILBOX_IMAP_HOST="${MAILBOX_IMAP_HOST:-${IMAP_HOST:-}}"
+export MAILBOX_IMAP_PORT="${MAILBOX_IMAP_PORT:-${IMAP_PORT:-}}"
+export MAILBOX_IMAP_USER="${MAILBOX_IMAP_USER:-${MAILBOX_USER:-${IMAP_USER:-}}}"
+export MAILBOX_IMAP_PASSWORD="${MAILBOX_IMAP_PASSWORD:-${MAILBOX_PASSWORD:-${IMAP_PASSWORD:-}}}"
+export MAILBOX_SMTP_HOST="${MAILBOX_SMTP_HOST:-${SMTP_HOST:-}}"
+export MAILBOX_SMTP_PORT="${MAILBOX_SMTP_PORT:-${SMTP_PORT:-}}"
+export MAILBOX_SMTP_USER="${MAILBOX_SMTP_USER:-${SMTP_USER:-}}"
+export MAILBOX_SMTP_PASSWORD="${MAILBOX_SMTP_PASSWORD:-${SMTP_PASSWORD:-}}"
+set +a
 ```
 
-If `MAILBOX_IMAP_HOST` is empty after sourcing — stop and print "mailbox not configured — add MAILBOX_* vars to .env".
+If `MAILBOX_IMAP_HOST` is empty after sourcing — stop and print "mailbox not configured — add MAILBOX_*/IMAP_* vars to .env".
 
 ## Step 2 — Send approved replies
 

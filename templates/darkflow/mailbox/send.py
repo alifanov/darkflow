@@ -34,12 +34,21 @@ def main():
     parser.add_argument("--body-file", required=True)
     args = parser.parse_args()
 
-    smtp_host = os.environ.get("MAILBOX_SMTP_HOST", "")
-    smtp_port = int(os.environ.get("MAILBOX_SMTP_PORT", "587"))
-    smtp_user = os.environ.get("MAILBOX_SMTP_USER", "")
-    smtp_pass = os.environ.get("MAILBOX_SMTP_PASSWORD", "")
-    use_ssl = os.environ.get("MAILBOX_SMTP_SSL", "") == "1"
-    from_addr = smtp_user or os.environ.get("MAILBOX_IMAP_USER", "")
+    # Tolerate the naming conventions in the wild: MAILBOX_SMTP_*, and the bare
+    # SMTP_*/IMAP_* names used by the process-emails skill.
+    def _env(*names, default=""):
+        for n in names:
+            v = os.environ.get(n)
+            if v:
+                return v
+        return default
+
+    smtp_host = _env("MAILBOX_SMTP_HOST", "SMTP_HOST")
+    smtp_port = int(_env("MAILBOX_SMTP_PORT", "SMTP_PORT", default="587"))
+    smtp_user = _env("MAILBOX_SMTP_USER", "SMTP_USER")
+    smtp_pass = _env("MAILBOX_SMTP_PASSWORD", "SMTP_PASSWORD")
+    use_ssl = _env("MAILBOX_SMTP_SSL", "SMTP_SSL") == "1"
+    from_addr = smtp_user or _env("MAILBOX_IMAP_USER", "MAILBOX_USER", "IMAP_USER")
 
     if not smtp_host:
         print("Missing MAILBOX_SMTP_HOST", file=sys.stderr)
