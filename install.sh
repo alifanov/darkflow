@@ -677,8 +677,10 @@ setup_labels() {
   _do_label "source:design"          "5319e7" "From design quality routines (impeccable:audit/critique/harden)"
   _do_label "source:code-health"     "5319e7" "From fallow code-health audit (dead code, dupes, cycles, complexity)"
   _do_label "source:ci"              "5319e7" "From CI gate — failing lint/test in GitHub Actions"
+  _do_label "source:docs"            "5319e7" "From docs-audit doc/code drift findings"
+  _do_label "source:infra"           "5319e7" "From Coolify / deployment health checks"
+  _do_label "source:vulnerability-report" "5319e7" "From GitHub Dependabot / Code Scanning / Secret Scanning"
   _do_label "ci-retry"               "e99695" "CI auto-fix in progress — fix-ci-issue retries up to 3x before escalating to needs-human"
-  _do_label "area:db"                "006b75" "Database finding — index additions are auto-approved (see docs/auto-approve.md)"
   _do_label "action:reply"           "0052cc" "Approved mailbox issue — agent will send email reply"
   _do_label "action:fix"             "0052cc" "Approved mailbox issue — agent will make a code change"
   _do_label "needs-human"            "8b5cf6" "Agent blocked — requires human action (credentials, config, external service)"
@@ -882,6 +884,9 @@ run_checklist() {
       coolify)       [[ "$MOD_COOLIFY"       == true ]] ;;
       claude-update) [[ "$MOD_CLAUDE_UPDATE" == true ]] ;;
       arch-review)   [[ "$MOD_ARCH_REVIEW"   == true ]] ;;
+      mailbox)          [[ "$MOD_MAILBOX"          == true ]] ;;
+      docs-audit)       [[ "$MOD_DOCS_AUDIT"       == true ]] ;;
+      product-overview) [[ "$MOD_PRODUCT_OVERVIEW" == true ]] ;;
       impeccable)    [[ "$MOD_IMPECCABLE"    == true ]] ;;
       fallow)        [[ "$MOD_FALLOW"        == true ]] ;;
       ci-gate)       [[ "$MOD_CI_GATE"       == true ]] ;;

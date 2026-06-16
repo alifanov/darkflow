@@ -36,7 +36,7 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 
 ## What gets created
 
-Issues with labels: `status:proposed`, `source:docs`, `area:docs`, `priority:high` / `medium` (cosmetic/minor drift is noted in the snapshot, not filed)
+Issues with labels: `status:proposed`, `source:docs`, `priority:high` / `medium` (cosmetic/minor drift is noted in the snapshot, not filed)
 
 A dated snapshot at `docs/insights/docs-audit/YYYY-MM-DD.md` and a metrics file at `.darkflow.d/state/metrics/docs-audit.json`.
 

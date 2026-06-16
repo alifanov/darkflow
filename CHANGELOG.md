@@ -14,6 +14,16 @@ Categories:
 
 ---
 
+## [2.82.0] — 2026-06-16
+
+- **Installer** — `_module_active()` in `install.sh` now handles `docs-audit`, `product-overview`, and `mailbox` (they fell into the `*) return 1` default, so on a fresh `--all` install — where `MOD_*=true` but `MODULES` is still empty — checklist items gated `when: module.docs-audit` / `module.product-overview` / `module.mailbox` were silently skipped from verification). Regression of the previously-fixed docs-audit/product-overview gotcha, now also covering `mailbox`.
+- **Webapp** — fixed `pendingStatus:"closed"` never clearing on ingest. The clear condition compared `pendingStatus` against the issue's `status:*` label value, but `"closed"` is a *state* transition, never a status label — so a Close-button decision stayed "pending" forever even after GitHub closed the issue (17 stuck rows observed across projects). Ingest now clears a `"closed"` pending state once GitHub reports `state === "closed"`; other pending states still clear on status-label match. Existing stuck rows clear on the next ingest cycle.
+- **New label** — added `source:docs`, `source:infra`, `source:vulnerability-report` to `_do_label` in `install.sh`. They were already emitted/queried by `docs-audit`, `coolify-check-deployment`, and `vulnerability-check` but never created, so `gh issue create` had to auto-create them.
+- **Removed label** — dropped the entire `area:*` family (including `area:db`) from `_do_label` and all references in command templates, routines, and `docs/auto-approve.md`. Auto-approve rules no longer gate on `area:deps`/`area:db`: Dependabot version upgrades auto-approve on alert type, additive DB-index findings auto-approve on the command's index-only judgement. `architecture-review` now counts its snapshot backlog via `source:manual` instead of `area:architecture`.
+- **Docs** — `auto-approve.md` allowlist/exclusions reworded to drop the removed `area:*` match criteria.
+
+---
+
 ## [2.81.0] — 2026-06-16
 
 - **Worker** — `fix-issues` now recovers an issue stranded by a crashed run immediately instead of waiting the full 1h auto-revive window. When a run exits non-zero (e.g. the Claude API drops the socket mid-run — `socket connection was closed unexpectedly`), the agent has usually already set `status:in-progress` and posted a "starting work" comment but never created a branch/PR. The new `recover_crashed_fix_issues()` reverts any open `status:in-progress` issue back to `status:approved` so the next cycle re-picks it — unless an open PR already references it (`#N` or a `fix/N-` branch), in which case it's left `in-progress` for a human to merge. The 1h `revive_stuck_issues` backstop remains for externally-killed/hung runs.

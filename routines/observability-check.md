@@ -99,7 +99,7 @@ Store credentials in your project `.env` (referenced by the env block above), ne
 
 Issues with labels: `status:proposed`, `source:signoz` (or relevant), `priority:*`
 
-Database findings also get `area:db`. **Additive index additions are created directly as `status:approved`** (auto-approved — see [`docs/auto-approve.md`](../docs/auto-approve.md)); query rewrites, N+1 fixes, and caching stay `status:proposed`.
+**Additive index additions are created directly as `status:approved`** (auto-approved — see [`docs/auto-approve.md`](../docs/auto-approve.md)); query rewrites, N+1 fixes, and caching stay `status:proposed`.
 
 ---
 

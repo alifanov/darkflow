@@ -147,12 +147,19 @@ export async function POST(req: NextRequest) {
           // applied it). We deliberately do NOT expire it on a timer: a human's
           // approval recorded in the DB is the source of truth and must survive a
           // worker that's offline for hours/days, not get silently dropped. It
-          // clears the moment GitHub's status matches the pending target. The UI
+          // clears the moment GitHub reflects the pending target. The UI
           // surfaces age via pendingStatusAt so a genuinely stuck decision is visible.
+          //
+          // "closed" is a *state* transition (open→closed), not a status:* label
+          // value, so it never equals newStatus (which only holds proposed/
+          // approved/rejected/in-progress/none). Clear it once GitHub reports the
+          // issue closed; otherwise compare against the status target as usual.
+          const githubReflectsPending =
+            prevPending?.pendingStatus === "closed"
+              ? i.state === "closed"
+              : prevPending?.pendingStatus === newStatus;
           const stillPending =
-            prevPending && prevPending.pendingStatus !== newStatus
-              ? prevPending
-              : null;
+            prevPending && !githubReflectsPending ? prevPending : null;
           return {
             projectId: project.id,
             number: i.number,
