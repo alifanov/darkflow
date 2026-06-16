@@ -273,6 +273,7 @@ export default async function ProjectPage({
           displayed={displayed}
           isNeedsHuman={isNeedsHuman}
           headingLabel={headingLabel}
+          minPriority={project.minPriority}
         />
       )}
 
@@ -309,6 +310,7 @@ export default async function ProjectPage({
             branch: project.branch,
             language: project.language,
             mergeStrategy: project.mergeStrategy,
+            minPriority: project.minPriority,
             maxConcurrent: project.maxConcurrent,
             posthogProjectId: project.posthogProjectId ?? null,
             obsTool: project.obsTool ?? null,
@@ -321,6 +323,15 @@ export default async function ProjectPage({
   );
 }
 
+// Priority rank: critical=0 (most important) … low=3 (least). An issue is "below
+// the project's minimum" when its rank is greater than the threshold's rank.
+const PRIORITY_RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+function isBelowPriorityThreshold(priority: string | null, minPriority: string): boolean {
+  const pr = PRIORITY_RANK[priority ?? ""];
+  const tr = PRIORITY_RANK[minPriority] ?? 2;
+  return pr !== undefined && pr > tr;
+}
+
 function IssuesTab({
   projectId,
   issues,
@@ -329,6 +340,7 @@ function IssuesTab({
   displayed,
   isNeedsHuman,
   headingLabel,
+  minPriority,
 }: {
   projectId: string;
   issues: {
@@ -348,6 +360,7 @@ function IssuesTab({
   displayed: typeof issues;
   isNeedsHuman: boolean;
   headingLabel: string;
+  minPriority: string;
 }) {
   const needsHumanIssues = issues.filter((i) => i.needsHuman);
 
@@ -412,6 +425,7 @@ function IssuesTab({
                       <IssueTableRow
                         key={issue.id}
                         issue={issue}
+                        belowThreshold={isBelowPriorityThreshold(issue.priority, minPriority)}
                         showActions={false}
                         showLaunch
                         showClose
@@ -427,6 +441,7 @@ function IssuesTab({
                     <IssueTableRow
                       key={issue.id}
                       issue={issue}
+                      belowThreshold={isBelowPriorityThreshold(issue.priority, minPriority)}
                       showActions={issue.status === "proposed" || untriagedNoNotes}
                       showLaunch={isUntriaged}
                       showTaskLink={issue.status === "proposed"}

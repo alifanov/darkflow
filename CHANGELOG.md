@@ -14,6 +14,14 @@ Categories:
 
 ---
 
+## [2.84.0] — 2026-06-16
+
+- **Webapp** — new per-project **Minimum issue priority** slider in Settings (critical · high · medium · low). Routines won't file issues below the chosen level — lower-priority findings go to the run snapshot instead. Default `medium` preserves prior behavior. New `Project.minPriority` column (migration `20260616130000_add_project_min_priority`), persisted via the project PATCH route and exposed on `/api/projects/by-repo` for the worker.
+- **Webapp** — the Issues list now highlights any open issue whose priority is **below** the project's configured minimum: a yellow left border, faint row tint, and bold yellow priority cell, so lingering lower-priority items are visible at a glance (e.g. manually-filed `low` issues under a `medium` threshold).
+- **Worker** — `darkflow-run.sh` generalizes the old `close_routine_low_issues` into `close_routine_below_priority`: routine-created issues ranking below the project's `min_priority` (synced from the Web UI via `get-config.sh`) are auto-closed before reaching the approval queue. Manual issues (`source:manual`), `status:in-progress`, and `needs-human` issues remain exempt. At the default `medium` threshold this is identical to the previous low-only behavior.
+
+---
+
 ## [2.83.0] — 2026-06-16
 
 - **Webapp** — added a 7-day "Issues — last 7 days" stacked bar chart (recharts) to the top of the Projects page, showing issues **created** (blue) and **closed** (green) per day across all projects. Days with no activity still render; an empty state shows when no timestamps exist yet.

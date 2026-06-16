@@ -39,6 +39,7 @@ interface SettingsPatchBody {
   branch?: string;
   language?: string;
   mergeStrategy?: string;
+  minPriority?: string;
   modules?: string[];
   maxConcurrent?: number;
   posthogProjectId?: string | null;
@@ -77,6 +78,7 @@ export async function PATCH(
         ...(body.branch !== undefined && { branch: body.branch }),
         ...(body.language !== undefined && { language: body.language }),
         ...(body.mergeStrategy !== undefined && { mergeStrategy: body.mergeStrategy }),
+        ...(body.minPriority !== undefined && { minPriority: body.minPriority }),
         ...(body.modules !== undefined && { modules: body.modules }),
         ...(body.maxConcurrent !== undefined && { maxConcurrent: body.maxConcurrent }),
         ...(body.posthogProjectId !== undefined && { posthogProjectId: body.posthogProjectId }),

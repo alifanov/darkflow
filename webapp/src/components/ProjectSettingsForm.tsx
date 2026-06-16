@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+// Slider index → priority word. Left = most important (critical), right = least (low).
+const PRIORITY_LEVELS = ["critical", "high", "medium", "low"];
+
 const LANGUAGES = [
   "English",
   "Russian",
@@ -30,6 +33,7 @@ interface ProjectSettingsFormProps {
     branch: string;
     language: string;
     mergeStrategy: string;
+    minPriority: string;
     maxConcurrent: number;
     posthogProjectId: string | null;
     obsTool: string | null;
@@ -87,6 +91,9 @@ export function ProjectSettingsForm({ projectId, initialValues }: ProjectSetting
   const [branch, setBranch] = useState(initialValues.branch);
   const [language, setLanguage] = useState(initialValues.language);
   const [mergeStrategy, setMergeStrategy] = useState(initialValues.mergeStrategy);
+  const [minPriority, setMinPriority] = useState(
+    PRIORITY_LEVELS.includes(initialValues.minPriority) ? initialValues.minPriority : "medium",
+  );
   const [maxConcurrent, setMaxConcurrent] = useState(String(initialValues.maxConcurrent));
   const [posthogProjectId, setPosthogProjectId] = useState(initialValues.posthogProjectId ?? "");
   const [obsTool, setObsTool] = useState(initialValues.obsTool ?? "");
@@ -110,6 +117,7 @@ export function ProjectSettingsForm({ projectId, initialValues }: ProjectSetting
           branch,
           language,
           mergeStrategy,
+          minPriority,
           maxConcurrent: parseInt(maxConcurrent, 10) || 3,
           posthogProjectId: posthogProjectId || null,
           obsTool: obsTool || null,
@@ -207,6 +215,37 @@ export function ProjectSettingsForm({ projectId, initialValues }: ProjectSetting
               width: 80,
             }}
           />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--muted)" }}>
+            Minimum issue priority
+          </label>
+          <input
+            type="range"
+            min={0}
+            max={3}
+            step={1}
+            value={PRIORITY_LEVELS.indexOf(minPriority)}
+            onChange={(e) => setMinPriority(PRIORITY_LEVELS[parseInt(e.target.value, 10)] ?? "medium")}
+            className="cursor-pointer"
+            style={{ accentColor: "var(--accent)", width: "100%", maxWidth: 320 }}
+          />
+          <div className="flex justify-between text-[11px] font-medium" style={{ width: "100%", maxWidth: 320 }}>
+            {PRIORITY_LEVELS.map((p) => (
+              <span
+                key={p}
+                className="capitalize"
+                style={{ color: p === minPriority ? "var(--accent)" : "var(--muted)" }}
+              >
+                {p}
+              </span>
+            ))}
+          </div>
+          <span className="text-xs" style={{ color: "var(--muted)" }}>
+            Routines won&apos;t file issues below this level — lower-priority findings go to the run
+            snapshot instead. Existing lower-priority issues are highlighted in the Issues list.
+          </span>
         </div>
       </section>
 

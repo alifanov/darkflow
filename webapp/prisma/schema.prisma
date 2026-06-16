@@ -21,6 +21,7 @@ model Project {
   branch        String    @default("main")
   language      String    @default("English")
   mergeStrategy String    @default("pr")
+  minPriority   String    @default("medium")
   modules            String[]
   maxConcurrent      Int       @default(3)
   posthogProjectId   String?

@@ -48,6 +48,8 @@ interface IssueTableRowProps {
   showClose?: boolean;
   showTaskLink?: boolean;
   showLaunch?: boolean;
+  /** Issue priority is below the project's configured minimum — flagged in the list. */
+  belowThreshold?: boolean;
 }
 
 const MD_COMPONENTS = {
@@ -101,7 +103,7 @@ function Markdown({ children }: { children: string }) {
   );
 }
 
-export function IssueTableRow({ issue, showActions, showClose, showTaskLink, showLaunch }: IssueTableRowProps) {
+export function IssueTableRow({ issue, showActions, showClose, showTaskLink, showLaunch, belowThreshold }: IssueTableRowProps) {
   const [open, setOpen] = useState(false);
   const bg = STATUS_COLORS[issue.status] ?? STATUS_COLORS.none;
   const color = STATUS_TEXT[issue.status] ?? "var(--muted)";
@@ -114,7 +116,13 @@ export function IssueTableRow({ issue, showActions, showClose, showTaskLink, sho
     <>
       <tr
         className="project-row"
-        style={{ borderBottom: open ? undefined : "1px solid var(--border)" }}
+        style={{
+          borderBottom: open ? undefined : "1px solid var(--border)",
+          ...(belowThreshold && {
+            borderLeft: "3px solid var(--yellow)",
+            background: "rgba(210, 153, 34, 0.07)",
+          }),
+        }}
       >
         <td className="py-3 px-4 font-mono text-xs" style={{ color: "var(--muted)", width: "3.5rem" }}>
           #{issue.number}
@@ -150,7 +158,11 @@ export function IssueTableRow({ issue, showActions, showClose, showTaskLink, sho
             )}
           </div>
         </td>
-        <td className="py-3 px-4 text-xs" style={{ color: "var(--muted)" }}>
+        <td
+          className="py-3 px-4 text-xs"
+          style={{ color: belowThreshold ? "var(--yellow)" : "var(--muted)", fontWeight: belowThreshold ? 600 : undefined }}
+          title={belowThreshold ? "Below this project's minimum issue priority" : undefined}
+        >
           {issue.priority ?? "—"}
         </td>
         <td className="py-3 px-4">
