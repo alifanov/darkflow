@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.81.0] — 2026-06-16
+
+- **Worker** — `fix-issues` now recovers an issue stranded by a crashed run immediately instead of waiting the full 1h auto-revive window. When a run exits non-zero (e.g. the Claude API drops the socket mid-run — `socket connection was closed unexpectedly`), the agent has usually already set `status:in-progress` and posted a "starting work" comment but never created a branch/PR. The new `recover_crashed_fix_issues()` reverts any open `status:in-progress` issue back to `status:approved` so the next cycle re-picks it — unless an open PR already references it (`#N` or a `fix/N-` branch), in which case it's left `in-progress` for a human to merge. The 1h `revive_stuck_issues` backstop remains for externally-killed/hung runs.
+
+---
+
 ## [2.80.0] — 2026-06-16
 
 - **Worker / Webapp** — unified mailbox credentials on a **single** canonical convention: `MAILBOX_IMAP_HOST` / `MAILBOX_IMAP_PORT` / `MAILBOX_IMAP_USER` / `MAILBOX_IMAP_PASSWORD` (and `MAILBOX_SMTP_*`), all living in the project's main `.env`. Removed the v2.79.0 multi-name tolerance: `fetch.py` / `send.py`, the `darkflow-run.sh` pre-flight, the `mailbox-check` command, and the webapp `mailbox-config.ts` now read only the canonical names. (`.env.darkflow` is still accepted as a legacy file-location fallback.)
