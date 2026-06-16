@@ -563,8 +563,7 @@ function MailboxTab({
             <li>Set the project&apos;s <span className="font-mono">Local path</span> in the Settings tab.</li>
             <li>
               Add <span className="font-mono">MAILBOX_IMAP_HOST / PORT / USER / PASSWORD</span> to{" "}
-              <span className="font-mono">&lt;localPath&gt;/.env</span>{" "}
-              (the short <span className="font-mono">MAILBOX_USER / MAILBOX_PASSWORD</span> names work too).
+              <span className="font-mono">&lt;localPath&gt;/.env</span>.
             </li>
             <li>Come back and hit <span className="font-mono">Sync</span>.</li>
           </ol>

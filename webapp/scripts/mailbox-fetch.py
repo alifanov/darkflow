@@ -86,27 +86,11 @@ def parse_date(raw):
     return dt.isoformat()
 
 
-def _env(*names, default=None):
-    """First non-empty env var among `names`. Tolerates the naming conventions in
-    the wild: MAILBOX_IMAP_*, MAILBOX_USER/PASSWORD, and bare IMAP_* names."""
-    for n in names:
-        v = os.environ.get(n)
-        if v:
-            return v
-    return default
-
-
 def connect():
-    host = _env("MAILBOX_IMAP_HOST", "IMAP_HOST")
-    port = int(_env("MAILBOX_IMAP_PORT", "IMAP_PORT", default="993"))
-    user = _env("MAILBOX_IMAP_USER", "MAILBOX_USER", "IMAP_USER")
-    password = _env("MAILBOX_IMAP_PASSWORD", "MAILBOX_PASSWORD", "IMAP_PASSWORD")
-    if not host:
-        raise KeyError("MAILBOX_IMAP_HOST (or IMAP_HOST)")
-    if not user:
-        raise KeyError("MAILBOX_IMAP_USER (or IMAP_USER)")
-    if not password:
-        raise KeyError("MAILBOX_IMAP_PASSWORD (or IMAP_PASSWORD)")
+    host = os.environ["MAILBOX_IMAP_HOST"]
+    port = int(os.environ.get("MAILBOX_IMAP_PORT", "993"))
+    user = os.environ["MAILBOX_IMAP_USER"]
+    password = os.environ["MAILBOX_IMAP_PASSWORD"]
     imap = imaplib.IMAP4_SSL(host, port)
     imap.login(user, password)
     return imap

@@ -6,18 +6,13 @@ import path from "path";
  * (git-ignored, never stored in the DB). Older installs may instead keep them in
  * `.env.darkflow`, so we read `.env` first and fall back to `.env.darkflow`.
  *
- * Naming in the wild is inconsistent across three conventions:
- *   - darkflow templates:   MAILBOX_IMAP_HOST / MAILBOX_IMAP_USER / MAILBOX_IMAP_PASSWORD
- *   - marketloop:           MAILBOX_IMAP_HOST / MAILBOX_USER       / MAILBOX_PASSWORD
- *   - process-emails skill: IMAP_HOST         / IMAP_USER          / IMAP_PASSWORD
- * We accept all of them and normalize to the MAILBOX_IMAP_* names the python
+ * Canonical variable names (the single, unified convention) are
+ * `MAILBOX_IMAP_HOST` / `MAILBOX_IMAP_PORT` / `MAILBOX_IMAP_USER` /
+ * `MAILBOX_IMAP_PASSWORD` — matching what the installer writes and the python
  * fetcher reads.
  */
 
 export type MailboxEnv = Record<string, string>;
-
-// Only these prefixes are pulled out of the env file (avoids slurping unrelated vars).
-const RELEVANT_PREFIXES = ["MAILBOX_", "IMAP_", "SMTP_", "EMAIL_"];
 
 function stripQuotes(value: string): string {
   const v = value.trim();
@@ -45,21 +40,14 @@ function parseEnvFile(filePath: string): MailboxEnv | null {
     const eq = withoutExport.indexOf("=");
     if (eq === -1) continue;
     const key = withoutExport.slice(0, eq).trim();
-    if (!RELEVANT_PREFIXES.some((p) => key.startsWith(p))) continue;
+    if (!key.startsWith("MAILBOX_")) continue;
     env[key] = stripQuotes(withoutExport.slice(eq + 1));
   }
   return env;
 }
 
-/** First non-empty value among the given keys. */
-function pick(env: MailboxEnv, ...keys: string[]): string | undefined {
-  for (const k of keys) if (env[k]) return env[k];
-  return undefined;
-}
-
 /**
- * Read the project's mailbox credentials, normalized so the python fetcher
- * always sees `MAILBOX_IMAP_HOST/PORT/USER/PASSWORD`.
+ * Read the project's MAILBOX_* credentials.
  * Returns null if neither `.env` nor `.env.darkflow` exists.
  */
 export function readMailboxEnv(localPath: string | null | undefined): MailboxEnv | null {
@@ -72,19 +60,7 @@ export function readMailboxEnv(localPath: string | null | undefined): MailboxEnv
   const primary = parseEnvFile(path.join(dir, ".env"));
   if (fallback === null && primary === null) return null;
 
-  const env: MailboxEnv = { ...(fallback ?? {}), ...(primary ?? {}) };
-
-  // Normalize across all three naming conventions onto MAILBOX_IMAP_*.
-  const host = pick(env, "MAILBOX_IMAP_HOST", "IMAP_HOST");
-  const port = pick(env, "MAILBOX_IMAP_PORT", "IMAP_PORT");
-  const user = pick(env, "MAILBOX_IMAP_USER", "MAILBOX_USER", "IMAP_USER");
-  const password = pick(env, "MAILBOX_IMAP_PASSWORD", "MAILBOX_PASSWORD", "IMAP_PASSWORD");
-  if (host) env.MAILBOX_IMAP_HOST = host;
-  if (port) env.MAILBOX_IMAP_PORT = port;
-  if (user) env.MAILBOX_IMAP_USER = user;
-  if (password) env.MAILBOX_IMAP_PASSWORD = password;
-
-  return env;
+  return { ...(fallback ?? {}), ...(primary ?? {}) };
 }
 
 /** True when the IMAP credentials needed to connect are all present. */

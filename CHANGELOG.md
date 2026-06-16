@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [2.80.0] — 2026-06-16
+
+- **Worker / Webapp** — unified mailbox credentials on a **single** canonical convention: `MAILBOX_IMAP_HOST` / `MAILBOX_IMAP_PORT` / `MAILBOX_IMAP_USER` / `MAILBOX_IMAP_PASSWORD` (and `MAILBOX_SMTP_*`), all living in the project's main `.env`. Removed the v2.79.0 multi-name tolerance: `fetch.py` / `send.py`, the `darkflow-run.sh` pre-flight, the `mailbox-check` command, and the webapp `mailbox-config.ts` now read only the canonical names. (`.env.darkflow` is still accepted as a legacy file-location fallback.)
+- **Note** — existing projects configured with the old `IMAP_*` / `SMTP_*` (process-emails skill) or `MAILBOX_USER` / `MAILBOX_PASSWORD` names must rename their `.env` keys to `MAILBOX_IMAP_*` / `MAILBOX_SMTP_*`. The three configured projects (marketloop, adbrief, qabot) were migrated as part of this change.
+
+---
+
 ## [2.79.0] — 2026-06-16
 
 - **Worker / Webapp** — the mailbox module now tolerates **three** credential naming conventions, normalizing them onto `MAILBOX_IMAP_*` / `MAILBOX_SMTP_*`:
