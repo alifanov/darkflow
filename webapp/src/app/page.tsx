@@ -2,11 +2,51 @@ import { prisma } from "@/lib/prisma";
 import { getLatestDarkflowVersion } from "@/lib/darkflow-version";
 import { ProjectRow } from "@/components/ProjectRow";
 import { GhTokenForm } from "@/components/GhTokenForm";
+import { IssuesActivityChart, type IssueActivityDay } from "@/components/IssuesActivityChart";
 
 export const dynamic = "force-dynamic";
 
+type DayCount = { day: Date; count: bigint };
+
+// Build the last-7-days (UTC, inclusive of today) created-vs-closed activity
+// series across all projects. Two grouped raw queries (one per timestamp
+// column) are merged into a 7-slot array seeded with every day so zero-activity
+// days still render. createdAt/closedAt are nullable, so pre-update workers
+// simply don't contribute.
+async function getIssueActivity(): Promise<IssueActivityDay[]> {
+  const [createdRaw, closedRaw] = await Promise.all([
+    prisma.$queryRaw<DayCount[]>`
+      SELECT date_trunc('day', "createdAt")::date AS day, COUNT(*)::bigint AS count
+      FROM "Issue"
+      WHERE "createdAt" >= date_trunc('day', now()) - interval '6 days'
+      GROUP BY day`,
+    prisma.$queryRaw<DayCount[]>`
+      SELECT date_trunc('day', "closedAt")::date AS day, COUNT(*)::bigint AS count
+      FROM "Issue"
+      WHERE "closedAt" >= date_trunc('day', now()) - interval '6 days'
+      GROUP BY day`,
+  ]);
+
+  const key = (d: Date) => d.toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
+  const createdBy = new Map(createdRaw.map((r) => [key(new Date(r.day)), Number(r.count)]));
+  const closedBy = new Map(closedRaw.map((r) => [key(new Date(r.day)), Number(r.count)]));
+
+  const days: IssueActivityDay[] = [];
+  const today = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - i));
+    const k = key(d);
+    days.push({
+      day: `${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`,
+      created: createdBy.get(k) ?? 0,
+      closed: closedBy.get(k) ?? 0,
+    });
+  }
+  return days;
+}
+
 export default async function ProjectsPage() {
-  const [rawProjects, latestVersion, settings] = await Promise.all([
+  const [rawProjects, latestVersion, settings, issueActivity] = await Promise.all([
     prisma.project.findMany({
       include: {
         _count: { select: { issues: { where: { state: { in: ["OPEN", "open"] }, status: { not: "rejected" } } } } },
@@ -24,6 +64,7 @@ export default async function ProjectsPage() {
     }),
     Promise.resolve(getLatestDarkflowVersion()),
     prisma.settings.findUnique({ where: { id: "global" } }),
+    getIssueActivity(),
   ]);
 
   const projects = [...rawProjects].sort((a, b) => {
@@ -40,6 +81,10 @@ export default async function ProjectsPage() {
     <div>
       <div className="mb-5">
         <GhTokenForm hasToken={!!settings?.ghToken} />
+      </div>
+
+      <div className="mb-6">
+        <IssuesActivityChart data={issueActivity} />
       </div>
 
       <div className="flex items-center gap-3 mb-6">

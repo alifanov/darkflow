@@ -12,6 +12,8 @@ interface IngestIssue {
   source?: string;
   needsHuman?: boolean;
   comments?: { author?: string; body?: string; createdAt?: string }[] | null;
+  createdAt?: string;
+  closedAt?: string;
 }
 
 interface IngestAnalytics {
@@ -175,6 +177,8 @@ export async function POST(req: NextRequest) {
             source: i.source ?? null,
             needsHuman,
             comments: i.comments ?? undefined,
+            createdAt: i.createdAt ? new Date(i.createdAt) : null,
+            closedAt: i.closedAt ? new Date(i.closedAt) : null,
           };
         }),
       });

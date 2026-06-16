@@ -1282,8 +1282,8 @@ sync_webapp() {
     return 0
   fi
 
-  issues=$(gh issue list --state all --json number,title,body,state,labels,url,updatedAt --limit 300 2>/dev/null) || {
-    gh_err=$(gh issue list --state all --json number,title,body,state,labels,url,updatedAt --limit 300 2>&1 || true)
+  issues=$(gh issue list --state all --json number,title,body,state,labels,url,updatedAt,createdAt,closedAt --limit 300 2>/dev/null) || {
+    gh_err=$(gh issue list --state all --json number,title,body,state,labels,url,updatedAt,createdAt,closedAt --limit 300 2>&1 || true)
     log "WEBAPP skipped (gh issue list failed: $(echo "$gh_err" | head -2 | tr '\n' ' '))"
     PENDING_LOGS=()
     return 0
@@ -1309,6 +1309,8 @@ sync_webapp() {
       body,
       state,
       url,
+      createdAt,
+      closedAt,
       # "blocked" is deprecated: an agent cannot act on it, so it folds into
       # needs-human. Drop the blocked status and flag the issue for a human.
       status:     ((label_prefix("status:") // "none") | if . == "blocked" then "none" else . end),

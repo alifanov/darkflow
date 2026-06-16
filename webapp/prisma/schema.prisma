@@ -76,6 +76,11 @@ model Issue {
   source          String?
   needsHuman      Boolean   @default(false)
   comments        Json?
+  // GitHub's real lifecycle timestamps (nullable — old rows / pre-update workers
+  // don't supply them). Held verbatim from GitHub so they survive the
+  // delete+recreate the ingest route does on every sync.
+  createdAt       DateTime?
+  closedAt        DateTime?
   updatedAt       DateTime  @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -84,6 +89,8 @@ model Issue {
   @@index([state])
   @@index([projectId, state])
   @@index([projectId, needsHuman])
+  @@index([createdAt])
+  @@index([closedAt])
 }
 
 model AnalyticsSnapshot {

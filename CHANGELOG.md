@@ -14,6 +14,14 @@ Categories:
 
 ---
 
+## [2.83.0] — 2026-06-16
+
+- **Webapp** — added a 7-day "Issues — last 7 days" stacked bar chart (recharts) to the top of the Projects page, showing issues **created** (blue) and **closed** (green) per day across all projects. Days with no activity still render; an empty state shows when no timestamps exist yet.
+- **Webapp** — `Issue` now persists GitHub's real `createdAt`/`closedAt` timestamps (new nullable columns + indexes, migration `20260616120000_add_issue_created_closed_at`). The ingest route maps them from the worker payload; previously the table had no creation/closure timestamps at all (only `updatedAt`), so per-day issue throughput was uncomputable.
+- **Worker** — `darkflow-run.sh` now fetches `createdAt,closedAt` in its `gh issue list --json` projection and passes them through the issues-ingest payload. Existing projects populate the chart after their worker updates and runs one sync; historical accuracy is preserved since these are GitHub's true timestamps (within the `--limit 300` window).
+
+---
+
 ## [2.82.0] — 2026-06-16
 
 - **Installer** — `_module_active()` in `install.sh` now handles `docs-audit`, `product-overview`, and `mailbox` (they fell into the `*) return 1` default, so on a fresh `--all` install — where `MOD_*=true` but `MODULES` is still empty — checklist items gated `when: module.docs-audit` / `module.product-overview` / `module.mailbox` were silently skipped from verification). Regression of the previously-fixed docs-audit/product-overview gotcha, now also covering `mailbox`.
