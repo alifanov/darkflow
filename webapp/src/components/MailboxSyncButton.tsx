@@ -18,7 +18,7 @@ export function MailboxSyncButton({ projectId }: { projectId: string }) {
         throw new Error(data.error ?? res.statusText);
       }
       if (data.configured === false) {
-        throw new Error("Mailbox not configured — set MAILBOX_IMAP_* in .env.darkflow");
+        throw new Error("Mailbox not configured — set MAILBOX_IMAP_* in the project's .env");
       }
       router.refresh();
     } catch (e) {

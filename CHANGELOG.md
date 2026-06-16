@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.77.1] — 2026-06-16
+
+- **Webapp** — Mailbox tab now reads IMAP creds from the project's main `<localPath>/.env` (canonical location), falling back to `.env.darkflow` for legacy installs. Also accepts the short `MAILBOX_USER` / `MAILBOX_PASSWORD` names in addition to `MAILBOX_IMAP_USER` / `MAILBOX_IMAP_PASSWORD`, normalizing them for the fetcher. Matches how real installs (e.g. marketloop) are actually configured; v2.77.0 only looked in `.env.darkflow` and would have found nothing.
+
+---
+
 ## [2.77.0] — 2026-06-16
 
 - **Webapp** — new **Mailbox** tab on the project page. Lists recent IMAP messages in a paginated table (Time · From · Subject); clicking a row expands the full body. Unread messages are marked with a dot. Emails are persisted to a new `Email` model and synced on demand via a **Sync** button.

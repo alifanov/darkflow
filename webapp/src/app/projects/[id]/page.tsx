@@ -562,9 +562,9 @@ function MailboxTab({
           <ol className="list-decimal pl-5 text-sm space-y-1" style={{ color: "var(--muted)" }}>
             <li>Set the project&apos;s <span className="font-mono">Local path</span> in the Settings tab.</li>
             <li>
-              Enable the <span className="font-mono">mailbox</span> module and add{" "}
-              <span className="font-mono">MAILBOX_IMAP_HOST / PORT / USER / PASSWORD</span> to{" "}
-              <span className="font-mono">&lt;localPath&gt;/.env.darkflow</span>.
+              Add <span className="font-mono">MAILBOX_IMAP_HOST / PORT / USER / PASSWORD</span> to{" "}
+              <span className="font-mono">&lt;localPath&gt;/.env</span>{" "}
+              (the short <span className="font-mono">MAILBOX_USER / MAILBOX_PASSWORD</span> names work too).
             </li>
             <li>Come back and hit <span className="font-mono">Sync</span>.</li>
           </ol>
