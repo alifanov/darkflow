@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.86.0] — 2026-06-16
+
+- **Webapp** — the Projects-page "Issues — last 7 days" panel is now split into two side-by-side charts. The left chart is unchanged (stacked Created/Closed bars). The new right chart, "Net change — last 7 days", plots the daily net delta `created − closed` against a zero reference line, with per-day coloring — red when the open-issue backlog grew that day, green when it shrank — so the dynamics of backlog change are visible at a glance instead of having to mentally subtract the two stacked segments.
+
+---
+
 ## [2.85.1] — 2026-06-16
 
 - **Tooling** — `/self-checkup` Step 6 now passes `--limit 200` to `gh label list`. By default `gh label list` caps at 30 labels, so the label-taxonomy diff silently reported every repo as missing `priority:*` / `needs-human` / `action:*` even when those labels exist — pure false positives. Documented the cap inline so the flag isn't dropped again.
