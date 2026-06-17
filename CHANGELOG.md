@@ -14,6 +14,11 @@ Categories:
 
 ---
 
+## [2.89.0] — 2026-06-17
+
+- **Self-checkup** — added **Step 7 «Конфигурация рутин»**: audits each project's `RoutineConfig` against the canonical `install.sh` baseline. Flags routines that **run too often** (`* * * * *` or `*/N` with N<15 → critical; heavier-than-baseline / sub-hourly weekly routines → high), frequency drift, disabled core routines, cron parse errors, model drift (opus↔sonnet), orphan/unknown routines, module mismatches, and configured-but-silent routines. Compares on frequency/hour/day (not the literal minute, which `install.sh` staggers per-project).
+- **Self-checkup** — recommendations are no longer capped at 10. They are now **grouped into `critical` / `high` / `medium` buckets**; `low`-priority items are dropped entirely.
+
 ## [2.88.0] — 2026-06-17
 
 - **Webapp** — added a **Needs approval** column (accent-colored proposal count) before **Approved** on the projects dashboard, so the full triage breakdown reads Open → Needs approval → Approved → Needs Human.
