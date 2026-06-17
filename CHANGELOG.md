@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.93.0] — 2026-06-17
+
+- **CI gate** — `templates/.github/workflows/darkflow-ci-gate.yml` now runs the gate job on a **self-hosted runner** (`runs-on: [self-hosted, Linux, X64]`) instead of `ubuntu-latest`, so the gate no longer consumes GitHub-hosted Actions minutes / hits billing-blocked startup failures. A comment documents the runner-label requirement (node/pnpm/python on PATH) and how to switch back to `ubuntu-latest`. Existing projects pick this up via `self-update` (checklist `wf-ci-gate`, `copy-template`).
+
 ## [2.92.0] — 2026-06-17
 
 - **New command** — `/darkflow:csp-setup`, a one-time setup command that wires Content-Security-Policy violation reporting into a project. It detects the project's CSP location and destination: if PostHog is integrated it reports to PostHog's `/report/` endpoint (region-correct, token from existing config); otherwise it creates an internal `/api/csp-report` route handler that logs violations via the project's existing logger → observability backend (e.g. SigNoz/OTel). Adds a baseline `Content-Security-Policy-Report-Only` when the project has no CSP. Idempotent.
