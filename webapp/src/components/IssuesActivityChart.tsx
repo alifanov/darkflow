@@ -31,6 +31,8 @@ const tooltipStyle = {
   fontSize: 12,
 };
 
+const tooltipItemStyle = { color: TEXT };
+
 function cardStyle() {
   return {
     border: "1px solid var(--border)",
@@ -80,6 +82,7 @@ export function IssuesActivityChart({ data }: { data: IssueActivityDay[] }) {
                 cursor={{ fill: "rgba(255,255,255,0.04)" }}
                 contentStyle={tooltipStyle}
                 labelStyle={{ color: MUTED }}
+                itemStyle={tooltipItemStyle}
               />
               <Legend wrapperStyle={{ fontSize: 12, color: MUTED }} iconType="circle" />
               <Bar dataKey="created" name="Created" stackId="a" fill={ACCENT} radius={[0, 0, 0, 0]} />
@@ -104,6 +107,7 @@ export function IssuesActivityChart({ data }: { data: IssueActivityDay[] }) {
                 cursor={{ fill: "rgba(255,255,255,0.04)" }}
                 contentStyle={tooltipStyle}
                 labelStyle={{ color: MUTED }}
+                itemStyle={tooltipItemStyle}
                 formatter={(v) => {
                   const n = Number(v);
                   return [n > 0 ? `+${n}` : `${n}`, "Created − Closed"];

@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.86.1] — 2026-06-17
+
+- **Webapp** — fixed unreadable black tooltip text on the "Net change — last 7 days" chart. Because that chart uses per-day `<Cell>` coloring, recharts didn't inherit an item text color from the series and fell back to black on the dark tooltip surface. Added an explicit `itemStyle` (light `--text`) to both activity-chart tooltips so values are legible.
+
+---
+
 ## [2.86.0] — 2026-06-16
 
 - **Webapp** — the Projects-page "Issues — last 7 days" panel is now split into two side-by-side charts. The left chart is unchanged (stacked Created/Closed bars). The new right chart, "Net change — last 7 days", plots the daily net delta `created − closed` against a zero reference line, with per-day coloring — red when the open-issue backlog grew that day, green when it shrank — so the dynamics of backlog change are visible at a glance instead of having to mentally subtract the two stacked segments.
