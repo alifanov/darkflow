@@ -158,7 +158,6 @@ export default async function ProjectsPage() {
                     workerState={workerState}
                     settingsPending={settingsPending}
                     routine={ws?.routine ?? null}
-                    proposedCount={p.issues.filter((i) => i.status === "proposed").length}
                     approvedCount={p.issues.filter((i) => i.status === "approved").length}
                     needsHumanCount={p.issues.filter((i) => i.needsHuman).length}
                     totalIssues={p._count.issues}

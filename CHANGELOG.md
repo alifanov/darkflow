@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.87.1] — 2026-06-17
+
+- **Webapp** — Open Issues column now shows just the plain total count, dropping the `(N new)` proposal hint for a cleaner read.
+
 ## [2.87.0] — 2026-06-17
 
 - **Webapp** — projects dashboard now renders full-width (removed the `max-w-7xl` clamp in the root layout) so the wider issue breakdown fits without horizontal squeeze.

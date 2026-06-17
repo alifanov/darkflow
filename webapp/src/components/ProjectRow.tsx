@@ -51,7 +51,6 @@ interface ProjectRowProps {
   workerState: "running" | "online" | null;
   settingsPending?: boolean;
   routine: string | null;
-  proposedCount: number;
   approvedCount: number;
   needsHumanCount: number;
   totalIssues: number;
@@ -72,7 +71,6 @@ export function ProjectRow({
   workerState,
   settingsPending,
   routine,
-  proposedCount,
   approvedCount,
   needsHumanCount,
   totalIssues,
@@ -190,11 +188,6 @@ export function ProjectRow({
       {/* Open Issues */}
       <td className="py-3 px-4 text-right text-sm" style={{ color: "var(--text)" }}>
         {totalIssues}
-        {proposedCount > 0 && (
-          <span className="ml-1 text-xs font-semibold" style={{ color: "var(--accent)" }}>
-            ({proposedCount} new)
-          </span>
-        )}
       </td>
 
       {/* Approved */}
