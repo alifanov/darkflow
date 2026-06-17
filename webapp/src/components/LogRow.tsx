@@ -13,9 +13,16 @@ interface LogRowProps {
   costUsd?: number | null;
   totalTokens?: number | null;
   timestamp: string;
+  isError?: boolean;
 }
 
-export function LogRow({ routine, summary, output, costUsd, totalTokens, timestamp }: LogRowProps) {
+// The worker writes each routine's outcome as `ran <name> — ok` on success or
+// `ran <name> — exit:N` on failure, so an `exit:` marker flags a failed run.
+export function logIsError(summary: string): boolean {
+  return summary.includes("exit:");
+}
+
+export function LogRow({ routine, summary, output, costUsd, totalTokens, timestamp, isError }: LogRowProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -42,6 +49,23 @@ export function LogRow({ routine, summary, output, costUsd, totalTokens, timesta
         <td className="py-3 px-4 text-sm" style={{ color: "var(--text)" }}>
           {summary}
         </td>
+        <td className="py-3 px-4">
+          {isError ? (
+            <span
+              className="rounded-full px-2 py-0.5 text-xs font-medium"
+              style={{ background: "rgba(239,68,68,0.12)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)" }}
+            >
+              Error
+            </span>
+          ) : (
+            <span
+              className="rounded-full px-2 py-0.5 text-xs font-medium"
+              style={{ background: "rgba(34,197,94,0.10)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.25)" }}
+            >
+              OK
+            </span>
+          )}
+        </td>
         <td className="py-3 px-4 text-xs text-right font-mono" style={{ color: "var(--muted)" }}>
           {totalTokens != null ? totalTokens.toLocaleString() : "—"}
         </td>
@@ -54,7 +78,7 @@ export function LogRow({ routine, summary, output, costUsd, totalTokens, timesta
       </tr>
       {open && output && (
         <tr style={{ borderBottom: "1px solid var(--border)" }}>
-          <td colSpan={6} className="px-4 pb-4 pt-1">
+          <td colSpan={7} className="px-4 pb-4 pt-1">
             <div
               className="text-xs overflow-auto max-h-[500px] p-3 rounded prose prose-invert prose-xs max-w-none"
               style={{ background: "var(--bg)", color: "var(--text)", lineHeight: 1.5 }}

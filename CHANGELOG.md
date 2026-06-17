@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.91.0] — 2026-06-17
+
+- **Webapp** — the project **Logs** tab gained a **Status** column showing **OK**/**Error** per routine run (errors detected from the worker's `exit:N` log marker), and the **Time** and **Status** column headers are now click-to-sort — sort by **Status** to surface all failed runs together.
+
 ## [2.90.0] — 2026-06-17
 
 - **Webapp** — projects dashboard gained an **Errors** column (before **Last routine**) showing the count of failed routine runs in the last 7 days (red when >0), so failing routines stand out at a glance. Failures are detected from the worker's `exit:N` log marker.

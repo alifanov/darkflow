@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { IssueTableRow, type IssueComment } from "@/components/IssueTableRow";
 import { DeleteProjectButton } from "@/components/DeleteProjectButton";
 import { LocalTime } from "@/components/LocalTime";
-import { LogRow } from "@/components/LogRow";
+import { RoutineLogsTable } from "@/components/RoutineLogsTable";
 import { ProjectSettingsForm } from "@/components/ProjectSettingsForm";
 import { RoutineConfigForm } from "@/components/RoutineConfigForm";
 import { MailboxRow } from "@/components/MailboxRow";
@@ -472,23 +472,17 @@ function RoutineLogsList({
       <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text)" }}>
         Recent runs ({logs.length})
       </h2>
-      <TableContainer>
-        <TableHead cols={["Time", "Routine", "Summary", "Tokens", "Cost", ""]} />
-        <tbody>
-          {logs.map((l) => (
-            <LogRow
-              key={l.id}
-              id={l.id}
-              routine={l.routine}
-              summary={l.summary}
-              output={l.output}
-              costUsd={l.costUsd}
-              totalTokens={l.totalTokens}
-              timestamp={l.timestamp.toISOString()}
-            />
-          ))}
-        </tbody>
-      </TableContainer>
+      <RoutineLogsTable
+        logs={logs.map((l) => ({
+          id: l.id,
+          routine: l.routine,
+          summary: l.summary,
+          output: l.output,
+          costUsd: l.costUsd,
+          totalTokens: l.totalTokens,
+          timestamp: l.timestamp.toISOString(),
+        }))}
+      />
     </section>
   );
 }
