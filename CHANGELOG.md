@@ -14,6 +14,11 @@ Categories:
 
 ---
 
+## [2.90.0] — 2026-06-17
+
+- **Webapp** — projects dashboard gained an **Errors** column (before **Last routine**) showing the count of failed routine runs in the last 7 days (red when >0), so failing routines stand out at a glance. Failures are detected from the worker's `exit:N` log marker.
+- **Webapp** — removed the **Commits** tab from the project detail page (commits are easier to view directly on GitHub).
+
 ## [2.89.0] — 2026-06-17
 
 - **Self-checkup** — added **Step 7 «Конфигурация рутин»**: audits each project's `RoutineConfig` against the canonical `install.sh` baseline. Flags routines that **run too often** (`* * * * *` or `*/N` with N<15 → critical; heavier-than-baseline / sub-hourly weekly routines → high), frequency drift, disabled core routines, cron parse errors, model drift (opus↔sonnet), orphan/unknown routines, module mismatches, and configured-but-silent routines. Compares on frequency/hour/day (not the literal minute, which `install.sh` staggers per-project).

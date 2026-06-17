@@ -45,8 +45,24 @@ async function getIssueActivity(): Promise<IssueActivityDay[]> {
   return days;
 }
 
+type ErrorCount = { projectId: string; count: bigint };
+
+// Count routine-log entries that errored in the last 7 days, grouped by project.
+// The worker writes each routine's outcome as `ran <name> — ok` on success or
+// `ran <name> — exit:N` on failure, so an `exit:` marker in the summary uniquely
+// flags a failed run.
+async function getRoutineErrorCounts(): Promise<Map<string, number>> {
+  const rows = await prisma.$queryRaw<ErrorCount[]>`
+    SELECT "projectId", COUNT(*)::bigint AS count
+    FROM "RoutineLog"
+    WHERE "timestamp" >= now() - interval '7 days'
+      AND "summary" LIKE '%exit:%'
+    GROUP BY "projectId"`;
+  return new Map(rows.map((r) => [r.projectId, Number(r.count)]));
+}
+
 export default async function ProjectsPage() {
-  const [rawProjects, latestVersion, settings, issueActivity] = await Promise.all([
+  const [rawProjects, latestVersion, settings, issueActivity, routineErrors] = await Promise.all([
     prisma.project.findMany({
       include: {
         _count: { select: { issues: { where: { state: { in: ["OPEN", "open"] }, status: { not: "rejected" } } } } },
@@ -65,6 +81,7 @@ export default async function ProjectsPage() {
     Promise.resolve(getLatestDarkflowVersion()),
     prisma.settings.findUnique({ where: { id: "global" } }),
     getIssueActivity(),
+    getRoutineErrorCounts(),
   ]);
 
   const projects = [...rawProjects].sort((a, b) => {
@@ -109,10 +126,10 @@ export default async function ProjectsPage() {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
-                {["#", "Name", "Domain", "Branch", "Lang", "DF Version", "Worker", "Open Issues", "Needs approval", "Approved", "Needs Human", "Last routine", "Last synced"].map((col, i) => (
+                {["#", "Name", "Domain", "Branch", "Lang", "DF Version", "Worker", "Open Issues", "Needs approval", "Approved", "Needs Human", "Errors", "Last routine", "Last synced"].map((col, i) => (
                   <th
                     key={col}
-                    className={`py-2 px-4 text-xs font-medium uppercase tracking-wider text-left${[7, 8, 9, 10].includes(i) ? " text-right" : ""}`}
+                    className={`py-2 px-4 text-xs font-medium uppercase tracking-wider text-left${[7, 8, 9, 10, 11].includes(i) ? " text-right" : ""}`}
                     style={{ color: "var(--muted)" }}
                   >
                     {col}
@@ -163,6 +180,7 @@ export default async function ProjectsPage() {
                     needsHumanCount={p.issues.filter((i) => i.needsHuman).length}
                     totalIssues={p._count.issues}
                     lastSyncedAt={p.lastSyncedAt?.toISOString() ?? null}
+                    errorCount={routineErrors.get(p.id) ?? 0}
                     lastRoutine={lastLog ? { routine: lastLog.routine, timestamp: lastLog.timestamp.toISOString() } : null}
                   />
                 );

@@ -34,11 +34,10 @@ const CARDS: { key: string; label: string; statuses: string[] }[] = [
   { key: "in-progress", label: "In progress", statuses: ["in-progress"] },
 ];
 
-const TABS: { key: "issues" | "logs" | "routines" | "commits" | "mailbox" | "settings"; label: string }[] = [
+const TABS: { key: "issues" | "logs" | "routines" | "mailbox" | "settings"; label: string }[] = [
   { key: "issues", label: "Issues" },
   { key: "logs", label: "Logs" },
   { key: "routines", label: "Routines" },
-  { key: "commits", label: "Commits" },
   { key: "mailbox", label: "Mailbox" },
   { key: "settings", label: "Settings" },
 ];
@@ -52,7 +51,6 @@ function isTab(v: string | undefined): v is TabKey {
     v === "issues" ||
     v === "logs" ||
     v === "routines" ||
-    v === "commits" ||
     v === "mailbox" ||
     v === "settings"
   );
@@ -102,7 +100,6 @@ export default async function ProjectPage({
       workerStatus: true,
       routineLogs: { orderBy: { timestamp: "desc" }, take: 100, select: { id: true, routine: true, summary: true, output: true, costUsd: true, totalTokens: true, timestamp: true } },
       routineConfigs: { orderBy: { name: "asc" } },
-      commits: { orderBy: { committedAt: "desc" }, take: 50 },
     },
   });
 
@@ -286,8 +283,6 @@ export default async function ProjectPage({
           modules={project.modules}
         />
       )}
-
-      {activeTab === "commits" && <CommitList commits={project.commits} />}
 
       {activeTab === "mailbox" && (
         <MailboxTab
@@ -491,58 +486,6 @@ function RoutineLogsList({
               totalTokens={l.totalTokens}
               timestamp={l.timestamp.toISOString()}
             />
-          ))}
-        </tbody>
-      </TableContainer>
-    </section>
-  );
-}
-
-function CommitList({
-  commits,
-}: {
-  commits: {
-    id: string;
-    sha: string;
-    message: string;
-    author: string;
-    email: string | null;
-    committedAt: Date;
-    url: string | null;
-  }[];
-}) {
-  if (commits.length === 0) {
-    return <p style={{ color: "var(--muted)" }}>No commits synced yet.</p>;
-  }
-  return (
-    <section>
-      <h2 className="text-lg font-semibold mb-3" style={{ color: "var(--text)" }}>
-        Recent commits ({commits.length})
-      </h2>
-      <TableContainer>
-        <TableHead cols={["SHA", "Message", "Author", "Date"]} />
-        <tbody>
-          {commits.map((c) => (
-            <tr key={c.id} className="project-row" style={{ borderBottom: "1px solid var(--border)" }}>
-              <td className="py-3 px-4 font-mono text-xs" style={{ color: "var(--accent)", width: "5rem" }}>
-                {c.url ? (
-                  <a href={c.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                    {c.sha.slice(0, 7)}
-                  </a>
-                ) : (
-                  c.sha.slice(0, 7)
-                )}
-              </td>
-              <td className="py-3 px-4 max-w-md truncate" style={{ color: "var(--text)" }}>
-                {c.message}
-              </td>
-              <td className="py-3 px-4 text-xs" style={{ color: "var(--muted)" }}>
-                {c.author}
-              </td>
-              <td className="py-3 px-4 text-xs" style={{ color: "var(--muted)" }}>
-                <LocalTime date={c.committedAt} />
-              </td>
-            </tr>
           ))}
         </tbody>
       </TableContainer>

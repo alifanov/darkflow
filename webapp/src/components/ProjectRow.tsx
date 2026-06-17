@@ -56,6 +56,7 @@ interface ProjectRowProps {
   needsHumanCount: number;
   totalIssues: number;
   lastSyncedAt: string | null;
+  errorCount: number;
   lastRoutine: { routine: string; timestamp: string } | null;
 }
 
@@ -77,6 +78,7 @@ export function ProjectRow({
   needsHumanCount,
   totalIssues,
   lastSyncedAt,
+  errorCount,
   lastRoutine,
 }: ProjectRowProps) {
   const router = useRouter();
@@ -205,6 +207,15 @@ export function ProjectRow({
       {/* Needs Human */}
       <td className="py-3 px-4 text-right text-sm" style={{ color: needsHumanCount > 0 ? "#c084fc" : "var(--muted)" }}>
         {needsHumanCount > 0 ? `${needsHumanCount} 👤` : "—"}
+      </td>
+
+      {/* Errors (failed routine runs, last 7 days) */}
+      <td
+        className="py-3 px-4 text-right text-sm"
+        style={{ color: errorCount > 0 ? "var(--red)" : "var(--muted)" }}
+        title={errorCount > 0 ? `${errorCount} failed routine run(s) in the last 7 days` : "No routine errors in the last 7 days"}
+      >
+        {errorCount > 0 ? errorCount : "—"}
       </td>
 
       {/* Last routine */}
