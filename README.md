@@ -283,6 +283,7 @@ Human-in-the-loop, for planning/design — these ask questions and wait for answ
 | Command | What it does |
 |---|---|
 | `/darkflow:grill` | Pressure-test a plan against the domain model — sharpens terminology, updates `docs/product/glossary.md` and `docs/decisions/` (ADRs) inline |
+| `/darkflow:csp-setup` | One-time setup — wire CSP violation reporting to PostHog (if present) or an internal `/api/csp-report` endpoint → your observability backend |
 
 Routine commands automatically call `bash .darkflow.d/get-config.sh` before running — this fetches the latest project settings (branch, language, merge strategy, modules, routines) from the **Web UI Settings tab** and refreshes the local `.darkflow` cache. If the server is unreachable, commands fall back to the cached values silently.
 

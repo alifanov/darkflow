@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.92.0] — 2026-06-17
+
+- **New command** — `/darkflow:csp-setup`, a one-time setup command that wires Content-Security-Policy violation reporting into a project. It detects the project's CSP location and destination: if PostHog is integrated it reports to PostHog's `/report/` endpoint (region-correct, token from existing config); otherwise it creates an internal `/api/csp-report` route handler that logs violations via the project's existing logger → observability backend (e.g. SigNoz/OTel). Adds a baseline `Content-Security-Policy-Report-Only` when the project has no CSP. Idempotent.
+- **Installer** — `install.sh` copies the new command template and lists it in the post-install command summary; `checklist.yml` gains `cmd-csp-setup` so existing projects pick it up on `self-update`.
+- **Docs** — README interactive-commands table documents `/darkflow:csp-setup`.
+
 ## [2.91.0] — 2026-06-17
 
 - **Webapp** — the project **Logs** tab gained a **Status** column showing **OK**/**Error** per routine run (errors detected from the worker's `exit:N` log marker), and the **Time** and **Status** column headers are now click-to-sort — sort by **Status** to surface all failed runs together.
