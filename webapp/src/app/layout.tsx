@@ -45,7 +45,7 @@ export default function RootLayout({
             </Link>
           </nav>
         </header>
-        <main className="max-w-7xl mx-auto px-6 py-8">{children}</main>
+        <main className="px-6 py-8">{children}</main>
       </body>
     </html>
   );

@@ -52,6 +52,7 @@ interface ProjectRowProps {
   settingsPending?: boolean;
   routine: string | null;
   proposedCount: number;
+  approvedCount: number;
   needsHumanCount: number;
   totalIssues: number;
   lastSyncedAt: string | null;
@@ -72,6 +73,7 @@ export function ProjectRow({
   settingsPending,
   routine,
   proposedCount,
+  approvedCount,
   needsHumanCount,
   totalIssues,
   lastSyncedAt,
@@ -186,18 +188,23 @@ export function ProjectRow({
       </td>
 
       {/* Open Issues */}
-      <td className="py-3 px-4 text-right text-sm" style={{ color: "var(--muted)" }}>
+      <td className="py-3 px-4 text-right text-sm" style={{ color: "var(--text)" }}>
         {totalIssues}
         {proposedCount > 0 && (
           <span className="ml-1 text-xs font-semibold" style={{ color: "var(--accent)" }}>
-            ({proposedCount})
+            ({proposedCount} new)
           </span>
         )}
-        {needsHumanCount > 0 && (
-          <span className="ml-1 text-xs font-semibold" style={{ color: "#c084fc" }}>
-            ({needsHumanCount} 👤)
-          </span>
-        )}
+      </td>
+
+      {/* Approved */}
+      <td className="py-3 px-4 text-right text-sm" style={{ color: approvedCount > 0 ? "var(--green)" : "var(--muted)" }}>
+        {approvedCount > 0 ? approvedCount : "—"}
+      </td>
+
+      {/* Needs Human */}
+      <td className="py-3 px-4 text-right text-sm" style={{ color: needsHumanCount > 0 ? "#c084fc" : "var(--muted)" }}>
+        {needsHumanCount > 0 ? `${needsHumanCount} 👤` : "—"}
       </td>
 
       {/* Last routine */}

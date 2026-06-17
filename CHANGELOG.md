@@ -14,6 +14,11 @@ Categories:
 
 ---
 
+## [2.87.0] — 2026-06-17
+
+- **Webapp** — projects dashboard now renders full-width (removed the `max-w-7xl` clamp in the root layout) so the wider issue breakdown fits without horizontal squeeze.
+- **Webapp** — split the issue counts into dedicated columns: **Open Issues** now shows just the total open count (with a subtle `(N new)` accent for proposals awaiting approval), plus new **Approved** (green) and **Needs Human** (purple 👤) columns, making it easy to scan where each project stands at a glance.
+
 ## [2.86.1] — 2026-06-17
 
 - **Webapp** — fixed unreadable black tooltip text on the "Net change — last 7 days" chart. Because that chart uses per-day `<Cell>` coloring, recharts didn't inherit an item text color from the series and fell back to black on the dark tooltip surface. Added an explicit `itemStyle` (light `--text`) to both activity-chart tooltips so values are legible.
