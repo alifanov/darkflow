@@ -109,10 +109,10 @@ export default async function ProjectsPage() {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
-                {["#", "Name", "Domain", "Branch", "Lang", "DF Version", "Worker", "Open Issues", "Approved", "Needs Human", "Last routine", "Last synced"].map((col, i) => (
+                {["#", "Name", "Domain", "Branch", "Lang", "DF Version", "Worker", "Open Issues", "Needs approval", "Approved", "Needs Human", "Last routine", "Last synced"].map((col, i) => (
                   <th
                     key={col}
-                    className={`py-2 px-4 text-xs font-medium uppercase tracking-wider text-left${[7, 8, 9].includes(i) ? " text-right" : ""}`}
+                    className={`py-2 px-4 text-xs font-medium uppercase tracking-wider text-left${[7, 8, 9, 10].includes(i) ? " text-right" : ""}`}
                     style={{ color: "var(--muted)" }}
                   >
                     {col}
@@ -158,6 +158,7 @@ export default async function ProjectsPage() {
                     workerState={workerState}
                     settingsPending={settingsPending}
                     routine={ws?.routine ?? null}
+                    proposedCount={p.issues.filter((i) => i.status === "proposed").length}
                     approvedCount={p.issues.filter((i) => i.status === "approved").length}
                     needsHumanCount={p.issues.filter((i) => i.needsHuman).length}
                     totalIssues={p._count.issues}

@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.88.0] — 2026-06-17
+
+- **Webapp** — added a **Needs approval** column (accent-colored proposal count) before **Approved** on the projects dashboard, so the full triage breakdown reads Open → Needs approval → Approved → Needs Human.
+
 ## [2.87.1] — 2026-06-17
 
 - **Webapp** — Open Issues column now shows just the plain total count, dropping the `(N new)` proposal hint for a cleaner read.
