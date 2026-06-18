@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.93.1] — 2026-06-18
+
+- **Webapp** — projects dashboard **Errors** column now counts failed routine runs within the project’s **100 most recent logs**, matching the Logs tab’s 100-entry limit. The previous 7-day window is removed so the dashboard count aligns with what users see on the project page.
+
 ## [2.93.0] — 2026-06-17
 
 - **CI gate** — `templates/.github/workflows/darkflow-ci-gate.yml` now runs the gate job on a **self-hosted runner** (`runs-on: [self-hosted, Linux, X64]`) instead of `ubuntu-latest`, so the gate no longer consumes GitHub-hosted Actions minutes / hits billing-blocked startup failures. A comment documents the runner-label requirement (node/pnpm/python on PATH) and how to switch back to `ubuntu-latest`. Existing projects pick this up via `self-update` (checklist `wf-ci-gate`, `copy-template`).

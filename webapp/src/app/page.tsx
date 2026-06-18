@@ -47,16 +47,20 @@ async function getIssueActivity(): Promise<IssueActivityDay[]> {
 
 type ErrorCount = { projectId: string; count: bigint };
 
-// Count routine-log entries that errored in the last 7 days, grouped by project.
-// The worker writes each routine's outcome as `ran <name> — ok` on success or
-// `ran <name> — exit:N` on failure, so an `exit:` marker in the summary uniquely
-// flags a failed run.
+// Count routine-log entries that errored among the project's 100 most recent
+// logs. The worker writes each routine's outcome as `ran <name> — ok` on success
+// or `ran <name> — exit:N` on failure, so an `exit:` marker in the summary
+// uniquely flags a failed run. The project page also shows the latest 100 logs.
 async function getRoutineErrorCounts(): Promise<Map<string, number>> {
   const rows = await prisma.$queryRaw<ErrorCount[]>`
+    WITH ranked AS (
+      SELECT "projectId", "summary",
+        ROW_NUMBER() OVER (PARTITION BY "projectId" ORDER BY "timestamp" DESC) AS rn
+      FROM "RoutineLog"
+    )
     SELECT "projectId", COUNT(*)::bigint AS count
-    FROM "RoutineLog"
-    WHERE "timestamp" >= now() - interval '7 days'
-      AND "summary" LIKE '%exit:%'
+    FROM ranked
+    WHERE rn <= 100 AND "summary" LIKE '%exit:%'
     GROUP BY "projectId"`;
   return new Map(rows.map((r) => [r.projectId, Number(r.count)]));
 }
