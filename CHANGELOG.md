@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.94.1] — 2026-06-19
+
+- **CI gate** — provision **node + pnpm via dedicated setup steps** (`pnpm/action-setup@v4` + `actions/setup-node@v4`, each guarded by `hashFiles` so Python-only repos skip them) instead of the inline `ensure_pnpm()` shim from v2.94.0. On self-hosted runners where node/npm/corepack are only on the *login* PATH (nvm/fnm/asdf), the gate's `bash --noprofile --norc` shell never sees them, so `ensure_pnpm()` (which itself needs corepack or npm) still failed with `pnpm: command not found`. The setup actions install node+pnpm into the job's PATH independently of host shell config — the same approach a hand-patched project (`vargi`) had already adopted. Existing projects: re-copy the workflow (the `wf-ci-gate` checklist item only restores it when *missing*, so push the updated file manually or delete-then-`self-update`).
+
 ## [2.94.0] — 2026-06-19
 
 - **CI gate** — `templates/.github/workflows/darkflow-ci-gate.yml` now **auto-provisions `pnpm`** on self-hosted runners instead of relying on a bare `corepack enable`. After the v2.93.0 switch to `runs-on: [self-hosted, Linux, X64]`, every pnpm-based project's gate failed instantly with `pnpm: command not found` — `corepack enable` writes its shim next to the (root-owned) node binary, which a non-root runner can't do, and `bash --noprofile --norc` never loads a login PATH. The new `ensure_pnpm()` helper installs the shim into `$HOME/.local/bin` (corepack with `--install-directory`, falling back to an `npm install -g --prefix` into a writable prefix) and exports it onto PATH, so the gate works on a plain self-hosted runner with only node + npm present. Existing projects pick this up via `self-update` (checklist `wf-ci-gate`, `copy-template`).
