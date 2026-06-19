@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.96.1] — 2026-06-19
+
+- **Webapp** — the **Needs Human** filter card no longer renders a purple border when it just has open needs-human issues; the border now only highlights when the card is actually selected. Previously a non-zero count made the card look permanently active on first load. The count cue (purple number) is unchanged.
+
 ## [2.96.0] — 2026-06-19
 
 - **Webapp** — fixed the Issues tab on the project page:

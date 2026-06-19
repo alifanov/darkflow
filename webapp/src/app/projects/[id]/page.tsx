@@ -410,7 +410,7 @@ function IssuesTab({
             className="rounded-lg border p-4 flex flex-col gap-1 transition-colors"
             style={{
               background: isNeedsHumanActive ? "#3a1a3a" : "var(--surface)",
-              borderColor: isNeedsHumanActive || needsHumanIssues.length > 0 ? "#c084fc" : "var(--border)",
+              borderColor: isNeedsHumanActive ? "#c084fc" : "var(--border)",
             }}
           >
             <span className="text-2xl font-bold" style={{ color: needsHumanIssues.length > 0 ? "#c084fc" : "var(--muted)" }}>
