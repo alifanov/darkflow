@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.94.0] — 2026-06-19
+
+- **CI gate** — `templates/.github/workflows/darkflow-ci-gate.yml` now **auto-provisions `pnpm`** on self-hosted runners instead of relying on a bare `corepack enable`. After the v2.93.0 switch to `runs-on: [self-hosted, Linux, X64]`, every pnpm-based project's gate failed instantly with `pnpm: command not found` — `corepack enable` writes its shim next to the (root-owned) node binary, which a non-root runner can't do, and `bash --noprofile --norc` never loads a login PATH. The new `ensure_pnpm()` helper installs the shim into `$HOME/.local/bin` (corepack with `--install-directory`, falling back to an `npm install -g --prefix` into a writable prefix) and exports it onto PATH, so the gate works on a plain self-hosted runner with only node + npm present. Existing projects pick this up via `self-update` (checklist `wf-ci-gate`, `copy-template`).
+
 ## [2.93.1] — 2026-06-18
 
 - **Webapp** — projects dashboard **Errors** column now counts failed routine runs within the project’s **100 most recent logs**, matching the Logs tab’s 100-entry limit. The previous 7-day window is removed so the dashboard count aligns with what users see on the project page.
