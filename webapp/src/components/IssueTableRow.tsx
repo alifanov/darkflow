@@ -5,7 +5,7 @@ import { useState, type ReactNode } from "react";
 const TASK_MANAGER_URL = "https://flow.chatindex.app/tasks";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { IssueActions } from "@/components/IssueActions";
+import { ApproveIssueButton } from "@/components/ApproveIssueButton";
 import { CloseIssueButton } from "@/components/CloseIssueButton";
 import { LaunchInCmuxButton } from "@/components/LaunchInCmuxButton";
 
@@ -44,7 +44,7 @@ interface IssueTableRowProps {
     needsHuman: boolean;
     comments?: IssueComment[] | null;
   };
-  showActions?: boolean;
+  showApprove?: boolean;
   showClose?: boolean;
   showTaskLink?: boolean;
   showLaunch?: boolean;
@@ -103,7 +103,7 @@ function Markdown({ children }: { children: string }) {
   );
 }
 
-export function IssueTableRow({ issue, showActions, showClose, showTaskLink, showLaunch, belowThreshold }: IssueTableRowProps) {
+export function IssueTableRow({ issue, showApprove, showClose, showTaskLink, showLaunch, belowThreshold }: IssueTableRowProps) {
   const [open, setOpen] = useState(false);
   const bg = STATUS_COLORS[issue.status] ?? STATUS_COLORS.none;
   const color = STATUS_TEXT[issue.status] ?? "var(--muted)";
@@ -183,7 +183,7 @@ export function IssueTableRow({ issue, showActions, showClose, showTaskLink, sho
         </td>
         <td className="py-3 px-4">
           <div className="flex items-center gap-2">
-            {showActions && <IssueActions issueId={issue.id} />}
+            {showApprove && <ApproveIssueButton issueId={issue.id} />}
             {showLaunch && <LaunchInCmuxButton issueId={issue.id} />}
             {showClose && <CloseIssueButton issueId={issue.id} />}
             {showTaskLink && (

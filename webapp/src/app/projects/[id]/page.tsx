@@ -138,16 +138,28 @@ export default async function ProjectPage({
       return b.number - a.number;
     });
 
-  const showAll = filter === "all";
-  const effectiveFilter = showAll ? undefined : (filter ?? "proposed");
-  const isNeedsHuman = effectiveFilter === "needs-human";
-  const activeCard = CARDS.find((c) => c.key === effectiveFilter);
-  const displayed = isNeedsHuman
-    ? sortedIssues.filter((i) => i.needsHuman)
-    : activeCard
-      ? sortedIssues.filter((i) => activeCard.statuses.includes(i.status))
-      : sortedIssues;
-  const headingLabel = isNeedsHuman ? "Needs Human" : activeCard ? activeCard.label : "All issues";
+  // Multi-select filter: `filter` is a comma-separated list of card keys.
+  // No keys selected → show everything; otherwise show the union of all
+  // selected cards (statuses match by card, "needs-human" matches the flag).
+  const VALID_KEYS = new Set<string>([...CARDS.map((c) => c.key), "needs-human"]);
+  const selectedKeys = (filter ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter((k) => VALID_KEYS.has(k));
+  const matchesKey = (issue: (typeof sortedIssues)[number], key: string) =>
+    key === "needs-human"
+      ? issue.needsHuman
+      : (CARDS.find((c) => c.key === key)?.statuses.includes(issue.status) ?? false);
+  const displayed =
+    selectedKeys.length === 0
+      ? sortedIssues
+      : sortedIssues.filter((i) => selectedKeys.some((k) => matchesKey(i, k)));
+  const headingLabel =
+    selectedKeys.length === 0
+      ? "All issues"
+      : selectedKeys
+          .map((k) => (k === "needs-human" ? "Needs Human" : CARDS.find((c) => c.key === k)?.label ?? k))
+          .join(", ");
 
   const now = Date.now();
   // Worker heartbeats every 30 s; 75 s tolerates one missed beat before flipping offline.
@@ -265,10 +277,8 @@ export default async function ProjectPage({
         <IssuesTab
           projectId={project.id}
           issues={sortedIssues}
-          effectiveFilter={effectiveFilter}
-          showAll={showAll}
+          selectedKeys={selectedKeys}
           displayed={displayed}
-          isNeedsHuman={isNeedsHuman}
           headingLabel={headingLabel}
           minPriority={project.minPriority}
         />
@@ -330,10 +340,8 @@ function isBelowPriorityThreshold(priority: string | null, minPriority: string):
 function IssuesTab({
   projectId,
   issues,
-  effectiveFilter,
-  showAll,
+  selectedKeys,
   displayed,
-  isNeedsHuman,
   headingLabel,
   minPriority,
 }: {
@@ -350,14 +358,25 @@ function IssuesTab({
     needsHuman: boolean;
     comments?: IssueComment[] | null;
   }[];
-  effectiveFilter: string | undefined;
-  showAll: boolean;
+  selectedKeys: string[];
   displayed: typeof issues;
-  isNeedsHuman: boolean;
   headingLabel: string;
   minPriority: string;
 }) {
   const needsHumanIssues = issues.filter((i) => i.needsHuman);
+
+  // Clicking a card toggles its key in/out of the selection. Empty selection
+  // drops the `filter` param entirely (→ show all).
+  const toggleHref = (key: string) => {
+    const next = selectedKeys.includes(key)
+      ? selectedKeys.filter((k) => k !== key)
+      : [...selectedKeys, key];
+    return next.length === 0
+      ? `/projects/${projectId}`
+      : `/projects/${projectId}?filter=${next.join(",")}`;
+  };
+
+  const isNeedsHumanActive = selectedKeys.includes("needs-human");
 
   return (
     <>
@@ -365,12 +384,12 @@ function IssuesTab({
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
           {CARDS.map((card) => {
             const count = issues.filter((i) => card.statuses.includes(i.status)).length;
-            const isActive = !showAll && effectiveFilter === card.key;
+            const isActive = selectedKeys.includes(card.key);
             const accent = STATUS_TEXT[card.key] ?? "var(--muted)";
             return (
               <Link
                 key={card.key}
-                href={isActive ? `/projects/${projectId}?filter=all` : `/projects/${projectId}?filter=${card.key}`}
+                href={toggleHref(card.key)}
                 className="rounded-lg border p-4 flex flex-col gap-1 transition-colors"
                 style={{
                   background: isActive ? STATUS_COLORS[card.key] ?? "var(--surface)" : "var(--surface)",
@@ -387,11 +406,11 @@ function IssuesTab({
             );
           })}
           <Link
-            href={isNeedsHuman ? `/projects/${projectId}?filter=all` : `/projects/${projectId}?filter=needs-human`}
+            href={toggleHref("needs-human")}
             className="rounded-lg border p-4 flex flex-col gap-1 transition-colors"
             style={{
-              background: isNeedsHuman ? "#3a1a3a" : "var(--surface)",
-              borderColor: isNeedsHuman || needsHumanIssues.length > 0 ? "#c084fc" : "var(--border)",
+              background: isNeedsHumanActive ? "#3a1a3a" : "var(--surface)",
+              borderColor: isNeedsHumanActive || needsHumanIssues.length > 0 ? "#c084fc" : "var(--border)",
             }}
           >
             <span className="text-2xl font-bold" style={{ color: needsHumanIssues.length > 0 ? "#c084fc" : "var(--muted)" }}>
@@ -414,31 +433,18 @@ function IssuesTab({
               <TableHead cols={["#", "Title", "Priority", "Status", "Actions"]} />
               <tbody>
                 {displayed.map((issue) => {
-                  // Needs Human view: offer Close + Task link, matching the old top section.
-                  if (isNeedsHuman) {
-                    return (
-                      <IssueTableRow
-                        key={issue.id}
-                        issue={issue}
-                        belowThreshold={isBelowPriorityThreshold(issue.priority, minPriority)}
-                        showActions={false}
-                        showLaunch
-                        showClose
-                        showTaskLink
-                      />
-                    );
-                  }
-                  // Untriaged issues without notes get quick Approve/Close actions so
-                  // they can be triaged inline; proposed issues keep the full action set.
-                  const isUntriaged = issue.status === "none";
-                  const untriagedNoNotes = isUntriaged && (issue.comments ?? []).length === 0;
+                  // Close + Fix in cmux are always available; Approve only makes
+                  // sense before the issue clears the approval gate (untriaged or
+                  // proposed) — hidden once approved or in-progress.
+                  const canApprove = issue.status === "none" || issue.status === "proposed";
                   return (
                     <IssueTableRow
                       key={issue.id}
                       issue={issue}
                       belowThreshold={isBelowPriorityThreshold(issue.priority, minPriority)}
-                      showActions={issue.status === "proposed" || untriagedNoNotes}
-                      showLaunch={isUntriaged}
+                      showApprove={canApprove}
+                      showLaunch
+                      showClose
                       showTaskLink={issue.status === "proposed"}
                     />
                   );

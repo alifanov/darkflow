@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [2.96.0] — 2026-06-19
+
+- **Webapp** — fixed the Issues tab on the project page:
+  - **Filters** — the status cards are now a multi-select. No card selected shows **all** issues (previously the page defaulted to `proposed`); selecting one card shows it; selecting several shows the union. Clicking an active card toggles it back off. The heading reflects the selected cards.
+  - **Row actions** — **Close** and **Fix in cmux** now appear on every issue row regardless of status. **Approve** is hidden once an issue is approved or in-progress (shown only for untriaged/proposed). Split the old combined `IssueActions` (Approve+Close) into a standalone `ApproveIssueButton` so Close can render independently without duplication.
+
 ## [2.95.0] — 2026-06-19
 
 - **Webapp** — the `fix-ci-issue` routine (CI-gate module: picks up `source:ci` failures, fixes, retries up to 3×, runs every 15 min) now appears in the Routines tab on the project page. It was already shipped to projects via `checklist.yml` / `routines.yml` but was missing from the webapp's canonical `ALL_ROUTINES` catalog, so it never rendered in the settings UI and couldn't be configured there. Added to `webapp/src/lib/routines.ts` with `module: "ci-gate"`, cron `*/15 * * * *`, model `sonnet`.
