@@ -14,6 +14,11 @@ Categories:
 
 ---
 
+## [2.94.2] — 2026-06-19
+
+- **CI gate** — drop the `setup-node` / `pnpm/action-setup` steps added in v2.94.1; the gate again calls `pnpm` directly and expects the toolchain to be on the runner's PATH. Root cause of the persistent red CI: the self-hosted runners are minimal `myoung34/github-runner` **containers that ship neither node nor pnpm**, and the v2.94.1 bootstrap actions can't run there either (no hosted tool cache to extract into — the setup step fails before any check). The durable fix is provisioning the toolchain *in the runner image*, not at job time.
+- **Docs** — add `docs/ci-runner.md`: runner toolchain requirements + a ready-to-use `Dockerfile` (`FROM myoung34/github-runner` + node 22 + pnpm 10) and a docker-compose anchor pattern to build one image and reuse it across all runner services.
+
 ## [2.94.1] — 2026-06-19
 
 - **CI gate** — provision **node + pnpm via dedicated setup steps** (`pnpm/action-setup@v4` + `actions/setup-node@v4`, each guarded by `hashFiles` so Python-only repos skip them) instead of the inline `ensure_pnpm()` shim from v2.94.0. On self-hosted runners where node/npm/corepack are only on the *login* PATH (nvm/fnm/asdf), the gate's `bash --noprofile --norc` shell never sees them, so `ensure_pnpm()` (which itself needs corepack or npm) still failed with `pnpm: command not found`. The setup actions install node+pnpm into the job's PATH independently of host shell config — the same approach a hand-patched project (`vargi`) had already adopted. Existing projects: re-copy the workflow (the `wf-ci-gate` checklist item only restores it when *missing*, so push the updated file manually or delete-then-`self-update`).
