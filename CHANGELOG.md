@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [2.95.0] — 2026-06-19
+
+- **Webapp** — the `fix-ci-issue` routine (CI-gate module: picks up `source:ci` failures, fixes, retries up to 3×, runs every 15 min) now appears in the Routines tab on the project page. It was already shipped to projects via `checklist.yml` / `routines.yml` but was missing from the webapp's canonical `ALL_ROUTINES` catalog, so it never rendered in the settings UI and couldn't be configured there. Added to `webapp/src/lib/routines.ts` with `module: "ci-gate"`, cron `*/15 * * * *`, model `sonnet`.
+
 ## [2.94.2] — 2026-06-19
 
 - **CI gate** — drop the `setup-node` / `pnpm/action-setup` steps added in v2.94.1; the gate again calls `pnpm` directly and expects the toolchain to be on the runner's PATH. Root cause of the persistent red CI: the self-hosted runners are minimal `myoung34/github-runner` **containers that ship neither node nor pnpm**, and the v2.94.1 bootstrap actions can't run there either (no hosted tool cache to extract into — the setup step fails before any check). The durable fix is provisioning the toolchain *in the runner image*, not at job time.

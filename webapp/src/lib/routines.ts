@@ -26,6 +26,7 @@ export const ALL_ROUTINES: RoutineDef[] = [
   { name: "build-optimization",  defaultCron: "0 4 * * 0",   defaultModel: "opus",   module: null,               label: "Build + deploy pipeline audit (weekly)" },
   { name: "uptime-check",        defaultCron: "0 */4 * * *", defaultModel: "sonnet", module: null,               label: "DNS + HTTP + page-load check → critical issue if down (every 4h)" },
   // Optional modules
+  { name: "fix-ci-issue",             defaultCron: "*/15 * * * *", defaultModel: "sonnet", module: "ci-gate",         label: "Pick up source:ci failures → fix → retry up to 3× (every 15 min)" },
   { name: "analytics-review",         defaultCron: "0 8 * * *",   defaultModel: "sonnet", module: "analytics",        label: "PostHog + commits → issues (daily)" },
   { name: "observability-check",      defaultCron: "30 8 * * *",  defaultModel: "sonnet", module: "observability",    label: "Errors / latency → issues (daily)" },
   { name: "gsc-check",                defaultCron: "0 8 * * 1",   defaultModel: "sonnet", module: "gsc",              label: "Search Console + SEO audit (weekly Mon)" },
