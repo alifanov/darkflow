@@ -208,4 +208,10 @@ model ProjectAlert {
 model Settings {
   id       String  @id @default("global")
   ghToken  String?
+
+  // Global worker status — there is one worker servicing every project, so its
+  // version and liveness are machine-level, reported on each heartbeat.
+  workerVersion  String?
+  workerLastSeen DateTime?
+  workerRoutine  String?
 }

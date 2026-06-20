@@ -45,12 +45,6 @@ interface ProjectRowProps {
   domain: string | null;
   branch: string | null;
   language: string;
-  versionBadge: "current" | "outdated" | "missing";
-  darkflowVersion: string | null;
-  latestVersion: string;
-  workerState: "running" | "online" | null;
-  settingsPending?: boolean;
-  routine: string | null;
   proposedCount: number;
   approvedCount: number;
   needsHumanCount: number;
@@ -67,12 +61,6 @@ export function ProjectRow({
   domain,
   branch,
   language,
-  versionBadge,
-  darkflowVersion,
-  latestVersion,
-  workerState,
-  settingsPending,
-  routine,
   proposedCount,
   approvedCount,
   needsHumanCount,
@@ -138,55 +126,6 @@ export function ProjectRow({
           <span>{langEmoji(language)}</span>
           <span>{language}</span>
         </span>
-      </td>
-
-      {/* Version */}
-      <td className="py-3 px-4">
-        {versionBadge === "missing" && (
-          <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: "var(--border)", color: "var(--muted)" }}>
-            DF —
-          </span>
-        )}
-        {versionBadge === "current" && (
-          <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ background: "var(--border)", color: "var(--muted)" }}>
-            v{darkflowVersion}
-          </span>
-        )}
-        {versionBadge === "outdated" && (
-          <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-200">
-            v{darkflowVersion} ⚠ →{latestVersion}
-          </span>
-        )}
-      </td>
-
-      {/* Worker */}
-      <td className="py-3 px-4">
-        {settingsPending && (
-          <span
-            className="inline-block mb-1 text-xs font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200"
-            title="Settings changed in the UI but the worker hasn't pulled them yet"
-          >
-            settings pending
-          </span>
-        )}
-        {workerState === "running" && (
-          <span className="flex items-center gap-1.5 text-xs" style={{ color: "var(--green)" }}>
-            <span
-              className="worker-dot-running shrink-0"
-              style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", display: "inline-block" }}
-            />
-            {routine ?? "running"}
-          </span>
-        )}
-        {workerState === "online" && (
-          <span className="flex items-center gap-1.5 text-xs" style={{ color: "var(--green)" }}>
-            <span
-              className="shrink-0"
-              style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)", opacity: 0.55, display: "inline-block" }}
-            />
-            online
-          </span>
-        )}
       </td>
 
       {/* Open Issues */}

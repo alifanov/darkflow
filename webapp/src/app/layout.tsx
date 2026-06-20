@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
 import { FaviconBadge } from "@/components/FaviconBadge";
+import { GlobalWorkerStatus } from "@/components/GlobalWorkerStatus";
 
 export const metadata: Metadata = {
   title: "Dark Flow",
@@ -44,6 +45,7 @@ export default function RootLayout({
               Analytics
             </Link>
           </nav>
+          <GlobalWorkerStatus />
         </header>
         <main className="px-6 py-8">{children}</main>
       </body>

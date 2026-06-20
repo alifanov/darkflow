@@ -14,6 +14,25 @@ Categories:
 
 ---
 
+## [3.3.0] — 2026-06-20
+
+Centralized config — phase 2 (web UI). The dashboard now shows **one** global worker
+version + liveness indicator instead of a per-project version badge and worker column.
+With a single global worker, staleness is a machine-level property, so a per-project
+"outdated" badge was noise — every release flagged every project even when nothing
+per-project changed.
+
+- **Schema** — added `workerVersion`, `workerLastSeen`, `workerRoutine` to the global
+  `Settings` row (additive migration `20260620000000_add_settings_worker_status`).
+- **Heartbeat** — `/api/worker/heartbeat` now also mirrors the worker's version, last-seen
+  time, and currently-running routine onto the global `Settings` row.
+- **UI** — new `GlobalWorkerStatus` header badge (single version + worker online/running/
+  offline indicator). Removed the per-project **DF Version** and **Worker** columns from
+  the dashboard and the per-project "settings pending" badge (the worker now reads config
+  live every tick, so there is no cache lag to flag).
+
+Webapp change — rebuild + restart the host process: `cd webapp && pnpm build && PORT=5555 pnpm start`.
+
 ## [3.2.0] — 2026-06-20
 
 Centralized config — phase 1 (worker). The global worker now reads each project's

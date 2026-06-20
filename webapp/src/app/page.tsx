@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { getLatestDarkflowVersion } from "@/lib/darkflow-version";
 import { ProjectRow } from "@/components/ProjectRow";
 import { GhTokenForm } from "@/components/GhTokenForm";
 import { IssuesActivityChart, type IssueActivityDay } from "@/components/IssuesActivityChart";
@@ -66,7 +65,7 @@ async function getRoutineErrorCounts(): Promise<Map<string, number>> {
 }
 
 export default async function ProjectsPage() {
-  const [rawProjects, latestVersion, settings, issueActivity, routineErrors] = await Promise.all([
+  const [rawProjects, settings, issueActivity, routineErrors] = await Promise.all([
     prisma.project.findMany({
       include: {
         _count: { select: { issues: { where: { state: { in: ["OPEN", "open"] }, status: { not: "rejected" } } } } },
@@ -74,7 +73,6 @@ export default async function ProjectsPage() {
           where: { state: { in: ["OPEN", "open"] }, status: { not: "rejected" } },
           select: { id: true, status: true, needsHuman: true },
         },
-        workerStatus: true,
         routineLogs: {
           orderBy: { timestamp: "desc" },
           take: 1,
@@ -82,7 +80,6 @@ export default async function ProjectsPage() {
         },
       },
     }),
-    Promise.resolve(getLatestDarkflowVersion()),
     prisma.settings.findUnique({ where: { id: "global" } }),
     getIssueActivity(),
     getRoutineErrorCounts(),
@@ -94,9 +91,6 @@ export default async function ProjectsPage() {
     if (bProposed !== aProposed) return bProposed - aProposed;
     return b._count.issues - a._count.issues;
   });
-
-  const now = Date.now();
-  const ALIVE_MS = 75 * 1000;
 
   return (
     <div>
@@ -130,10 +124,10 @@ export default async function ProjectsPage() {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
-                {["#", "Name", "Domain", "Branch", "Lang", "DF Version", "Worker", "Open Issues", "Needs approval", "Approved", "Needs Human", "Errors", "Last routine", "Last synced"].map((col, i) => (
+                {["#", "Name", "Domain", "Branch", "Lang", "Open Issues", "Needs approval", "Approved", "Needs Human", "Errors", "Last routine", "Last synced"].map((col, i) => (
                   <th
                     key={col}
-                    className={`py-2 px-4 text-xs font-medium uppercase tracking-wider text-left${[7, 8, 9, 10, 11].includes(i) ? " text-right" : ""}`}
+                    className={`py-2 px-4 text-xs font-medium uppercase tracking-wider text-left${[5, 6, 7, 8, 9].includes(i) ? " text-right" : ""}`}
                     style={{ color: "var(--muted)" }}
                   >
                     {col}
@@ -143,25 +137,6 @@ export default async function ProjectsPage() {
             </thead>
             <tbody>
               {projects.map((p, idx) => {
-                const ws = p.workerStatus;
-                const alive = ws && now - new Date(ws.updatedAt).getTime() < ALIVE_MS;
-                const workerState = alive
-                  ? ws.status === "running"
-                    ? "running"
-                    : "online"
-                  : null;
-                const versionBadge =
-                  p.darkflowVersion == null
-                    ? "missing"
-                    : p.darkflowVersion === latestVersion
-                    ? "current"
-                    : "outdated";
-                // Settings were saved in the UI after the worker last pulled config
-                // (or it never has) → the running worker hasn't applied them yet.
-                const settingsPending =
-                  p.settingsUpdatedAt != null &&
-                  (!ws?.configSyncedAt ||
-                    new Date(ws.configSyncedAt).getTime() < new Date(p.settingsUpdatedAt).getTime());
                 const lastLog = p.routineLogs[0] ?? null;
 
                 return (
@@ -173,12 +148,6 @@ export default async function ProjectsPage() {
                     domain={p.domain}
                     branch={p.branch}
                     language={p.language}
-                    versionBadge={versionBadge}
-                    darkflowVersion={p.darkflowVersion}
-                    latestVersion={latestVersion}
-                    workerState={workerState}
-                    settingsPending={settingsPending}
-                    routine={ws?.routine ?? null}
                     proposedCount={p.issues.filter((i) => i.status === "proposed").length}
                     approvedCount={p.issues.filter((i) => i.status === "approved").length}
                     needsHumanCount={p.issues.filter((i) => i.needsHuman).length}

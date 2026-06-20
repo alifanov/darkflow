@@ -42,5 +42,25 @@ export async function POST(req: NextRequest) {
     update: { status, routine: routine ?? null, ...(configSyncedAtDate ? { configSyncedAt: configSyncedAtDate } : {}) },
   });
 
+  // There is a single global worker, so its liveness + version are machine-level.
+  // Mirror them onto the global Settings row on every heartbeat — this drives the
+  // dashboard's one-and-only worker/version indicator. workerRoutine reflects what
+  // it's doing right now, cleared when the worker reports anything but "running".
+  const workerRoutine = status === "running" ? routine ?? null : null;
+  await prisma.settings.upsert({
+    where: { id: "global" },
+    create: {
+      id: "global",
+      workerVersion: darkflowVersion || null,
+      workerLastSeen: new Date(),
+      workerRoutine,
+    },
+    update: {
+      ...(darkflowVersion ? { workerVersion: darkflowVersion } : {}),
+      workerLastSeen: new Date(),
+      workerRoutine,
+    },
+  });
+
   return NextResponse.json({ ok: true });
 }
