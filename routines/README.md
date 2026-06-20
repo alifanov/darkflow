@@ -76,7 +76,7 @@ The installer does **not** auto-start it — you start it yourself, for full con
 
 ```bash
 # Start (runs in the background until you stop it)
-nohup bash ~/.darkflow/darkflow-run.sh >> ~/.darkflow/worker.log 2>&1 &
+nohup bash ~/.darkflow/darkflow-run.sh >/dev/null 2>> ~/.darkflow/worker.err.log &
 
 # Stop
 pkill -f ~/.darkflow/darkflow-run.sh

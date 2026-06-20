@@ -167,7 +167,7 @@ A **single global worker** (`~/.darkflow/darkflow-run.sh`) services every projec
 the machine. You start it manually (no auto-start), and it runs until you stop it:
 
 ```bash
-nohup bash ~/.darkflow/darkflow-run.sh >> ~/.darkflow/worker.log 2>&1 &   # start
+nohup bash ~/.darkflow/darkflow-run.sh >/dev/null 2>> ~/.darkflow/worker.err.log &   # start
 pkill -f ~/.darkflow/darkflow-run.sh                                       # stop
 ```
 

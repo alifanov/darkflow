@@ -297,7 +297,7 @@ worker_start_help() {
     fi
   fi
   info "Start the global worker yourself (services every project, runs until stopped):"
-  dim  "  nohup ${BASH_BIN} ${GLOBAL_DIR}/darkflow-run.sh >> ${GLOBAL_DIR}/worker.log 2>&1 &"
+  dim  "  nohup ${BASH_BIN} ${GLOBAL_DIR}/darkflow-run.sh >/dev/null 2>> ${GLOBAL_DIR}/worker.err.log &"
   dim  "Stop it with:  pkill -f ${GLOBAL_DIR}/darkflow-run.sh"
 }
 
@@ -1720,7 +1720,7 @@ echo -e "  +$(( $(printf '%s' "$SLUG" | cksum | cut -d' ' -f1) % 60 )) so indepe
 echo ""
 echo -e "  ${DIM}One global worker (~/.darkflow/darkflow-run.sh) services every project."
 echo -e "  Start it yourself (no auto-start), then it runs until you stop it:${RESET}"
-echo -e "  Start worker:  ${DIM}nohup ${BASH_BIN} ~/.darkflow/darkflow-run.sh >> ~/.darkflow/worker.log 2>&1 &${RESET}"
+echo -e "  Start worker:  ${DIM}nohup ${BASH_BIN} ~/.darkflow/darkflow-run.sh >/dev/null 2>> ~/.darkflow/worker.err.log &${RESET}"
 echo -e "  Stop worker:   ${DIM}pkill -f ~/.darkflow/darkflow-run.sh${RESET}"
 echo ""
 echo -e "  Run one routine:  ${DIM}~/.darkflow/darkflow-run.sh <name>   (from this project dir)${RESET}"

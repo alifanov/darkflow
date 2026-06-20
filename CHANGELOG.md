@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.1.1] — 2026-06-20
+
+- **Installer/Docs** — the manual worker start command now redirects stdout to `/dev/null` and stderr to `~/.darkflow/worker.err.log` instead of appending stdout back into `worker.log`. The worker already writes its own log internally, so the old `>> worker.log` doubled every line. `worker.log` is now clean; crashes land in `worker.err.log`.
+
 ## [3.1.0] — 2026-06-20
 
 - **Worker** — removed the worker's **automatic self-update**. With a single global worker there's only one artifact to update, so updates are now explicit (`install.sh --self-update` or `/darkflow:self-update`). This drops the riskiest code path — the unattended worker no longer fetches and runs an installer on its own — and removes a class of CDN-lag failure modes.
