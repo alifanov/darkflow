@@ -38,12 +38,11 @@ ENV_GH_TOKEN="${GH_TOKEN:-}"
 # messages emitted between projects still land somewhere.
 PROJECT_ROOT=""
 DARKFLOW_D=""
-YAML=""
 STATE_DIR=""
 LOCK_DIR=""
 LOG="$GLOBAL_LOG"
 METRICS_DIR=""
-DARKFLOW_CFG=""
+PROJECT_CFG_JSON=""
 
 # Temp files registered here are removed by the EXIT trap even on signals.
 _CLEANUP_FILES=()
@@ -62,19 +61,19 @@ mkdir -p "$GLOBAL_DIR" 2>/dev/null || true
 # subcommands. cd's into the project so gh/git invocations resolve the right repo.
 set_project() {
   PROJECT_ROOT="$1"
-  DARKFLOW_D="${PROJECT_ROOT}/.darkflow.d"
-  YAML="${DARKFLOW_D}/routines.yml"
+  DARKFLOW_D="${PROJECT_ROOT}/.darkflow.d"          # per-project runtime dir (state, metrics, logs, mailbox)
   STATE_DIR="${DARKFLOW_D}/state"
   LOCK_DIR="${STATE_DIR}/.lock"
   LOG="${DARKFLOW_D}/darkflow-run.log"
   METRICS_DIR="${STATE_DIR}/metrics"
-  DARKFLOW_CFG="${PROJECT_ROOT}/.darkflow"
+  PROJECT_CFG_JSON="${STATE_DIR}/config.json"        # config + schedule fetched from the Web UI
   _LOG_PREFIX=""
   _LOG_PREFIX_READY=false
   _REPO_URL_CACHE=""
   mkdir -p "$STATE_DIR" 2>/dev/null || true
   cd "$PROJECT_ROOT" 2>/dev/null || return 1
   resolve_gh_token
+  fetch_project_config || return 1   # not registered / server down → caller skips this project
   return 0
 }
 
@@ -126,15 +125,37 @@ glog() {
   echo "$line"
 }
 
-# ── .darkflow config reader ───────────────────────────────────────────────────
-
+# ── Project config reader ─────────────────────────────────────────────────────
+# Reads settings from the per-project config JSON fetched from the Web UI (the DB
+# is the source of truth). `webapp_url` and `version` are machine-global and come
+# from ~/.darkflow/config; secrets like gh_token are no longer stored per project.
+# The legacy snake_case keys are kept so call sites don't change.
 darkflow_val() {
-  local key="$1" default="${2:-}" val
-  if [[ -f "$DARKFLOW_CFG" ]]; then
-    val=$(grep -E "^${key}=" "$DARKFLOW_CFG" 2>/dev/null | head -1 | cut -d= -f2-)
-    if [[ -n "$val" ]]; then echo "$val"; return; fi
-  fi
-  echo "$default"
+  local key="$1" default="${2:-}" val jqexpr
+  case "$key" in
+    webapp_url|version)
+      val=$(global_val "$key" ""); [[ -n "$val" ]] && { echo "$val"; return; }; echo "$default"; return ;;
+    gh_token)
+      echo "$default"; return ;;
+  esac
+  [[ -f "$PROJECT_CFG_JSON" ]] || { echo "$default"; return; }
+  case "$key" in
+    name)               jqexpr='.name' ;;
+    slug)               jqexpr='.slug' ;;
+    domain|site_url)    jqexpr='.domain' ;;
+    branch)             jqexpr='.branch' ;;
+    language)           jqexpr='.language' ;;
+    merge_strategy)     jqexpr='.mergeStrategy' ;;
+    min_priority)       jqexpr='.minPriority' ;;
+    max_concurrent)     jqexpr='.maxConcurrent' ;;
+    posthog_project_id) jqexpr='.posthogProjectId' ;;
+    obs_tool)           jqexpr='.obsTool' ;;
+    obs_url)            jqexpr='.obsUrl' ;;
+    modules)            jqexpr='(.modules // []) | join(",")' ;;
+    *)                  echo "$default"; return ;;
+  esac
+  val=$(jq -r "${jqexpr} // empty" "$PROJECT_CFG_JSON" 2>/dev/null)
+  if [[ -n "$val" && "$val" != "null" ]]; then echo "$val"; else echo "$default"; fi
 }
 
 # ── ~/.darkflow/config reader (global worker settings) ────────────────────────
@@ -146,6 +167,28 @@ global_val() {
     if [[ -n "$val" ]]; then echo "$val"; return; fi
   fi
   echo "$default"
+}
+
+# ── Per-project config fetch (Web UI = source of truth) ───────────────────────
+# Pulls the project's full settings + merged routine schedule from
+# /api/projects/by-repo into $PROJECT_CFG_JSON, which darkflow_val() and the
+# routine helpers read. Returns non-zero when the project isn't registered or the
+# server is unreachable, so callers skip it instead of dispatching blind.
+fetch_project_config() {
+  local webapp_url repo_url encoded resp
+  webapp_url=$(global_val "webapp_url" "")
+  [[ -n "$webapp_url" ]] || return 1
+  command -v curl &>/dev/null || return 1
+  command -v jq   &>/dev/null || return 1
+  repo_url=$(_get_repo_url_cached)
+  [[ -n "$repo_url" ]] || return 1
+  encoded=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$repo_url" 2>/dev/null \
+    || printf '%s' "$repo_url" | sed 's|:|%3A|g; s|/|%2F|g')
+  resp=$(curl -fsS -m 10 "${webapp_url}/api/projects/by-repo?repoUrl=${encoded}" 2>/dev/null) || return 1
+  [[ "${resp:0:1}" == "{" ]] || return 1
+  jq -e '.id' >/dev/null 2>&1 <<< "$resp" || return 1   # 404 → {"error":…} has no .id
+  printf '%s' "$resp" > "$PROJECT_CFG_JSON" 2>/dev/null || return 1
+  return 0
 }
 
 # Lazily builds the log prefix "[vX.Y.Z] [ProjectName]" and caches it.
@@ -161,24 +204,16 @@ _init_log_prefix() {
   [[ -n "$name" ]] && _LOG_PREFIX+=" [${name}]"
 }
 
-# ── GitHub token bootstrap (per project) ──────────────────────────────────────
-# Priority: gh_token in .darkflow > webapp global token > gh auth token.
-# Re-resolved by set_project() for every project, since each repo may use a
-# different token. When a project defines no token of its own we restore the
-# environment baseline first, so an explicit token from a previous project never
-# leaks into a tokenless one.
+# ── GitHub token bootstrap ────────────────────────────────────────────────────
+# Priority: shared webapp global token > gh auth token. Tokens are no longer
+# stored per project (the Web UI holds one shared token). Reset to the inherited
+# environment baseline first so a token resolved for one project never leaks into
+# the next.
 resolve_gh_token() {
-  local cfg_tok webapp_url webapp_tok tok
-  cfg_tok=$(darkflow_val "gh_token" "")
-  if [[ -n "$cfg_tok" ]]; then
-    export GH_TOKEN="$cfg_tok"
-    return 0
-  fi
-  # No per-project token — reset to the inherited baseline (or unset so gh falls
-  # back to its keyring) before trying the shared webapp token / gh CLI.
+  local webapp_url webapp_tok tok
   if [[ -n "$ENV_GH_TOKEN" ]]; then export GH_TOKEN="$ENV_GH_TOKEN"; else unset GH_TOKEN; fi
   if command -v curl &>/dev/null; then
-    webapp_url=$(darkflow_val "webapp_url" "$(global_val webapp_url '')")
+    webapp_url=$(global_val webapp_url '')
     if [[ -n "$webapp_url" ]]; then
       webapp_tok=$(curl -fsS -m 5 "${webapp_url}/api/settings/gh-token" 2>/dev/null \
         | grep -o '"ghToken":"[^"]*"' | cut -d'"' -f4 || true)
@@ -323,21 +358,30 @@ write_state() {
   mv "$tmp" "${STATE_DIR}/${name}.last"
 }
 
-# ── YAML helpers ──────────────────────────────────────────────────────────────
-
-yaml_get() {
-  local expr="$1" file="$2" default="${3:-}"
-  local val
-  val=$(yq "$expr" "$file" 2>/dev/null || true)
-  if [[ -z "$val" || "$val" == "null" ]]; then
-    echo "$default"
-  else
-    echo "$val"
-  fi
-}
+# ── Routine schedule helpers (read from the fetched config JSON) ──────────────
+# The Web UI already merged the global default catalog with per-project overrides,
+# so each entry in .routines[] carries its resolved cron/model/engine/enabled.
 
 routine_names() {
-  yq '.routines | keys | .[]' "$YAML" 2>/dev/null
+  [[ -f "$PROJECT_CFG_JSON" ]] || return 0
+  jq -r '.routines[]?.name' "$PROJECT_CFG_JSON" 2>/dev/null
+}
+
+# routine_val <name> <jsonField> [default]
+# NB: don't use jq's `//` here — it treats `false` as empty, which would turn a
+# disabled routine (enabled:false) back into the "true" default. Filter null only.
+routine_val() {
+  local name="$1" field="$2" default="${3:-}" val
+  [[ -f "$PROJECT_CFG_JSON" ]] || { echo "$default"; return; }
+  val=$(jq -r --arg n "$name" --arg f "$field" \
+    '.routines[]? | select(.name==$n) | .[$f] | select(. != null)' "$PROJECT_CFG_JSON" 2>/dev/null)
+  if [[ -n "$val" ]]; then echo "$val"; else echo "$default"; fi
+}
+
+routine_exists() {
+  local name="$1"
+  [[ -f "$PROJECT_CFG_JSON" ]] || return 1
+  jq -e --arg n "$name" '.routines[]? | select(.name==$n)' "$PROJECT_CFG_JSON" >/dev/null 2>&1
 }
 
 # ── Preflight ─────────────────────────────────────────────────────────────────
@@ -345,12 +389,6 @@ routine_names() {
 # Machine-global tool checks — run once at startup, independent of any project.
 preflight_tools() {
   local ok=true
-  if ! command -v yq &>/dev/null; then
-    echo "darkflow-run: yq not found." >&2
-    echo "  macOS:  brew install yq" >&2
-    echo "  Linux:  https://github.com/mikefarah/yq#install" >&2
-    ok=false
-  fi
   if ! command -v claude &>/dev/null; then
     echo "darkflow-run: claude not found." >&2
     echo "  Install Claude Code: https://claude.ai/code" >&2
@@ -375,45 +413,28 @@ preflight_tools() {
 # Assumes preflight_tools already ran. set_project() must have run first.
 preflight() {
   local ok=true
-  if [[ ! -f "$YAML" ]]; then
-    echo "darkflow-run: ${YAML} not found. Run install.sh to reinstall Dark Flow." >&2
-    ok=false
+  if [[ ! -f "$PROJECT_CFG_JSON" ]]; then
+    echo "darkflow-run: no config for this project — register it in the Web UI and make sure the server is reachable." >&2
+    return 1
   fi
   # Warn when an enabled routine has no command file, but DON'T fail the whole
-  # dispatcher over it. This is the expected state right after Dark Flow removes a
-  # routine upstream: existing projects still carry a stale enabled entry in
-  # routines.yml until get-config.sh refreshes it from the Web UI (which now drops
-  # routines Dark Flow no longer ships). Aborting here would brick every other
-  # routine AND block the get-config.sh refresh that self-heals the file — the
-  # orphan simply gets skipped at dispatch time instead. mode_manual still errors
-  # if you explicitly request a routine whose command is missing.
-  if [[ -f "$YAML" ]] && command -v yq &>/dev/null; then
-    local _cmd_dir="${USER_CMD_DIR}"
-    local _rname _enabled
-    while IFS= read -r _rname; do
-      _enabled=$(yq ".routines[\"${_rname}\"].enabled // true" "$YAML" 2>/dev/null || echo "true")
-      [[ "$_enabled" == "false" ]] && continue
-      if [[ ! -f "${_cmd_dir}/${_rname}.md" ]]; then
-        echo "darkflow-run: routine '${_rname}' has no command file (~/.claude/commands/darkflow/${_rname}.md) — skipping it." >&2
-        echo "  This is normal if Dark Flow removed the routine; it clears on the next Web UI config refresh." >&2
-      fi
-    done < <(routine_names)
-  fi
-  # If any enabled routine runs on the codex engine, require the codex CLI too.
-  # (claude is always required above — the self-update path uses it.)
-  if [[ -f "$YAML" ]] && command -v yq &>/dev/null; then
-    local _uses_codex=false _crname _cenabled _cengine
-    while IFS= read -r _crname; do
-      _cenabled=$(yq ".routines[\"${_crname}\"].enabled // true" "$YAML" 2>/dev/null || echo "true")
-      [[ "$_cenabled" == "false" ]] && continue
-      _cengine=$(yq ".routines[\"${_crname}\"].engine // \"claude\"" "$YAML" 2>/dev/null || echo "claude")
-      [[ "$_cengine" == "codex" ]] && _uses_codex=true
-    done < <(routine_names)
-    if [[ "$_uses_codex" == true ]] && ! command -v codex &>/dev/null; then
-      echo "darkflow-run: codex not found, but a routine is set to engine: codex." >&2
-      echo "  Install Codex CLI (npm i -g @openai/codex) and authenticate it, or switch the routine back to claude." >&2
-      ok=false
+  # dispatcher over it — this is the expected state right after Dark Flow removes
+  # a routine upstream; the orphan simply gets skipped at dispatch time. Also
+  # require the codex CLI when any enabled routine runs on the codex engine.
+  local _cmd_dir="${USER_CMD_DIR}" _rname _enabled _uses_codex=false _cengine
+  while IFS= read -r _rname; do
+    _enabled=$(routine_val "$_rname" enabled "true")
+    [[ "$_enabled" == "false" ]] && continue
+    if [[ ! -f "${_cmd_dir}/${_rname}.md" ]]; then
+      echo "darkflow-run: routine '${_rname}' has no command file (~/.claude/commands/darkflow/${_rname}.md) — skipping it." >&2
     fi
+    _cengine=$(routine_val "$_rname" engine "claude")
+    [[ "$_cengine" == "codex" ]] && _uses_codex=true
+  done < <(routine_names)
+  if [[ "$_uses_codex" == true ]] && ! command -v codex &>/dev/null; then
+    echo "darkflow-run: codex not found, but a routine is set to engine: codex." >&2
+    echo "  Install Codex CLI (npm i -g @openai/codex) and authenticate it, or switch the routine back to claude." >&2
+    ok=false
   fi
   [[ "$ok" == true ]]
 }
@@ -771,7 +792,9 @@ mailbox_preflight() {
     set +a
     if [[ -z "${MAILBOX_IMAP_HOST:-}" ]]; then echo "UNCONFIGURED"; exit 0; fi
     command -v python3 >/dev/null 2>&1 || { echo "NOPY"; exit 0; }
-    out=$(python3 "${PROJECT_ROOT}/.darkflow.d/mailbox/fetch.py" --count 2>/dev/null)
+    _fetch_py="${GLOBAL_DIR}/mailbox/fetch.py"
+    [[ -f "$_fetch_py" ]] || _fetch_py="${PROJECT_ROOT}/.darkflow.d/mailbox/fetch.py"
+    out=$(python3 "$_fetch_py" --count 2>/dev/null)
     if [[ "$out" =~ ^[0-9]+$ ]]; then echo "COUNT:${out}"; else echo "ERR"; fi
   )
 
@@ -829,9 +852,9 @@ run_routine() {
     # every gh call inside the session to fail silently with 403, producing a
     # "ran ok" summary that hides the real problem.
     if ! validate_gh_token; then
-      local webapp_hint; webapp_hint=$(darkflow_val "webapp_url" "")
-      local fix_hint="add gh_token= to .darkflow"
-      [[ -n "$webapp_hint" ]] && fix_hint+=" or update it at ${webapp_hint}"
+      local webapp_hint; webapp_hint=$(global_val "webapp_url" "")
+      local fix_hint="set a valid GitHub token in the Web UI"
+      [[ -n "$webapp_hint" ]] && fix_hint+=" (${webapp_hint})"
       log "SKIP   ${name} — GitHub token invalid or expired (${_GH_TOKEN_ERROR:-unknown}). Fix: ${fix_hint}"
       local skip_ts; skip_ts=$(date -u +%FT%TZ)
       write_state "$name" "$(( $(now_epoch) - $(now_epoch) % 60 ))"
@@ -910,10 +933,10 @@ run_routine() {
 
   log "START  ${name} (engine=${engine}, model=${model}, perm=${permission_mode})"
 
-  # Refresh settings from Web UI before invoking the agent so both darkflow_val()
-  # reads below and the LLM command's "Step 1 — Read project config" see fresh values.
-  # Falls back to the cached .darkflow silently if the server is offline.
-  bash "${PROJECT_ROOT}/.darkflow.d/get-config.sh" 2>/dev/null || true
+  # Refresh config from the Web UI right before invoking the agent so darkflow_val()
+  # reads below see the freshest values. Silently keeps the cached JSON if the
+  # server is offline.
+  fetch_project_config 2>/dev/null || true
 
   send_heartbeat "running" "$name"
   start_heartbeat_loop "$name"
@@ -1289,7 +1312,7 @@ backfill_missing_priority() {
 
 apply_pending_statuses() {
   local webapp_url repo_url pending_json count
-  webapp_url=$(darkflow_val "webapp_url" "")
+  webapp_url=$(global_val "webapp_url" "")
   [[ -z "$webapp_url" ]] && return 0
   ! command -v gh   &>/dev/null && return 0
   ! command -v jq   &>/dev/null && return 0
@@ -1342,13 +1365,13 @@ apply_pending_statuses() {
 
 # ── Webapp sync ───────────────────────────────────────────────────────────────
 # Called after any routine actually ran. POSTs issue data and project metadata
-# to the Dark Flow webapp API (/api/ingest) using the webapp_url from .darkflow.
+# to the Dark Flow webapp API (/api/ingest) using the webapp_url from ~/.darkflow/config.
 
 sync_webapp() {
   local webapp_url
-  webapp_url=$(darkflow_val "webapp_url" "")
+  webapp_url=$(global_val "webapp_url" "")
   if [[ -z "$webapp_url" ]]; then
-    log "WEBAPP skipped (webapp_url not set in .darkflow)"
+    log "WEBAPP skipped (webapp_url not set in ~/.darkflow/config)"
     PENDING_LOGS=()
     return 0
   fi
@@ -1419,7 +1442,7 @@ sync_webapp() {
 
   issues_json=$(enrich_needs_human_comments "$issues_json")
 
-  # Read project metadata from .darkflow
+  # Read project metadata from the fetched config JSON
   local proj_name proj_domain proj_branch proj_lang proj_merge proj_modules proj_version
   proj_name=$(darkflow_val "name" "$(basename "$PROJECT_ROOT")")
   proj_domain=$(darkflow_val "domain" "")
@@ -1451,10 +1474,11 @@ sync_webapp() {
     logs_json=$(printf '%s\n' "${PENDING_LOGS[@]}" | jq -sc '.')
   fi
 
-  # Parse routines.yml into a JSON array snapshot
+  # Routine snapshot: pass the fetched schedule straight through (the Web UI is the
+  # source of truth; ingest only seeds RoutineConfig when a project has none yet).
   local routines_json="[]"
-  if [[ -f "$YAML" ]]; then
-    routines_json=$(yq -o=json '.routines | to_entries | map({"name": .key, "cron": .value.cron, "model": .value.model, "engine": (.value.engine // "claude"), "enabled": (.value.enabled // true), "permissionMode": .value.permission_mode})' "$YAML" 2>/dev/null | jq -c '.' 2>/dev/null || echo "[]")
+  if [[ -f "$PROJECT_CFG_JSON" ]]; then
+    routines_json=$(jq -c '.routines // []' "$PROJECT_CFG_JSON" 2>/dev/null || echo "[]")
   fi
 
   # Last 50 commits via git log; tab-separated to dodge quoting issues in messages.
@@ -1549,7 +1573,7 @@ _get_repo_url_cached() {
 send_heartbeat() {
   local status="$1" routine="${2:-}"
   local webapp_url
-  webapp_url=$(darkflow_val "webapp_url" "")
+  webapp_url=$(global_val "webapp_url" "")
   [[ -z "$webapp_url" ]] && return 0
   ! command -v curl &>/dev/null && return 0
   ! command -v gh   &>/dev/null && return 0
@@ -1563,12 +1587,9 @@ send_heartbeat() {
   proj_hb_version=$(darkflow_val "version" "")
   [[ -n "$routine" ]] && routine_field="\"${routine}\""
 
-  # Report when get-config.sh last successfully pulled settings from the Web UI so
-  # the dashboard can flag projects whose worker hasn't applied the latest config.
-  if [[ -f "${STATE_DIR}/config-synced-at" ]]; then
-    local synced; synced=$(head -1 "${STATE_DIR}/config-synced-at" 2>/dev/null | tr -d '[:space:]')
-    [[ -n "$synced" ]] && config_field="\"${synced}\""
-  fi
+  # The worker now reads config straight from the Web UI every tick, so whenever a
+  # fresh config JSON exists the project is, by definition, up to date as of now.
+  [[ -f "$PROJECT_CFG_JSON" ]] && config_field="\"$(date -u +%FT%TZ)\""
 
   curl -fsS -o /dev/null -m 5 \
     -X POST "${webapp_url}/api/worker/heartbeat" \
@@ -1626,27 +1647,28 @@ fetch_projects() {
   jq -r '.[].localPath | select(. != null and . != "")' <<< "$resp" 2>/dev/null || true
 }
 
-# Walks up from the current directory to the nearest ancestor containing a
-# .darkflow.d/ — the project the cwd-scoped subcommands operate on.
+# The cwd-scoped subcommands operate on the git repo containing the current dir.
 detect_project_from_cwd() {
-  local d="$PWD"
-  while [[ -n "$d" && "$d" != "/" ]]; do
-    [[ -d "$d/.darkflow.d" ]] && { echo "$d"; return 0; }
-    d="$(dirname "$d")"
-  done
-  [[ -d "/.darkflow.d" ]] && { echo "/"; return 0; }
+  local top
+  top=$(git rev-parse --show-toplevel 2>/dev/null) && [[ -n "$top" ]] && { echo "$top"; return 0; }
   return 1
 }
 
-# Resolves the cwd's project and enters it, or aborts with guidance.
+# Resolves the cwd's project and enters it, or aborts with guidance. set_project
+# fetches the project's config from the Web UI — failure means it isn't a git repo
+# or isn't registered there.
 require_cwd_project() {
   local p
   if ! p=$(detect_project_from_cwd); then
-    echo "darkflow-run: not inside a Dark Flow project (no .darkflow.d/ found from ${PWD})." >&2
-    echo "  cd into a project that has .darkflow.d/, or run the global worker with no arguments." >&2
+    echo "darkflow-run: not inside a git repository (${PWD})." >&2
+    echo "  cd into a registered project, or run the global worker with no arguments." >&2
     exit 1
   fi
-  set_project "$p" || { echo "darkflow-run: failed to enter project ${p}" >&2; exit 1; }
+  set_project "$p" || {
+    echo "darkflow-run: '${p}' is not registered in the Web UI (or the server is unreachable)." >&2
+    echo "  Add it in the Dark Flow dashboard, then retry." >&2
+    exit 1
+  }
 }
 
 # ── Mode: list ────────────────────────────────────────────────────────────────
@@ -1656,8 +1678,8 @@ mode_list() {
   printf "%-25s %-20s %-9s %s\n" "ROUTINE" "CRON" "ENABLED" "LAST RUN"
   printf "%-25s %-20s %-9s %s\n" "-------" "----" "-------" "--------"
   while IFS= read -r name; do
-    cron=$(yaml_get ".routines[\"${name}\"].cron" "$YAML" "")
-    enabled=$(yaml_get ".routines[\"${name}\"].enabled" "$YAML" "true")
+    cron=$(routine_val "$name" cron "")
+    enabled=$(routine_val "$name" enabled "true")
     last_run=$(read_state "$name")
     if [[ "$last_run" == "0" ]]; then
       last_str="never"
@@ -1673,19 +1695,15 @@ mode_list() {
 mode_dispatch() {
   local dry_run="${1:-false}"
   local now name cron enabled model permission_mode engine last_run floor prev
-  local default_model default_perm default_engine
 
   now=$(now_epoch)
-  default_model=$(yaml_get '.defaults.model' "$YAML" "sonnet")
-  default_perm=$(yaml_get '.defaults.permission_mode' "$YAML" "bypassPermissions")
-  default_engine=$(yaml_get '.defaults.engine' "$YAML" "claude")
 
   rotate_log
 
   local any_due=false
   while IFS= read -r name; do
-    cron=$(yaml_get ".routines[\"${name}\"].cron" "$YAML" "")
-    enabled=$(yaml_get ".routines[\"${name}\"].enabled" "$YAML" "true")
+    cron=$(routine_val "$name" cron "")
+    enabled=$(routine_val "$name" enabled "true")
 
     if [[ "$enabled" != "true" || -z "$cron" ]]; then
       continue
@@ -1697,9 +1715,9 @@ mode_dispatch() {
       continue
     fi
 
-    model=$(yaml_get ".routines[\"${name}\"].model" "$YAML" "$default_model")
-    permission_mode=$(yaml_get ".routines[\"${name}\"].permission_mode" "$YAML" "$default_perm")
-    engine=$(yaml_get ".routines[\"${name}\"].engine" "$YAML" "$default_engine")
+    model=$(routine_val "$name" model "sonnet")
+    permission_mode=$(routine_val "$name" permissionMode "bypassPermissions")
+    engine=$(routine_val "$name" engine "claude")
 
     # Parse 5 cron fields
     read -r c_min c_hr c_dom c_month c_dow <<< "$cron"
@@ -1738,9 +1756,9 @@ mode_dispatch() {
 
 mode_manual() {
   local name="$1"
-  local model permission_mode engine default_model default_perm default_engine
+  local model permission_mode engine
 
-  if ! yq ".routines | has(\"${name}\")" "$YAML" 2>/dev/null | grep -q "true"; then
+  if ! routine_exists "$name"; then
     echo "darkflow-run: unknown routine '${name}'" >&2
     echo "Known routines: $(routine_names | tr '\n' ' ')" >&2
     exit 1
@@ -1748,16 +1766,13 @@ mode_manual() {
 
   if [[ ! -f "${USER_CMD_DIR}/${name}.md" ]]; then
     echo "darkflow-run: routine '${name}' has no command file: ~/.claude/commands/darkflow/${name}.md" >&2
-    echo "  Dark Flow may have removed it. Run install.sh to repair, or remove it from routines.yml." >&2
+    echo "  Dark Flow may have removed it, or it's disabled for this project in the Web UI." >&2
     exit 1
   fi
 
-  default_model=$(yaml_get '.defaults.model' "$YAML" "sonnet")
-  default_perm=$(yaml_get '.defaults.permission_mode' "$YAML" "bypassPermissions")
-  default_engine=$(yaml_get '.defaults.engine' "$YAML" "claude")
-  model=$(yaml_get ".routines[\"${name}\"].model" "$YAML" "$default_model")
-  permission_mode=$(yaml_get ".routines[\"${name}\"].permission_mode" "$YAML" "$default_perm")
-  engine=$(yaml_get ".routines[\"${name}\"].engine" "$YAML" "$default_engine")
+  model=$(routine_val "$name" model "sonnet")
+  permission_mode=$(routine_val "$name" permissionMode "bypassPermissions")
+  engine=$(routine_val "$name" engine "claude")
 
   log "MANUAL ${name}"
   run_routine "$name" "$model" "$permission_mode" "$engine"
@@ -1790,11 +1805,13 @@ mode_watch() {
       local path
       while IFS= read -r path; do
         [[ -z "$path" ]] && continue
-        if [[ ! -d "${path}/.darkflow.d" ]]; then
-          glog "SKIP ${path} — no .darkflow.d/ (moved, deleted, or not installed)"
+        if [[ ! -d "$path" ]]; then
+          glog "SKIP ${path} — directory not found (moved or deleted)"
           continue
         fi
-        set_project "$path" || { glog "SKIP ${path} — cannot enter directory"; continue; }
+        # set_project enters the repo and fetches its config from the Web UI;
+        # failure means the dir isn't a registered git repo or the server is down.
+        set_project "$path" || { glog "SKIP ${path} — not a registered project or config fetch failed"; continue; }
         send_heartbeat "idle"
         if try_acquire_lock; then
           mode_dispatch false || log "WATCH  dispatch error (tick ${tick})"

@@ -14,6 +14,28 @@ Categories:
 
 ---
 
+## [3.2.0] — 2026-06-20
+
+Centralized config — phase 1 (worker). The global worker now reads each project's
+settings **and** routine schedule straight from the Web UI (`/api/projects/by-repo`)
+instead of the local `.darkflow` cache + `.darkflow.d/routines.yml`. The DB is the
+single source of truth; the local config files are no longer consulted by the worker.
+
+- **Worker** — `darkflow_val()` now reads the per-project config JSON fetched from the
+  Web UI (new `fetch_project_config`), and routine dispatch (`mode_list`/`mode_dispatch`/
+  `mode_manual`) reads the merged schedule from that JSON via `jq`. `webapp_url` and
+  `version` come from `~/.darkflow/config`; `gh_token` is no longer stored per project
+  (the shared Web UI token / `gh auth` is used).
+- **Worker** — project discovery no longer gates on `.darkflow.d/` existence; a project
+  is serviced iff it's registered in the Web UI (resolved by repo URL). cwd subcommands
+  resolve the project via `git rev-parse --show-toplevel`.
+- **Worker** — dropped the `yq` dependency and the `get-config.sh` pre-run refresh (config
+  is now re-fetched directly before each run). `.darkflow.d/` stays as the per-project
+  runtime dir (state, metrics, logs, mailbox); mailbox `fetch.py` is read from
+  `~/.darkflow/mailbox/` when present, falling back to the project copy.
+- Fixed a latent bug where a disabled routine (`enabled: false`) could be treated as
+  enabled because `jq`'s `//` operator coerces `false` to its default.
+
 ## [3.1.3] — 2026-06-20
 
 - **Worker** — removed the dead `# DF_VERSION:` comment from `templates/darkflow/darkflow-run.sh`. It was never parsed by anything (version comparison uses the `VERSION` file and per-project `.darkflow` config), so it only drifted out of sync (stuck at 3.0.0). One fewer thing to keep updated.
