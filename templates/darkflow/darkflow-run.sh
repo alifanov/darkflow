@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# DF_VERSION: 3.0.0
 # Dark Flow global routine dispatcher
 # Lives at ~/.darkflow/darkflow-run.sh — ONE worker services every registered
 # project. With no arguments it loops, discovering projects from the web UI

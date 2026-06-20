@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.1.3] — 2026-06-20
+
+- **Worker** — removed the dead `# DF_VERSION:` comment from `templates/darkflow/darkflow-run.sh`. It was never parsed by anything (version comparison uses the `VERSION` file and per-project `.darkflow` config), so it only drifted out of sync (stuck at 3.0.0). One fewer thing to keep updated.
+
 ## [3.1.2] — 2026-06-20
 
 - **Repo tooling** — added `make worker-start` / `worker-stop` / `worker-status` / `worker-logs` to the darkflow repo Makefile for controlling the global worker (`~/.darkflow/darkflow-run.sh`). `worker-start` is idempotent (won't double-start) and logs to `~/.darkflow/worker.err.log`.
