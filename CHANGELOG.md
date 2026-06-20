@@ -14,6 +14,14 @@ Categories:
 
 ---
 
+## [3.4.3] — 2026-06-20
+
+- **Webapp** — dropped the "Last synced" column from the projects list. It tracked
+  `lastSyncedAt` (set on `/api/ingest`, which fires right after a routine runs), so its
+  timestamp duplicated the existing "Last routine" column, and its red ">1h stale" rule
+  was misleading given routine cadences range from hourly to weekly. The `lastSyncedAt`
+  field stays in the schema; liveness is better surfaced by the global worker status.
+
 ## [3.4.2] — 2026-06-20
 
 - **Repo tooling** — added `make worker-run` to run the global worker in the **foreground**

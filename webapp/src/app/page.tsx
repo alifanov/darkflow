@@ -124,7 +124,7 @@ export default async function ProjectsPage() {
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
-                {["#", "Name", "Domain", "Branch", "Lang", "Open Issues", "Needs approval", "Approved", "Needs Human", "Errors", "Last routine", "Last synced"].map((col, i) => (
+                {["#", "Name", "Domain", "Branch", "Lang", "Open Issues", "Needs approval", "Approved", "Needs Human", "Errors", "Last routine"].map((col, i) => (
                   <th
                     key={col}
                     className={`py-2 px-4 text-xs font-medium uppercase tracking-wider text-left${[5, 6, 7, 8, 9].includes(i) ? " text-right" : ""}`}
@@ -152,7 +152,6 @@ export default async function ProjectsPage() {
                     approvedCount={p.issues.filter((i) => i.status === "approved").length}
                     needsHumanCount={p.issues.filter((i) => i.needsHuman).length}
                     totalIssues={p._count.issues}
-                    lastSyncedAt={p.lastSyncedAt?.toISOString() ?? null}
                     errorCount={routineErrors.get(p.id) ?? 0}
                     lastRoutine={lastLog ? { routine: lastLog.routine, timestamp: lastLog.timestamp.toISOString() } : null}
                   />
