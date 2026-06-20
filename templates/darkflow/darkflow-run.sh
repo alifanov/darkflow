@@ -1624,18 +1624,23 @@ check_for_update() {
   fi
   echo "$now_ts" > "$check_ts_file"
 
-  local installed latest
+  local installed latest cb
   installed=$(global_val "version" "0.0.0")
   [[ -z "$installed" ]] && installed="0.0.0"
 
-  latest=$(curl -fsSL -m 5 "${DARKFLOW_REPO}/VERSION" 2>/dev/null | tr -d '[:space:]') || latest=""
+  # Cache-bust GitHub's raw CDN so a stale VERSION/install.sh can't trigger a
+  # spurious "update" to an older installer that lacks --self-update.
+  cb="$(now_epoch)"
+  latest=$(curl -fsSL -m 5 "${DARKFLOW_REPO}/VERSION?t=${cb}" 2>/dev/null | tr -d '[:space:]') || latest=""
   [[ -z "$latest" ]] && return 0   # no network or fetch failed — skip silently
 
   [[ "$latest" == "$installed" ]] && return 0
 
   glog "UPDATE detected ${installed} → ${latest}, refreshing global worker + commands"
-  bash <(curl -fsSL -m 30 "${DARKFLOW_REPO}/install.sh") --self-update --yes >> "$GLOBAL_LOG" 2>&1 \
-    || glog "UPDATE installer --self-update returned non-zero"
+  # Run the installer from ~/.darkflow (a writable, throwaway cwd) with --self-update
+  # so even a momentarily-stale full installer can't scaffold a project here.
+  ( cd "$GLOBAL_DIR" && bash <(curl -fsSL -m 30 "${DARKFLOW_REPO}/install.sh?t=${cb}") --self-update --yes ) \
+    >> "$GLOBAL_LOG" 2>&1 || glog "UPDATE installer --self-update returned non-zero"
 
   local nowv; nowv=$(global_val "version" "0.0.0")
   if [[ "$nowv" == "$latest" ]]; then

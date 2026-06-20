@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.0.1] — 2026-06-20
+
+- **Worker** — hardened the global worker's self-update: cache-bust the GitHub raw fetches for `VERSION` and `install.sh`, and run the installer from `~/.darkflow` with `--self-update`. Prevents a momentarily-stale CDN copy (an old `install.sh` without `--self-update`) from running a full project install in the worker's cwd.
+
 ## [3.0.0] — 2026-06-20
 
 **Breaking: one global worker + user-scope commands.** Dark Flow no longer runs a separate dispatcher per project or copies slash commands into each project. Re-run the installer (`/darkflow:self-update`) in any project once to migrate — the worker then auto-self-updates.
