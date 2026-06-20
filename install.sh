@@ -186,11 +186,62 @@ fetch_raw() {
   fi
 }
 
+# Cached project config JSON fetched from the Web UI (the DB is the source of
+# truth — there is no local .darkflow anymore). Populated lazily by read_config.
+_DF_CFG_JSON=""
+_DF_CFG_FETCHED=false
+
+_fetch_project_config_json() {
+  $_DF_CFG_FETCHED && return 0
+  _DF_CFG_FETCHED=true
+  command -v curl &>/dev/null || return 0
+  command -v jq   &>/dev/null || return 0
+  command -v gh   &>/dev/null || return 0
+  local wu ru enc resp
+  wu=$(grep '^webapp_url=' "$HOME/.darkflow/config" 2>/dev/null | head -1 | cut -d= -f2- || true)
+  [[ -n "$wu" ]] || return 0
+  ru=$(gh repo view --json url -q .url 2>/dev/null || true)
+  [[ -n "$ru" ]] || return 0
+  enc=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1],safe=''))" "$ru" 2>/dev/null \
+    || printf '%s' "$ru" | sed 's|:|%3A|g; s|/|%2F|g')
+  resp=$(curl -fsS --max-time 5 "${wu}/api/projects/by-repo?repoUrl=${enc}" 2>/dev/null) || return 0
+  [[ "${resp:0:1}" == "{" ]] || return 0
+  jq -e '.id' >/dev/null 2>&1 <<< "$resp" || return 0
+  _DF_CFG_JSON="$resp"
+}
+
+# Read a project setting from the Web UI (DB). webapp_url comes from the global
+# config; everything else maps the legacy snake_case key to the API's camelCase.
 read_config() {
-  local key="$1" default="${2:-}"
-  local v
-  v=$(grep "^${key}=" .darkflow 2>/dev/null | head -1 | cut -d= -f2- || true)
-  [[ -n "$v" ]] && echo "$v" || echo "$default"
+  local key="$1" default="${2:-}" jqexpr v
+  if [[ "$key" == "webapp_url" ]]; then
+    v=$(grep '^webapp_url=' "$HOME/.darkflow/config" 2>/dev/null | head -1 | cut -d= -f2- || true)
+    [[ -n "$v" ]] && { echo "$v"; return; } || { echo "$default"; return; }
+  fi
+  _fetch_project_config_json
+  [[ -n "$_DF_CFG_JSON" ]] || { echo "$default"; return; }
+  case "$key" in
+    name)               jqexpr='.name' ;;
+    slug)               jqexpr='.slug' ;;
+    domain)             jqexpr='.domain' ;;
+    branch)             jqexpr='.branch' ;;
+    language)           jqexpr='.language' ;;
+    merge_strategy)     jqexpr='.mergeStrategy' ;;
+    min_priority)       jqexpr='.minPriority' ;;
+    modules)            jqexpr='(.modules // []) | join(",")' ;;
+    obs_tool)           jqexpr='.obsTool' ;;
+    obs_url)            jqexpr='.obsUrl' ;;
+    posthog_project_id) jqexpr='.posthogProjectId' ;;
+    *)                  echo "$default"; return ;;
+  esac
+  v=$(jq -r "${jqexpr} // empty" <<< "$_DF_CFG_JSON" 2>/dev/null)
+  [[ -n "$v" && "$v" != "null" ]] && echo "$v" || echo "$default"
+}
+
+# Is this project already registered in the Web UI (DB)?
+project_registered() {
+  _fetch_project_config_json
+  [[ -n "$_DF_CFG_JSON" ]]
 }
 
 detect_os() {
@@ -220,8 +271,8 @@ USER_CMD_DIR="$HOME/.claude/commands/darkflow"
 BASH_BIN="$(command -v bash 2>/dev/null || echo /bin/bash)"
 
 # Every slash command Dark Flow ships, installed once into user scope as a
-# superset — routines.yml still gates which actually run per project, and an
-# unused slash command is harmless.
+# superset — the per-project routine schedule (in the Web UI) gates which actually
+# run, and an unused slash command is harmless.
 ALL_DF_COMMANDS=(
   add-issue install self-update fix-issues analytics-review observability-check
   gsc-check ads-review coolify-check-deployment claude-md-update security-audit
@@ -260,6 +311,20 @@ install_user_commands() {
       || warn "Could not fetch command: ${c}"
   done
   success "Installed ${#ALL_DF_COMMANDS[@]} slash commands into ${USER_CMD_DIR}/"
+}
+
+# Machine-global helper assets: the config fetcher used by every slash command's
+# "Step 1", and the mailbox IMAP/SMTP scripts. These used to be copied per project;
+# they're global now so projects carry no operational scripts.
+install_global_helpers() {
+  [[ "$DRY_RUN" == true ]] && { info "Would install global helpers into ${GLOBAL_DIR}/"; return; }
+  mkdir -p "$GLOBAL_DIR"
+  gb_fetch "darkflow/get-config.sh" "${GLOBAL_DIR}/get-config.sh" \
+    && chmod +x "${GLOBAL_DIR}/get-config.sh" \
+    || warn "Could not fetch get-config.sh"
+  gb_fetch "darkflow/mailbox/fetch.py" "${GLOBAL_DIR}/mailbox/fetch.py" || warn "Could not fetch mailbox/fetch.py"
+  gb_fetch "darkflow/mailbox/send.py"  "${GLOBAL_DIR}/mailbox/send.py"  || warn "Could not fetch mailbox/send.py"
+  success "Installed global helpers (get-config.sh, mailbox) into ${GLOBAL_DIR}/"
 }
 
 # Write ~/.darkflow/config (webapp_url + version). Preserves a custom webapp_url
@@ -314,6 +379,16 @@ cleanup_legacy_project_files() {
     success "Removed per-project commands (.claude/commands/darkflow/) — now in ~/.claude/commands/darkflow/"
   fi
   [[ -f ".claude/commands/darkflow.md" ]] && rm -f ".claude/commands/darkflow.md"
+
+  # Config + schedule + helpers are centralized now (DB + ~/.darkflow/). Drop the
+  # stale per-project cache/operational files so nothing reads a stale copy.
+  # .darkflow.d/ itself stays — it's the runtime dir (state, metrics, logs).
+  local _removed=false f
+  for f in ".darkflow" ".darkflow.d/routines.yml" ".darkflow.d/get-config.sh"; do
+    [[ -e "$f" ]] && { rm -f "$f"; _removed=true; }
+  done
+  [[ -d ".darkflow.d/mailbox" ]] && { rm -rf ".darkflow.d/mailbox"; _removed=true; }
+  [[ "$_removed" == true ]] && success "Removed legacy per-project config/helpers (.darkflow, routines.yml, get-config.sh, mailbox) — now centralized"
   return 0
 }
 
@@ -321,9 +396,52 @@ global_bootstrap() {
   header "Global worker (one worker for all projects)"
   install_global_worker
   install_user_commands
+  install_global_helpers
   write_global_config
   worker_start_help
   cleanup_legacy_project_files
+}
+
+# Register / refresh this project in the Web UI (the DB is the source of truth for
+# settings). On first contact /api/ingest creates the row from these values; on
+# later runs it deliberately leaves settings alone (they're edited in the UI).
+# Identity is the GitHub repo URL, so a remote must exist.
+register_project() {
+  local modules_csv="$1"
+  [[ "$DRY_RUN" == true ]] && { info "Would register project in the Web UI"; return; }
+  command -v curl &>/dev/null && command -v jq &>/dev/null && command -v gh &>/dev/null || {
+    warn "curl, jq and gh are required to register the project in the Web UI — skipping."; return; }
+  local repo_url; repo_url=$(gh repo view --json url -q .url 2>/dev/null || true)
+  if [[ -z "$repo_url" ]]; then
+    warn "No GitHub remote yet — add one and re-run install, or add the project in the Web UI, to register it."
+    return
+  fi
+  local wu; wu=$(read_config webapp_url "$WEBAPP_URL")
+  [[ -n "$wu" ]] || { warn "No webapp_url configured — cannot register the project."; return; }
+  local modules_json; modules_json=$(printf '%s' "$modules_csv" | jq -Rc 'split(",") | map(select(length>0))')
+  local payload
+  payload=$(jq -nc \
+    --arg repoUrl "$repo_url" \
+    --arg name "$PROJECT_NAME" \
+    --arg localPath "$(pwd)" \
+    --arg branch "$MAIN_BRANCH" \
+    --arg language "$LANGUAGE" \
+    --arg mergeStrategy "$MERGE_STRATEGY" \
+    --arg version "$LATEST_VERSION" \
+    --arg obsTool "${OBS_TOOL:-}" \
+    --arg obsUrl "${OBS_URL:-}" \
+    --arg posthog "${POSTHOG_PROJECT_ID:-}" \
+    --argjson modules "$modules_json" \
+    '{repoUrl:$repoUrl, name:$name, localPath:$localPath, branch:$branch, language:$language,
+      mergeStrategy:$mergeStrategy, modules:$modules, darkflowVersion:$version}
+     + (if $obsTool != "" then {obsTool:$obsTool} else {} end)
+     + (if $obsUrl  != "" then {obsUrl:$obsUrl}  else {} end)
+     + (if $posthog != "" then {posthogProjectId:$posthog} else {} end)')
+  if curl -fsS -m 10 -X POST "${wu}/api/ingest" -H 'Content-Type: application/json' -d "$payload" >/dev/null 2>&1; then
+    success "Registered project in the Web UI (${wu})"
+  else
+    warn "Could not reach the Web UI at ${wu} — start it and re-run install, or add the project in the UI."
+  fi
 }
 
 # ── Global-only self-update (manual: `install.sh --self-update`) ──────────────
@@ -342,36 +460,15 @@ fi
 
 MODE=fresh
 INSTALLED_VERSION=""
-LATEST_VERSION=""
+LATEST_VERSION=$(fetch_raw "VERSION" | tr -d '[:space:]')
+[[ -z "$LATEST_VERSION" ]] && LATEST_VERSION="0.0.0"
 
-if [[ -f ".darkflow" ]]; then
-  INSTALLED_VERSION=$(read_config version "0.0.0")
-  LATEST_VERSION=$(fetch_raw "VERSION" | tr -d '[:space:]')
-  [[ -z "$LATEST_VERSION" ]] && LATEST_VERSION="$INSTALLED_VERSION"
-
-  if [[ "$INSTALLED_VERSION" == "$LATEST_VERSION" && "$FORCE" != true ]]; then
-    MODE=verify
-  else
-    MODE=update
-  fi
-else
-  LATEST_VERSION=$(fetch_raw "VERSION" | tr -d '[:space:]')
-  [[ -z "$LATEST_VERSION" ]] && LATEST_VERSION="0.0.0"
-fi
-
-# ── Verify mode: already up to date — quick exit ─────────────────────────────
-
-if [[ "$MODE" == "verify" ]]; then
-  echo ""
-  success "Dark Flow already up to date (${INSTALLED_VERSION})"
-  dim "Run with --force to re-apply all templates."
-  echo ""
-  _webapp_url=$(read_config webapp_url "")
-  if [[ -n "$_webapp_url" && -x "${GLOBAL_DIR}/darkflow-run.sh" ]]; then
-    bash "${GLOBAL_DIR}/darkflow-run.sh" --sync >/dev/null 2>&1 && \
-      success "Synced project to web UI (${_webapp_url})" || true
-  fi
-  exit 0
+# A project is "installed" when it's already registered in the Web UI, or it still
+# carries the scaffolding marker from a previous install. There is no per-project
+# version anymore (it's machine-global), so re-applying templates is idempotent —
+# we always run a full update rather than a version-compare quick-exit.
+if project_registered || [[ -f ".darkflow.d/claude.md" ]]; then
+  MODE=update
 fi
 
 # ── Read existing config (update mode only) ───────────────────────────────────
@@ -915,7 +1012,7 @@ HEREDOC
   [[ "$MOD_CI_GATE"    == true ]] && echo "- **CI gate** (GitHub Actions, on push) — failing lint/test → auto-filed \`source:ci\` issue"
   [[ "$MOD_CI_GATE"    == true ]] && echo "- **Fix CI issue** (Every 15 min) — \`/darkflow:fix-ci-issue\` picks up a \`source:ci\` issue, pushes a fix; retries up to 3x, then escalates to \`needs-human\`"
   echo ""
-  echo "Schedule: \`.darkflow.d/routines.yml\`  |  Worker: one global \`~/.darkflow/darkflow-run.sh\` services every project"
+  echo "Schedule: managed in the Web UI (Settings → Routine schedule)  |  Worker: one global \`~/.darkflow/darkflow-run.sh\` services every project"
   echo "Run any routine manually (from this project dir): \`~/.darkflow/darkflow-run.sh <name>\`"
   echo "List status (from this project dir): \`~/.darkflow/darkflow-run.sh --list\`"
   echo ""
@@ -1258,16 +1355,11 @@ smart_update_template ".github/ISSUE_TEMPLATE/recommendation.yml" \
 
 [[ "$DRY_RUN" == false && -f "docs/README.md" ]] && inject_name "docs/README.md"
 
-# Slash commands + the worker itself are installed once into user/home scope by
-# global_bootstrap (below) — not copied per project anymore. The project keeps
-# only its own operational files: get-config.sh, mailbox scripts, ci-gate workflow.
-smart_update_template "darkflow/get-config.sh"          ".darkflow.d/get-config.sh"          "true"
-
-if [[ "$MOD_MAILBOX" == true ]]; then
-  smart_update_template "darkflow/mailbox/fetch.py" ".darkflow.d/mailbox/fetch.py" "true"
-  smart_update_template "darkflow/mailbox/send.py"  ".darkflow.d/mailbox/send.py"  "true"
-fi
-
+# The worker, slash commands, the config fetcher (get-config.sh) and the mailbox
+# scripts are all installed once into ~/.darkflow/ + user scope by global_bootstrap
+# (below) — projects no longer carry any operational scripts. The only per-project
+# files Dark Flow writes are docs scaffolding, the CLAUDE.md include, and (opt-in)
+# the CI-gate workflow.
 if [[ "$MOD_CI_GATE" == true ]]; then
   make_dir ".github/workflows"
   smart_update_template ".github/workflows/darkflow-ci-gate.yml" ".github/workflows/darkflow-ci-gate.yml"
@@ -1277,62 +1369,26 @@ fi
 # clean up any legacy per-project worker/command copies left by older installs.
 global_bootstrap
 
-# ── 3. Config (.darkflow) ─────────────────────────────────────────────────────
+# ── 3. Register project (Web UI = source of truth) ────────────────────────────
 
 header "3/4  Config"
 
 if [[ "$DRY_RUN" == false ]]; then
-  if [[ "$MODE" == "fresh" ]]; then
-    _local_mods=""
-    [[ "$MOD_ANALYTICS"     == true ]] && _local_mods="${_local_mods}analytics,"
-    [[ "$MOD_OBSERVABILITY" == true ]] && _local_mods="${_local_mods}observability,"
-    [[ "$MOD_GSC"           == true ]] && _local_mods="${_local_mods}gsc,"
-    [[ "$MOD_ADS"           == true ]] && _local_mods="${_local_mods}ads,"
-    [[ "$MOD_COOLIFY"       == true ]] && _local_mods="${_local_mods}coolify,"
-    [[ "$MOD_CLAUDE_UPDATE" == true ]] && _local_mods="${_local_mods}claude-update,"
-    [[ "$MOD_ARCH_REVIEW"   == true ]] && _local_mods="${_local_mods}arch-review,"
-    [[ "$MOD_MAILBOX"       == true ]] && _local_mods="${_local_mods}mailbox,"
-    [[ "$MOD_DOCS_AUDIT"        == true ]] && _local_mods="${_local_mods}docs-audit,"
-    [[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && _local_mods="${_local_mods}product-overview,"
-    [[ "$MOD_IMPECCABLE"        == true ]] && _local_mods="${_local_mods}impeccable,"
-    [[ "$MOD_FALLOW"            == true ]] && _local_mods="${_local_mods}fallow,"
-    [[ "$MOD_CI_GATE"           == true ]] && _local_mods="${_local_mods}ci-gate,"
-    {
-      echo "# Dark Flow project config — managed by install.sh"
-      echo "version=${LATEST_VERSION}"
-      echo "installed=$(date -u +%Y-%m-%d)"
-      echo "language=${LANGUAGE}"
-      echo "branch=${MAIN_BRANCH}"
-      echo "merge_strategy=${MERGE_STRATEGY}"
-      echo "modules=${_local_mods%,}"
-      [[ -n "$OBS_TOOL"           ]] && echo "obs_tool=${OBS_TOOL}"
-      [[ -n "$OBS_URL"            ]] && echo "obs_url=${OBS_URL}"
-      [[ -n "$POSTHOG_PROJECT_ID" ]] && echo "posthog_project_id=${POSTHOG_PROJECT_ID}"
-      echo "slug=${SLUG}"
-      echo "name=${PROJECT_NAME}"
-      echo "webapp_url=${WEBAPP_URL}"
-      echo "max_concurrent=3"
-    } > .darkflow
-    success "Created .darkflow (v${LATEST_VERSION})"
-  else
-    # Update version/date; append any missing keys
-    if [[ "$(uname)" == "Darwin" ]]; then
-      sed -i '' "s/^version=.*/version=${LATEST_VERSION}/" .darkflow
-      sed -i '' "s/^installed=.*/installed=$(date -u +%Y-%m-%d)/" .darkflow
-    else
-      sed -i "s/^version=.*/version=${LATEST_VERSION}/" .darkflow
-      sed -i "s/^installed=.*/installed=$(date -u +%Y-%m-%d)/" .darkflow
-    fi
-    grep -q "^version="    .darkflow || echo "version=${LATEST_VERSION}" >> .darkflow
-    grep -q "^slug="       .darkflow || echo "slug=${SLUG}"            >> .darkflow
-    grep -q "^name="       .darkflow || echo "name=${PROJECT_NAME}"    >> .darkflow
-    grep -q "^webapp_url=" .darkflow || echo "webapp_url=${WEBAPP_URL}" >> .darkflow
-    [[ -n "$POSTHOG_PROJECT_ID" ]] && { grep -q "^posthog_project_id=" .darkflow && \
-      { [[ "$(uname)" == "Darwin" ]] && sed -i '' "s/^posthog_project_id=.*/posthog_project_id=${POSTHOG_PROJECT_ID}/" .darkflow || \
-        sed -i "s/^posthog_project_id=.*/posthog_project_id=${POSTHOG_PROJECT_ID}/" .darkflow; } || \
-      echo "posthog_project_id=${POSTHOG_PROJECT_ID}" >> .darkflow; }
-    success "Updated .darkflow to v${LATEST_VERSION}"
-  fi
+  _local_mods=""
+  [[ "$MOD_ANALYTICS"     == true ]] && _local_mods="${_local_mods}analytics,"
+  [[ "$MOD_OBSERVABILITY" == true ]] && _local_mods="${_local_mods}observability,"
+  [[ "$MOD_GSC"           == true ]] && _local_mods="${_local_mods}gsc,"
+  [[ "$MOD_ADS"           == true ]] && _local_mods="${_local_mods}ads,"
+  [[ "$MOD_COOLIFY"       == true ]] && _local_mods="${_local_mods}coolify,"
+  [[ "$MOD_CLAUDE_UPDATE" == true ]] && _local_mods="${_local_mods}claude-update,"
+  [[ "$MOD_ARCH_REVIEW"   == true ]] && _local_mods="${_local_mods}arch-review,"
+  [[ "$MOD_MAILBOX"       == true ]] && _local_mods="${_local_mods}mailbox,"
+  [[ "$MOD_DOCS_AUDIT"        == true ]] && _local_mods="${_local_mods}docs-audit,"
+  [[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && _local_mods="${_local_mods}product-overview,"
+  [[ "$MOD_IMPECCABLE"        == true ]] && _local_mods="${_local_mods}impeccable,"
+  [[ "$MOD_FALLOW"            == true ]] && _local_mods="${_local_mods}fallow,"
+  [[ "$MOD_CI_GATE"           == true ]] && _local_mods="${_local_mods}ci-gate,"
+  register_project "${_local_mods%,}"
 
   # Integration credentials — always live in the project's main .env. We append
   # only the keys that aren't already there, so re-runs never clobber values the
@@ -1376,215 +1432,6 @@ if [[ "$DRY_RUN" == false ]]; then
   done
 fi
 
-# ── 4. routines.yml ───────────────────────────────────────────────────────────
-
-if [[ ! -f ".darkflow.d/routines.yml" || "$FORCE" == true ]]; then
-  if [[ "$DRY_RUN" == false ]]; then
-    {
-      cat << 'YAML'
-# Dark Flow routine schedule — generated by install.sh. Safe to edit after installation.
-# A single global worker (~/.darkflow/darkflow-run.sh) reads this for every project.
-# Run a routine manually (from this project dir):   ~/.darkflow/darkflow-run.sh <name>
-# List routines and status (from this project dir): ~/.darkflow/darkflow-run.sh --list
-defaults:
-  model: sonnet
-  engine: claude
-  permission_mode: bypassPermissions
-
-routines:
-  fix-issues:
-    cron: "0 * * * *"
-    model: sonnet
-    engine: claude
-    enabled: true
-YAML
-
-      [[ "$MOD_ANALYTICS" == true ]] && cat << 'YAML'
-
-  analytics-review:
-    cron: "0 8 * * *"
-    model: sonnet
-    engine: claude
-    enabled: true
-YAML
-
-      [[ "$MOD_OBSERVABILITY" == true ]] && cat << 'YAML'
-
-  observability-check:
-    cron: "30 8 * * *"
-    model: sonnet
-    engine: claude
-    enabled: true
-YAML
-
-      [[ "$MOD_GSC" == true ]] && cat << 'YAML'
-
-  gsc-check:
-    cron: "0 8 * * 1"
-    model: sonnet
-    engine: claude
-    enabled: true
-YAML
-
-      [[ "$MOD_ADS" == true ]] && cat << 'YAML'
-
-  ads-review:
-    cron: "0 8 * * 1"
-    model: sonnet
-    engine: claude
-    enabled: true
-YAML
-
-      [[ "$MOD_COOLIFY" == true ]] && cat << 'YAML'
-
-  coolify-check-deployment:
-    cron: "0 9 * * *"
-    model: sonnet
-    engine: claude
-    enabled: true
-YAML
-
-      [[ "$MOD_CLAUDE_UPDATE" == true ]] && cat << 'YAML'
-
-  claude-md-update:
-    cron: "0 9 * * 1-5"
-    model: sonnet
-    engine: claude
-    enabled: true
-YAML
-
-      [[ "$MOD_ARCH_REVIEW" == true ]] && cat << 'YAML'
-
-  architecture-review:
-    cron: "0 2 * * 0"
-    model: opus
-    engine: claude
-    enabled: true
-YAML
-
-      [[ "$MOD_FALLOW" == true ]] && cat << 'YAML'
-
-  code-health:
-    cron: "0 7 * * 0"
-    model: sonnet
-    engine: claude
-    enabled: true
-YAML
-
-      [[ "$MOD_DOCS_AUDIT" == true ]] && cat << 'YAML'
-
-  docs-audit:
-    cron: "0 5 * * 0"
-    model: opus
-    engine: claude
-    enabled: true
-YAML
-
-      [[ "$MOD_PRODUCT_OVERVIEW" == true ]] && cat << 'YAML'
-
-  product-overview:
-    cron: "0 7 * * 1"
-    model: opus
-    engine: claude
-    enabled: true
-YAML
-
-      [[ "$MOD_IMPECCABLE" == true ]] && cat << 'YAML'
-
-  design-audit:
-    cron: "0 10 * * 6"
-    model: opus
-    engine: claude
-    enabled: true
-
-  design-critique:
-    cron: "0 11 * * 6"
-    model: opus
-    engine: claude
-    enabled: true
-
-  design-harden:
-    cron: "0 10 1 * *"
-    model: opus
-    engine: claude
-    enabled: true
-YAML
-
-      [[ "$MOD_MAILBOX" == true ]] && cat << 'YAML'
-
-  mailbox-check:
-    cron: "0 * * * *"
-    model: sonnet
-    engine: claude
-    enabled: true
-YAML
-
-      [[ "$MOD_CI_GATE" == true ]] && cat << 'YAML'
-
-  fix-ci-issue:
-    cron: "*/15 * * * *"
-    model: sonnet
-    engine: claude
-    enabled: true
-YAML
-
-      cat << 'YAML'
-
-  security-audit:
-    cron: "0 3 * * 0"
-    model: opus
-    engine: claude
-    enabled: true
-
-  build-optimization:
-    cron: "0 4 * * 0"
-    model: opus
-    engine: claude
-    enabled: true
-
-  uptime-check:
-    cron: "0 */4 * * *"
-    model: sonnet
-    engine: claude
-    enabled: true
-
-  vulnerability-check:
-    cron: "0 6 * * *"
-    model: sonnet
-    engine: claude
-    enabled: true
-YAML
-
-      echo ""
-    } > ".darkflow.d/routines.yml"
-
-    # Stagger routine minutes per-project so independent projects don't all
-    # dispatch on the same minute (e.g. every fix-issues at :00) and saturate
-    # the global concurrency semaphore. Offset is deterministic from the slug,
-    # so the same project always lands on the same minute; relative spacing
-    # between a project's own routines is preserved.
-    _cron_offset=$(( $(printf '%s' "$SLUG" | cksum | cut -d' ' -f1) % 60 ))
-    _stagger_tmp=$(mktemp)
-    awk -v off="$_cron_offset" '
-      /^[[:space:]]+cron:[[:space:]]*"/ && match($0, /"[^"]*"/) {
-        q = substr($0, RSTART + 1, RLENGTH - 2)
-        n = split(q, f, " ")
-        if (f[1] ~ /^[0-9]+$/) {
-          f[1] = (f[1] + off) % 60
-          nq = f[1]; for (i = 2; i <= n; i++) nq = nq " " f[i]
-          sub(/"[^"]*"/, "\"" nq "\"", $0)
-        }
-      }
-      { print }
-    ' ".darkflow.d/routines.yml" > "$_stagger_tmp" && mv "$_stagger_tmp" ".darkflow.d/routines.yml"
-
-    success "Created .darkflow.d/routines.yml (minute offset +${_cron_offset})"
-  else
-    info "Would create: .darkflow.d/routines.yml"
-  fi
-else
-  skip ".darkflow.d/routines.yml (project-specific — edit manually)"
-fi
 
 # ── 5. GitHub labels, CLAUDE.md, Makefile ────────────────────────────────────
 
@@ -1678,13 +1525,13 @@ elif [[ "$MODE" == "fresh" ]]; then
   echo "  1. Fill in docs/product/ — what are you building and for whom"
   echo "  2. Fill in docs/spec/    — user flows, screens, data model"
   echo "  3. Fill in docs/design/  — tokens, components, voice and tone"
-  echo "  4. Commit: git add docs/ .github/ISSUE_TEMPLATE/ CLAUDE.md .darkflow .darkflow.d/ && git commit -m 'chore: install dark-flow'"
+  echo "  4. Commit: git add docs/ .github/ISSUE_TEMPLATE/ CLAUDE.md .darkflow.d/claude.md && git commit -m 'chore: install dark-flow'"
   echo "  5. Open ${WEBAPP_URL} in a browser — projects and issues sync automatically"
 else
   echo -e "${GREEN}${BOLD}Dark Flow updated to v${LATEST_VERSION}${RESET}"
   echo ""
   echo "Commit the changes:"
-  echo "  git add .darkflow .darkflow.d/ docs/ CLAUDE.md Makefile"
+  echo "  git add .darkflow.d/claude.md docs/ CLAUDE.md Makefile"
   echo "  git commit -m 'chore: update dark-flow to ${LATEST_VERSION}'"
 fi
 
@@ -1715,8 +1562,8 @@ echo "  vulnerability-check  0 6 * * *      GitHub Dependabot + code scanning �
 [[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-harden        0 10 1 * *     Production-readiness review (impeccable:harden) → GitHub issues"
 [[ "$MOD_CI_GATE"       == true ]] && echo "  fix-ci-issue         */15 * * * *   Picks up source:ci issue → push fix; retries up to 3x, then needs-human"
 echo ""
-echo -e "  ${DIM}Minutes shown are baselines; this project's actual cron minute is offset by"
-echo -e "  +$(( $(printf '%s' "$SLUG" | cksum | cut -d' ' -f1) % 60 )) so independent projects don't all dispatch on the same minute. See routines.yml.${RESET}"
+echo -e "  ${DIM}These are the default schedules. Enable/disable routines and override their"
+echo -e "  cron per project in the Web UI (Settings → Routine schedule).${RESET}"
 echo ""
 echo -e "  ${DIM}One global worker (~/.darkflow/darkflow-run.sh) services every project."
 echo -e "  Start it yourself (no auto-start), then it runs until you stop it:${RESET}"

@@ -6,17 +6,17 @@ All Coolify data is fetched via the official `coolify` CLI (not an MCP server). 
 
 ## Step 1 — Read project config
 
-Run `bash .darkflow.d/get-config.sh` to pull the latest project settings from the Web UI and refresh the local `.darkflow` cache (silently falls back to cache if the server is unreachable).
+Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
 
-Read `.darkflow` in the project root. Extract:
-- `coolify_app=` → Coolify app UUID for this project (optional; if missing, resolve it in Step 2)
-- `language=` → output/issue language (default: English)
+Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
+- `coolify_app` → Coolify app UUID for this project (optional; if missing, resolve it in Step 2)
+- `language` → output/issue language (default: English)
 
-If `.darkflow` is missing, continue normally.
+If `.darkflow.d/state/config.json` is missing, continue normally.
 
 ## Step 2 — Resolve the app UUID
 
-If `coolify_app=` is not set, list apps and find the UUID by name/project:
+If `coolify_app` is not set, list apps and find the UUID by name/project:
 
 ```bash
 coolify app list
@@ -40,7 +40,7 @@ coolify app deployments list APP_UUID
 
 If the latest deployment succeeded, output: `Coolify deployment OK — latest deploy succeeded.`
 
-Language for all GitHub issues and output: the `language=` value from `.darkflow`.
+Language for all GitHub issues and output: the `language` value from `.darkflow.d/state/config.json`.
 
 ## Guardrails
 

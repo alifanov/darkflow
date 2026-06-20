@@ -79,6 +79,9 @@ interface IngestBody {
   language?: string;
   mergeStrategy?: string;
   modules?: string[];
+  obsTool?: string;
+  obsUrl?: string;
+  posthogProjectId?: string;
   darkflowVersion?: string;
   issues?: IngestIssue[];
   analytics?: IngestAnalytics;
@@ -116,6 +119,9 @@ export async function POST(req: NextRequest) {
       language: body.language ?? "English",
       mergeStrategy: body.mergeStrategy ?? "pr",
       modules: body.modules ?? [],
+      obsTool: body.obsTool || null,
+      obsUrl: body.obsUrl || null,
+      posthogProjectId: body.posthogProjectId || null,
       darkflowVersion: body.darkflowVersion || null,
       lastSyncedAt: new Date(),
     },

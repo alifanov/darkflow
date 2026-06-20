@@ -2,13 +2,13 @@ Scan the current codebase state and recent session history to regenerate CLAUDE.
 
 ## Step 1 — Read project config
 
-Run `bash .darkflow.d/get-config.sh` to pull the latest project settings from the Web UI and refresh the local `.darkflow` cache (silently falls back to cache if the server is unreachable).
+Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
 
-Read `.darkflow` in the project root. Extract:
-- `branch=` → main branch name for push (default: main)
-- `language=` → output language (default: English)
+Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
+- `branch` → main branch name for push (default: main)
+- `language` → output language (default: English)
 
-If `.darkflow` is missing or has no `<!-- darkflow:start -->` marker in `CLAUDE.md`, skip the run without committing — leave no comment.
+If `.darkflow.d/state/config.json` is missing or has no `<!-- darkflow:start -->` marker in `CLAUDE.md`, skip the run without committing — leave no comment.
 
 ## Step 2 — Check if update is needed
 
@@ -70,7 +70,7 @@ Rules:
 - Keep CLAUDE.md under 300 lines — summarise, don't enumerate
 - All documented commands must be copy-paste ready
 
-Language for all user-facing output: the `language=` value from `.darkflow`.
+Language for all user-facing output: the `language` value from `.darkflow.d/state/config.json`.
 
 ## Step 6 — Commit and push
 

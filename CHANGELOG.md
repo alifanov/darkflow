@@ -14,6 +14,40 @@ Categories:
 
 ---
 
+## [3.4.0] — 2026-06-20
+
+Centralized config — phase 3 (installer). The installer no longer scaffolds any
+per-project operational files. A project is registered in the Web UI (DB) and owns
+only its docs scaffolding, the `CLAUDE.md` include, the Makefile block, and (opt-in)
+the CI-gate workflow.
+
+- **Installer** — stopped writing `.darkflow`, `.darkflow.d/routines.yml`, the
+  per-project `get-config.sh`, and the per-project mailbox scripts. Projects are now
+  registered via a `POST /api/ingest` (`register_project`); settings + routine
+  schedule live in the DB thereafter. Mode detection keys off DB registration /
+  scaffolding instead of `.darkflow`; the version-compare "verify" quick-exit is gone
+  (re-applying templates is idempotent).
+- **Installer** — `get-config.sh` and the mailbox scripts are installed once into
+  `~/.darkflow/` by `global_bootstrap` (`install_global_helpers`). `read_config` now
+  reads project settings from the Web UI, not a local file.
+- **Installer** — `cleanup_legacy_project_files` now also removes the obsolete
+  `.darkflow`, `.darkflow.d/routines.yml`, `.darkflow.d/get-config.sh`, and
+  `.darkflow.d/mailbox/` from existing projects on the next install/update (the
+  config already lives in the DB). `.darkflow.d/` stays as the runtime dir.
+- **get-config.sh** — rewritten as a global helper that fetches the project's config
+  from `/api/projects/by-repo` into `.darkflow.d/state/config.json`.
+- **Slash commands** — every command's "Step 1 — Read project config" now runs
+  `~/.darkflow/get-config.sh` and reads `.darkflow.d/state/config.json` (JSON) instead
+  of the removed `.darkflow` cache. Mailbox commands call `~/.darkflow/mailbox/*`.
+- **checklist.yml** — dropped the per-project `.darkflow` config-keys, `routines.yml`
+  routine entries, `get-config.sh`, and mailbox entries. Routines + settings are no
+  longer checklisted; new routines auto-propagate via `webapp/src/lib/routines.ts`.
+- **Webapp** — `/api/ingest` create now persists `obsTool` / `obsUrl` /
+  `posthogProjectId` so install-time integration settings reach the DB.
+- Removed the obsolete `templates/darkflow/routines.yml`.
+
+Webapp change — rebuild + restart the host process: `cd webapp && pnpm build && PORT=5555 pnpm start`.
+
 ## [3.3.0] — 2026-06-20
 
 Centralized config — phase 2 (web UI). The dashboard now shows **one** global worker

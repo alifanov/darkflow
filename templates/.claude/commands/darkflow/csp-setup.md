@@ -10,7 +10,7 @@ Two requirements for any reporting to work:
 
 ## Step 1 — Read project config
 
-Run `bash .darkflow.d/get-config.sh` to refresh local settings, then read `.darkflow`. Extract `language=` (default: English) for any output.
+Run `bash ~/.darkflow/get-config.sh` to refresh the project config, then read `.darkflow.d/state/config.json` (JSON). Extract `language` (default: English) for any output.
 
 ## Step 2 — Map the project
 

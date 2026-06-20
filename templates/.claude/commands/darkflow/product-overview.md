@@ -4,12 +4,12 @@ It consolidates signals that already exist (docs, git history, issues, insight s
 
 ## Step 1 — Read project config
 
-Run `bash .darkflow.d/get-config.sh` to pull the latest project settings from the Web UI and refresh the local `.darkflow` cache (silently falls back to cache if the server is unreachable).
+Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
 
-Read `.darkflow` in the project root. Extract:
-- `language=` → output language (default: English)
+Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
+- `language` → output language (default: English)
 
-If `.darkflow` is missing, continue with the default.
+If `.darkflow.d/state/config.json` is missing, continue with the default.
 
 ## Step 2 — Gather the inputs
 

@@ -2,14 +2,14 @@ Pick up one status:approved GitHub issue, implement the fix, and close it.
 
 ## Step 1 — Read project config
 
-Run `bash .darkflow.d/get-config.sh` to pull the latest project settings from the Web UI and refresh the local `.darkflow` cache (silently falls back to cache if the server is unreachable).
+Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
 
-Read `.darkflow` in the project root. Extract:
-- `branch=` → main branch name (default: main)
-- `merge_strategy=` → `pr` or `direct` (default: pr)
-- `language=` → output/issue language (default: English)
+Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
+- `branch` → main branch name (default: main)
+- `mergeStrategy` → `pr` or `direct` (default: pr)
+- `language` → output/issue language (default: English)
 
-If `.darkflow` is missing, continue with the defaults.
+If `.darkflow.d/state/config.json` is missing, continue with the defaults.
 
 ## Step 2 — Pick the next issue
 
@@ -65,7 +65,7 @@ Read the title, body, and all comments carefully. If the issue references other 
 
 Implement all the changes needed for it.
 
-**Product language is always English.** The `language=` setting is the *communication* language (issues, comments, commits, chat) — it never changes what you write inside the product. All source code, identifiers, code comments, UI copy, user-facing strings, and logs you add must be in English, even when `language=` is set to something else.
+**Product language is always English.** The `language` setting is the *communication* language (issues, comments, commits, chat) — it never changes what you write inside the product. All source code, identifiers, code comments, UI copy, user-facing strings, and logs you add must be in English, even when `language` is set to something else.
 
 **Before merging or pushing — run quality checks:**
 
@@ -80,7 +80,7 @@ Detect the project's tech stack and run all available checks. Stop at the first 
 | Go | `go vet ./...` → `go test ./...` → `go build ./...` |
 | Other | Check for `Makefile` targets `lint`, `test`, `build` and run those that exist |
 
-**Skip the `build` step when the CI gate is active.** If `.darkflow`'s `modules=` includes `ci-gate` (or `.github/workflows/darkflow-ci-gate.yml` exists), do **not** run `build` locally — the CI gate verifies the build on push/PR. Still run `lint` and `test`.
+**Skip the `build` step when the CI gate is active.** If `.darkflow.d/state/config.json`'s `modules` includes `ci-gate` (or `.github/workflows/darkflow-ci-gate.yml` exists), do **not** run `build` locally — the CI gate verifies the build on push/PR. Still run `lint` and `test`.
 
 **If the fix requires human intervention** (examples: missing environment variable, external credentials, third-party service setup, infrastructure change, secret rotation, manual config change that the agent cannot perform):
 - Do NOT attempt the fix
@@ -113,13 +113,13 @@ Skip this step if the fix is purely internal (refactor, test, build config) with
 Always work in the project root on the configured base branch — never run `git worktree add` or check work out into a separate directory. The dispatcher runs you in `cwd = project root`; keep it that way. If the PR strategy needs a feature branch, create it **in place** with `git checkout -b <branch>` on top of the configured base branch, then switch back when done — do not spin up a worktree.
 
 **Branch rule — never cherry-pick to main/master on your own:**
-The base branch is the `branch=` value from `.darkflow` (it may be `main`, `master`, `dev`, `develop`, or anything else — always read it from config, never assume `main`). If it is a non-main/non-master branch, land the fix **only** on that branch. Do NOT cherry-pick, merge, or push to `main` or `master` independently — that is a human decision. Leave the fix in the configured branch and close the issue.
+The base branch is the `branch` value from `.darkflow.d/state/config.json` (it may be `main`, `master`, `dev`, `develop`, or anything else — always read it from config, never assume `main`). If it is a non-main/non-master branch, land the fix **only** on that branch. Do NOT cherry-pick, merge, or push to `main` or `master` independently — that is a human decision. Leave the fix in the configured branch and close the issue.
 
 **If `merge_strategy=pr`:**
-From the project root, create a feature branch in place with `git checkout -b` based off the `branch=` value from `.darkflow`, implement and commit there, then open a pull request targeting `branch=` with `Closes #N` in the description and merge it into that branch. No worktree — the branch lives in the same working directory.
+From the project root, create a feature branch in place with `git checkout -b` based off the `branch` value from `.darkflow.d/state/config.json`, implement and commit there, then open a pull request targeting `branch` with `Closes #N` in the description and merge it into that branch. No worktree — the branch lives in the same working directory.
 
 **If `merge_strategy=direct`:**
-Commit and push directly to the `branch=` value from `.darkflow`.
+Commit and push directly to the `branch` value from `.darkflow.d/state/config.json`.
 
 After landing, leave a comment on the issue with a brief summary of what was done:
 - What was broken or missing
@@ -128,5 +128,5 @@ After landing, leave a comment on the issue with a brief summary of what was don
 
 Then close the issue.
 
-Language for GitHub comments and output: the `language=` value from `.darkflow`. Code and everything shipped inside the product stays in English regardless of this value.
+Language for GitHub comments and output: the `language` value from `.darkflow.d/state/config.json`. Code and everything shipped inside the product stays in English regardless of this value.
 

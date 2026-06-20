@@ -2,12 +2,12 @@ Run an architectural analysis of the codebase and create status:proposed GitHub 
 
 ## Step 1 — Read project config
 
-Run `bash .darkflow.d/get-config.sh` to pull the latest project settings from the Web UI and refresh the local `.darkflow` cache (silently falls back to cache if the server is unreachable).
+Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
 
-Read `.darkflow` in the project root. Extract:
-- `language=` → output/issue language (default: English)
+Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
+- `language` → output/issue language (default: English)
 
-If `.darkflow` is missing, continue with the default.
+If `.darkflow.d/state/config.json` is missing, continue with the default.
 
 ## Step 2 — Do the work
 
@@ -18,7 +18,7 @@ After the review is complete, create a GitHub issue for each significant finding
 - Focus on actionable improvements, not style preferences
 - Do not create issues for findings already tracked in open GitHub issues
 
-Language for all GitHub issues and output: the `language=` value from `.darkflow`.
+Language for all GitHub issues and output: the `language` value from `.darkflow.d/state/config.json`.
 
 ## Step 3 — After completing
 

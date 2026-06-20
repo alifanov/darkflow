@@ -6,17 +6,17 @@ This is an **active health check**: when the site is healthy it does nothing but
 
 ## Step 1 — Read project config
 
-Run `bash .darkflow.d/get-config.sh` to pull the latest project settings from the Web UI and refresh the local `.darkflow` cache (silently falls back to cache if the server is unreachable).
+Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
 
-Read `.darkflow` in the project root. Extract:
-- `site_url=` → the public production URL to monitor (e.g. `https://example.com`)
-- `language=` → output/issue language (default: English)
+Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
+- `domain` → the public production URL to monitor (e.g. `https://example.com`)
+- `language` → output/issue language (default: English)
 
-If `.darkflow` is missing, continue with defaults.
+If `.darkflow.d/state/config.json` is missing, continue with defaults.
 
 ## Step 2 — Resolve the URL to check
 
-If `site_url=` is set, use it. Otherwise, auto-discover the production URL from the project (first match wins):
+If `domain` is set, use it. Otherwise, auto-discover the production URL from the project (first match wins):
 
 - Coolify: `coolify app list` then the app's FQDN/domain (if the `coolify` CLI is configured)
 - `vercel.json` / `.vercel/project.json` production domain
@@ -100,7 +100,7 @@ Otherwise create the issue **auto-approved** so `fix-issues` acts immediately:
 
 Security-style auto-approval applies: a down production site is an emergency. `fix-issues` runs its normal quality checks and escalates to `needs-human` if the fix requires secret rotation or infrastructure changes it can't perform.
 
-Language for all GitHub issues and output: the `language=` value from `.darkflow`.
+Language for all GitHub issues and output: the `language` value from `.darkflow.d/state/config.json`.
 
 ## Step 5 — Write snapshot and metrics
 

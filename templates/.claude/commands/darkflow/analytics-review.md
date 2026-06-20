@@ -2,19 +2,19 @@ Review analytics and recent commits, then create status:proposed GitHub issues.
 
 ## Step 1 — Read project config
 
-Run `bash .darkflow.d/get-config.sh` to pull the latest project settings from the Web UI and refresh the local `.darkflow` cache (silently falls back to cache if the server is unreachable).
+Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
 
-Read `.darkflow` in the project root. Extract:
-- `language=` → output/issue language (default: English)
-- `posthog_project_id=` → PostHog project to query (if set)
+Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
+- `language` → output/issue language (default: English)
+- `posthogProjectId` → PostHog project to query (if set)
 
-If `.darkflow` is missing, continue with the defaults.
+If `.darkflow.d/state/config.json` is missing, continue with the defaults.
 
 **If `posthog_project_id` is set:** switch the PostHog MCP to that project now — before any queries — using the `switch-project` tool.
 
 <!-- Note: the detection block below (name-match → write ID) is mirrored in self-update.md Step 3. Keep both in sync when modifying. -->
 
-**If `posthog_project_id` is NOT set:** use the PostHog MCP to list all available projects. Find the one whose name best matches the `name=` value from `.darkflow` (case-insensitive, partial match is fine). Switch to that project. Then persist the discovered ID back into `.darkflow`:
+**If `posthog_project_id` is NOT set:** use the PostHog MCP to list all available projects. Find the one whose name best matches the `name` value from `.darkflow.d/state/config.json` (case-insensitive, partial match is fine). Switch to that project. Then persist the discovered ID back into `.darkflow.d/state/config.json`:
 
 ```bash
 # on macOS
@@ -57,7 +57,7 @@ Do NOT create PostHog alerts, insights, dashboards, or any other PostHog artifac
 
 Write an analytics snapshot to `docs/insights/analytics/YYYY-MM-DD.md` before posting recommendations.
 
-Language for all GitHub issues and output: the `language=` value from `.darkflow`.
+Language for all GitHub issues and output: the `language` value from `.darkflow.d/state/config.json`.
 
 ## Step 3 — After completing
 

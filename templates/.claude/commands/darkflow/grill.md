@@ -4,7 +4,7 @@ This command is **interactive** — it asks questions and waits for your answers
 
 ## Step 0 — Read project config
 
-Run `bash .darkflow.d/get-config.sh` to refresh the local `.darkflow` cache, then read `.darkflow` and extract `language=` (default: English). Conduct the whole session in that language.
+Run `bash ~/.darkflow/get-config.sh` to refresh the project config at `.darkflow.d/state/config.json`, then read `.darkflow.d/state/config.json` (JSON) and extract `language` (default: English). Conduct the whole session in that language.
 
 ## The two documents this command maintains
 

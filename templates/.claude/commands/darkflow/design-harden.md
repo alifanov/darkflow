@@ -2,12 +2,12 @@ Run a production-readiness check on the interface — edge cases, i18n, error st
 
 ## Step 1 — Read project config
 
-Run `bash .darkflow.d/get-config.sh` to pull the latest project settings from the Web UI and refresh the local `.darkflow` cache (silently falls back to cache if the server is unreachable).
+Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
 
-Read `.darkflow` in the project root. Extract:
-- `language=` → output/issue language (default: English)
+Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
+- `language` → output/issue language (default: English)
 
-If `.darkflow` is missing, continue with defaults.
+If `.darkflow.d/state/config.json` is missing, continue with defaults.
 
 ## Step 2 — Do the work
 
@@ -36,7 +36,7 @@ After the hardening review is complete, create a GitHub issue for each gap found
   - [ ] <verifiable outcome 2 if needed>
   ```
 
-Language for all GitHub issues and output: the `language=` value from `.darkflow`.
+Language for all GitHub issues and output: the `language` value from `.darkflow.d/state/config.json`.
 
 ## Step 3 — Write snapshot
 

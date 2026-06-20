@@ -4,12 +4,12 @@ Check the project's IMAP inbox for new messages, create GitHub issues from them,
 
 ## Step 1 — Read config
 
-Run `bash .darkflow.d/get-config.sh` to pull the latest project settings from the Web UI and refresh the local `.darkflow` cache (silently falls back to cache if the server is unreachable).
+Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
 
-Read `.darkflow` in the project root. Extract:
-- `language=` → output/issue language (default: English)
-- `branch=` → main branch name
-- `merge_strategy=` → `pr` or `direct`
+Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
+- `language` → output/issue language (default: English)
+- `branch` → main branch name
+- `mergeStrategy` → `pr` or `direct`
 
 Load mailbox credentials from `.env` (the project's main env; `.env.darkflow` is a legacy fallback):
 ```bash
@@ -36,7 +36,7 @@ For each such issue:
    - **Subject** — `Re: ` + original subject from `Subject:` field
    - **Message-ID** — value of `Message-ID:` field for threading
 
-2. Check if there are any human comments on the issue. If yes — include them as the reply body context (the human may have added instructions or draft text). If not — write a polite, short acknowledgement in `language=` that the message was received and is being handled.
+2. Check if there are any human comments on the issue. If yes — include them as the reply body context (the human may have added instructions or draft text). If not — write a polite, short acknowledgement in `language` that the message was received and is being handled.
 
 3. Write the reply body to a temp file:
    ```bash
@@ -47,7 +47,7 @@ For each such issue:
 
 4. Send the reply:
    ```bash
-   python3 .darkflow.d/mailbox/send.py \
+   python3 ~/.darkflow/mailbox/send.py \
      --to "<From address from issue>" \
      --subject "Re: <original subject>" \
      --in-reply-to "<message-id from issue>" \
@@ -65,7 +65,7 @@ For each such issue:
 ## Step 3 — Fetch new mail
 
 ```bash
-python3 .darkflow.d/mailbox/fetch.py
+python3 ~/.darkflow/mailbox/fetch.py
 ```
 
 The script prints a JSON array of unseen messages to stdout. Each element:
@@ -115,16 +115,16 @@ EOF
 )"
 ```
 
-**Title format** — rewrite to be action-oriented in `language=`:
+**Title format** — rewrite to be action-oriented in `language`:
 - For support requests: "Reply to <sender name>: <their subject>"
 - For bug reports: "Fix: <what is broken> (reported by <sender name>)"
 - For feature requests: "Evaluate: <request summary> (from <sender name>)"
 
 **After successful `gh issue create`** — mark the message as Seen in the mailbox:
 ```bash
-python3 .darkflow.d/mailbox/fetch.py --mark-seen <uid>
+python3 ~/.darkflow/mailbox/fetch.py --mark-seen <uid>
 ```
 
 If `gh issue create` fails for a message — do NOT mark it as Seen (it will be re-fetched next run). Log the error and continue.
 
-Language for all GitHub issues, comments, and reply emails: the `language=` value from `.darkflow`.
+Language for all GitHub issues, comments, and reply emails: the `language` value from `.darkflow.d/state/config.json`.

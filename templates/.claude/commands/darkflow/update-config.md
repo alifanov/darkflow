@@ -11,13 +11,13 @@ Update Dark Flow project settings: language and/or main branch.
 
 ## Step 1 — Read current settings
 
-Run `bash .darkflow.d/get-config.sh` to pull the latest project settings from the Web UI and refresh the local `.darkflow` cache (silently falls back to cache if the server is unreachable).
+Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
 
-Read `.darkflow` from the project root. Extract `language=` and `branch=` values. If the file is missing, abort with an error.
+Read `.darkflow.d/state/config.json` from the project root. Extract `language` and `branch` values. If the file is missing, abort with an error.
 
 ## Step 2 — Determine new values
 
-Parse any `lang=` and `branch=` arguments passed to the command.
+Parse any `lang` and `branch` arguments passed to the command.
 
 For any value **not** provided as an argument, ask the user interactively:
 - **Language**: current value shown as default; accept free text (e.g. English, Russian, Spanish)
@@ -25,9 +25,9 @@ For any value **not** provided as an argument, ask the user interactively:
 
 If the user presses Enter without input, keep the current value unchanged.
 
-## Step 3 — Update `.darkflow`
+## Step 3 — Update `.darkflow.d/state/config.json`
 
-For each changed value, update the corresponding key in `.darkflow` in-place:
+For each changed value, update the corresponding key in `.darkflow.d/state/config.json` in-place:
 
 ```bash
 # macOS
@@ -65,7 +65,7 @@ git commit -m "chore: update darkflow config (lang=<NEW_LANG>, branch=<NEW_BRANC
 git push
 ```
 
-Only include values that actually changed in the commit message. Note: `.darkflow` is gitignored and must not be staged — only `.darkflow.d/claude.md` is tracked.
+Only include values that actually changed in the commit message. Note: `.darkflow.d/state/config.json` is gitignored and must not be staged — only `.darkflow.d/claude.md` is tracked.
 
 ## Step 6 — Report
 

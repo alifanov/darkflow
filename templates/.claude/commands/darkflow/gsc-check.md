@@ -6,13 +6,13 @@ This routine has two halves:
 
 ## Step 1 — Read project config
 
-Run `bash .darkflow.d/get-config.sh` to pull the latest project settings from the Web UI and refresh the local `.darkflow` cache (silently falls back to cache if the server is unreachable).
+Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
 
-Read `.darkflow` in the project root. Extract:
-- `language=` → output/issue language (default: English)
-- `site_url=` → the public production URL (used for live-page SEO checks)
+Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
+- `language` → output/issue language (default: English)
+- `domain` → the public production URL (used for live-page SEO checks)
 
-If `.darkflow` is missing, continue with the defaults. If `site_url=` is absent, try to auto-discover the production URL (Coolify FQDN, `vercel.json`/`.vercel/project.json`, `netlify.toml`, `CNAME`); if none is found, skip the live-page checks and audit the codebase only.
+If `.darkflow.d/state/config.json` is missing, continue with the defaults. If `domain` is absent, try to auto-discover the production URL (Coolify FQDN, `vercel.json`/`.vercel/project.json`, `netlify.toml`, `CNAME`); if none is found, skip the live-page checks and audit the codebase only.
 
 ## Step 2 — GSC data analysis
 
@@ -29,7 +29,7 @@ Check Google Search Console data for the last week using MCP tools. Analyse posi
 
 ## Step 3 — Technical + on-page SEO audit
 
-Audit the project's site for SEO problems. Work primarily from the **codebase** (it's the source of truth and lets you propose exact fixes); use `site_url=` to spot-check rendered pages where code alone is ambiguous.
+Audit the project's site for SEO problems. Work primarily from the **codebase** (it's the source of truth and lets you propose exact fixes); use `domain` to spot-check rendered pages where code alone is ambiguous.
 
 > ⚠️ **Schema markup detection:** `curl`/`web_fetch` strip `<script>` tags, so JSON-LD injected client-side won't show in static HTML. Detect structured data from the **source code** (e.g. `application/ld+json` blocks, Next.js metadata, schema components) or a rendered browser DOM — never report "no schema" based on a raw fetch alone.
 
@@ -79,7 +79,7 @@ Before posting recommendations, write the snapshots:
 - GSC snapshot → `docs/insights/search-console/YYYY-MM-DD.md`
 - SEO audit snapshot → `docs/insights/seo-audit/YYYY-MM-DD.md`
 
-Language for all GitHub issues and output: the `language=` value from `.darkflow`.
+Language for all GitHub issues and output: the `language` value from `.darkflow.d/state/config.json`.
 
 ## Step 4 — After completing
 

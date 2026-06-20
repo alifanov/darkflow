@@ -2,12 +2,12 @@ Run a full security review — static code analysis and live app check — then 
 
 ## Step 1 — Read project config
 
-Run `bash .darkflow.d/get-config.sh` to pull the latest project settings from the Web UI and refresh the local `.darkflow` cache (silently falls back to cache if the server is unreachable).
+Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
 
-Read `.darkflow` in the project root. Extract:
-- `language=` → output/issue language (default: English)
+Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
+- `language` → output/issue language (default: English)
 
-If `.darkflow` is missing, continue with the default.
+If `.darkflow.d/state/config.json` is missing, continue with the default.
 
 ## Step 2 — Do the work
 
@@ -35,7 +35,7 @@ After the review is complete, create a GitHub issue for each finding:
   - [ ] <verifiable outcome 2 if needed>
   ```
 
-Language for all GitHub issues and output: the `language=` value from `.darkflow`.
+Language for all GitHub issues and output: the `language` value from `.darkflow.d/state/config.json`.
 
 ## Step 3 — Write docs snapshot
 

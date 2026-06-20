@@ -1,135 +1,38 @@
 #!/usr/bin/env bash
-# get-config.sh — Fetch the latest project settings from the Dark Flow Web UI
-# and refresh the local .darkflow cache + .darkflow.d/routines.yml.
+# get-config.sh — fetch the current project's settings from the Dark Flow Web UI
+# (the DB is the source of truth) into <project>/.darkflow.d/state/config.json.
 #
-# Called automatically by darkflow-run.sh before each routine, and prepended to
-# every slash command's "Step 1 — Read project config".
+# Installed globally at ~/.darkflow/get-config.sh. The interactive slash commands
+# call it in their "Step 1 — Read project config"; the global worker fetches the
+# same JSON itself. Safe to run anywhere: silently no-ops (keeping any cached JSON)
+# if the server is offline or the project isn't registered.
 #
-# Safe to run at any time: silently no-ops if the server is offline or unreachable.
-# Identity is via repoUrl (the DB unique key); webapp_url is the local anchor.
+# Identity is via repoUrl (the DB unique key); webapp_url comes from ~/.darkflow/config.
 
 set -euo pipefail
 
-# ── Paths ─────────────────────────────────────────────────────────────────────
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-DARKFLOW_CFG="${PROJECT_ROOT}/.darkflow"
-ROUTINES_YML="${SCRIPT_DIR}/routines.yml"
-STATE_DIR="${SCRIPT_DIR}/state"
-CONFIG_SYNC_LOG="${STATE_DIR}/config-sync.log"
-CONFIG_SYNCED_AT="${STATE_DIR}/config-synced-at"
+GLOBAL_CFG="${HOME}/.darkflow/config"
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-_val() {
-  local key="$1" default="${2:-}"
-  if [[ -f "$DARKFLOW_CFG" ]]; then
-    local v; v=$(grep -E "^${key}=" "$DARKFLOW_CFG" 2>/dev/null | head -1 | cut -d= -f2-)
-    [[ -n "$v" ]] && { echo "$v"; return; }
-  fi
-  echo "$default"
-}
+command -v curl &>/dev/null || exit 0
+command -v jq   &>/dev/null || exit 0
+command -v gh   &>/dev/null || exit 0
 
-_set_val() {
-  local key="$1" value="$2"
-  if grep -q "^${key}=" "$DARKFLOW_CFG" 2>/dev/null; then
-    if [[ "$(uname)" == "Darwin" ]]; then
-      sed -i '' "s|^${key}=.*|${key}=${value}|" "$DARKFLOW_CFG"
-    else
-      sed -i "s|^${key}=.*|${key}=${value}|" "$DARKFLOW_CFG"
-    fi
-  else
-    echo "${key}=${value}" >> "$DARKFLOW_CFG"
-  fi
-}
+# Project root = the git toplevel of the current directory.
+PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+[[ -n "$PROJECT_ROOT" ]] || exit 0
 
-# ── Prerequisites ─────────────────────────────────────────────────────────────
-[[ -f "$DARKFLOW_CFG" ]] || exit 0          # no local config at all — skip
-command -v curl &>/dev/null || exit 0       # no curl — skip
+webapp_url=$(grep -E '^webapp_url=' "$GLOBAL_CFG" 2>/dev/null | head -1 | cut -d= -f2-)
+[[ -n "$webapp_url" ]] || exit 0
 
-webapp_url=$(_val "webapp_url" "")
-[[ -n "$webapp_url" ]] || exit 0            # no webapp_url — skip
-
-# jq is required for a *correct* sync: without it we could update .darkflow but
-# not routines.yml (or vice-versa), leaving the two out of step. Since the Web UI
-# is the source of truth, a partial sync is worse than none — bail loudly instead.
-mkdir -p "$STATE_DIR" 2>/dev/null || true
-if ! command -v jq &>/dev/null; then
-  echo "$(date -u +%FT%TZ) jq not installed — config sync skipped (install jq to sync from the Web UI)" >> "$CONFIG_SYNC_LOG" 2>/dev/null || true
-  exit 0
-fi
-
-# ── Resolve repoUrl ───────────────────────────────────────────────────────────
-cd "$PROJECT_ROOT" 2>/dev/null || exit 0
-if ! command -v gh &>/dev/null; then exit 0; fi
-repo_url=$(gh repo view --json url -q .url 2>/dev/null || echo "")
+repo_url=$(gh repo view --json url -q .url 2>/dev/null || true)
 [[ -n "$repo_url" ]] || exit 0
 
-# ── Fetch settings from webapp ────────────────────────────────────────────────
-encoded_url=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${repo_url}', safe=''))" 2>/dev/null \
+encoded=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$repo_url" 2>/dev/null \
   || printf '%s' "$repo_url" | sed 's|:|%3A|g; s|/|%2F|g')
 
-response=$(curl -fsS --max-time 5 \
-  "${webapp_url}/api/projects/by-repo?repoUrl=${encoded_url}" 2>/dev/null) || exit 0
+resp=$(curl -fsS --max-time 5 "${webapp_url}/api/projects/by-repo?repoUrl=${encoded}" 2>/dev/null) || exit 0
+[[ "${resp:0:1}" == "{" ]] || exit 0
+jq -e '.id' >/dev/null 2>&1 <<< "$resp" || exit 0   # 404 → no .id; keep the cache
 
-# Validate it looks like JSON
-[[ "${response:0:1}" == "{" ]] || exit 0
-
-# ── Parse and update .darkflow ────────────────────────────────────────────────
-# The Web UI is authoritative. For every field the response *contains*, mirror it
-# into .darkflow verbatim — including when the server sends null/empty, which
-# means "cleared in the UI" and must clear the local value too. Only a field that
-# is entirely ABSENT from the response is left untouched (forward-compat with old
-# servers that don't emit it yet).
-_apply() {
-  local json_key="$1" cfg_key="$2"
-  local present; present=$(echo "$response" | jq -r "has(\"${json_key}\")" 2>/dev/null)
-  [[ "$present" == "true" ]] || return 0          # absent → leave local as-is
-  local v; v=$(echo "$response" | jq -r ".${json_key} // \"\"" 2>/dev/null)
-  _set_val "$cfg_key" "$v"                          # present (incl. empty) → mirror, clearing if blank
-}
-
-_apply name              name
-_apply slug              slug
-_apply domain            domain
-_apply branch            branch
-_apply language          language
-_apply mergeStrategy     merge_strategy
-_apply minPriority       min_priority
-_apply posthogProjectId  posthog_project_id
-_apply obsTool           obs_tool
-_apply obsUrl            obs_url
-_apply maxConcurrent     max_concurrent
-
-# ── Regenerate routines.yml from the settings response ────────────────────────
-# Always regenerate when the response includes a `routines` array — even an empty
-# one. The response reached here only after passing JSON validation, so an empty
-# array is a real "no routines" state from the DB, not a fetch failure. Writing it
-# out (rather than skipping) is what lets the UI disable/remove routines and have
-# the worker actually stop running them.
-if [[ "$(echo "$response" | jq -r 'has("routines")' 2>/dev/null)" == "true" ]]; then
-  routines_json=$(echo "$response" | jq -c '.routines // []' 2>/dev/null)
-  {
-    echo "# .darkflow.d/routines.yml — auto-generated by get-config.sh from Dark Flow Web UI"
-    echo "# Edit routines in the Web UI Settings tab (Settings > Routine schedule)."
-    echo ""
-    echo "defaults:"
-    echo "  model: sonnet"
-    echo "  engine: claude"
-    echo "  permission_mode: bypassPermissions"
-    echo ""
-    echo "routines:"
-    echo "$routines_json" | jq -r '.[] | (
-      "  " + .name + ":",
-      "    cron: \"" + (.cron // "0 * * * *") + "\"",
-      "    model: " + (.model // "sonnet"),
-      "    engine: " + (.engine // "claude"),
-      "    enabled: " + (if .enabled then "true" else "false" end),
-      if .permissionMode then "    permission_mode: " + .permissionMode else empty end
-    )'
-  } > "$ROUTINES_YML"
-fi
-
-# ── Record a successful sync ──────────────────────────────────────────────────
-# darkflow-run.sh reads this timestamp and reports it on the next heartbeat so the
-# Web UI can tell whether the worker has picked up the latest settings yet.
-date -u +%FT%TZ > "$CONFIG_SYNCED_AT" 2>/dev/null || true
+mkdir -p "${PROJECT_ROOT}/.darkflow.d/state" 2>/dev/null || true
+printf '%s' "$resp" > "${PROJECT_ROOT}/.darkflow.d/state/config.json"

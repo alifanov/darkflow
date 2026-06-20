@@ -6,13 +6,13 @@ Update Dark Flow to the latest version.
 bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh) --force --yes
 ```
 
-The installer is fully non-interactive: `--yes` skips all prompts, `--force` overwrites locally-modified templates. It refreshes the global worker (`~/.darkflow/darkflow-run.sh`), the user-scope slash commands (`~/.claude/commands/darkflow/`), this project's `.darkflow.d/` files, and the version in `.darkflow`.
+The installer is fully non-interactive: `--yes` skips all prompts, `--force` overwrites locally-modified templates. It refreshes the global worker (`~/.darkflow/darkflow-run.sh`), the user-scope slash commands (`~/.claude/commands/darkflow/`), this project's `.darkflow.d/` files, and the version in `.darkflow.d/state/config.json`.
 
 > Updates are manual by design — the global worker never fetches or runs an installer on its own. To update just the worker + commands without touching a project, run `bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh) --self-update --yes`. After updating, restart the worker so the new code takes effect (`pkill -f ~/.darkflow/darkflow-run.sh` then start it again).
 
-## Step 2 — Ensure `.darkflow` is in `.gitignore`
+## Step 2 — Ensure `.darkflow.d/state/config.json` is in `.gitignore`
 
-Check if `.darkflow` is already ignored. If not, add it:
+Check if `.darkflow.d/state/config.json` is already ignored. If not, add it:
 
 ```bash
 grep -qxF '.darkflow' .gitignore 2>/dev/null || echo '.darkflow' >> .gitignore
@@ -22,11 +22,11 @@ grep -qxF '.darkflow' .gitignore 2>/dev/null || echo '.darkflow' >> .gitignore
 
 <!-- Note: the detection logic below (name-match → write ID) is mirrored in analytics-review.md Step 1. Keep both in sync when modifying. -->
 
-Read `.darkflow`. Extract `language=` (default: English) for all user-facing output. If `posthog_project_id=` is missing or empty, and the PostHog MCP is available:
+Read `.darkflow.d/state/config.json`. Extract `language` (default: English) for all user-facing output. If `posthogProjectId` is missing or empty, and the PostHog MCP is available:
 
 1. List all available PostHog projects.
-2. Find the one whose name best matches `name=` from `.darkflow` (case-insensitive, partial match).
-3. Write the ID to `.darkflow`:
+2. Find the one whose name best matches `name` from `.darkflow.d/state/config.json` (case-insensitive, partial match).
+3. Write the ID to `.darkflow.d/state/config.json`:
 
 ```bash
 # macOS
@@ -69,7 +69,7 @@ Replace `vX.Y.Z` with the actual installed version. If there were no changes (al
 
 ## Step 6 — Report
 
-Print a single summary line in `language=`:
+Print a single summary line in `language`:
 - On success: `Dark Flow updated to vX.Y.Z`
 - If already up to date: `Dark Flow already up to date (vX.Y.Z)`
 - On failure: print the error output and exit non-zero

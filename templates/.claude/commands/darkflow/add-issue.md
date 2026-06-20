@@ -1,7 +1,7 @@
 Help the user create a GitHub issue for a manually identified task (bug, feature, or improvement).
 
-Run `bash .darkflow.d/get-config.sh` to refresh the local `.darkflow` cache from the Web UI (silently falls back to cache if offline), then read `.darkflow` in the project root (if it exists) and extract:
-- `language=` → language for all conversation and issue text (default: English)
+Run `bash ~/.darkflow/get-config.sh` to refresh the project config at `.darkflow.d/state/config.json` from the Web UI (silently falls back to cache if offline), then read `.darkflow.d/state/config.json` (JSON) and extract:
+- `language` → language for all conversation and issue text (default: English)
 
 Then read `docs/github-issues.md` to get the list of `area:*` labels defined for this project. Use those — not a hardcoded list.
 
@@ -48,7 +48,7 @@ EOF
 ```
 
 **Important rules:**
-- Language for all conversation and issue text: the `language=` value from `.darkflow` (default: English)
+- Language for all conversation and issue text: the `language` value from `.darkflow.d/state/config.json` (default: English)
 - Always use `status:approved` — the user already decided to do it
 - If effort is `l`: warn "This looks like more than a day — better to split into 2–4 sub-issues. Want me to help break it down first?"
 - After creating, show the URL and issue number. The fix-issues routine will pick it up automatically.
