@@ -159,7 +159,7 @@ The real power comes from scheduling Claude agents that run the loop automatical
 | [Code health](routines/code-health.md) | `0 7 * * 0` | Weekly Sun 7:00 — fallow audit (dead code, dupes, cycles, complexity) → issues *(optional, TS/JS only)* |
 | [Mailbox check](routines/mailbox-check.md) | `0 * * * *` | Hourly — IMAP inbox → issues; approved `action:reply` issues → SMTP reply *(optional)* |
 
-Cron times are in the machine's local timezone. Schedule is defined in `.darkflow.d/routines.yml` — edit it to change frequency, model, or enable/disable a routine.
+Cron times are in the machine's local timezone. The schedule lives in the Web UI (Settings → Routine schedule) — change frequency/model or enable/disable a routine there, per project. Defaults come from the catalog in `webapp/src/lib/routines.ts`.
 
 ### Running routines
 
@@ -296,9 +296,9 @@ Human-in-the-loop, for planning/design — these ask questions and wait for answ
 | `/darkflow:grill` | Pressure-test a plan against the domain model — sharpens terminology, updates `docs/product/glossary.md` and `docs/decisions/` (ADRs) inline |
 | `/darkflow:csp-setup` | One-time setup — wire CSP violation reporting to PostHog (if present) or an internal `/api/csp-report` endpoint → your observability backend |
 
-Routine commands automatically call `bash .darkflow.d/get-config.sh` before running — this fetches the latest project settings (branch, language, merge strategy, modules, routines) from the **Web UI Settings tab** and refreshes the local `.darkflow` cache. If the server is unreachable, commands fall back to the cached values silently.
+Routine commands automatically call `bash ~/.darkflow/get-config.sh` before running — this fetches the latest project settings (branch, language, merge strategy, modules, routine schedule) from the **Web UI Settings tab** into `.darkflow.d/state/config.json`. If the server is unreachable, commands fall back to the last fetched copy silently.
 
-**To edit project settings:** open the Web UI → project detail → **Settings** tab. Changes take effect the next time a routine or command runs. The local `.darkflow` file is now a cache; the database is the source of truth.
+**To edit project settings:** open the Web UI → project detail → **Settings** tab. Changes take effect the next time a routine or command runs. The database is the single source of truth — projects no longer carry a `.darkflow` config file.
 
 ---
 

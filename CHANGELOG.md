@@ -14,6 +14,21 @@ Categories:
 
 ---
 
+## [3.4.1] — 2026-06-20
+
+Centralized config — phase 4 (docs). Updated documentation to the centralized model;
+the per-project file cleanup for existing installs is handled automatically by the
+installer (v3.4.0's `cleanup_legacy_project_files`), so no separate migration step is
+needed.
+
+- **Docs** — `README.md`, root + template `CLAUDE.md`, `routines/README.md`, and every
+  `routines/<name>.md` now describe the Web UI as the source of truth for settings + the
+  routine schedule (no more `.darkflow` / `routines.yml` / per-project `get-config.sh`).
+  New routines are added to the catalog `webapp/src/lib/routines.ts`.
+- **self-checkup** — rewired the repo-consistency and per-project audits to the new model:
+  routine source of truth is the catalog (not `checklist.yml`/`routines.yml`), and worker
+  version + liveness are read once from the global `Settings` row, not per project.
+
 ## [3.4.0] — 2026-06-20
 
 Centralized config — phase 3 (installer). The installer no longer scaffolds any

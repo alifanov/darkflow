@@ -22,7 +22,7 @@ Monthly production-readiness review using `impeccable:harden` — edge cases, i1
 
 Enable with `--with-impeccable` during install, or set `modules=...,impeccable,...` in `.darkflow`.
 
-Disable without removing: set `enabled: false` in `.darkflow.d/routines.yml`.
+Disable without removing: toggle it off in the Web UI (Settings → Routine schedule).
 
 ## Notes
 

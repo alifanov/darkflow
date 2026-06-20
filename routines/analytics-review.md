@@ -21,7 +21,7 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 | Cron | `0 8 * * *` (daily 8:00) |
 | Folder | Project root (`/path/to/your-project`) |
 | Model | Sonnet (default) |
-| Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
+| Permission mode | `bypassPermissions` (default; override per project in the Web UI) |
 | Run manually | `~/.darkflow/darkflow-run.sh analytics-review` |
 
 ---

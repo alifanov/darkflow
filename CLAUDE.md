@@ -18,7 +18,7 @@ webapp/                 ← Next.js web app (projects list, issue triage, approv
   src/components/       ← shared React components (ProjectRow, LogRow, etc.)
   src/lib/              ← prisma client, darkflow-version helper
 templates/
-  darkflow/             ← global worker (darkflow-run.sh → ~/.darkflow/), get-config.sh, routines.yml, mailbox/
+  darkflow/             ← global worker + helpers (darkflow-run.sh, get-config.sh, mailbox/ → ~/.darkflow/)
   docs/                 ← generic docs structure templates
   .github/              ← GitHub issue template (darkflow/recommendation.yml)
   .claude/commands/     ← slash commands installed into user scope (~/.claude/commands/darkflow/)

@@ -744,8 +744,8 @@ MAILBOX_SMTP_USER=you@example.com
 MAILBOX_SMTP_PASSWORD=...
 ```
 
-Or, if you don't want the mailbox integration, disable the routine instead: set
-`enabled: false` for `mailbox-check` in `.darkflow.d/routines.yml`.
+Or, if you don't want the mailbox integration, disable the routine instead: toggle
+`mailbox-check` off in the Web UI (Settings → Routine schedule).
 
 ## Acceptance criteria
 

@@ -23,7 +23,7 @@ Reads `.darkflow` for `branch`, `merge_strategy`, and `language` — no placehol
 | Cron | `*/15 * * * *` (every 15 min) |
 | Folder | Project root (`/path/to/your-project`) |
 | Model | Sonnet (lint/test fixes are mechanical) |
-| Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
+| Permission mode | `bypassPermissions` (default; override per project in the Web UI) |
 | Run manually | `~/.darkflow/darkflow-run.sh fix-ci-issue` |
 | Module | `ci-gate` — only installed when the CI gate is enabled |
 

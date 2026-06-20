@@ -33,7 +33,7 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 | Cron | `0 2 * * 0` (weekly Sun 2:00) |
 | Folder | Project root (`/path/to/your-project`) |
 | Model | Opus (recommended — deep architectural reasoning) |
-| Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
+| Permission mode | `bypassPermissions` (default; override per project in the Web UI) |
 | Run manually | `~/.darkflow/darkflow-run.sh architecture-review` |
 
 ---

@@ -21,7 +21,7 @@ The command reads `.darkflow` for the target branch — no placeholders to repla
 | Cron | `0 9 * * 1-5` (weekdays 9:00) |
 | Folder | Project root (`/path/to/your-project`) |
 | Model | Sonnet (default) |
-| Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
+| Permission mode | `bypassPermissions` (default; override per project in the Web UI) |
 | Run manually | `~/.darkflow/darkflow-run.sh claude-md-update` |
 
 ---

@@ -28,12 +28,12 @@ The command reads `.darkflow` for the output language, branch, and merge strateg
 | Folder | Project root (`/path/to/your-project`) |
 | Model | Sonnet (default) |
 | Module | `mailbox` |
-| Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
+| Permission mode | `bypassPermissions` (default; override per project in the Web UI) |
 | Run manually | `~/.darkflow/darkflow-run.sh mailbox-check` |
 
 Enable with `--with-mailbox` during install, or set `modules=...,mailbox,...` in `.darkflow`.
 
-Disable without removing: set `enabled: false` in `.darkflow.d/routines.yml`.
+Disable without removing: toggle it off in the Web UI (Settings → Routine schedule).
 
 ---
 

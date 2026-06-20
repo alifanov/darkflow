@@ -22,7 +22,7 @@ Weekly design quality check using `impeccable:audit` — five-dimension technica
 
 Enable with `--with-impeccable` during install, or set `modules=...,impeccable,...` in `.darkflow`.
 
-Disable without removing: set `enabled: false` in `.darkflow.d/routines.yml`.
+Disable without removing: toggle it off in the Web UI (Settings → Routine schedule).
 
 ## Notes
 

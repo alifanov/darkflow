@@ -19,7 +19,7 @@ Daily check of the Coolify deployment pipeline — detects failed/red deploys an
 | Cron | `0 9 * * *` (daily 9:00) |
 | Folder | Project root (`/path/to/your-project`) |
 | Model | Sonnet (default) |
-| Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
+| Permission mode | `bypassPermissions` (default; override per project in the Web UI) |
 | Run manually | `~/.darkflow/darkflow-run.sh coolify-check-deployment` |
 
 ---

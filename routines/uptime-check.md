@@ -25,7 +25,7 @@ The command reads `.darkflow` for `site_url` (the URL to monitor) and `language`
 | Cron | `0 */4 * * *` (every 4 hours) |
 | Folder | Project root (`/path/to/your-project`) |
 | Model | Sonnet (mechanical check — curl + status + body inspection) |
-| Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
+| Permission mode | `bypassPermissions` (default; override per project in the Web UI) |
 | Run manually | `~/.darkflow/darkflow-run.sh uptime-check` |
 
 Set the URL to monitor explicitly with `site_url=https://example.com` in `.darkflow` (recommended; otherwise it is auto-discovered on first run).

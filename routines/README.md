@@ -9,10 +9,11 @@ Each routine is a slash command (`/darkflow:<name>`) installed once into user sc
 ```
 ~/.darkflow/darkflow-run.sh   ← ONE global worker: discovers projects, runs due routines
 ~/.darkflow/config            ← global config (webapp_url, version)
+~/.darkflow/get-config.sh      ← fetches a project's config from the Web UI
 ~/.darkflow/worker.log        ← global worker log
 
-per project:
-.darkflow.d/routines.yml      ← schedule: which cron, which model, enabled?
+per project (runtime only — config + schedule live in the Web UI/DB):
+.darkflow.d/state/config.json ← project config fetched from the Web UI (cache)
 .darkflow.d/state/            ← last-run timestamps (git-ignored, machine-local)
 .darkflow.d/darkflow-run.log  ← this project's run log (git-ignored)
 ```
@@ -93,21 +94,20 @@ web UI (the installer registers this automatically on first sync).
 
 ## Editing the schedule
 
-Open `.darkflow.d/routines.yml` and change `cron`, `model`, or `enabled` for any routine:
+The schedule lives in the Web UI, not in a file. Open a project's **Settings → Routine
+schedule** to change `cron`/`model`/`engine` or enable/disable any routine. The global
+worker fetches the merged schedule (catalog defaults + your overrides) from
+`/api/projects/by-repo` on every tick, so changes apply on the next tick — no reload.
 
-```yaml
-routines:
-  fix-issues:
-    cron: "0 * * * *"   # change frequency here
-    model: sonnet
-    enabled: true        # set false to disable without deleting
-```
-
-The dispatcher picks up YAML changes immediately on its next tick — no reload needed.
+The catalog of routines + their default cron/model lives in `webapp/src/lib/routines.ts`;
+a project's per-routine overrides are stored in the `RoutineConfig` table.
 
 ## Permissions
 
-All routines need to act autonomously. The default `permission_mode: bypassPermissions` in `routines.yml` is the equivalent of "Always allowed: Act without asking" in the Claude Code Routines UI. Change to `acceptEdits` for a more cautious mode that still prompts before bash commands.
+All routines need to act autonomously. The default `bypassPermissions` mode is the
+equivalent of "Always allowed: Act without asking" in the Claude Code UI. Override a
+routine to `acceptEdits` per project in the Web UI for a more cautious mode that still
+prompts before bash commands.
 
 ## Worktree note
 
@@ -116,5 +116,7 @@ Routines **never** create a git worktree. They always run in the project root (`
 ## Adding a new routine
 
 1. Add a prompt file: `templates/.claude/commands/darkflow/<name>.md`
-2. Add an entry to `routines.yml` in the installed project
+2. Add it to the catalog in `webapp/src/lib/routines.ts` (name, default cron/model, module gate)
 3. Document it here and in `routines/<name>.md`
+
+New routines auto-propagate to every project via `/api/projects/by-repo` — no per-project edit needed.
