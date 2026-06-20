@@ -1,5 +1,5 @@
 .PHONY: help up down web logs restart ps db-shell docker-up \
-        worker-start worker-stop worker-status worker-logs
+        worker-run worker-start worker-stop worker-status worker-logs
 
 WORKER := $(HOME)/.darkflow/darkflow-run.sh
 
@@ -29,6 +29,13 @@ ps: ## Show running containers and their status
 
 db-shell: ## Open a psql shell inside the Postgres container
 	docker compose exec db psql -U darkflow darkflow
+
+worker-run: ## Run the global Dark Flow worker in the foreground (live logs; Ctrl-C to stop)
+	@if [ ! -f "$(WORKER)" ]; then echo "Worker not installed at $(WORKER) — run install.sh --self-update first."; exit 1; fi
+	@if pgrep -f "$(WORKER)" >/dev/null 2>&1; then \
+		echo "Worker already running in the background (PID $$(pgrep -f "$(WORKER)" | head -1)). Stop it first: make worker-stop"; exit 1; \
+	fi
+	bash "$(WORKER)"
 
 worker-start: ## Start the global Dark Flow worker in the background (serves every project)
 	@if [ ! -f "$(WORKER)" ]; then echo "Worker not installed at $(WORKER) — run install.sh in a project first."; exit 1; fi

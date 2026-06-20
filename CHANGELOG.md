@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [3.4.2] — 2026-06-20
+
+- **Repo tooling** — added `make worker-run` to run the global worker in the **foreground**
+  with live logs in the terminal (Ctrl-C to stop), alongside the existing background
+  `worker-start`. Refuses to start if a background worker is already running.
+
 ## [3.4.1] — 2026-06-20
 
 Centralized config — phase 4 (docs). Updated documentation to the centralized model;
