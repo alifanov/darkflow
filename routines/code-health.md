@@ -41,7 +41,7 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 | Folder | Project root (`/path/to/your-project`) |
 | Model | Sonnet (recommended — fallow does the analysis deterministically; the model only triages JSON → issues) |
 | Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
-| Run manually | `bash .darkflow.d/darkflow-run.sh code-health` |
+| Run manually | `~/.darkflow/darkflow-run.sh code-health` |
 
 ---
 

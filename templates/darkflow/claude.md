@@ -41,8 +41,8 @@ Scheduled Claude Code agents that run this workflow automatically:
 
 - **Fix issues** (Hourly) — picks up `status:approved` issues → PR → merge to main
 
-Schedule: `.darkflow.d/routines.yml`  |  Dispatcher: `bash .darkflow.d/darkflow-run.sh`
-Run any routine manually: `bash .darkflow.d/darkflow-run.sh <name>`
+Schedule: `.darkflow.d/routines.yml`  |  Worker: one global `~/.darkflow/darkflow-run.sh` services every project
+Run any routine manually (from this project dir): `~/.darkflow/darkflow-run.sh <name>`
 
 ### Dark Flow commands
 

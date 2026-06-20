@@ -24,7 +24,7 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 | Folder | Project root (`/path/to/your-project`) |
 | Model | Opus (recommended — synthesis across many sources) |
 | Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
-| Run manually | `bash .darkflow.d/darkflow-run.sh product-overview` |
+| Run manually | `~/.darkflow/darkflow-run.sh product-overview` |
 
 ---
 

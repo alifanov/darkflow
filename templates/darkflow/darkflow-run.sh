@@ -1,31 +1,50 @@
 #!/usr/bin/env bash
-# DF_VERSION: 2.30.3
-# Dark Flow routine dispatcher
-# Lives at .darkflow.d/darkflow-run.sh — run from anywhere in the project.
+# DF_VERSION: 3.0.0
+# Dark Flow global routine dispatcher
+# Lives at ~/.darkflow/darkflow-run.sh — ONE worker services every registered
+# project. With no arguments it loops, discovering projects from the web UI
+# (/api/projects) and dispatching each one's due routines. The single-project
+# subcommands operate on the Dark Flow project containing the current directory.
 #
 # Usage:
-#   bash .darkflow.d/darkflow-run.sh              # loop every 60s — checks for due routines (default)
-#   bash .darkflow.d/darkflow-run.sh <name>       # manual: run one routine immediately
-#   bash .darkflow.d/darkflow-run.sh --sync       # push issues + metadata to the web UI
-#   bash .darkflow.d/darkflow-run.sh --list       # show routine status table
-#   bash .darkflow.d/darkflow-run.sh --dry-run    # show what would run, don't run it
-#   bash .darkflow.d/darkflow-run.sh --self-test  # run internal cron-matcher tests
+#   darkflow-run.sh              # global loop: discover all projects, dispatch due routines (default)
+#   darkflow-run.sh <name>       # manual: run one routine in the cwd's project immediately
+#   darkflow-run.sh --sync       # push the cwd project's issues + metadata to the web UI
+#   darkflow-run.sh --list       # show the cwd project's routine status table
+#   darkflow-run.sh --dry-run    # show what would run for the cwd project, don't run it
+#   darkflow-run.sh --self-test  # run internal cron-matcher tests
 
 set -euo pipefail
 
-# ── Paths ─────────────────────────────────────────────────────────────────────
+# ── Global paths ──────────────────────────────────────────────────────────────
+# These never change: the worker, its config, slots and the user-scope command
+# files are all machine-global now (one worker for every project).
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-DARKFLOW_D="${PROJECT_ROOT}/.darkflow.d"
-YAML="${DARKFLOW_D}/routines.yml"
-STATE_DIR="${DARKFLOW_D}/state"
-LOCK_DIR="${STATE_DIR}/.lock"
-LOG="${DARKFLOW_D}/darkflow-run.log"
-METRICS_DIR="${DARKFLOW_D}/state/metrics"
-DARKFLOW_CFG="${PROJECT_ROOT}/.darkflow"
+SELF_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 DARKFLOW_REPO="https://raw.githubusercontent.com/alifanov/darkflow/main"
 GLOBAL_SLOTS_DIR="${TMPDIR:-/tmp}/darkflow-slots"
+GLOBAL_DIR="${HOME}/.darkflow"
+GLOBAL_CFG="${GLOBAL_DIR}/config"          # webapp_url=, version=
+GLOBAL_LOG="${GLOBAL_DIR}/worker.log"
+USER_CMD_DIR="${HOME}/.claude/commands/darkflow"   # slash commands live in user scope
+
+# Snapshot of any GH_TOKEN inherited from the environment, so resolve_gh_token can
+# restore this baseline between projects instead of leaking one project's token
+# into the next.
+ENV_GH_TOKEN="${GH_TOKEN:-}"
+
+# ── Per-project paths ─────────────────────────────────────────────────────────
+# (Re)computed by set_project() for each project the global worker services.
+# LOG points at the global log until a project is selected so orchestration
+# messages emitted between projects still land somewhere.
+PROJECT_ROOT=""
+DARKFLOW_D=""
+YAML=""
+STATE_DIR=""
+LOCK_DIR=""
+LOG="$GLOBAL_LOG"
+METRICS_DIR=""
+DARKFLOW_CFG=""
 
 # Temp files registered here are removed by the EXIT trap even on signals.
 _CLEANUP_FILES=()
@@ -37,7 +56,28 @@ PENDING_LOGS=()
 _LOG_PREFIX=""
 _LOG_PREFIX_READY=false
 
-cd "$PROJECT_ROOT"
+mkdir -p "$GLOBAL_DIR" 2>/dev/null || true
+
+# Point every per-project path var at <abs_path> and reset per-project caches.
+# Called once per project per dispatch tick, and once for the cwd-scoped manual
+# subcommands. cd's into the project so gh/git invocations resolve the right repo.
+set_project() {
+  PROJECT_ROOT="$1"
+  DARKFLOW_D="${PROJECT_ROOT}/.darkflow.d"
+  YAML="${DARKFLOW_D}/routines.yml"
+  STATE_DIR="${DARKFLOW_D}/state"
+  LOCK_DIR="${STATE_DIR}/.lock"
+  LOG="${DARKFLOW_D}/darkflow-run.log"
+  METRICS_DIR="${STATE_DIR}/metrics"
+  DARKFLOW_CFG="${PROJECT_ROOT}/.darkflow"
+  _LOG_PREFIX=""
+  _LOG_PREFIX_READY=false
+  _REPO_URL_CACHE=""
+  mkdir -p "$STATE_DIR" 2>/dev/null || true
+  cd "$PROJECT_ROOT" 2>/dev/null || return 1
+  resolve_gh_token
+  return 0
+}
 
 # ── OS detection ──────────────────────────────────────────────────────────────
 
@@ -79,12 +119,31 @@ rotate_log() {
   fi
 }
 
+# Global logger — used by the orchestration loop for messages that aren't tied to
+# any one project (project discovery, worker start/stop, self-update).
+glog() {
+  local line="[$(date '+%Y-%m-%d %H:%M:%S')] [global] $*"
+  echo "$line" >> "$GLOBAL_LOG" 2>/dev/null || true
+  echo "$line"
+}
+
 # ── .darkflow config reader ───────────────────────────────────────────────────
 
 darkflow_val() {
   local key="$1" default="${2:-}" val
   if [[ -f "$DARKFLOW_CFG" ]]; then
     val=$(grep -E "^${key}=" "$DARKFLOW_CFG" 2>/dev/null | head -1 | cut -d= -f2-)
+    if [[ -n "$val" ]]; then echo "$val"; return; fi
+  fi
+  echo "$default"
+}
+
+# ── ~/.darkflow/config reader (global worker settings) ────────────────────────
+
+global_val() {
+  local key="$1" default="${2:-}" val
+  if [[ -f "$GLOBAL_CFG" ]]; then
+    val=$(grep -E "^${key}=" "$GLOBAL_CFG" 2>/dev/null | head -1 | cut -d= -f2-)
     if [[ -n "$val" ]]; then echo "$val"; return; fi
   fi
   echo "$default"
@@ -103,26 +162,37 @@ _init_log_prefix() {
   [[ -n "$name" ]] && _LOG_PREFIX+=" [${name}]"
 }
 
-# ── GitHub token bootstrap ────────────────────────────────────────────────────
-# Priority: gh_token in .darkflow > webapp global token > gh auth token
-if [[ -z "${GH_TOKEN:-}" ]]; then
-  _cfg_tok=$(darkflow_val "gh_token" "")
-  if [[ -n "$_cfg_tok" ]]; then
-    export GH_TOKEN="$_cfg_tok"
-  else
-    # Try fetching token from the webapp (no auth needed, just curl)
-    _webapp_url=$(darkflow_val "webapp_url" "")
-    if [[ -n "$_webapp_url" ]] && command -v curl &>/dev/null; then
-      _webapp_tok=$(curl -fsS -m 5 "${_webapp_url}/api/settings/gh-token" 2>/dev/null \
+# ── GitHub token bootstrap (per project) ──────────────────────────────────────
+# Priority: gh_token in .darkflow > webapp global token > gh auth token.
+# Re-resolved by set_project() for every project, since each repo may use a
+# different token. When a project defines no token of its own we restore the
+# environment baseline first, so an explicit token from a previous project never
+# leaks into a tokenless one.
+resolve_gh_token() {
+  local cfg_tok webapp_url webapp_tok tok
+  cfg_tok=$(darkflow_val "gh_token" "")
+  if [[ -n "$cfg_tok" ]]; then
+    export GH_TOKEN="$cfg_tok"
+    return 0
+  fi
+  # No per-project token — reset to the inherited baseline (or unset so gh falls
+  # back to its keyring) before trying the shared webapp token / gh CLI.
+  if [[ -n "$ENV_GH_TOKEN" ]]; then export GH_TOKEN="$ENV_GH_TOKEN"; else unset GH_TOKEN; fi
+  if command -v curl &>/dev/null; then
+    webapp_url=$(darkflow_val "webapp_url" "$(global_val webapp_url '')")
+    if [[ -n "$webapp_url" ]]; then
+      webapp_tok=$(curl -fsS -m 5 "${webapp_url}/api/settings/gh-token" 2>/dev/null \
         | grep -o '"ghToken":"[^"]*"' | cut -d'"' -f4 || true)
-      [[ -n "$_webapp_tok" && "$_webapp_tok" != "null" ]] && export GH_TOKEN="$_webapp_tok"
-    fi
-    # Fall back to gh CLI
-    if [[ -z "${GH_TOKEN:-}" ]] && command -v gh &>/dev/null; then
-      _tok=$(gh auth token 2>/dev/null) && export GH_TOKEN="$_tok" || true
+      if [[ -n "$webapp_tok" && "$webapp_tok" != "null" ]]; then
+        export GH_TOKEN="$webapp_tok"
+        return 0
+      fi
     fi
   fi
-fi
+  if [[ -z "${GH_TOKEN:-}" ]] && command -v gh &>/dev/null; then
+    tok=$(gh auth token 2>/dev/null) && export GH_TOKEN="$tok" || true
+  fi
+}
 
 # ── Cron field matching ────────────────────────────────────────────────────────
 # Returns 0 if integer value matches cron field expression.
@@ -273,7 +343,8 @@ routine_names() {
 
 # ── Preflight ─────────────────────────────────────────────────────────────────
 
-preflight() {
+# Machine-global tool checks — run once at startup, independent of any project.
+preflight_tools() {
   local ok=true
   if ! command -v yq &>/dev/null; then
     echo "darkflow-run: yq not found." >&2
@@ -298,6 +369,13 @@ preflight() {
     echo "  Linux:  apt install jq / dnf install jq" >&2
     ok=false
   fi
+  [[ "$ok" == true ]]
+}
+
+# Per-project checks for the cwd-scoped subcommands (--list/--dry-run/<name>).
+# Assumes preflight_tools already ran. set_project() must have run first.
+preflight() {
+  local ok=true
   if [[ ! -f "$YAML" ]]; then
     echo "darkflow-run: ${YAML} not found. Run install.sh to reinstall Dark Flow." >&2
     ok=false
@@ -311,13 +389,13 @@ preflight() {
   # orphan simply gets skipped at dispatch time instead. mode_manual still errors
   # if you explicitly request a routine whose command is missing.
   if [[ -f "$YAML" ]] && command -v yq &>/dev/null; then
-    local _cmd_dir="${PROJECT_ROOT}/.claude/commands/darkflow"
+    local _cmd_dir="${USER_CMD_DIR}"
     local _rname _enabled
     while IFS= read -r _rname; do
       _enabled=$(yq ".routines[\"${_rname}\"].enabled // true" "$YAML" 2>/dev/null || echo "true")
       [[ "$_enabled" == "false" ]] && continue
       if [[ ! -f "${_cmd_dir}/${_rname}.md" ]]; then
-        echo "darkflow-run: routine '${_rname}' has no command file (.claude/commands/darkflow/${_rname}.md) — skipping it." >&2
+        echo "darkflow-run: routine '${_rname}' has no command file (~/.claude/commands/darkflow/${_rname}.md) — skipping it." >&2
         echo "  This is normal if Dark Flow removed the routine; it clears on the next Web UI config refresh." >&2
       fi
     done < <(routine_names)
@@ -861,7 +939,7 @@ run_routine() {
     # call gh, which the workspace-write sandbox blocks (no network), so we run
     # with the externally-sandboxed bypass — equivalent to Claude's bypassPermissions.
     # Codex's stdout is already human-readable, so we store it verbatim.
-    local _cmd_file="${PROJECT_ROOT}/.claude/commands/darkflow/${name}.md"
+    local _cmd_file="${USER_CMD_DIR}/${name}.md"
     if [[ -f "$_cmd_file" ]]; then
       run_in_pgid codex exec --model "${model}" \
         --dangerously-bypass-approvals-and-sandbox \
@@ -1404,6 +1482,7 @@ sync_webapp() {
   payload=$(jq -n \
     --arg repoUrl    "$repo_url" \
     --arg name       "$proj_name" \
+    --arg localPath  "$PROJECT_ROOT" \
     --arg domain     "$proj_domain" \
     --arg branch     "$proj_branch" \
     --arg language   "$proj_lang" \
@@ -1421,6 +1500,7 @@ sync_webapp() {
     '{
       repoUrl:          $repoUrl,
       name:             $name,
+      localPath:        $localPath,
       domain:           $domain,
       branch:           $branch,
       language:         $language,
@@ -1524,17 +1604,18 @@ stop_heartbeat_loop() {
   fi
 }
 
-# ── Self-update check ─────────────────────────────────────────────────────────
-# Fetches the latest Dark Flow VERSION from GitHub; if it differs from the
-# installed version, triggers /darkflow:self-update via Claude.
-# Throttled to at most once per minute via STATE_DIR/last-update-check.
-# Returns 0 always (update failure should never abort the caller).
+# ── Self-update check (global) ────────────────────────────────────────────────
+# Compares the worker's installed version (~/.darkflow/config) against the latest
+# VERSION on GitHub; if they differ, refreshes the global worker + user-scope
+# commands by running the installer in its `--self-update` mode (deterministic,
+# no Claude session). Throttled to once per minute. Returns 0 always — an update
+# failure must never abort the orchestration loop. The caller re-execs the worker
+# when the installed version changes.
 
 check_for_update() {
-  ! command -v curl   &>/dev/null && return 0
-  ! command -v claude &>/dev/null && return 0
+  ! command -v curl &>/dev/null && return 0
 
-  local check_ts_file="${STATE_DIR}/last-update-check"
+  local check_ts_file="${GLOBAL_DIR}/last-update-check"
   local last_check=0
   [[ -f "$check_ts_file" ]] && last_check=$(cat "$check_ts_file" 2>/dev/null || echo 0)
   local now_ts; now_ts=$(now_epoch)
@@ -1543,47 +1624,65 @@ check_for_update() {
   fi
   echo "$now_ts" > "$check_ts_file"
 
-  local installed_version latest
-  installed_version=$(darkflow_val "version" "0.0.0")
-  [[ -z "$installed_version" ]] && installed_version="0.0.0"
+  local installed latest
+  installed=$(global_val "version" "0.0.0")
+  [[ -z "$installed" ]] && installed="0.0.0"
 
   latest=$(curl -fsSL -m 5 "${DARKFLOW_REPO}/VERSION" 2>/dev/null | tr -d '[:space:]') || latest=""
   [[ -z "$latest" ]] && return 0   # no network or fetch failed — skip silently
 
-  [[ "$latest" == "$installed_version" ]] && return 0
+  [[ "$latest" == "$installed" ]] && return 0
 
-  log "UPDATE detected ${installed_version} → ${latest}, running /darkflow:self-update"
+  glog "UPDATE detected ${installed} → ${latest}, refreshing global worker + commands"
+  bash <(curl -fsSL -m 30 "${DARKFLOW_REPO}/install.sh") --self-update --yes >> "$GLOBAL_LOG" 2>&1 \
+    || glog "UPDATE installer --self-update returned non-zero"
 
-  local ts; ts=$(date -u +%FT%TZ)
-  local claude_output exit_code=0
-  # Fallback: if the slash command isn't installed yet (pre-2.20.0 projects),
-  # run the installer directly instead of failing with "Unknown command".
-  if [[ -f ".claude/commands/darkflow/self-update.md" ]]; then
-    local _su_stream
-    _su_stream=$(mktemp)
-    _CLEANUP_FILES+=("$_su_stream")
-    run_in_pgid claude -p "/darkflow:self-update" --model sonnet --permission-mode bypassPermissions \
-      > "$_su_stream" || exit_code=$?
-    claude_output=$(cat "$_su_stream") || claude_output=""
-    rm -f "$_su_stream"
-    _CLEANUP_FILES=("${_CLEANUP_FILES[@]/$_su_stream}")
+  local nowv; nowv=$(global_val "version" "0.0.0")
+  if [[ "$nowv" == "$latest" ]]; then
+    glog "UPDATE complete (now at ${latest})"
   else
-    log "UPDATE self-update.md not found, running installer directly"
-    claude_output=$(bash <(curl -fsSL -m 30 "${DARKFLOW_REPO}/install.sh") --force --yes 2>&1) || exit_code=$?
-  fi
-
-  local status_str="ok"
-  [[ "$exit_code" != "0" ]] && status_str="exit:${exit_code}"
-  local output_json
-  output_json=$(jq -Rsa '.' <<< "$claude_output")
-  PENDING_LOGS+=("{\"routine\":\"self-update\",\"summary\":\"self-update ${installed_version}→${latest} — ${status_str}\",\"output\":${output_json},\"timestamp\":\"${ts}\"}")
-
-  if [[ "$exit_code" == "0" ]]; then
-    log "UPDATE complete (now at ${latest})"
-  else
-    log "UPDATE failed (exit ${exit_code})"
+    glog "UPDATE incomplete (still ${nowv})"
   fi
   return 0
+}
+
+# ── Project discovery ─────────────────────────────────────────────────────────
+# The global worker learns which projects to service — and where they live on
+# disk — from the web UI. Each project the user has given a Local path is
+# returned by GET /api/projects. Prints one absolute path per line.
+
+fetch_projects() {
+  local webapp_url resp
+  webapp_url=$(global_val "webapp_url" "")
+  [[ -z "$webapp_url" ]] && return 0
+  command -v curl &>/dev/null || return 0
+  command -v jq   &>/dev/null || return 0
+  resp=$(curl -fsS -m 10 "${webapp_url}/api/projects" 2>/dev/null) || return 0
+  [[ "${resp:0:1}" == "[" ]] || return 0
+  jq -r '.[].localPath | select(. != null and . != "")' <<< "$resp" 2>/dev/null || true
+}
+
+# Walks up from the current directory to the nearest ancestor containing a
+# .darkflow.d/ — the project the cwd-scoped subcommands operate on.
+detect_project_from_cwd() {
+  local d="$PWD"
+  while [[ -n "$d" && "$d" != "/" ]]; do
+    [[ -d "$d/.darkflow.d" ]] && { echo "$d"; return 0; }
+    d="$(dirname "$d")"
+  done
+  [[ -d "/.darkflow.d" ]] && { echo "/"; return 0; }
+  return 1
+}
+
+# Resolves the cwd's project and enters it, or aborts with guidance.
+require_cwd_project() {
+  local p
+  if ! p=$(detect_project_from_cwd); then
+    echo "darkflow-run: not inside a Dark Flow project (no .darkflow.d/ found from ${PWD})." >&2
+    echo "  cd into a project that has .darkflow.d/, or run the global worker with no arguments." >&2
+    exit 1
+  fi
+  set_project "$p" || { echo "darkflow-run: failed to enter project ${p}" >&2; exit 1; }
 }
 
 # ── Mode: list ────────────────────────────────────────────────────────────────
@@ -1630,7 +1729,7 @@ mode_dispatch() {
 
     # Skip routines Dark Flow no longer ships (no command file). preflight already
     # warned; running them would only fail. They clear on the next config refresh.
-    if [[ ! -f "${PROJECT_ROOT}/.claude/commands/darkflow/${name}.md" ]]; then
+    if [[ ! -f "${USER_CMD_DIR}/${name}.md" ]]; then
       continue
     fi
 
@@ -1683,8 +1782,8 @@ mode_manual() {
     exit 1
   fi
 
-  if [[ ! -f "${PROJECT_ROOT}/.claude/commands/darkflow/${name}.md" ]]; then
-    echo "darkflow-run: routine '${name}' has no command file: .claude/commands/darkflow/${name}.md" >&2
+  if [[ ! -f "${USER_CMD_DIR}/${name}.md" ]]; then
+    echo "darkflow-run: routine '${name}' has no command file: ~/.claude/commands/darkflow/${name}.md" >&2
     echo "  Dark Flow may have removed it. Run install.sh to repair, or remove it from routines.yml." >&2
     exit 1
   fi
@@ -1703,54 +1802,67 @@ mode_manual() {
 
 # ── Mode: watch ───────────────────────────────────────────────────────────────
 
+# Global orchestration loop: one worker, every project. Each tick discovers the
+# registered projects from the web UI and runs a dispatch pass for each. The
+# global concurrency semaphore (/tmp/darkflow-slots) still caps how many agent
+# sessions run at once across all projects, so iterating serially here never
+# over-subscribes the machine.
 mode_watch() {
   local interval=30
   local tick=0
-  local consecutive_skips=0
 
-  log "Dark Flow started (tick every ${interval}s). Ctrl-C to stop."
-  trap 'echo ""; log "WATCH  stopped (signal)"; stop_heartbeat_loop; exit 0' INT TERM
+  glog "Dark Flow global worker started (tick every ${interval}s, ${SELF_PATH}). Ctrl-C to stop."
+  trap 'echo ""; glog "WATCH stopped (signal)"; stop_heartbeat_loop; exit 0' INT TERM
 
-  # Check for update at startup; exec self if a new version was installed.
-  local _watch_pre_ver; _watch_pre_ver=$(darkflow_val "version" "0.0.0")
+  # Check for update at startup; re-exec the (newly installed) worker if changed.
+  local _pre_ver; _pre_ver=$(global_val "version" "0.0.0")
   check_for_update
-  if [[ "$(darkflow_val "version" "0.0.0")" != "$_watch_pre_ver" ]]; then
-    log "UPDATE reloading dispatcher"
-    exec "${BASH_SOURCE[0]}"
+  if [[ "$(global_val "version" "0.0.0")" != "$_pre_ver" ]]; then
+    glog "UPDATE reloading worker"
+    exec "$SELF_PATH"
   fi
 
   while true; do
     (( tick++ )) || true
-    log "WATCH  tick ${tick}"
-    send_heartbeat "idle"
 
-    if try_acquire_lock; then
-      consecutive_skips=0
-      mode_dispatch false || log "WATCH  dispatch error (tick ${tick})"
-      # Full web UI sync (GitHub issues + metadata) every 10th tick (~5 min).
-      # The heartbeat above keeps the worker-alive signal fresh every 30 s.
-      if (( tick % 10 == 1 )); then
-        sync_webapp
-      fi
-      # Check for update every 30 ticks (~15 min); reload if new version installed.
-      if (( tick % 30 == 0 )); then
-        local _tick_pre_ver; _tick_pre_ver=$(darkflow_val "version" "0.0.0")
-        check_for_update
-        if [[ "$(darkflow_val "version" "0.0.0")" != "$_tick_pre_ver" ]]; then
-          log "UPDATE reloading dispatcher"
-          release_lock
-          exec "${BASH_SOURCE[0]}"
-        fi
-      fi
-      release_lock
+    local projects; projects=$(fetch_projects)
+    if [[ -z "$projects" ]]; then
+      glog "WATCH tick ${tick} — no projects registered (set each project's Local path in the web UI)"
     else
-      (( consecutive_skips++ )) || true
-      local owner_pid=""
-      [[ -f "$LOCK_DIR/pid" ]] && owner_pid=$(cat "$LOCK_DIR/pid" 2>/dev/null || echo "")
-      if (( consecutive_skips >= 5 )); then
-        log "WATCH  WARN skipped tick ${tick} (${consecutive_skips} skips in a row, lock held by PID ${owner_pid:-unknown})"
-      else
-        log "WATCH  skipped tick ${tick} (another dispatch is running, PID ${owner_pid:-unknown})"
+      local pcount; pcount=$(printf '%s\n' "$projects" | grep -c . || true)
+      glog "WATCH tick ${tick} — ${pcount} project(s)"
+      local path
+      while IFS= read -r path; do
+        [[ -z "$path" ]] && continue
+        if [[ ! -d "${path}/.darkflow.d" ]]; then
+          glog "SKIP ${path} — no .darkflow.d/ (moved, deleted, or not installed)"
+          continue
+        fi
+        set_project "$path" || { glog "SKIP ${path} — cannot enter directory"; continue; }
+        send_heartbeat "idle"
+        if try_acquire_lock; then
+          mode_dispatch false || log "WATCH  dispatch error (tick ${tick})"
+          # Full web UI sync (GitHub issues + metadata) every 10th tick (~5 min).
+          if (( tick % 10 == 1 )); then
+            sync_webapp
+          fi
+          release_lock
+        else
+          local owner_pid=""
+          [[ -f "$LOCK_DIR/pid" ]] && owner_pid=$(cat "$LOCK_DIR/pid" 2>/dev/null || echo "")
+          log "WATCH  skipped (another dispatch is running, PID ${owner_pid:-unknown})"
+        fi
+      done <<< "$projects"
+    fi
+
+    # Check for a new Dark Flow version every 30 ticks (~15 min); reload if the
+    # global worker was upgraded underneath us.
+    if (( tick % 30 == 0 )); then
+      local _tick_pre_ver; _tick_pre_ver=$(global_val "version" "0.0.0")
+      check_for_update
+      if [[ "$(global_val "version" "0.0.0")" != "$_tick_pre_ver" ]]; then
+        glog "UPDATE reloading worker"
+        exec "$SELF_PATH"
       fi
     fi
 
@@ -1835,14 +1947,16 @@ mode_sync() {
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-mkdir -p "$STATE_DIR"
-
 case "${1:-}" in
   --list)
+    preflight_tools || exit 1
+    require_cwd_project
     preflight || exit 1
     mode_list
     ;;
   --dry-run)
+    preflight_tools || exit 1
+    require_cwd_project
     preflight || exit 1
     acquire_lock
     mode_dispatch true
@@ -1851,18 +1965,21 @@ case "${1:-}" in
     mode_self_test
     ;;
   --sync)
+    require_cwd_project
     mode_sync
     ;;
   "")
-    # Default: continuous loop, check every minute
-    preflight || exit 1
-    mode_watch 60
+    # Default: global continuous loop over every registered project.
+    preflight_tools || exit 1
+    mode_watch
     ;;
   -*)
     echo "Usage: darkflow-run.sh [<routine-name> | --sync | --list | --dry-run | --self-test]" >&2
     exit 1
     ;;
   *)
+    preflight_tools || exit 1
+    require_cwd_project
     preflight || exit 1
     acquire_lock
     mode_manual "$1"

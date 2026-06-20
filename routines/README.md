@@ -2,18 +2,26 @@
 
 Routines are Claude agents that run automatically on a schedule, keeping your project healthy without manual intervention.
 
-Each routine is a slash command (`/darkflow:<name>`) that Dark Flow installs into `.claude/commands/darkflow/`. The **dispatcher** (`darkflow-run.sh`) reads a YAML schedule and runs due routines via `claude -p`.
+Each routine is a slash command (`/darkflow:<name>`) installed once into user scope (`~/.claude/commands/darkflow/`). A **single global worker** (`~/.darkflow/darkflow-run.sh`) services every project: it reads each project's YAML schedule and runs due routines via `claude -p` (or `codex exec`).
 
 ## How it works
 
 ```
-.darkflow.d/routines.yml     ← schedule: which cron, which model, enabled?
-.darkflow.d/darkflow-run.sh  ← dispatcher: reads YAML, runs due routines
-.darkflow.d/state/           ← last-run timestamps (git-ignored, machine-local)
-.darkflow.d/darkflow-run.log ← dispatcher log (git-ignored)
+~/.darkflow/darkflow-run.sh   ← ONE global worker: discovers projects, runs due routines
+~/.darkflow/config            ← global config (webapp_url, version)
+~/.darkflow/worker.log        ← global worker log
+
+per project:
+.darkflow.d/routines.yml      ← schedule: which cron, which model, enabled?
+.darkflow.d/state/            ← last-run timestamps (git-ignored, machine-local)
+.darkflow.d/darkflow-run.log  ← this project's run log (git-ignored)
 ```
 
-The dispatcher fires `claude -p "/darkflow:<name>"` for each due routine — a clean, non-interactive session that starts only with the slash command. No context is carried between runs.
+The worker discovers projects from the web UI (`GET /api/projects` — each project's
+**Local path**), then for each one fires `claude -p "/darkflow:<name>"` for every due
+routine — a clean, non-interactive session that starts only with the slash command. No
+context is carried between runs. A machine-global semaphore caps how many agent sessions
+run at once across all projects.
 
 ## Routine schedule
 
@@ -45,49 +53,39 @@ Cron times are in the machine's local timezone.
 
 ## Running routines
 
-```bash
-# Start the dispatcher loop (checks every minute — default)
-bash .darkflow.d/darkflow-run.sh
-
-# Run one routine immediately (ignores schedule and state)
-bash .darkflow.d/darkflow-run.sh fix-issues
-
-# Show status table (last run, enabled, cron)
-bash .darkflow.d/darkflow-run.sh --list
-
-# Preview what would run without running it
-bash .darkflow.d/darkflow-run.sh --dry-run
-```
-
-## Running in the foreground
-
-The default no-argument mode is a **continuous loop** — it checks for due routines every minute, runs them, and sleeps until the next check. No system scheduler needed:
+The global worker runs all projects automatically. The single-project subcommands act on
+the project containing the current directory:
 
 ```bash
-bash .darkflow.d/darkflow-run.sh
+# Run one routine immediately (ignores schedule and state) — cwd's project
+~/.darkflow/darkflow-run.sh fix-issues
+
+# Show status table (last run, enabled, cron) — cwd's project
+~/.darkflow/darkflow-run.sh --list
+
+# Preview what would run without running it — cwd's project
+~/.darkflow/darkflow-run.sh --dry-run
 ```
 
-Recommended: run inside `tmux` or `screen` so it survives terminal disconnect:
+## The global worker
+
+With no arguments, `~/.darkflow/darkflow-run.sh` is a **continuous loop**: every 30s it
+discovers the registered projects from the web UI and runs each one's due routines. On
+**macOS** `install.sh` installs it as a launchd agent (`com.darkflow.worker`) with
+`RunAtLoad` + `KeepAlive`, so it starts at login and restarts if it dies — no terminal to
+keep open.
 
 ```bash
-tmux new-session -d -s darkflow 'bash .darkflow.d/darkflow-run.sh'
+# Inspect / control the launchd agent (macOS)
+launchctl list | grep darkflow
+launchctl unload ~/Library/LaunchAgents/com.darkflow.worker.plist   # stop
+launchctl load -w ~/Library/LaunchAgents/com.darkflow.worker.plist  # start
 ```
 
-Press Ctrl-C (or `kill`) to stop cleanly.
+On Linux (no launchd) start it however you prefer, e.g. `nohup ~/.darkflow/darkflow-run.sh >/dev/null 2>&1 &`.
 
-## Setting up a system scheduler
-
-For background operation without a persistent terminal, install a system scheduler:
-
-```bash
-bash .darkflow.d/install-scheduler.sh
-```
-
-This installs a **launchd job** (macOS) or **crontab entry** (Linux) that fires the dispatcher every 15 minutes. To remove it:
-
-```bash
-bash .darkflow.d/uninstall-scheduler.sh
-```
+A project becomes eligible the moment it has synced and has a **Local path** set in the
+web UI (the installer registers this automatically on first sync).
 
 ## Editing the schedule
 

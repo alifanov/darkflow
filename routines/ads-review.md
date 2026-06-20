@@ -22,7 +22,7 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 | Folder | Project root (`/path/to/your-project`) |
 | Model | Sonnet (default) |
 | Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
-| Run manually | `bash .darkflow.d/darkflow-run.sh ads-review` |
+| Run manually | `~/.darkflow/darkflow-run.sh ads-review` |
 
 ---
 

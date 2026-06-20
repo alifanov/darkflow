@@ -20,7 +20,7 @@ Daily check of the Coolify deployment pipeline — detects failed/red deploys an
 | Folder | Project root (`/path/to/your-project`) |
 | Model | Sonnet (default) |
 | Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
-| Run manually | `bash .darkflow.d/darkflow-run.sh coolify-check-deployment` |
+| Run manually | `~/.darkflow/darkflow-run.sh coolify-check-deployment` |
 
 ---
 

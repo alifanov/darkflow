@@ -29,7 +29,7 @@ The command reads `.darkflow` for the output language, branch, and merge strateg
 | Model | Sonnet (default) |
 | Module | `mailbox` |
 | Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
-| Run manually | `bash .darkflow.d/darkflow-run.sh mailbox-check` |
+| Run manually | `~/.darkflow/darkflow-run.sh mailbox-check` |
 
 Enable with `--with-mailbox` during install, or set `modules=...,mailbox,...` in `.darkflow`.
 

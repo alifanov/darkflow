@@ -26,7 +26,7 @@ The command reads `.darkflow` for `site_url` (the URL to monitor) and `language`
 | Folder | Project root (`/path/to/your-project`) |
 | Model | Sonnet (mechanical check — curl + status + body inspection) |
 | Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
-| Run manually | `bash .darkflow.d/darkflow-run.sh uptime-check` |
+| Run manually | `~/.darkflow/darkflow-run.sh uptime-check` |
 
 Set the URL to monitor explicitly with `site_url=https://example.com` in `.darkflow` (recommended; otherwise it is auto-discovered on first run).
 

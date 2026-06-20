@@ -163,15 +163,20 @@ Cron times are in the machine's local timezone. Schedule is defined in `.darkflo
 
 ### Running routines
 
-Run routines manually at any time:
+A **single global worker** (`~/.darkflow/darkflow-run.sh`) services every project on
+the machine. On macOS it's installed as a launchd agent (`com.darkflow.worker`) and
+starts at login — no per-project process to babysit. It discovers projects from the
+web UI (each project's **Local path**), so a project appears once it has synced.
+
+Run routines manually at any time (from inside the project directory):
 
 ```bash
-bash .darkflow.d/darkflow-run.sh fix-issues      # run one routine now
-bash .darkflow.d/darkflow-run.sh --list           # show status table
-bash .darkflow.d/darkflow-run.sh --dry-run        # preview what's due
+~/.darkflow/darkflow-run.sh fix-issues      # run one routine now (cwd's project)
+~/.darkflow/darkflow-run.sh --list           # show status table (cwd's project)
+~/.darkflow/darkflow-run.sh --dry-run        # preview what's due (cwd's project)
 ```
 
-See [routines/README.md](./routines/README.md) for full dispatcher docs.
+See [routines/README.md](./routines/README.md) for full worker docs.
 
 ### CI gate (GitHub Actions, optional)
 
@@ -241,7 +246,7 @@ Human
 - [ ] Run `install.sh`
 - [ ] Verify `gh auth status` works in the project folder
 - [ ] Configure required MCP servers (see each routine's page for details)
-- [ ] Run `bash .darkflow.d/darkflow-run.sh --dry-run` to confirm the dispatcher works
+- [ ] Run `~/.darkflow/darkflow-run.sh --dry-run` from the project to confirm the worker works
 
 ---
 

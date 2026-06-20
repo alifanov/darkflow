@@ -73,6 +73,7 @@ interface IngestAlert {
 interface IngestBody {
   repoUrl: string;
   name?: string;
+  localPath?: string;
   domain?: string;
   branch?: string;
   language?: string;
@@ -107,6 +108,9 @@ export async function POST(req: NextRequest) {
     create: {
       repoUrl,
       name: body.name ?? repoUrl.split("/").pop() ?? repoUrl,
+      // The global worker discovers projects by their localPath, so seed it on
+      // first contact. After that the Web UI is the source of truth (see below).
+      localPath: body.localPath?.trim() || null,
       domain: body.domain || null,
       branch: body.branch ?? "main",
       language: body.language ?? "English",
@@ -123,6 +127,18 @@ export async function POST(req: NextRequest) {
       lastSyncedAt: new Date(),
     },
   });
+
+  // Backfill localPath when an install/sync supplies it but the stored value is
+  // still empty (e.g. the project was first created by a worker sync before the
+  // installer registered its path). A non-empty UI-set value always wins, so we
+  // never overwrite one here.
+  const incomingLocalPath = body.localPath?.trim();
+  if (incomingLocalPath && !project.localPath) {
+    await prisma.project.update({
+      where: { id: project.id },
+      data: { localPath: incomingLocalPath },
+    });
+  }
 
   if (body.issues !== undefined) {
     // Snapshot pending statuses so we can preserve those still in flight

@@ -22,7 +22,7 @@ The command reads `.darkflow` for the target branch — no placeholders to repla
 | Folder | Project root (`/path/to/your-project`) |
 | Model | Sonnet (default) |
 | Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
-| Run manually | `bash .darkflow.d/darkflow-run.sh claude-md-update` |
+| Run manually | `~/.darkflow/darkflow-run.sh claude-md-update` |
 
 ---
 

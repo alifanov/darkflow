@@ -23,6 +23,8 @@ SKIP_CLAUDE_SNIPPET=false
 FORCE=false
 DRY_RUN=false
 NON_INTERACTIVE=false
+SELF_UPDATE=false
+WEBAPP_URL_SET=false
 
 MOD_ANALYTICS=""
 MOD_OBSERVABILITY=""
@@ -116,7 +118,8 @@ while [[ $# -gt 0 ]]; do
     --obs-url)            OBS_URL="$2"; shift 2 ;;
     --obs-api-key)        OBS_API_KEY="$2"; shift 2 ;;
     --posthog-project-id) POSTHOG_PROJECT_ID="$2"; shift 2 ;;
-    --webapp-url)         WEBAPP_URL="$2"; shift 2 ;;
+    --webapp-url)         WEBAPP_URL="$2"; WEBAPP_URL_SET=true; shift 2 ;;
+    --self-update)        SELF_UPDATE=true; NON_INTERACTIVE=true; shift ;;
     --branch)             MAIN_BRANCH="$2"; shift 2 ;;
     --merge-pr)           MERGE_STRATEGY="pr"; shift ;;
     --merge-direct)       MERGE_STRATEGY="direct"; shift ;;
@@ -152,6 +155,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --no-labels           Skip GitHub label setup"
       echo "  --no-claude           Skip CLAUDE.md creation"
       echo "  --target DIR          Install into DIR instead of current directory"
+      echo "  --self-update         Refresh only the global worker + user-scope commands (no project work)"
       exit 0
       ;;
     *) warn "Unknown argument: $1"; shift ;;
@@ -202,6 +206,161 @@ project_slug() {
   echo "${PROJECT_NAME}" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-*//;s/-*$//'
 }
 
+# ── Global worker bootstrap (one worker for every project) ────────────────────
+# Dark Flow now runs a single host-side worker (~/.darkflow/darkflow-run.sh) that
+# services every project, plus user-scope slash commands so they exist in all
+# projects automatically. These artifacts are machine-global, not per-project.
+
+GLOBAL_DIR="$HOME/.darkflow"
+USER_CMD_DIR="$HOME/.claude/commands/darkflow"
+
+# The worker requires a modern bash (the script uses bash 4+ syntax). macOS ships
+# /bin/bash 3.2, which can't even parse it, so the launchd agent must run under the
+# same bash that runs this installer (typically Homebrew's bash 5 on PATH).
+BASH_BIN="$(command -v bash 2>/dev/null || echo /bin/bash)"
+
+# Every slash command Dark Flow ships, installed once into user scope as a
+# superset — routines.yml still gates which actually run per project, and an
+# unused slash command is harmless.
+ALL_DF_COMMANDS=(
+  add-issue install self-update fix-issues analytics-review observability-check
+  gsc-check ads-review coolify-check-deployment claude-md-update security-audit
+  vulnerability-check architecture-review update-config docs-audit product-overview
+  build-optimization csp-setup uptime-check grill design-audit design-critique
+  design-harden mailbox-check code-health fix-ci-issue
+)
+
+# Fetch a template (local clone or remote) to dest, always overwriting.
+gb_fetch() {
+  local rel="$1" dest="$2"
+  mkdir -p "$(dirname "$dest")"
+  if [[ "$USE_LOCAL" == true ]]; then
+    cp "$SOURCE_DIR/$rel" "$dest"
+  else
+    curl -fsSL "${DARKFLOW_REPO}/templates/${rel}?t=$(date +%s)" -o "$dest"
+  fi
+}
+
+install_global_worker() {
+  [[ "$DRY_RUN" == true ]] && { info "Would install global worker at ${GLOBAL_DIR}/darkflow-run.sh"; return; }
+  mkdir -p "$GLOBAL_DIR"
+  gb_fetch "darkflow/darkflow-run.sh" "${GLOBAL_DIR}/darkflow-run.sh"
+  chmod +x "${GLOBAL_DIR}/darkflow-run.sh"
+  success "Installed global worker at ${GLOBAL_DIR}/darkflow-run.sh"
+}
+
+install_user_commands() {
+  [[ "$DRY_RUN" == true ]] && { info "Would install slash commands into ${USER_CMD_DIR}/"; return; }
+  mkdir -p "$USER_CMD_DIR"
+  gb_fetch ".claude/commands/darkflow.md" "$HOME/.claude/commands/darkflow.md" \
+    || warn "Could not fetch root command (darkflow.md)"
+  local c
+  for c in "${ALL_DF_COMMANDS[@]}"; do
+    gb_fetch ".claude/commands/darkflow/${c}.md" "${USER_CMD_DIR}/${c}.md" \
+      || warn "Could not fetch command: ${c}"
+  done
+  success "Installed ${#ALL_DF_COMMANDS[@]} slash commands into ${USER_CMD_DIR}/"
+}
+
+# Write ~/.darkflow/config (webapp_url + version). Preserves a custom webapp_url
+# across updates — only --webapp-url overrides it.
+write_global_config() {
+  [[ "$DRY_RUN" == true ]] && return
+  mkdir -p "$GLOBAL_DIR"
+  local cfg="${GLOBAL_DIR}/config" existing_url url
+  existing_url=$(grep "^webapp_url=" "$cfg" 2>/dev/null | head -1 | cut -d= -f2- || true)
+  if [[ "$WEBAPP_URL_SET" == true ]]; then
+    url="$WEBAPP_URL"
+  elif [[ -n "$existing_url" ]]; then
+    url="$existing_url"
+  else
+    url="$WEBAPP_URL"
+  fi
+  {
+    echo "# Dark Flow global worker config — managed by install.sh"
+    echo "webapp_url=${url}"
+    echo "version=${LATEST_VERSION}"
+  } > "$cfg"
+}
+
+install_launchd_agent() {
+  [[ "$DRY_RUN" == true ]] && { info "Would install launchd agent com.darkflow.worker"; return; }
+  if [[ "$DETECTED_OS" != "macos" ]]; then
+    info "Global worker installed at ${GLOBAL_DIR}/darkflow-run.sh"
+    dim "Auto-start is macOS-only. Start it on login however you prefer, e.g.:"
+    dim "  nohup ${GLOBAL_DIR}/darkflow-run.sh >/dev/null 2>&1 &"
+    return
+  fi
+  local plist="$HOME/Library/LaunchAgents/com.darkflow.worker.plist"
+  mkdir -p "$HOME/Library/LaunchAgents"
+  cat > "$plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>             <string>com.darkflow.worker</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>${BASH_BIN}</string>
+    <string>${GLOBAL_DIR}/darkflow-run.sh</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>${PATH}</string>
+    <key>HOME</key><string>${HOME}</string>
+  </dict>
+  <key>RunAtLoad</key>         <true/>
+  <key>KeepAlive</key>         <true/>
+  <key>StandardOutPath</key>   <string>${GLOBAL_DIR}/worker.out.log</string>
+  <key>StandardErrorPath</key> <string>${GLOBAL_DIR}/worker.err.log</string>
+</dict>
+</plist>
+PLIST
+  launchctl unload "$plist" 2>/dev/null || true
+  if launchctl load -w "$plist" 2>/dev/null; then
+    success "Global worker launchd agent loaded (com.darkflow.worker)"
+  else
+    warn "Could not load launchd agent — start manually: bash ${GLOBAL_DIR}/darkflow-run.sh"
+  fi
+}
+
+# Remove the now-obsolete per-project worker + command copies. Only runs inside a
+# project (skipped during --self-update, which has no project context).
+cleanup_legacy_project_files() {
+  [[ "$DRY_RUN" == true || "$SELF_UPDATE" == true ]] && return
+  if [[ -f ".darkflow.d/darkflow-run.sh" ]]; then
+    rm -f ".darkflow.d/darkflow-run.sh"
+    success "Removed legacy per-project worker (.darkflow.d/darkflow-run.sh) — now global"
+  fi
+  if [[ -d ".claude/commands/darkflow" ]]; then
+    rm -rf ".claude/commands/darkflow"
+    success "Removed per-project commands (.claude/commands/darkflow/) — now in ~/.claude/commands/darkflow/"
+  fi
+  [[ -f ".claude/commands/darkflow.md" ]] && rm -f ".claude/commands/darkflow.md"
+  return 0
+}
+
+global_bootstrap() {
+  header "Global worker (one worker for all projects)"
+  install_global_worker
+  install_user_commands
+  write_global_config
+  install_launchd_agent
+  cleanup_legacy_project_files
+}
+
+# ── Global-only self-update (invoked by the worker's update check) ────────────
+# Refreshes just the global worker + user-scope commands, then exits — no project
+# scaffolding, labels, or sync. cwd is irrelevant here.
+if [[ "$SELF_UPDATE" == true ]]; then
+  LATEST_VERSION=$(fetch_raw "VERSION" | tr -d '[:space:]')
+  [[ -z "$LATEST_VERSION" ]] && LATEST_VERSION="0.0.0"
+  global_bootstrap
+  echo ""
+  success "Dark Flow global worker refreshed to v${LATEST_VERSION}"
+  exit 0
+fi
+
 # ── Mode detection ────────────────────────────────────────────────────────────
 
 MODE=fresh
@@ -231,8 +390,8 @@ if [[ "$MODE" == "verify" ]]; then
   dim "Run with --force to re-apply all templates."
   echo ""
   _webapp_url=$(read_config webapp_url "")
-  if [[ -n "$_webapp_url" && -f ".darkflow.d/darkflow-run.sh" ]]; then
-    bash ".darkflow.d/darkflow-run.sh" --sync >/dev/null 2>&1 && \
+  if [[ -n "$_webapp_url" && -x "${GLOBAL_DIR}/darkflow-run.sh" ]]; then
+    bash "${GLOBAL_DIR}/darkflow-run.sh" --sync >/dev/null 2>&1 && \
       success "Synced project to web UI (${_webapp_url})" || true
   fi
   exit 0
@@ -779,9 +938,9 @@ HEREDOC
   [[ "$MOD_CI_GATE"    == true ]] && echo "- **CI gate** (GitHub Actions, on push) — failing lint/test → auto-filed \`source:ci\` issue"
   [[ "$MOD_CI_GATE"    == true ]] && echo "- **Fix CI issue** (Every 15 min) — \`/darkflow:fix-ci-issue\` picks up a \`source:ci\` issue, pushes a fix; retries up to 3x, then escalates to \`needs-human\`"
   echo ""
-  echo "Schedule: \`.darkflow.d/routines.yml\`  |  Dispatcher: \`bash .darkflow.d/darkflow-run.sh\`"
-  echo "Run any routine manually: \`bash .darkflow.d/darkflow-run.sh <name>\`"
-  echo "List status: \`bash .darkflow.d/darkflow-run.sh --list\`"
+  echo "Schedule: \`.darkflow.d/routines.yml\`  |  Worker: one global \`~/.darkflow/darkflow-run.sh\` services every project"
+  echo "Run any routine manually (from this project dir): \`~/.darkflow/darkflow-run.sh <name>\`"
+  echo "List status (from this project dir): \`~/.darkflow/darkflow-run.sh --list\`"
   echo ""
   echo "### Dark Flow commands"
   echo ""
@@ -1070,12 +1229,15 @@ run_checklist() {
 
 # ── Web UI sync ───────────────────────────────────────────────────────────────
 
+# Registers this project (incl. its localPath) and pushes GitHub issues to the
+# web UI via the global worker's --sync (run from the project dir, which the
+# worker resolves from cwd). localPath is what lets the global worker discover it.
 web_sync() {
   local _url
   _url=$(read_config webapp_url "$WEBAPP_URL")
-  if [[ -n "$_url" && -f ".darkflow.d/darkflow-run.sh" ]]; then
-    if bash ".darkflow.d/darkflow-run.sh" --sync >/dev/null 2>&1; then
-      success "Synced project + GitHub issues to web UI (${_url})"
+  if [[ -n "$_url" && -x "${GLOBAL_DIR}/darkflow-run.sh" ]]; then
+    if bash "${GLOBAL_DIR}/darkflow-run.sh" --sync >/dev/null 2>&1; then
+      success "Registered project + synced GitHub issues to web UI (${_url})"
     else
       info "Web UI sync skipped — run 'make df-sync' to retry"
     fi
@@ -1119,51 +1281,24 @@ smart_update_template ".github/ISSUE_TEMPLATE/recommendation.yml" \
 
 [[ "$DRY_RUN" == false && -f "docs/README.md" ]] && inject_name "docs/README.md"
 
-make_dir ".claude/commands"
-make_dir ".claude/commands/darkflow"
-
-smart_update_template ".claude/commands/darkflow.md"                              ".claude/commands/darkflow.md"
-smart_update_template ".claude/commands/darkflow/add-issue.md"                    ".claude/commands/darkflow/add-issue.md"
-smart_update_template ".claude/commands/darkflow/install.md"                      ".claude/commands/darkflow/install.md"
-smart_update_template ".claude/commands/darkflow/self-update.md"                   ".claude/commands/darkflow/self-update.md"
-smart_update_template ".claude/commands/darkflow/fix-issues.md"                   ".claude/commands/darkflow/fix-issues.md"
-smart_update_template ".claude/commands/darkflow/analytics-review.md"             ".claude/commands/darkflow/analytics-review.md"
-smart_update_template ".claude/commands/darkflow/observability-check.md"          ".claude/commands/darkflow/observability-check.md"
-smart_update_template ".claude/commands/darkflow/gsc-check.md"                    ".claude/commands/darkflow/gsc-check.md"
-smart_update_template ".claude/commands/darkflow/ads-review.md"                   ".claude/commands/darkflow/ads-review.md"
-smart_update_template ".claude/commands/darkflow/coolify-check-deployment.md"     ".claude/commands/darkflow/coolify-check-deployment.md"
-smart_update_template ".claude/commands/darkflow/claude-md-update.md"             ".claude/commands/darkflow/claude-md-update.md"
-smart_update_template ".claude/commands/darkflow/security-audit.md"               ".claude/commands/darkflow/security-audit.md"
-smart_update_template ".claude/commands/darkflow/vulnerability-check.md"          ".claude/commands/darkflow/vulnerability-check.md"
-smart_update_template ".claude/commands/darkflow/architecture-review.md"          ".claude/commands/darkflow/architecture-review.md"
-smart_update_template ".claude/commands/darkflow/update-config.md"                ".claude/commands/darkflow/update-config.md"
-smart_update_template ".claude/commands/darkflow/docs-audit.md"                   ".claude/commands/darkflow/docs-audit.md"
-smart_update_template ".claude/commands/darkflow/product-overview.md"             ".claude/commands/darkflow/product-overview.md"
-smart_update_template ".claude/commands/darkflow/build-optimization.md"          ".claude/commands/darkflow/build-optimization.md"
-smart_update_template ".claude/commands/darkflow/csp-setup.md"                    ".claude/commands/darkflow/csp-setup.md"
-smart_update_template ".claude/commands/darkflow/uptime-check.md"                 ".claude/commands/darkflow/uptime-check.md"
-smart_update_template ".claude/commands/darkflow/grill.md"                       ".claude/commands/darkflow/grill.md"
-smart_update_template ".claude/commands/darkflow/design-audit.md"                ".claude/commands/darkflow/design-audit.md"
-smart_update_template ".claude/commands/darkflow/design-critique.md"             ".claude/commands/darkflow/design-critique.md"
-smart_update_template ".claude/commands/darkflow/design-harden.md"               ".claude/commands/darkflow/design-harden.md"
-smart_update_template "darkflow/darkflow-run.sh"        ".darkflow.d/darkflow-run.sh"        "true" "true"
+# Slash commands + the worker itself are installed once into user/home scope by
+# global_bootstrap (below) — not copied per project anymore. The project keeps
+# only its own operational files: get-config.sh, mailbox scripts, ci-gate workflow.
 smart_update_template "darkflow/get-config.sh"          ".darkflow.d/get-config.sh"          "true"
 
 if [[ "$MOD_MAILBOX" == true ]]; then
-  smart_update_template ".claude/commands/darkflow/mailbox-check.md" ".claude/commands/darkflow/mailbox-check.md"
   smart_update_template "darkflow/mailbox/fetch.py" ".darkflow.d/mailbox/fetch.py" "true"
   smart_update_template "darkflow/mailbox/send.py"  ".darkflow.d/mailbox/send.py"  "true"
-fi
-
-if [[ "$MOD_FALLOW" == true ]]; then
-  smart_update_template ".claude/commands/darkflow/code-health.md" ".claude/commands/darkflow/code-health.md"
 fi
 
 if [[ "$MOD_CI_GATE" == true ]]; then
   make_dir ".github/workflows"
   smart_update_template ".github/workflows/darkflow-ci-gate.yml" ".github/workflows/darkflow-ci-gate.yml"
-  smart_update_template ".claude/commands/darkflow/fix-ci-issue.md" ".claude/commands/darkflow/fix-ci-issue.md"
 fi
+
+# Install / refresh the single global worker + all user-scope slash commands, and
+# clean up any legacy per-project worker/command copies left by older installs.
+global_bootstrap
 
 # ── 3. Config (.darkflow) ─────────────────────────────────────────────────────
 
@@ -1271,8 +1406,9 @@ if [[ ! -f ".darkflow.d/routines.yml" || "$FORCE" == true ]]; then
     {
       cat << 'YAML'
 # Dark Flow routine schedule — generated by install.sh. Safe to edit after installation.
-# Run a routine manually:   bash .darkflow.d/darkflow-run.sh <name>
-# List routines and status: bash .darkflow.d/darkflow-run.sh --list
+# A single global worker (~/.darkflow/darkflow-run.sh) reads this for every project.
+# Run a routine manually (from this project dir):   ~/.darkflow/darkflow-run.sh <name>
+# List routines and status (from this project dir): ~/.darkflow/darkflow-run.sh --list
 defaults:
   model: sonnet
   engine: claude
@@ -1480,26 +1616,32 @@ setup_labels
 sync_claude_md
 sync_makefile
 
-# ── Legacy scheduler cleanup ──────────────────────────────────────────────────
+# ── Legacy per-project scheduler cleanup ──────────────────────────────────────
+# Dark Flow used to run one dispatcher per project (started by a per-slug launchd
+# job or crontab line). The single global worker (com.darkflow.worker) replaces
+# them, so remove any per-project scheduler left over from older installs.
 
-if [[ "$MODULES" == *"scheduler"* && "$MODE" == "update" && "$DRY_RUN" == false ]]; then
+if [[ "$DRY_RUN" == false ]]; then
   if [[ "$DETECTED_OS" == "macos" ]]; then
     _plist="$HOME/Library/LaunchAgents/com.darkflow.${SLUG}.plist"
     if [[ -f "$_plist" ]]; then
       launchctl unload "$_plist" 2>/dev/null || true
       rm -f "$_plist"
-      success "Removed legacy launchd job: com.darkflow.${SLUG}"
+      success "Removed legacy per-project launchd job: com.darkflow.${SLUG}"
     fi
   elif [[ "$DETECTED_OS" == "linux" ]]; then
     if crontab -l 2>/dev/null | grep -q "# darkflow:${SLUG}"; then
       (crontab -l 2>/dev/null | grep -v "# darkflow:${SLUG}") | crontab -
-      success "Removed legacy crontab entry: darkflow:${SLUG}"
+      success "Removed legacy per-project crontab entry: darkflow:${SLUG}"
     fi
   fi
-  if [[ "$(uname)" == "Darwin" ]]; then
-    sed -i '' "s/,scheduler//g; s/scheduler,//g; s/^modules=scheduler$/modules=/" .darkflow
-  else
-    sed -i "s/,scheduler//g; s/scheduler,//g; s/^modules=scheduler$/modules=/" .darkflow
+  # Drop the obsolete `scheduler` module marker from .darkflow if present.
+  if [[ "$MODULES" == *"scheduler"* && -f .darkflow ]]; then
+    if [[ "$(uname)" == "Darwin" ]]; then
+      sed -i '' "s/,scheduler//g; s/scheduler,//g; s/^modules=scheduler$/modules=/" .darkflow
+    else
+      sed -i "s/,scheduler//g; s/scheduler,//g; s/^modules=scheduler$/modules=/" .darkflow
+    fi
   fi
 fi
 
@@ -1599,7 +1741,10 @@ echo ""
 echo -e "  ${DIM}Minutes shown are baselines; this project's actual cron minute is offset by"
 echo -e "  +$(( $(printf '%s' "$SLUG" | cksum | cut -d' ' -f1) % 60 )) so independent projects don't all dispatch on the same minute. See routines.yml.${RESET}"
 echo ""
-echo -e "  Run manually:  ${DIM}bash .darkflow.d/darkflow-run.sh <name>${RESET}"
-echo -e "  Show status:   ${DIM}bash .darkflow.d/darkflow-run.sh --list${RESET}"
-echo -e "  Dry run:       ${DIM}bash .darkflow.d/darkflow-run.sh --dry-run${RESET}"
+echo -e "  ${DIM}One global worker (~/.darkflow/darkflow-run.sh) services every project."
+echo -e "  On macOS it runs via launchd (com.darkflow.worker) and starts at login.${RESET}"
+echo ""
+echo -e "  Run manually:  ${DIM}~/.darkflow/darkflow-run.sh <name>   (from this project dir)${RESET}"
+echo -e "  Show status:   ${DIM}~/.darkflow/darkflow-run.sh --list   (from this project dir)${RESET}"
+echo -e "  Dry run:       ${DIM}~/.darkflow/darkflow-run.sh --dry-run (from this project dir)${RESET}"
 echo ""

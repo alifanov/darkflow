@@ -22,7 +22,7 @@ The command reads `.darkflow` for branch, language, and merge strategy — no pl
 | Folder | Project root (`/path/to/your-project`) |
 | Model | Sonnet (default) |
 | Permission mode | `bypassPermissions` (set in `.darkflow.d/routines.yml`) |
-| Run manually | `bash .darkflow.d/darkflow-run.sh fix-issues` |
+| Run manually | `~/.darkflow/darkflow-run.sh fix-issues` |
 
 ---
 

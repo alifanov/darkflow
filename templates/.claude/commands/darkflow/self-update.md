@@ -6,7 +6,9 @@ Update Dark Flow to the latest version.
 bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh) --force --yes
 ```
 
-The installer is fully non-interactive: `--yes` skips all prompts, `--force` overwrites locally-modified templates. It will update `.darkflow.d/darkflow-run.sh`, slash commands, and the version in `.darkflow`.
+The installer is fully non-interactive: `--yes` skips all prompts, `--force` overwrites locally-modified templates. It refreshes the global worker (`~/.darkflow/darkflow-run.sh`), the user-scope slash commands (`~/.claude/commands/darkflow/`), this project's `.darkflow.d/` files, and the version in `.darkflow`.
+
+> The global worker also self-updates on its own: it checks GitHub every ~15 min and runs `install.sh --self-update` when a newer version ships, so the worker + commands stay current without this command. Run this command to force an immediate update or to refresh a single project's files.
 
 ## Step 2 — Ensure `.darkflow` is in `.gitignore`
 

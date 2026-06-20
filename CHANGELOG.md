@@ -14,6 +14,15 @@ Categories:
 
 ---
 
+## [3.0.0] — 2026-06-20
+
+**Breaking: one global worker + user-scope commands.** Dark Flow no longer runs a separate dispatcher per project or copies slash commands into each project. Re-run the installer (`/darkflow:self-update`) in any project once to migrate — the worker then auto-self-updates.
+
+- **Installer** — `install.sh` now installs a single global worker at `~/.darkflow/darkflow-run.sh` and, on macOS, loads it as a launchd agent (`com.darkflow.worker`, `RunAtLoad` + `KeepAlive`) so one process services every project and starts at login. All slash commands are installed once into **user scope** (`~/.claude/commands/darkflow/`, full superset) instead of per project. The per-project worker copy and `.claude/commands/darkflow/` are removed on upgrade. New `--self-update` flag refreshes only the global worker + commands (used by the worker's own update check). The project step still writes `.darkflow.d/{routines.yml,get-config.sh,state,mailbox}` and registers the project's local path with the web UI.
+- **Worker** — `darkflow-run.sh` refactored to be project-agnostic: the default loop discovers every registered project from the web UI (`GET /api/projects`, by **Local path**) and dispatches each one's due routines, sharing the existing machine-global concurrency semaphore. Single-project subcommands (`<routine>`, `--list`, `--dry-run`, `--sync`) act on the project containing the current directory. Self-update now refreshes the global worker via `install.sh --self-update` (deterministic, no Claude session) and re-execs.
+- **Webapp** — new `GET /api/projects` discovery endpoint returns every project with a Local path; `/api/ingest` now accepts `localPath` and seeds it on first contact (a UI-set value always wins). The worker reports its own absolute path on every sync, so projects self-register for discovery.
+- **Docs** — README, routines guide, CLAUDE.md templates, and the generated project docs updated to describe the single global worker and user-scope commands. `checklist.yml` no longer verifies per-project command/worker files (now global).
+
 ## [2.96.1] — 2026-06-19
 
 - **Webapp** — the **Needs Human** filter card no longer renders a purple border when it just has open needs-human issues; the border now only highlights when the card is actually selected. Previously a non-zero count made the card look permanently active on first load. The count cue (purple number) is unchanged.
