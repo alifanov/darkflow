@@ -164,9 +164,15 @@ Cron times are in the machine's local timezone. Schedule is defined in `.darkflo
 ### Running routines
 
 A **single global worker** (`~/.darkflow/darkflow-run.sh`) services every project on
-the machine. On macOS it's installed as a launchd agent (`com.darkflow.worker`) and
-starts at login — no per-project process to babysit. It discovers projects from the
-web UI (each project's **Local path**), so a project appears once it has synced.
+the machine. You start it manually (no auto-start), and it runs until you stop it:
+
+```bash
+nohup bash ~/.darkflow/darkflow-run.sh >> ~/.darkflow/worker.log 2>&1 &   # start
+pkill -f ~/.darkflow/darkflow-run.sh                                       # stop
+```
+
+It discovers projects from the web UI (each project's **Local path**), so a project
+appears once it has synced.
 
 Run routines manually at any time (from inside the project directory):
 

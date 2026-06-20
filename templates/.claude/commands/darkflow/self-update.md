@@ -8,7 +8,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/insta
 
 The installer is fully non-interactive: `--yes` skips all prompts, `--force` overwrites locally-modified templates. It refreshes the global worker (`~/.darkflow/darkflow-run.sh`), the user-scope slash commands (`~/.claude/commands/darkflow/`), this project's `.darkflow.d/` files, and the version in `.darkflow`.
 
-> The global worker also self-updates on its own: it checks GitHub every ~15 min and runs `install.sh --self-update` when a newer version ships, so the worker + commands stay current without this command. Run this command to force an immediate update or to refresh a single project's files.
+> Updates are manual by design — the global worker never fetches or runs an installer on its own. To update just the worker + commands without touching a project, run `bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh) --self-update --yes`. After updating, restart the worker so the new code takes effect (`pkill -f ~/.darkflow/darkflow-run.sh` then start it again).
 
 ## Step 2 — Ensure `.darkflow` is in `.gitignore`
 

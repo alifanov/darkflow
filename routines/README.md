@@ -70,19 +70,23 @@ the project containing the current directory:
 ## The global worker
 
 With no arguments, `~/.darkflow/darkflow-run.sh` is a **continuous loop**: every 30s it
-discovers the registered projects from the web UI and runs each one's due routines. On
-**macOS** `install.sh` installs it as a launchd agent (`com.darkflow.worker`) with
-`RunAtLoad` + `KeepAlive`, so it starts at login and restarts if it dies — no terminal to
-keep open.
+discovers the registered projects from the web UI and runs each one's due routines.
+
+The installer does **not** auto-start it — you start it yourself, for full control:
 
 ```bash
-# Inspect / control the launchd agent (macOS)
-launchctl list | grep darkflow
-launchctl unload ~/Library/LaunchAgents/com.darkflow.worker.plist   # stop
-launchctl load -w ~/Library/LaunchAgents/com.darkflow.worker.plist  # start
+# Start (runs in the background until you stop it)
+nohup bash ~/.darkflow/darkflow-run.sh >> ~/.darkflow/worker.log 2>&1 &
+
+# Stop
+pkill -f ~/.darkflow/darkflow-run.sh
+
+# Watch what it's doing
+tail -f ~/.darkflow/worker.log
 ```
 
-On Linux (no launchd) start it however you prefer, e.g. `nohup ~/.darkflow/darkflow-run.sh >/dev/null 2>&1 &`.
+Prefer something more durable (tmux/screen, a launchd agent, or a systemd unit)? Wrap that
+same command — the worker itself is just a long-running process.
 
 A project becomes eligible the moment it has synced and has a **Local path** set in the
 web UI (the installer registers this automatically on first sync).

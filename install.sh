@@ -283,45 +283,22 @@ write_global_config() {
   } > "$cfg"
 }
 
-install_launchd_agent() {
-  [[ "$DRY_RUN" == true ]] && { info "Would install launchd agent com.darkflow.worker"; return; }
-  if [[ "$DETECTED_OS" != "macos" ]]; then
-    info "Global worker installed at ${GLOBAL_DIR}/darkflow-run.sh"
-    dim "Auto-start is macOS-only. Start it on login however you prefer, e.g.:"
-    dim "  nohup ${GLOBAL_DIR}/darkflow-run.sh >/dev/null 2>&1 &"
-    return
+# Dark Flow does NOT auto-start the worker — the operator starts it manually for
+# full control. Remove any launchd agent left by an earlier install so nothing
+# auto-runs, then print how to start it.
+worker_start_help() {
+  [[ "$DRY_RUN" == true ]] && { info "Would print manual worker start instructions"; return; }
+  if [[ "$DETECTED_OS" == "macos" ]]; then
+    local plist="$HOME/Library/LaunchAgents/com.darkflow.worker.plist"
+    if [[ -f "$plist" ]]; then
+      launchctl unload "$plist" 2>/dev/null || true
+      rm -f "$plist"
+      info "Removed the auto-start launchd agent — the worker is manual now."
+    fi
   fi
-  local plist="$HOME/Library/LaunchAgents/com.darkflow.worker.plist"
-  mkdir -p "$HOME/Library/LaunchAgents"
-  cat > "$plist" <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key>             <string>com.darkflow.worker</string>
-  <key>ProgramArguments</key>
-  <array>
-    <string>${BASH_BIN}</string>
-    <string>${GLOBAL_DIR}/darkflow-run.sh</string>
-  </array>
-  <key>EnvironmentVariables</key>
-  <dict>
-    <key>PATH</key><string>${PATH}</string>
-    <key>HOME</key><string>${HOME}</string>
-  </dict>
-  <key>RunAtLoad</key>         <true/>
-  <key>KeepAlive</key>         <true/>
-  <key>StandardOutPath</key>   <string>${GLOBAL_DIR}/worker.out.log</string>
-  <key>StandardErrorPath</key> <string>${GLOBAL_DIR}/worker.err.log</string>
-</dict>
-</plist>
-PLIST
-  launchctl unload "$plist" 2>/dev/null || true
-  if launchctl load -w "$plist" 2>/dev/null; then
-    success "Global worker launchd agent loaded (com.darkflow.worker)"
-  else
-    warn "Could not load launchd agent — start manually: bash ${GLOBAL_DIR}/darkflow-run.sh"
-  fi
+  info "Start the global worker yourself (services every project, runs until stopped):"
+  dim  "  nohup ${BASH_BIN} ${GLOBAL_DIR}/darkflow-run.sh >> ${GLOBAL_DIR}/worker.log 2>&1 &"
+  dim  "Stop it with:  pkill -f ${GLOBAL_DIR}/darkflow-run.sh"
 }
 
 # Remove the now-obsolete per-project worker + command copies. Only runs inside a
@@ -345,11 +322,11 @@ global_bootstrap() {
   install_global_worker
   install_user_commands
   write_global_config
-  install_launchd_agent
+  worker_start_help
   cleanup_legacy_project_files
 }
 
-# ── Global-only self-update (invoked by the worker's update check) ────────────
+# ── Global-only self-update (manual: `install.sh --self-update`) ──────────────
 # Refreshes just the global worker + user-scope commands, then exits — no project
 # scaffolding, labels, or sync. cwd is irrelevant here.
 if [[ "$SELF_UPDATE" == true ]]; then
@@ -1742,9 +1719,11 @@ echo -e "  ${DIM}Minutes shown are baselines; this project's actual cron minute 
 echo -e "  +$(( $(printf '%s' "$SLUG" | cksum | cut -d' ' -f1) % 60 )) so independent projects don't all dispatch on the same minute. See routines.yml.${RESET}"
 echo ""
 echo -e "  ${DIM}One global worker (~/.darkflow/darkflow-run.sh) services every project."
-echo -e "  On macOS it runs via launchd (com.darkflow.worker) and starts at login.${RESET}"
+echo -e "  Start it yourself (no auto-start), then it runs until you stop it:${RESET}"
+echo -e "  Start worker:  ${DIM}nohup ${BASH_BIN} ~/.darkflow/darkflow-run.sh >> ~/.darkflow/worker.log 2>&1 &${RESET}"
+echo -e "  Stop worker:   ${DIM}pkill -f ~/.darkflow/darkflow-run.sh${RESET}"
 echo ""
-echo -e "  Run manually:  ${DIM}~/.darkflow/darkflow-run.sh <name>   (from this project dir)${RESET}"
-echo -e "  Show status:   ${DIM}~/.darkflow/darkflow-run.sh --list   (from this project dir)${RESET}"
-echo -e "  Dry run:       ${DIM}~/.darkflow/darkflow-run.sh --dry-run (from this project dir)${RESET}"
+echo -e "  Run one routine:  ${DIM}~/.darkflow/darkflow-run.sh <name>   (from this project dir)${RESET}"
+echo -e "  Show status:      ${DIM}~/.darkflow/darkflow-run.sh --list   (from this project dir)${RESET}"
+echo -e "  Dry run:          ${DIM}~/.darkflow/darkflow-run.sh --dry-run (from this project dir)${RESET}"
 echo ""

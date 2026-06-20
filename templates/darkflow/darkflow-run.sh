@@ -1604,70 +1604,12 @@ stop_heartbeat_loop() {
   fi
 }
 
-# ── Self-update check (global) ────────────────────────────────────────────────
-# Compares the worker's installed version (~/.darkflow/config) against the latest
-# VERSION on GitHub; if they differ, refreshes the global worker + user-scope
-# commands by running the installer in its `--self-update` mode (deterministic,
-# no Claude session). Throttled to once per minute. Returns 0 always — an update
-# failure must never abort the orchestration loop. The caller re-execs the worker
-# when the installed version changes.
-
-check_for_update() {
-  ! command -v curl &>/dev/null && return 0
-
-  local check_ts_file="${GLOBAL_DIR}/last-update-check"
-  local last_check=0
-  [[ -f "$check_ts_file" ]] && last_check=$(cat "$check_ts_file" 2>/dev/null || echo 0)
-  local now_ts; now_ts=$(now_epoch)
-  if (( now_ts - last_check < 60 )); then
-    return 0
-  fi
-  echo "$now_ts" > "$check_ts_file"
-
-  local installed latest cb
-  installed=$(global_val "version" "0.0.0")
-  [[ -z "$installed" ]] && installed="0.0.0"
-
-  # Cache-bust GitHub's raw CDN so a stale VERSION/install.sh can't trigger a
-  # spurious "update" to an older installer that lacks --self-update.
-  cb="$(now_epoch)"
-  latest=$(curl -fsSL -m 5 "${DARKFLOW_REPO}/VERSION?t=${cb}" 2>/dev/null | tr -d '[:space:]') || latest=""
-  [[ -z "$latest" ]] && return 0   # no network or fetch failed — skip silently
-
-  [[ "$latest" == "$installed" ]] && return 0
-
-  glog "UPDATE detected ${installed} → ${latest}, refreshing global worker + commands"
-
-  # Fetch the installer to a temp file and verify it actually supports the global
-  # `--self-update` flow before running it. The raw CDN can briefly serve a stale
-  # pre-3.0.0 install.sh (no --self-update) that would otherwise treat the flag as
-  # unknown and run a FULL project install in our cwd. Guarding on the flag makes
-  # self-update deterministic regardless of CDN propagation lag.
-  local _inst; _inst=$(mktemp)
-  _CLEANUP_FILES+=("$_inst")
-  if ! curl -fsSL -m 30 "${DARKFLOW_REPO}/install.sh?t=${cb}" -o "$_inst" 2>/dev/null; then
-    glog "UPDATE installer fetch failed — will retry next cycle"
-    rm -f "$_inst"; _CLEANUP_FILES=("${_CLEANUP_FILES[@]/$_inst}")
-    return 0
-  fi
-  if ! grep -q -- '--self-update' "$_inst"; then
-    glog "UPDATE fetched installer lacks --self-update (stale CDN) — skipping, will retry next cycle"
-    rm -f "$_inst"; _CLEANUP_FILES=("${_CLEANUP_FILES[@]/$_inst}")
-    return 0
-  fi
-  # Run from ~/.darkflow (writable, throwaway cwd) as belt-and-suspenders.
-  ( cd "$GLOBAL_DIR" && bash "$_inst" --self-update --yes ) \
-    >> "$GLOBAL_LOG" 2>&1 || glog "UPDATE installer --self-update returned non-zero"
-  rm -f "$_inst"; _CLEANUP_FILES=("${_CLEANUP_FILES[@]/$_inst}")
-
-  local nowv; nowv=$(global_val "version" "0.0.0")
-  if [[ "$nowv" == "$latest" ]]; then
-    glog "UPDATE complete (now at ${latest})"
-  else
-    glog "UPDATE incomplete (still ${nowv})"
-  fi
-  return 0
-}
+# Self-update is intentionally NOT automatic. With a single global worker there is
+# only one artifact to update, so updates are done explicitly — either by running
+# the installer (`install.sh --self-update`) or the `/darkflow:self-update` slash
+# command. This keeps the unattended worker from ever fetching and executing an
+# installer on its own (the riskiest path) and removes a whole class of CDN-lag
+# failure modes.
 
 # ── Project discovery ─────────────────────────────────────────────────────────
 # The global worker learns which projects to service — and where they live on
@@ -1837,14 +1779,6 @@ mode_watch() {
   glog "Dark Flow global worker started (tick every ${interval}s, ${SELF_PATH}). Ctrl-C to stop."
   trap 'echo ""; glog "WATCH stopped (signal)"; stop_heartbeat_loop; exit 0' INT TERM
 
-  # Check for update at startup; re-exec the (newly installed) worker if changed.
-  local _pre_ver; _pre_ver=$(global_val "version" "0.0.0")
-  check_for_update
-  if [[ "$(global_val "version" "0.0.0")" != "$_pre_ver" ]]; then
-    glog "UPDATE reloading worker"
-    exec "$SELF_PATH"
-  fi
-
   while true; do
     (( tick++ )) || true
 
@@ -1876,17 +1810,6 @@ mode_watch() {
           log "WATCH  skipped (another dispatch is running, PID ${owner_pid:-unknown})"
         fi
       done <<< "$projects"
-    fi
-
-    # Check for a new Dark Flow version every 30 ticks (~15 min); reload if the
-    # global worker was upgraded underneath us.
-    if (( tick % 30 == 0 )); then
-      local _tick_pre_ver; _tick_pre_ver=$(global_val "version" "0.0.0")
-      check_for_update
-      if [[ "$(global_val "version" "0.0.0")" != "$_tick_pre_ver" ]]; then
-        glog "UPDATE reloading worker"
-        exec "$SELF_PATH"
-      fi
     fi
 
     sleep "$interval" || true   # || true so SIGINT from Ctrl-C doesn't exit with error

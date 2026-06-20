@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [3.1.0] — 2026-06-20
+
+- **Worker** — removed the worker's **automatic self-update**. With a single global worker there's only one artifact to update, so updates are now explicit (`install.sh --self-update` or `/darkflow:self-update`). This drops the riskiest code path — the unattended worker no longer fetches and runs an installer on its own — and removes a class of CDN-lag failure modes.
+- **Installer** — Dark Flow no longer **auto-starts** the worker. The launchd agent is gone; `install.sh` now removes any previously-installed `com.darkflow.worker` agent and prints how to start the worker yourself (`nohup bash ~/.darkflow/darkflow-run.sh >> ~/.darkflow/worker.log 2>&1 &`). You control when it runs.
+- **Docs** — README, routines guide, and the self-update command updated for manual start + manual update.
+
 ## [3.0.2] — 2026-06-20
 
 - **Worker** — the self-update now fetches `install.sh` to a temp file and verifies it actually supports `--self-update` before running it. If the raw CDN briefly serves a stale pre-3.0.0 installer (which would treat the flag as unknown and run a full project install in the worker's cwd), the worker skips and retries next cycle instead. Makes self-update deterministic regardless of CDN propagation lag.
