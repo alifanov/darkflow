@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.0.2] — 2026-06-20
+
+- **Worker** — the self-update now fetches `install.sh` to a temp file and verifies it actually supports `--self-update` before running it. If the raw CDN briefly serves a stale pre-3.0.0 installer (which would treat the flag as unknown and run a full project install in the worker's cwd), the worker skips and retries next cycle instead. Makes self-update deterministic regardless of CDN propagation lag.
+
 ## [3.0.1] — 2026-06-20
 
 - **Worker** — hardened the global worker's self-update: cache-bust the GitHub raw fetches for `VERSION` and `install.sh`, and run the installer from `~/.darkflow` with `--self-update`. Prevents a momentarily-stale CDN copy (an old `install.sh` without `--self-update`) from running a full project install in the worker's cwd.

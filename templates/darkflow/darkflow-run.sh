@@ -1637,10 +1637,28 @@ check_for_update() {
   [[ "$latest" == "$installed" ]] && return 0
 
   glog "UPDATE detected ${installed} → ${latest}, refreshing global worker + commands"
-  # Run the installer from ~/.darkflow (a writable, throwaway cwd) with --self-update
-  # so even a momentarily-stale full installer can't scaffold a project here.
-  ( cd "$GLOBAL_DIR" && bash <(curl -fsSL -m 30 "${DARKFLOW_REPO}/install.sh?t=${cb}") --self-update --yes ) \
+
+  # Fetch the installer to a temp file and verify it actually supports the global
+  # `--self-update` flow before running it. The raw CDN can briefly serve a stale
+  # pre-3.0.0 install.sh (no --self-update) that would otherwise treat the flag as
+  # unknown and run a FULL project install in our cwd. Guarding on the flag makes
+  # self-update deterministic regardless of CDN propagation lag.
+  local _inst; _inst=$(mktemp)
+  _CLEANUP_FILES+=("$_inst")
+  if ! curl -fsSL -m 30 "${DARKFLOW_REPO}/install.sh?t=${cb}" -o "$_inst" 2>/dev/null; then
+    glog "UPDATE installer fetch failed — will retry next cycle"
+    rm -f "$_inst"; _CLEANUP_FILES=("${_CLEANUP_FILES[@]/$_inst}")
+    return 0
+  fi
+  if ! grep -q -- '--self-update' "$_inst"; then
+    glog "UPDATE fetched installer lacks --self-update (stale CDN) — skipping, will retry next cycle"
+    rm -f "$_inst"; _CLEANUP_FILES=("${_CLEANUP_FILES[@]/$_inst}")
+    return 0
+  fi
+  # Run from ~/.darkflow (writable, throwaway cwd) as belt-and-suspenders.
+  ( cd "$GLOBAL_DIR" && bash "$_inst" --self-update --yes ) \
     >> "$GLOBAL_LOG" 2>&1 || glog "UPDATE installer --self-update returned non-zero"
+  rm -f "$_inst"; _CLEANUP_FILES=("${_CLEANUP_FILES[@]/$_inst}")
 
   local nowv; nowv=$(global_val "version" "0.0.0")
   if [[ "$nowv" == "$latest" ]]; then
