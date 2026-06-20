@@ -1,4 +1,7 @@
-.PHONY: help up down web logs restart ps db-shell docker-up
+.PHONY: help up down web logs restart ps db-shell docker-up \
+        worker-start worker-stop worker-status worker-logs
+
+WORKER := $(HOME)/.darkflow/darkflow-run.sh
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS=":.*##"}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -26,3 +29,24 @@ ps: ## Show running containers and their status
 
 db-shell: ## Open a psql shell inside the Postgres container
 	docker compose exec db psql -U darkflow darkflow
+
+worker-start: ## Start the global Dark Flow worker in the background (serves every project)
+	@if [ ! -f "$(WORKER)" ]; then echo "Worker not installed at $(WORKER) — run install.sh in a project first."; exit 1; fi
+	@if pgrep -f "$(WORKER)" >/dev/null 2>&1; then \
+		echo "Worker already running (PID $$(pgrep -f "$(WORKER)" | head -1))."; \
+	else \
+		nohup bash "$(WORKER)" >/dev/null 2>>"$(HOME)/.darkflow/worker.err.log" & \
+		sleep 1; echo "Worker started (PID $$(pgrep -f "$(WORKER)" | head -1)). Logs: ~/.darkflow/worker.log"; \
+	fi
+
+worker-stop: ## Stop the global Dark Flow worker
+	@pkill -f "$(WORKER)" 2>/dev/null && echo "Worker stopped." || echo "Worker was not running."
+
+worker-status: ## Show whether the global worker is running + last log lines
+	@if pgrep -f "$(WORKER)" >/dev/null 2>&1; then \
+		echo "Running (PID $$(pgrep -f "$(WORKER)" | head -1))"; \
+	else echo "Not running"; fi
+	@tail -n 5 "$(HOME)/.darkflow/worker.log" 2>/dev/null || true
+
+worker-logs: ## Tail the global worker log (Ctrl-C to stop)
+	@tail -f "$(HOME)/.darkflow/worker.log"

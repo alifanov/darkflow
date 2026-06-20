@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.1.2] — 2026-06-20
+
+- **Repo tooling** — added `make worker-start` / `worker-stop` / `worker-status` / `worker-logs` to the darkflow repo Makefile for controlling the global worker (`~/.darkflow/darkflow-run.sh`). `worker-start` is idempotent (won't double-start) and logs to `~/.darkflow/worker.err.log`.
+
 ## [3.1.1] — 2026-06-20
 
 - **Installer/Docs** — the manual worker start command now redirects stdout to `/dev/null` and stderr to `~/.darkflow/worker.err.log` instead of appending stdout back into `worker.log`. The worker already writes its own log internally, so the old `>> worker.log` doubled every line. `worker.log` is now clean; crashes land in `worker.err.log`.
