@@ -1809,22 +1809,37 @@ mode_watch() {
           glog "SKIP ${path} — directory not found (moved or deleted)"
           continue
         fi
-        # set_project enters the repo and fetches its config from the Web UI;
-        # failure means the dir isn't a registered git repo or the server is down.
-        set_project "$path" || { glog "SKIP ${path} — not a registered project or config fetch failed"; continue; }
-        send_heartbeat "idle"
-        if try_acquire_lock; then
-          mode_dispatch false || log "WATCH  dispatch error (tick ${tick})"
-          # Full web UI sync (GitHub issues + metadata) every 10th tick (~5 min).
-          if (( tick % 10 == 1 )); then
-            sync_webapp
+        # Dispatch each project in its OWN subshell so projects run in PARALLEL.
+        # The fork gives the child private copies of PROJECT_ROOT/LOG/GH_TOKEN/
+        # PENDING_LOGS, so the loop's next set_project can't clobber a still-running
+        # child (and per-project token isolation is exact). Cross-project isolation
+        # already holds: per-project lock dir, separate git repos/cwd. The global
+        # /tmp/darkflow-slots semaphore still caps total agent sessions on the
+        # machine. We do NOT wait on these children: the per-project lock makes a
+        # re-dispatch of a busy project fail fast next tick, so the count of live
+        # children is bounded by the number of projects.
+        (
+          # set_project enters the repo and fetches its config from the Web UI;
+          # failure means the dir isn't a registered git repo or the server is down.
+          set_project "$path" || { glog "SKIP ${path} — not a registered project or config fetch failed"; exit 0; }
+          send_heartbeat "idle"
+          if try_acquire_lock; then
+            mode_dispatch false || log "WATCH  dispatch error (tick ${tick})"
+            # This subshell owns its PENDING_LOGS (fork) and dies at exit, so it
+            # must flush its OWN logs now — the old every-10th-tick batching only
+            # worked while PENDING_LOGS lived in one long-running process. Sync
+            # whenever a routine produced logs; keep a periodic full metadata/issue
+            # refresh on top (~5 min).
+            if [[ ${#PENDING_LOGS[@]} -gt 0 ]] || (( tick % 10 == 1 )); then
+              sync_webapp
+            fi
+            release_lock
+          else
+            local owner_pid=""
+            [[ -f "$LOCK_DIR/pid" ]] && owner_pid=$(cat "$LOCK_DIR/pid" 2>/dev/null || echo "")
+            log "WATCH  skipped (another dispatch is running, PID ${owner_pid:-unknown})"
           fi
-          release_lock
-        else
-          local owner_pid=""
-          [[ -f "$LOCK_DIR/pid" ]] && owner_pid=$(cat "$LOCK_DIR/pid" 2>/dev/null || echo "")
-          log "WATCH  skipped (another dispatch is running, PID ${owner_pid:-unknown})"
-        fi
+        ) &
       done <<< "$projects"
     fi
 

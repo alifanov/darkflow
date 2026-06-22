@@ -14,6 +14,11 @@ Categories:
 
 ---
 
+## [3.6.0] — 2026-06-22
+
+- **Worker** — the global watch loop now dispatches each project in its own backgrounded subshell, so projects are serviced **in parallel** instead of one-after-another per tick. Cross-project isolation was already guaranteed (per-project lock dir, separate git repos/cwd) and the fork now also gives each project private `PROJECT_ROOT`/`LOG`/`GH_TOKEN`/`PENDING_LOGS`; the global `/tmp/darkflow-slots` semaphore still caps total concurrent agent sessions. The loop does not `wait` on children — a busy project's per-project lock makes its re-dispatch fail fast next tick, bounding live children by project count.
+- **Worker** — each subshell now flushes its **own** `PENDING_LOGS` whenever a routine produced logs, instead of relying on the every-10th-tick batch sync. The old batching only worked because `PENDING_LOGS` lived in one long-running process; an ephemeral subshell would have died before the next sync tick and dropped its routine result. This also fixes a latent bug where one project's pending logs could be attributed to another project at sync time.
+
 ## [3.5.0] — 2026-06-22
 
 - **Webapp** — approve/reject/close are now non-optimistic: the route pushes to GitHub via `gh` **first** and only mutates the DB on success; on failure it returns 502 and the button surfaces the error instead of silently showing a state GitHub never accepted. Removed the `pendingStatus` write path and the worker fallback for these actions (host-mode `gh` is now required — the Docker profile without `gh` can't approve/reject/close from the UI).
