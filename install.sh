@@ -934,6 +934,13 @@ generate_darkflow_md() {
 @docs/agent-workflow.md
 @docs/github-issues.md
 @docs/auto-approve.md
+@.darkflow.d/constraints.md
+
+### Project constraints
+
+Before proposing or making **any** change — especially in analysis/optimization routines that
+file issues — honor every constraint in `.darkflow.d/constraints.md`. If a finding would violate
+a constraint, drop it: do not file the issue and do not make the change.
 
 HEREDOC
 
@@ -1063,6 +1070,12 @@ sync_claude_md() {
 
   generate_darkflow_md > ".darkflow.d/claude.md"
   success "Updated .darkflow.d/claude.md"
+
+  # Ensure the per-project constraints file exists — never clobber user content.
+  if [[ ! -f ".darkflow.d/constraints.md" ]]; then
+    printf '# Project constraints\n\n<!-- One constraint per line. Routines that propose changes will honor these. -->\n' > ".darkflow.d/constraints.md"
+    success "Created .darkflow.d/constraints.md"
+  fi
 
   if [[ ! -f "CLAUDE.md" ]]; then
     { echo "# CLAUDE.md"; echo ""; echo "@.darkflow.d/claude.md"; } > CLAUDE.md

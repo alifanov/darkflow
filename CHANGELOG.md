@@ -14,6 +14,11 @@ Categories:
 
 ---
 
+## [3.7.0] — 2026-06-22
+
+- **Feature** — per-project **routine constraints**. A free-text field in the project Settings tab (webapp) writes `<project>/.darkflow.d/constraints.md`, which is `@`-imported into every agent's context via `.darkflow.d/claude.md`. Routines that analyze and propose changes (build-optimization, architecture-review, design-*, analytics-review, etc.) honor these limits — findings that violate a constraint are dropped, not filed. New API route `PUT/GET /api/projects/[id]/constraints` reads/writes the file via the project's host `localPath` (same pattern as mailbox `.env`); no DB column, no worker changes.
+- **Installer** — `generate_darkflow_md()` now emits the `@.darkflow.d/constraints.md` import plus a "Project constraints" instruction section; `sync_claude_md()` creates a placeholder `constraints.md` on first run (never clobbers user content). Existing installs pick this up on next `darkflow:update`.
+
 ## [3.6.0] — 2026-06-22
 
 - **Worker** — the global watch loop now dispatches each project in its own backgrounded subshell, so projects are serviced **in parallel** instead of one-after-another per tick. Cross-project isolation was already guaranteed (per-project lock dir, separate git repos/cwd) and the fork now also gives each project private `PROJECT_ROOT`/`LOG`/`GH_TOKEN`/`PENDING_LOGS`; the global `/tmp/darkflow-slots` semaphore still caps total concurrent agent sessions. The loop does not `wait` on children — a busy project's per-project lock makes its re-dispatch fail fast next tick, bounding live children by project count.

@@ -3,6 +3,13 @@
 @docs/agent-workflow.md
 @docs/github-issues.md
 @docs/auto-approve.md
+@.darkflow.d/constraints.md
+
+### Project constraints
+
+Before proposing or making **any** change — especially in analysis/optimization routines that
+file issues — honor every constraint in `.darkflow.d/constraints.md`. If a finding would violate
+a constraint, drop it: do not file the issue and do not make the change.
 
 **Communication language:** English — use it ONLY for human-facing text you write *about* the work: GitHub issues, comments, commit messages, PR descriptions, and console/chat output.
 **Product language:** English — everything shipped *inside* the product is always written in English, regardless of the communication language: source code, identifiers, code comments, UI copy, user-facing strings, logs, and in-product docs. Setting the communication language to anything other than English never changes this.

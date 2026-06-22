@@ -6,7 +6,9 @@ import { DeleteProjectButton } from "@/components/DeleteProjectButton";
 import { LocalTime } from "@/components/LocalTime";
 import { RoutineLogsTable } from "@/components/RoutineLogsTable";
 import { ProjectSettingsForm } from "@/components/ProjectSettingsForm";
+import { ProjectConstraintsForm } from "@/components/ProjectConstraintsForm";
 import { RoutineConfigForm } from "@/components/RoutineConfigForm";
+import { readConstraints } from "@/lib/constraints";
 import { MailboxRow } from "@/components/MailboxRow";
 import { MailboxSyncButton } from "@/components/MailboxSyncButton";
 import { readMailboxEnv, isMailboxConfigured } from "@/lib/mailbox-config";
@@ -307,6 +309,16 @@ export default async function ProjectPage({
             settingsUpdatedAt: project.settingsUpdatedAt ?? null,
           }}
         />
+      )}
+
+      {activeTab === "settings" && (
+        <div className="mt-8">
+          <ProjectConstraintsForm
+            projectId={project.id}
+            initialConstraints={readConstraints(project.localPath)}
+            hasLocalPath={Boolean(project.localPath?.trim())}
+          />
+        </div>
       )}
     </div>
   );
