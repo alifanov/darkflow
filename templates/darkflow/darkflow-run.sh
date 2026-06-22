@@ -1328,13 +1328,8 @@ apply_pending_statuses() {
 
   check_gh_auth || return 0
 
-  local gh_err
-  repo_url=$(gh repo view --json url -q .url 2>/dev/null) || {
-    gh_err=$(gh repo view --json url -q .url 2>&1 || true)
-    log "PENDING skipped (gh repo view failed: $(echo "$gh_err" | head -2 | tr '\n' ' '))"
-    return 0
-  }
-  [[ -z "$repo_url" ]] && return 0
+  repo_url=$(_get_repo_url_cached)
+  [[ -z "$repo_url" ]] && { log "PENDING skipped (could not resolve repo URL)"; return 0; }
 
   pending_json=$(curl -fsS -m 10 -G \
     --data-urlencode "repoUrl=${repo_url}" \
@@ -1401,12 +1396,7 @@ sync_webapp() {
   apply_pending_statuses
 
   local repo_url issues now_iso gh_err
-  repo_url=$(gh repo view --json url -q .url 2>/dev/null) || {
-    gh_err=$(gh repo view --json url -q .url 2>&1 || true)
-    log "WEBAPP skipped (gh repo view failed: $(echo "$gh_err" | head -2 | tr '\n' ' '))"
-    PENDING_LOGS=()
-    return 0
-  }
+  repo_url=$(_get_repo_url_cached)
   if [[ -z "$repo_url" ]]; then
     log "WEBAPP skipped (could not determine repo URL)"
     PENDING_LOGS=()
@@ -1574,9 +1564,35 @@ sync_webapp() {
 
 _REPO_URL_CACHE=""
 
+# Normalize any git remote spelling to the canonical https URL with no .git suffix
+# and no embedded credentials — the exact form `gh repo view --json url` returns,
+# which is what projects are registered under in the Web UI.
+_normalize_repo_url() {
+  local u="$1"
+  u="${u%.git}"                       # strip trailing .git
+  if [[ "$u" == git@*:* ]]; then      # git@host:owner/repo → https://host/owner/repo
+    local host="${u#git@}"; host="${host%%:*}"
+    u="https://${host}/${u#*:}"
+  elif [[ "$u" == ssh://* ]]; then    # ssh://git@host/owner/repo → https://host/owner/repo
+    u="${u#ssh://}"; u="https://${u#git@}"
+  fi
+  u="${u/https:\/\/*@/https:\/\/}"    # strip https://user:tok@ credentials
+  printf '%s' "$u"
+}
+
+# Resolve the repo URL from the local git remote (zero API cost) and fall back to
+# `gh repo view` (GraphQL) only when there's no usable remote. This keeps the
+# worker resolving repos even when the GraphQL rate limit is exhausted — otherwise
+# every project gets skipped and the worker goes dark.
 _get_repo_url_cached() {
   if [[ -z "$_REPO_URL_CACHE" ]]; then
-    _REPO_URL_CACHE=$(gh repo view --json url -q .url 2>/dev/null || echo "")
+    local remote
+    remote=$(git remote get-url origin 2>/dev/null || echo "")
+    if [[ -n "$remote" ]]; then
+      _REPO_URL_CACHE=$(_normalize_repo_url "$remote")
+    else
+      _REPO_URL_CACHE=$(gh repo view --json url -q .url 2>/dev/null || echo "")
+    fi
   fi
   echo "$_REPO_URL_CACHE"
 }

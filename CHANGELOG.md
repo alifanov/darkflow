@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.10.2] — 2026-06-22
+
+- **Worker** — repo URL is now resolved from the local git remote (`git remote get-url origin`, normalized to the canonical `https://host/owner/repo` form) instead of `gh repo view`, which used the GitHub **GraphQL** API. The old path ran one GraphQL call per project per 30s tick (~2000/hr across a typical machine), and whenever the shared GraphQL rate limit was exhausted *every* project got skipped — `set_project` failed, no heartbeat was sent, and the Web UI showed the worker permanently "offline". The new resolver costs zero API calls and keeps the worker beating through rate-limit exhaustion. `gh repo view` remains only as a fallback when there is no usable git remote. The two direct `gh repo view` call sites in `apply_pending_statuses` and `sync_webapp` now route through the same cached resolver. `templates/darkflow/darkflow-run.sh`.
+
 ## [3.10.1] — 2026-06-22
 
 - **Worker** — `run_in_pgid` now pre-flights the engine binary with `command -v "$1"` before handing off to the python `execvp` wrapper. A missing engine CLI (e.g. `codex` not installed) previously surfaced as an opaque `FileNotFoundError` Python traceback in the routine log; it now fails fast with `command not found on PATH: '<cmd>' — is the engine CLI installed?` and return code 127. `templates/darkflow/darkflow-run.sh`.
