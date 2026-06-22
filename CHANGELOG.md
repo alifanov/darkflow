@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.9.1] — 2026-06-22
+
+- **Maintainer command** — `/self-checkup` Step 6 now catches the two failure modes behind the silent-approved-issue bug: (1) the **invariant violation** `status:approved` + `needs-human`/`status:blocked` on one issue (mutually exclusive — silently drops it from the `fix-issues` queue), and (2) a **worker-log ↔ queue mismatch** — cross-reads `~/.darkflow/worker.log` and each project's `.darkflow.d/darkflow-run.log` against the live GitHub queue to flag recurring `SKIP fix-issues — no actionable …` / `SKIP … not a registered project` / wedged-dispatch lines that contradict reality. `.claude/commands/self-checkup.md`.
+
 ## [3.9.0] — 2026-06-22
 
 - **Bugfix / invariant** — `needs-human` and `status:approved` are now strictly mutually exclusive, enforced at every write site, and `fix-issues` trusts `status:approved` alone. Previously the worker's `apply_pending_statuses` (the path that flushes web-UI approvals to GitHub labels when the webapp's own `gh` call didn't run) added `status:approved` **without** stripping `needs-human`; the `fix-issues` actionable filter then excluded `needs-human`, so those issues sat "approved" in the UI yet were silently never picked up (seen on adsynex: 11 approved issues stuck). Fixes:
