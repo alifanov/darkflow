@@ -8,24 +8,17 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const result = await prisma.issue.updateMany({
-      where: { id },
-      data: {
-        state: "closed",
-        status: "rejected",
-        pendingStatus: "rejected",
-        pendingStatusAt: new Date(),
-      },
-    });
-    if (result.count === 0) {
+    const issue = await prisma.issue.findUnique({ where: { id }, select: { id: true } });
+    if (!issue) {
       return NextResponse.json({ error: "Issue not found" }, { status: 404 });
     }
-    if (await applyStatusToGitHub(id, "rejected")) {
-      await prisma.issue.updateMany({
-        where: { id },
-        data: { pendingStatus: null, pendingStatusAt: null },
-      });
+    // Reject closes the GitHub issue; on success drop the row (closed issues
+    // don't live in the DB anymore — see ingest).
+    const r = await applyStatusToGitHub(id, "rejected");
+    if (!r.ok) {
+      return NextResponse.json({ error: `GitHub update failed: ${r.error}` }, { status: 502 });
     }
+    await prisma.issue.deleteMany({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("reject issue:", err);

@@ -157,10 +157,15 @@ export async function POST(req: NextRequest) {
       existingPending.map((i) => [i.number, i])
     );
 
+    // Closed issues no longer live in the DB — the UI deletes them on close/
+    // reject, so re-ingesting them from `gh issue list --state all` would
+    // resurrect rows the user just dismissed. Keep only open ones.
+    const openIssues = body.issues.filter((i) => (i.state ?? "open") !== "closed");
+
     await prisma.issue.deleteMany({ where: { projectId: project.id } });
-    if (body.issues.length > 0) {
+    if (openIssues.length > 0) {
       await prisma.issue.createMany({
-        data: body.issues.map((i) => {
+        data: openIssues.map((i) => {
           // "blocked" is deprecated — an agent can't act on it, so fold it into
           // needs-human (a human must intervene) and drop the blocked status.
           const isBlocked = i.status === "blocked";

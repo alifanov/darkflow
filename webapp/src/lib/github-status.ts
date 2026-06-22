@@ -20,49 +20,51 @@ function repoSlug(url: string): string | null {
   return m ? m[1] : null;
 }
 
-// Best-effort synchronous label push so the UI doesn't sit on "Pending Sync"
-// until the worker's ~5-min cycle. Returns true when GitHub now reflects the
-// target (caller then clears pendingStatus); false on any failure, leaving
-// pendingStatus for the worker to reconcile.
-// ponytail: relies on ambient `gh auth` on the host — fine for single-account
-// setups; if multi-account/token-per-repo is needed, thread the project token in.
+const gh = (args: string[]) => execFileP("gh", args, { timeout: 20000 });
+
+// `gh issue close` on an already-closed issue exits non-zero; treat that as
+// success so the operation is idempotent.
+async function closeIdempotent(num: string, slug: string): Promise<void> {
+  try {
+    await gh(["issue", "close", num, "-R", slug]);
+  } catch (e) {
+    const s = `${(e as { stderr?: string }).stderr ?? ""}${(e as { stdout?: string }).stdout ?? ""}`.toLowerCase();
+    if (!s.includes("already") && !s.includes("closed")) throw e;
+  }
+}
+
+// Synchronously push the status to GitHub via `gh` on the host. The caller waits
+// for this and only mutates the DB on { ok: true } — no optimistic writes. On
+// failure the DB is left untouched and `error` is surfaced to the UI.
+// ponytail: relies on ambient `gh auth` on the host (single-account). No worker
+// fallback anymore — in the Docker profile without gh these actions just fail.
 export async function applyStatusToGitHub(
   issueId: string,
   target: "approved" | "rejected" | "closed"
-): Promise<boolean> {
+): Promise<{ ok: boolean; error?: string }> {
   const issue = await prisma.issue.findUnique({
     where: { id: issueId },
     select: { number: true, project: { select: { repoUrl: true } } },
   });
   const repoUrl = issue?.project?.repoUrl;
-  if (!repoUrl) return false;
+  if (!repoUrl) return { ok: false, error: "issue or repo not found" };
   const slug = repoSlug(repoUrl);
-  if (!slug) return false;
+  if (!slug) return { ok: false, error: `could not parse repo from ${repoUrl}` };
 
   const num = String(issue!.number);
   const removeArgs = STATUS_LABELS.flatMap((l) => ["--remove-label", l]);
-  const opts = { timeout: 15000 } as const;
 
   try {
     if (target === "closed") {
-      await execFileP(
-        "gh",
-        ["issue", "edit", num, "-R", slug, ...removeArgs, "--remove-label", "needs-human"],
-        opts
-      ).catch(() => {});
-      await execFileP("gh", ["issue", "close", num, "-R", slug], opts);
+      await gh(["issue", "edit", num, "-R", slug, ...removeArgs, "--remove-label", "needs-human"]).catch(() => {});
+      await closeIdempotent(num, slug);
     } else {
-      await execFileP(
-        "gh",
-        ["issue", "edit", num, "-R", slug, ...removeArgs, "--add-label", `status:${target}`],
-        opts
-      );
-      if (target === "rejected") {
-        await execFileP("gh", ["issue", "close", num, "-R", slug], opts).catch(() => {});
-      }
+      await gh(["issue", "edit", num, "-R", slug, ...removeArgs, "--add-label", `status:${target}`]);
+      if (target === "rejected") await closeIdempotent(num, slug);
     }
-    return true;
-  } catch {
-    return false;
+    return { ok: true };
+  } catch (e) {
+    const msg = `${(e as { stderr?: string }).stderr ?? (e as Error).message ?? "gh failed"}`.split("\n")[0];
+    return { ok: false, error: msg };
   }
 }

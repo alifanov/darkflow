@@ -8,27 +8,17 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const result = await prisma.issue.updateMany({
-      where: { id },
-      data: {
-        // Optimistically close in the DB (mirrors reject) so the row leaves the
-        // open-issues list on refresh; the worker reconciles via pendingStatus
-        // if the synchronous gh close below fails.
-        state: "closed",
-        needsHuman: false,
-        pendingStatus: "closed",
-        pendingStatusAt: new Date(),
-      },
-    });
-    if (result.count === 0) {
+    const issue = await prisma.issue.findUnique({ where: { id }, select: { id: true } });
+    if (!issue) {
       return NextResponse.json({ error: "Issue not found" }, { status: 404 });
     }
-    if (await applyStatusToGitHub(id, "closed")) {
-      await prisma.issue.updateMany({
-        where: { id },
-        data: { pendingStatus: null, pendingStatusAt: null },
-      });
+    // Non-optimistic: close on GitHub first, then drop the row. Closed issues
+    // don't live in the DB anymore (ingest skips them), so deletion is durable.
+    const r = await applyStatusToGitHub(id, "closed");
+    if (!r.ok) {
+      return NextResponse.json({ error: `GitHub update failed: ${r.error}` }, { status: 502 });
     }
+    await prisma.issue.deleteMany({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("close issue:", err);

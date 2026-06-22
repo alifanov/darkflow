@@ -8,23 +8,19 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const result = await prisma.issue.updateMany({
-      where: { id },
-      data: {
-        status: "approved",
-        pendingStatus: "approved",
-        pendingStatusAt: new Date(),
-      },
-    });
-    if (result.count === 0) {
+    const issue = await prisma.issue.findUnique({ where: { id }, select: { id: true } });
+    if (!issue) {
       return NextResponse.json({ error: "Issue not found" }, { status: 404 });
     }
-    if (await applyStatusToGitHub(id, "approved")) {
-      await prisma.issue.updateMany({
-        where: { id },
-        data: { pendingStatus: null, pendingStatusAt: null },
-      });
+    // Non-optimistic: push to GitHub first, only touch the DB once it succeeds.
+    const r = await applyStatusToGitHub(id, "approved");
+    if (!r.ok) {
+      return NextResponse.json({ error: `GitHub update failed: ${r.error}` }, { status: 502 });
     }
+    await prisma.issue.updateMany({
+      where: { id },
+      data: { status: "approved", pendingStatus: null, pendingStatusAt: null },
+    });
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("approve issue:", err);

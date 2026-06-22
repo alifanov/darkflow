@@ -14,6 +14,11 @@ Categories:
 
 ---
 
+## [3.5.0] — 2026-06-22
+
+- **Webapp** — approve/reject/close are now non-optimistic: the route pushes to GitHub via `gh` **first** and only mutates the DB on success; on failure it returns 502 and the button surfaces the error instead of silently showing a state GitHub never accepted. Removed the `pendingStatus` write path and the worker fallback for these actions (host-mode `gh` is now required — the Docker profile without `gh` can't approve/reject/close from the UI).
+- **Webapp** — reject/close now **delete** the issue row instead of marking it closed; `/api/ingest` no longer stores `state: "closed"` issues, so the worker's `--state all` resync can't resurrect a dismissed row. Trade-off: the home "issues closed per day" chart no longer has data to plot.
+
 ## [3.4.7] — 2026-06-22
 
 - **Webapp** — Close button now sets `state: "closed"` in the DB (mirroring Reject), so the row leaves the open-issues list immediately on refresh. Previously close only set `needsHuman`/`pendingStatus`; once v3.4.6 cleared `pendingStatus` synchronously, the row stayed in the list looking untouched.
