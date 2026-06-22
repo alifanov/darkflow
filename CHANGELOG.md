@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.10.3] — 2026-06-22
+
+- **Worker** — `sync_webapp` no longer passes the issue/log/commit arrays to `jq` as `--argjson` command-line arguments. With up to 300 issues (full bodies) the combined argv overflowed `ARG_MAX`, failing with `jq: Argument list too long` and silently dropping the Web UI sync for that project. The large arrays are now concatenated into a temp file and read by `jq` via `--slurpfile` (only the small scalar fields stay on the command line), and the assembled payload is POSTed to `/api/ingest` over stdin (`curl --data-binary @-`) so it can't overflow curl's argv either. `templates/darkflow/darkflow-run.sh`.
+
 ## [3.10.2] — 2026-06-22
 
 - **Worker** — repo URL is now resolved from the local git remote (`git remote get-url origin`, normalized to the canonical `https://host/owner/repo` form) instead of `gh repo view`, which used the GitHub **GraphQL** API. The old path ran one GraphQL call per project per 30s tick (~2000/hr across a typical machine), and whenever the shared GraphQL rate limit was exhausted *every* project got skipped — `set_project` failed, no heartbeat was sent, and the Web UI showed the worker permanently "offline". The new resolver costs zero API calls and keeps the worker beating through rate-limit exhaustion. `gh repo view` remains only as a fallback when there is no usable git remote. The two direct `gh repo view` call sites in `apply_pending_statuses` and `sync_webapp` now route through the same cached resolver. `templates/darkflow/darkflow-run.sh`.

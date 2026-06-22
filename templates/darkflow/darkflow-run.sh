@@ -1501,7 +1501,27 @@ sync_webapp() {
     [[ -z "$commits_json" ]] && commits_json="[]"
   fi
 
-  # Assemble payload
+  # Assemble payload. The issue/log/commit arrays can be large (up to 300 issues
+  # with full bodies), so they go into a temp file read by jq via --slurpfile —
+  # passing them as --argjson argv could overflow ARG_MAX ("jq: Argument list too
+  # long") and silently drop the sync. Only the small scalar fields stay on the
+  # command line. Each *_json var is already valid JSON, so concatenating them
+  # builds the context object without another jq invocation.
+  local tmp_ctx
+  tmp_ctx=$(mktemp "${TMPDIR:-/tmp}/darkflow-ctx.XXXXXX") || {
+    log "WEBAPP skipped (mktemp failed)"; PENDING_LOGS=(); return 0; }
+  {
+    printf '{"modules":%s'      "$modules_json"
+    printf ',"issues":%s'       "$issues_json"
+    printf ',"analytics":%s'    "$analytics_json"
+    printf ',"security":%s'     "$security_json"
+    printf ',"architecture":%s' "$architecture_json"
+    printf ',"logs":%s'         "$logs_json"
+    printf ',"routines":%s'     "$routines_json"
+    printf ',"commits":%s'      "$commits_json"
+    printf ',"alerts":%s}'      "$alerts_json"
+  } > "$tmp_ctx"
+
   local payload
   payload=$(jq -n \
     --arg repoUrl    "$repo_url" \
@@ -1512,16 +1532,8 @@ sync_webapp() {
     --arg language   "$proj_lang" \
     --arg merge      "$proj_merge" \
     --arg version    "$proj_version" \
-    --argjson modules    "$modules_json" \
-    --argjson issues     "$issues_json" \
-    --argjson analytics  "$analytics_json" \
-    --argjson security   "$security_json" \
-    --argjson architecture "$architecture_json" \
-    --argjson logs       "$logs_json" \
-    --argjson routines   "$routines_json" \
-    --argjson commits    "$commits_json" \
-    --argjson alerts     "$alerts_json" \
-    '{
+    --slurpfile ctx "$tmp_ctx" \
+    '($ctx[0]) as $c | {
       repoUrl:          $repoUrl,
       name:             $name,
       localPath:        $localPath,
@@ -1529,24 +1541,31 @@ sync_webapp() {
       branch:           $branch,
       language:         $language,
       mergeStrategy:    $merge,
-      modules:          $modules,
+      modules:          $c.modules,
       darkflowVersion:  $version,
-      issues:           $issues,
-      logs:             $logs,
-      routines:         $routines,
-      commits:          $commits,
-      alerts:           $alerts
+      issues:           $c.issues,
+      logs:             $c.logs,
+      routines:         $c.routines,
+      commits:          $c.commits,
+      alerts:           $c.alerts
     }
-    | if $analytics   != null then . + {analytics: $analytics}     else . end
-    | if $security    != null then . + {security: $security}        else . end
-    | if $architecture != null then . + {architecture: $architecture} else . end
-    ') || { log "WEBAPP skipped (payload build error)"; PENDING_LOGS=(); return 0; }
+    | if $c.analytics    != null then . + {analytics: $c.analytics}       else . end
+    | if $c.security     != null then . + {security: $c.security}         else . end
+    | if $c.architecture != null then . + {architecture: $c.architecture} else . end
+    ')
+  local jq_rc=$?
+  rm -f "$tmp_ctx"
+  if (( jq_rc != 0 )) || [[ -z "$payload" ]]; then
+    log "WEBAPP skipped (payload build error)"; PENDING_LOGS=(); return 0
+  fi
 
+  # POST the body via stdin (--data-binary @-) so a large payload can't overflow
+  # ARG_MAX on the curl command line either.
   local http_code
-  http_code=$(curl -fsS -o /dev/null -w "%{http_code}" \
+  http_code=$(printf '%s' "$payload" | curl -fsS -o /dev/null -w "%{http_code}" \
     -X POST "${webapp_url}/api/ingest" \
     -H "Content-Type: application/json" \
-    -d "$payload" 2>/dev/null) || true
+    --data-binary @- 2>/dev/null) || true
 
   if [[ "$http_code" =~ ^2 ]]; then
     log "WEBAPP synced (HTTP ${http_code})"
