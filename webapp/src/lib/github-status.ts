@@ -59,7 +59,11 @@ export async function applyStatusToGitHub(
       await gh(["issue", "edit", num, "-R", slug, ...removeArgs, "--remove-label", "needs-human"]).catch(() => {});
       await closeIdempotent(num, slug);
     } else {
-      await gh(["issue", "edit", num, "-R", slug, ...removeArgs, "--add-label", `status:${target}`]);
+      // Approving routes the issue to the autonomous agent, so it overrides the
+      // needs-human gate — the worker excludes needs-human from its queue, so
+      // leaving it on would make an "approved" issue silently never get picked
+      // up. (The close path strips it too.)
+      await gh(["issue", "edit", num, "-R", slug, ...removeArgs, "--remove-label", "needs-human", "--add-label", `status:${target}`]);
       if (target === "rejected") await closeIdempotent(num, slug);
     }
     return { ok: true };

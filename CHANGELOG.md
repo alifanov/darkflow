@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.7.1] — 2026-06-22
+
+- **Bugfix** — approving an issue in the webapp now also removes the `needs-human` label. Previously, approving a `needs-human` issue added `status:approved` but left `needs-human` on it; the worker correctly excludes `needs-human` from its autonomous `fix-issues` queue, so the issue showed as "approved" in GitHub yet was silently skipped every tick. Approval is a human routing the issue to the agent, so it now overrides the human-gate (matches the close path, which already strips `needs-human`). `webapp/src/lib/github-status.ts`.
+
 ## [3.7.0] — 2026-06-22
 
 - **Feature** — per-project **routine constraints**. A free-text field in the project Settings tab (webapp) writes `<project>/.darkflow.d/constraints.md`, which is `@`-imported into every agent's context via `.darkflow.d/claude.md`. Routines that analyze and propose changes (build-optimization, architecture-review, design-*, analytics-review, etc.) honor these limits — findings that violate a constraint are dropped, not filed. New API route `PUT/GET /api/projects/[id]/constraints` reads/writes the file via the project's host `localPath` (same pattern as mailbox `.env`); no DB column, no worker changes.
