@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.4.4] — 2026-06-22
+
+- **Webapp** — dashboard "Errors" column and project detail Logs tab now scope to the last 24h instead of the latest 100 log entries.
+
 ## [3.4.3] — 2026-06-20
 
 - **Webapp** — dropped the "Last synced" column from the projects list. It tracked

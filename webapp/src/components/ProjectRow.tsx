@@ -150,7 +150,7 @@ export function ProjectRow({
       <td
         className="py-3 px-4 text-right text-sm"
         style={{ color: errorCount > 0 ? "var(--red)" : "var(--muted)" }}
-        title={errorCount > 0 ? `${errorCount} failed routine run(s) in the last 100 logs` : "No routine errors in the last 100 logs"}
+        title={errorCount > 0 ? `${errorCount} failed routine run(s) in the last 24h` : "No routine errors in the last 24h"}
       >
         {errorCount > 0 ? errorCount : "—"}
       </td>

@@ -98,7 +98,7 @@ export default async function ProjectPage({
       securityStatus: true,
       architectureStatus: true,
       workerStatus: true,
-      routineLogs: { orderBy: { timestamp: "desc" }, take: 100, select: { id: true, routine: true, summary: true, output: true, costUsd: true, totalTokens: true, timestamp: true } },
+      routineLogs: { where: { timestamp: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }, orderBy: { timestamp: "desc" }, select: { id: true, routine: true, summary: true, output: true, costUsd: true, totalTokens: true, timestamp: true } },
       routineConfigs: { orderBy: { name: "asc" } },
     },
   });
