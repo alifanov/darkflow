@@ -11,6 +11,10 @@ export async function POST(
     const result = await prisma.issue.updateMany({
       where: { id },
       data: {
+        // Optimistically close in the DB (mirrors reject) so the row leaves the
+        // open-issues list on refresh; the worker reconciles via pendingStatus
+        // if the synchronous gh close below fails.
+        state: "closed",
         needsHuman: false,
         pendingStatus: "closed",
         pendingStatusAt: new Date(),

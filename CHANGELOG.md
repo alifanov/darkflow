@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.4.7] — 2026-06-22
+
+- **Webapp** — Close button now sets `state: "closed"` in the DB (mirroring Reject), so the row leaves the open-issues list immediately on refresh. Previously close only set `needsHuman`/`pendingStatus`; once v3.4.6 cleared `pendingStatus` synchronously, the row stayed in the list looking untouched.
+
 ## [3.4.6] — 2026-06-22
 
 - **Webapp** — approve/reject/close now push the GitHub status label synchronously (best-effort `gh issue edit` on the host) instead of only writing `pendingStatus` and waiting for the worker's ~5-min sync. On success `pendingStatus` is cleared immediately, so the "Pending Sync" badge no longer lingers; on failure (e.g. no `gh` in the Docker profile) it falls back to the worker reconciling as before.
