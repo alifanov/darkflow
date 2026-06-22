@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { applyStatusToGitHub } from "@/lib/github-status";
 
 export async function POST(
   _req: NextRequest,
@@ -17,6 +18,12 @@ export async function POST(
     });
     if (result.count === 0) {
       return NextResponse.json({ error: "Issue not found" }, { status: 404 });
+    }
+    if (await applyStatusToGitHub(id, "closed")) {
+      await prisma.issue.updateMany({
+        where: { id },
+        data: { pendingStatus: null, pendingStatusAt: null },
+      });
     }
     return NextResponse.json({ ok: true });
   } catch (err) {

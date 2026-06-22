@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.4.6] — 2026-06-22
+
+- **Webapp** — approve/reject/close now push the GitHub status label synchronously (best-effort `gh issue edit` on the host) instead of only writing `pendingStatus` and waiting for the worker's ~5-min sync. On success `pendingStatus` is cleared immediately, so the "Pending Sync" badge no longer lingers; on failure (e.g. no `gh` in the Docker profile) it falls back to the worker reconciling as before.
+
 ## [3.4.5] — 2026-06-22
 
 - **Installer** — fix `register_project` crashing with `jq: invalid JSON text passed to --argjson` when no optional modules are active. Empty `jq -R` input produced no output; switched to `jq -n --arg` so an empty module list yields `[]`.
