@@ -2,7 +2,12 @@
 
 Dark Flow is a workflow installer for AI-assisted development projects.
 
-> **NEVER start the global worker (`~/.darkflow/darkflow-run.sh`) yourself** — not via `nohup`, not in the background, not "to verify". The user always starts it manually. You may stop/restart-by-stopping it when asked, but starting it is the user's job only.
+> **After updating Dark Flow, restart the global worker in the background yourself** so the new code takes effect — a running worker holds the old script in memory, so a self-update has no effect until the worker is restarted:
+> ```bash
+> pkill -f /.darkflow/darkflow-run.sh
+> nohup /usr/local/bin/bash ~/.darkflow/darkflow-run.sh >/dev/null 2>> ~/.darkflow/worker.err.log &
+> ```
+> The first-time start on a fresh machine is the user's call, but restarting after a self-update (or when explicitly asked) is your job — do it in the background, don't wait for the user.
 
 ## What's in this repo
 

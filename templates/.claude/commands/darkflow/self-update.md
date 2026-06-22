@@ -8,7 +8,19 @@ bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/insta
 
 The installer is fully non-interactive: `--yes` skips all prompts, `--force` overwrites locally-modified templates. It refreshes the global worker (`~/.darkflow/darkflow-run.sh`), the user-scope slash commands (`~/.claude/commands/darkflow/`), this project's `.darkflow.d/` files, and the version in `.darkflow.d/state/config.json`.
 
-> Updates are manual by design — the global worker never fetches or runs an installer on its own. To update just the worker + commands without touching a project, run `bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh) --self-update --yes`. After updating, restart the worker so the new code takes effect (`pkill -f ~/.darkflow/darkflow-run.sh` then start it again).
+> Updates are manual by design — the global worker never fetches or runs an installer on its own. To update just the worker + commands without touching a project, run `bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh) --self-update --yes`.
+
+## Step 1b — Restart the global worker (in the background)
+
+A running worker holds the **old** script in memory, so the update has no effect until you restart it. If a worker is running (`pgrep -f /.darkflow/darkflow-run.sh`), restart it yourself in the background — do not wait for the user:
+
+```bash
+pkill -f /.darkflow/darkflow-run.sh
+sleep 1
+nohup /usr/local/bin/bash ~/.darkflow/darkflow-run.sh >/dev/null 2>> ~/.darkflow/worker.err.log &
+```
+
+If no worker was running, leave it stopped (the first-time start is the user's call) and just note it.
 
 ## Step 2 — Ensure `.darkflow.d/state/config.json` is in `.gitignore`
 

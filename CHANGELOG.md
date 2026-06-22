@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.10.0] — 2026-06-22
+
+- **Workflow / policy** — reversed the "never start the worker yourself" rule. After a self-update the agent now **restarts the global worker in the background itself** (a running worker holds the old script in memory, so an update is inert until restart). `CLAUDE.md` directive rewritten; `self-update.md` gains a **Step 1b — Restart the global worker** that does `pkill -f /.darkflow/darkflow-run.sh` then `nohup … &` when a worker was running (first-time start on a fresh machine stays the user's call). `CLAUDE.md`, `templates/.claude/commands/darkflow/self-update.md`.
+
 ## [3.9.1] — 2026-06-22
 
 - **Maintainer command** — `/self-checkup` Step 6 now catches the two failure modes behind the silent-approved-issue bug: (1) the **invariant violation** `status:approved` + `needs-human`/`status:blocked` on one issue (mutually exclusive — silently drops it from the `fix-issues` queue), and (2) a **worker-log ↔ queue mismatch** — cross-reads `~/.darkflow/worker.log` and each project's `.darkflow.d/darkflow-run.log` against the live GitHub queue to flag recurring `SKIP fix-issues — no actionable …` / `SKIP … not a registered project` / wedged-dispatch lines that contradict reality. `.claude/commands/self-checkup.md`.
