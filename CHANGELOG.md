@@ -14,6 +14,15 @@ Categories:
 
 ---
 
+## [3.9.0] — 2026-06-22
+
+- **Bugfix / invariant** — `needs-human` and `status:approved` are now strictly mutually exclusive, enforced at every write site, and `fix-issues` trusts `status:approved` alone. Previously the worker's `apply_pending_statuses` (the path that flushes web-UI approvals to GitHub labels when the webapp's own `gh` call didn't run) added `status:approved` **without** stripping `needs-human`; the `fix-issues` actionable filter then excluded `needs-human`, so those issues sat "approved" in the UI yet were silently never picked up (seen on adsynex: 11 approved issues stuck). Fixes:
+  - `apply_pending_statuses` now `--remove-label needs-human` when it sets `status:approved`/`status:rejected` (mirrors the webapp approve path).
+  - `convert_blocked_to_needs_human` now also strips `status:approved` when folding `status:blocked` into `needs-human`.
+  - `mailbox-check` send-failure path now strips `status:approved` when it parks an issue as `needs-human`.
+  - `fix-issues` actionable filter simplified to `status:approved` minus `action:reply` only (dropped the `needs-human`/`status:blocked` re-checks — now guaranteed absent). `action:reply` stays excluded because those are mailbox-owned (handled by `mailbox-check`), not a code task. `templates/darkflow/darkflow-run.sh`, `templates/.claude/commands/darkflow/mailbox-check.md`.
+  - (The agent templates `fix-issues.md`/`fix-ci-issue.md` already stripped `status:approved` when adding `needs-human` — unchanged.)
+
 ## [3.8.0] — 2026-06-22
 
 - **New label** — `source:arch-review`. The `architecture-review` routine previously labelled its auto-generated findings `source:manual`, but the worker's min-priority gate (`close_routine_below_priority` in `darkflow-run.sh`) deliberately exempts `source:manual` so it never auto-closes human-filed issues. Result: arch-review findings below a project's `minPriority` slipped straight past the level filter and piled up in the proposed queue (seen on qabot/studyclutch with `minPriority=high`). Giving arch-review its own source label makes the gate apply to it like every other routine. `install.sh`, `templates/.claude/commands/darkflow/architecture-review.md`, `routines/architecture-review.md`.

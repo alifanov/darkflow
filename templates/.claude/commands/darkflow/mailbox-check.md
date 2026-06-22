@@ -60,7 +60,7 @@ For each such issue:
    gh issue close $number
    ```
 
-6. If send fails: label the issue `needs-human`, leave a comment with the error. Continue to the next issue.
+6. If send fails: `gh issue edit $number --add-label needs-human --remove-label status:approved` (needs-human and status:approved are mutually exclusive — parking it for a human must drop it from the approved queue), leave a comment with the error. Continue to the next issue.
 
 ## Step 3 — Fetch new mail
 

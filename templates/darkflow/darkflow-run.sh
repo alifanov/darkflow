@@ -865,18 +865,17 @@ run_routine() {
     # Flush any webapp-approved issues to GitHub labels before checking the count,
     # otherwise issues approved via the web UI won't have the label yet and get skipped.
     apply_pending_statuses
-    # Count only *actionable* approved issues — exclude those parked for a human
-    # (needs-human / status:blocked) or owned by mailbox-check (action:reply).
-    # Otherwise a queue jammed with only non-actionable issues launches a codex/
-    # claude run every cycle that re-picks the same issue and posts duplicate
-    # comments without ever fixing anything.
+    # Count approved issues fix-issues should act on. status:approved is the
+    # single source of truth: needs-human / status:blocked are kept mutually
+    # exclusive with it at write time (every path that adds needs-human strips
+    # status:approved, and approving strips needs-human), so we no longer
+    # re-filter them here. The one exclusion left is action:reply — those are
+    # mailbox-owned (mailbox-check sends the reply), not a code task for us.
     local approved_count
     approved_count=$(gh issue list --state open --label "status:approved" \
                        --json number,labels \
                        --jq '[.[] | select((.labels | map(.name)) as $l
-                                | ($l | index("action:reply") | not)
-                                  and ($l | index("needs-human") | not)
-                                  and ($l | index("status:blocked") | not))] | length' \
+                                | ($l | index("action:reply") | not))] | length' \
                        2>/dev/null || echo "")
     if [[ "$approved_count" == "0" ]]; then
       log "SKIP   ${name} — no actionable status:approved issues"
@@ -1066,6 +1065,7 @@ convert_blocked_to_needs_human() {
     [[ -z "$num" ]] && continue
     if gh_err=$(gh issue edit "$num" \
          --remove-label "status:blocked" \
+         --remove-label "status:approved" \
          --add-label "needs-human" 2>&1 >/dev/null); then
       log "MIGRATE #${num} status:blocked → needs-human (deprecated)"
     else
@@ -1352,7 +1352,10 @@ apply_pending_statuses() {
       gh issue edit "$num" "${remove_args[@]}" --remove-label "needs-human" >/dev/null 2>&1 || true
       gh issue close "$num" >/dev/null 2>&1 && log "PENDING #${num} closed (needs-human resolved)" || \
         log "PENDING #${num} failed to close"
-    elif gh_err=$(gh issue edit "$num" "${remove_args[@]}" --add-label "status:${target}" 2>&1 >/dev/null); then
+    elif gh_err=$(gh issue edit "$num" "${remove_args[@]}" --remove-label "needs-human" --add-label "status:${target}" 2>&1 >/dev/null); then
+      # Strip needs-human: approving (or rejecting) overrides the human-gate, and
+      # fix-issues now trusts status:approved alone — leaving needs-human on would
+      # silently keep the issue parked. Mirrors the webapp approve path.
       log "PENDING #${num} → status:${target}"
       if [[ "$target" == "rejected" ]]; then
         gh issue close "$num" >/dev/null 2>&1 && log "PENDING #${num} closed (rejected)"
