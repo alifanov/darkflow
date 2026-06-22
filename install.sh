@@ -418,7 +418,7 @@ register_project() {
   fi
   local wu; wu=$(read_config webapp_url "$WEBAPP_URL")
   [[ -n "$wu" ]] || { warn "No webapp_url configured — cannot register the project."; return; }
-  local modules_json; modules_json=$(printf '%s' "$modules_csv" | jq -Rc 'split(",") | map(select(length>0))')
+  local modules_json; modules_json=$(jq -nc --arg csv "$modules_csv" '$csv | split(",") | map(select(length>0))')
   local payload
   payload=$(jq -nc \
     --arg repoUrl "$repo_url" \

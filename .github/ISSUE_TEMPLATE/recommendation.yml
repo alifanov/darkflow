@@ -16,6 +16,8 @@ body:
         - source:security-review
         - source:ux-audit
         - source:user-feedback
+        - source:vulnerability-report
+        - source:infra
         - source:manual
     validations:
       required: true
@@ -30,26 +32,6 @@ body:
       required: true
 
   - type: dropdown
-    id: area
-    attributes:
-      label: Area (область кода)
-      description: Можно выбрать несколько через запятую в заголовке — здесь основная
-      options:
-        - area:worker
-        - area:api
-        - area:landing
-        - area:checkout
-        - area:auth
-        - area:dashboard
-        - area:email
-        - area:checks
-        - area:architecture
-        - area:docs
-        - area:infra
-    validations:
-      required: true
-
-  - type: dropdown
     id: priority
     attributes:
       label: Priority
@@ -58,18 +40,6 @@ body:
         - "priority:p1 — на этой неделе"
         - "priority:p2 — в этом месяце"
         - "priority:p3 — когда-нибудь / nice-to-have"
-    validations:
-      required: true
-
-  - type: dropdown
-    id: effort
-    attributes:
-      label: Effort
-      options:
-        - "effort:xs — ≤ 30 минут"
-        - "effort:s — ~ 2 часа"
-        - "effort:m — ~ полдня"
-        - "effort:l — > 1 дня (дробить)"
     validations:
       required: true
 

@@ -43,7 +43,7 @@ See also: [`decisions/`](./decisions/) for the ADR explaining why this approach 
 
 ### `priority:*` — срочность
 
-Ровно один. Заменяет суффиксы приоритета в заголовках.
+Ровно один, и он **обязателен** — каждая issue должна нести `priority:*`. Заменяет суффиксы приоритета в заголовках.
 
 | Лейбл | Цвет | Семантика |
 |---|---|---|
@@ -55,6 +55,8 @@ See also: [`decisions/`](./decisions/) for the ADR explaining why this approach 
 > **Правило создания issue:** агенты и рутины создают issue **только для `critical` / `high` / `medium`**. Находки уровня `low` не превращаются в issue — их фиксируют в снимке (`docs/insights/*`). Лейбл `priority:low` остаётся валидным для issue, заведённых вручную.
 >
 > **Enforcement:** правило не держится на одном промпте — диспетчер (`darkflow-run.sh`) перед каждой синхронизацией автоматически закрывает любую открытую issue с `priority:low`, у которой есть рутинный `source:*` (т.е. не `source:manual`). Ручные low-issue и всё, что уже `status:in-progress`, не трогаются.
+>
+> **Enforcement (priority обязателен):** LLM-агенты не всегда проставляют `priority:*` из промпта, поэтому диспетчер перед каждой синхронизацией находит любую открытую issue **без** лейбла `priority:*` и проставляет ей `priority:medium` (безопасный дефолт — issue остаётся в очереди на approve, а не отбрасывается как `low`). Так очередь Web UI никогда не показывает issue с пустым приоритетом («—»).
 
 ### Тип задачи — стандартные GitHub-лейблы
 
@@ -139,10 +141,10 @@ gh label create "source:seo"             --color "5319e7" --description "Из т
 gh label create "source:ads"             --color "5319e7" --description "Из insights/ads/* (Google Ads)"
 gh label create "source:signoz"          --color "5319e7" --description "Из SigNoz observability"
 gh label create "source:security-review" --color "5319e7" --description "Из security-аудита"
-gh label create "source:user-feedback"        --color "5319e7" --description "Из insights/qualitative/*"
-gh label create "source:vulnerability-report" --color "5319e7" --description "GitHub Dependabot / Code Scanning / Secret Scanning"
-gh label create "source:infra"                --color "5319e7" --description "Coolify / deployment health checks"
-gh label create "source:manual"               --color "5319e7" --description "Гипотеза без data-источника"
+gh label create "source:user-feedback"         --color "5319e7" --description "Из insights/qualitative/*"
+gh label create "source:vulnerability-report"  --color "5319e7" --description "GitHub Dependabot / Code Scanning / Secret Scanning"
+gh label create "source:infra"                 --color "5319e7" --description "Coolify / deployment health checks"
+gh label create "source:manual"                --color "5319e7" --description "Гипотеза без data-источника"
 
 # priority
 gh label create "priority:critical" --color "b60205" --description "Бьёт по revenue / выключает фичу сейчас"

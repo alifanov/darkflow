@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.4.5] — 2026-06-22
+
+- **Installer** — fix `register_project` crashing with `jq: invalid JSON text passed to --argjson` when no optional modules are active. Empty `jq -R` input produced no output; switched to `jq -n --arg` so an empty module list yields `[]`.
+
 ## [3.4.4] — 2026-06-22
 
 - **Webapp** — dashboard "Errors" column and project detail Logs tab now scope to the last 24h instead of the latest 100 log entries.

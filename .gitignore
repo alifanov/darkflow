@@ -2,3 +2,6 @@
 *.swp
 .env
 /.claude/
+.darkflow.d/state/
+.darkflow.d/mailbox/state/
+.darkflow.d/*.log

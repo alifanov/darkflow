@@ -111,3 +111,5 @@ Never skip the version bump — the install one-liner fetches raw files from `ma
 No build process — just commit and push. The install one-liner fetches from `main` branch raw files via GitHub CDN.
 
 After every change, bump the version in `VERSION` (semver: patch for fixes/copy, minor for new features or template changes, major for breaking installer changes).
+
+@.darkflow.d/claude.md
