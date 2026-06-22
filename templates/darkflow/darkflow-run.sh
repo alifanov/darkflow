@@ -542,6 +542,14 @@ run_in_pgid() {
     return 1
   fi
 
+  # Pre-flight: the python wrapper execvp's "$1" and would otherwise emit an
+  # opaque FileNotFoundError traceback if the engine binary (claude/codex) is
+  # missing from PATH. Fail loud and clear instead.
+  if ! command -v "$1" &>/dev/null; then
+    echo "darkflow-run: command not found on PATH: '$1' — is the engine CLI installed?" >&2
+    return 127
+  fi
+
   python3 -c 'import os,sys; os.setpgrp(); os.execvp(sys.argv[1], sys.argv[1:])' "$@" > "$_tmpout" 2>&1 &
   _bgpid=$!
   _pgid_ret=$_bgpid

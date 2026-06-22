@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.10.1] — 2026-06-22
+
+- **Worker** — `run_in_pgid` now pre-flights the engine binary with `command -v "$1"` before handing off to the python `execvp` wrapper. A missing engine CLI (e.g. `codex` not installed) previously surfaced as an opaque `FileNotFoundError` Python traceback in the routine log; it now fails fast with `command not found on PATH: '<cmd>' — is the engine CLI installed?` and return code 127. `templates/darkflow/darkflow-run.sh`.
+
 ## [3.10.0] — 2026-06-22
 
 - **Workflow / policy** — reversed the "never start the worker yourself" rule. After a self-update the agent now **restarts the global worker in the background itself** (a running worker holds the old script in memory, so an update is inert until restart). `CLAUDE.md` directive rewritten; `self-update.md` gains a **Step 1b — Restart the global worker** that does `pkill -f /.darkflow/darkflow-run.sh` then `nohup … &` when a worker was running (first-time start on a fresh machine stays the user's call). `CLAUDE.md`, `templates/.claude/commands/darkflow/self-update.md`.
