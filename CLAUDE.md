@@ -2,6 +2,8 @@
 
 Dark Flow is a workflow installer for AI-assisted development projects.
 
+> **NEVER start the global worker (`~/.darkflow/darkflow-run.sh`) yourself** — not via `nohup`, not in the background, not "to verify". The user always starts it manually. You may stop/restart-by-stopping it when asked, but starting it is the user's job only.
+
 ## What's in this repo
 
 ```
