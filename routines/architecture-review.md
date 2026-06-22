@@ -47,7 +47,7 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 
 ## What gets created
 
-Issues with labels: `status:proposed`, `source:manual`, `priority:medium` (architectural debt is rarely urgent; `low`-level debt is noted in the snapshot, not filed as an issue)
+Issues with labels: `status:proposed`, `source:arch-review`, `priority:medium` (architectural debt is rarely urgent; `low`-level debt is noted in the snapshot, not filed as an issue)
 
 Large findings (multi-day work) should be broken into sub-issues before approving.
 

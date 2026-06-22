@@ -14,6 +14,11 @@ Categories:
 
 ---
 
+## [3.8.0] — 2026-06-22
+
+- **New label** — `source:arch-review`. The `architecture-review` routine previously labelled its auto-generated findings `source:manual`, but the worker's min-priority gate (`close_routine_below_priority` in `darkflow-run.sh`) deliberately exempts `source:manual` so it never auto-closes human-filed issues. Result: arch-review findings below a project's `minPriority` slipped straight past the level filter and piled up in the proposed queue (seen on qabot/studyclutch with `minPriority=high`). Giving arch-review its own source label makes the gate apply to it like every other routine. `install.sh`, `templates/.claude/commands/darkflow/architecture-review.md`, `routines/architecture-review.md`.
+- **Note** — every other routine command already uses a distinct `source:*` label; only `add-issue` keeps `source:manual` (human-driven, correctly exempt). Existing repos get the new label on next `darkflow:update`; their already-filed `arch:` issues must be re-labelled `source:manual` → `source:arch-review` once for the gate to retroactively close the sub-threshold ones.
+
 ## [3.7.1] — 2026-06-22
 
 - **Bugfix** — approving an issue in the webapp now also removes the `needs-human` label. Previously, approving a `needs-human` issue added `status:approved` but left `needs-human` on it; the worker correctly excludes `needs-human` from its autonomous `fix-issues` queue, so the issue showed as "approved" in GitHub yet was silently skipped every tick. Approval is a human routing the issue to the agent, so it now overrides the human-gate (matches the close path, which already strips `needs-human`). `webapp/src/lib/github-status.ts`.

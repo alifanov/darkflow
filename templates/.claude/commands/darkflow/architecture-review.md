@@ -14,7 +14,7 @@ If `.darkflow.d/state/config.json` is missing, continue with the default.
 /improve-codebase-architecture
 
 After the review is complete, create a GitHub issue for each significant finding:
-- Labels: `status:proposed`, `source:manual`, priority based on impact, `effort:m` or `effort:l`
+- Labels: `status:proposed`, `source:arch-review`, priority based on impact, `effort:m` or `effort:l`
 - Focus on actionable improvements, not style preferences
 - Do not create issues for findings already tracked in open GitHub issues
 
@@ -24,7 +24,7 @@ Language for all GitHub issues and output: the `language` value from `.darkflow.
 
 Save an architecture snapshot so the Dark Flow worker can forward it to the web UI.
 
-Run `gh issue list --state open --label source:manual --json number,labels --limit 200`, then:
+Run `gh issue list --state open --label source:arch-review --json number,labels --limit 200`, then:
 - Count the returned issues → `openIssues`
 - Derive `status`: `"warning"` if openIssues > 10, `"ok"` otherwise
 

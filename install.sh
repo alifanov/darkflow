@@ -902,6 +902,7 @@ setup_labels() {
   _do_label "source:ads"             "5319e7" "From insights/ads/* (Google Ads)"
   _do_label "source:signoz"          "5319e7" "From SigNoz observability"
   _do_label "source:security-review" "5319e7" "From security audit"
+  _do_label "source:arch-review"     "5319e7" "From architecture-review routine"
   _do_label "source:user-feedback"   "5319e7" "From insights/qualitative/*"
   _do_label "source:manual"          "5319e7" "Hypothesis without data source"
   _do_label "source:mailbox"         "5319e7" "From inbox email — incoming customer requests"
