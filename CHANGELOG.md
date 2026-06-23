@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.11.0] — 2026-06-23
+
+- **Workflow / Docs** — the agent must no longer start, restart, or relaunch the global worker. The worker's `claude`/`codex` engine authenticates from the user's interactive shell (keychain / env credentials a Claude Code session does not have); a worker the agent launches inherits a credential-less environment and every routine fails with `Not logged in · Please run /login`. Flipped the instruction in the root `CLAUDE.md` blockquote and in the `/darkflow:self-update` slash command (Step 1b → "Ask the user to restart the global worker"): the agent now prints the restart command and asks the user to run it in their own terminal. Stopping/killing the worker on request is still allowed (needs no credentials). `CLAUDE.md`, `templates/.claude/commands/darkflow/self-update.md`.
+
 ## [3.10.3] — 2026-06-22
 
 - **Worker** — `sync_webapp` no longer passes the issue/log/commit arrays to `jq` as `--argjson` command-line arguments. With up to 300 issues (full bodies) the combined argv overflowed `ARG_MAX`, failing with `jq: Argument list too long` and silently dropping the Web UI sync for that project. The large arrays are now concatenated into a temp file and read by `jq` via `--slurpfile` (only the small scalar fields stay on the command line), and the assembled payload is POSTed to `/api/ingest` over stdin (`curl --data-binary @-`) so it can't overflow curl's argv either. `templates/darkflow/darkflow-run.sh`.

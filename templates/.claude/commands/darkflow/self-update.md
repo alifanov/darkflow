@@ -10,9 +10,17 @@ The installer is fully non-interactive: `--yes` skips all prompts, `--force` ove
 
 > Updates are manual by design — the global worker never fetches or runs an installer on its own. To update just the worker + commands without touching a project, run `bash <(curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh) --self-update --yes`.
 
-## Step 1b — Restart the global worker (in the background)
+## Step 1b — Ask the user to restart the global worker
 
-A running worker holds the **old** script in memory, so the update has no effect until you restart it. If a worker is running (`pgrep -f /.darkflow/darkflow-run.sh`), restart it yourself in the background — do not wait for the user:
+A running worker holds the **old** script in memory, so the update has no effect until the worker is restarted. **Do NOT restart it yourself.** The worker's `claude`/`codex` engine authenticates from the user's interactive shell (keychain / env credentials a Claude Code session does not have); a worker you launch inherits your credential-less environment and every routine fails with `Not logged in · Please run /login`.
+
+Check whether a worker is running and tell the user what to do:
+
+```bash
+pgrep -f /.darkflow/darkflow-run.sh >/dev/null && echo "worker running — needs restart" || echo "worker not running"
+```
+
+If it is running, print this and ask the user to run it **in their own terminal** (where `claude -p "ok"` works) — do not run it for them, not in the background, not even if asked to "just restart it":
 
 ```bash
 pkill -f /.darkflow/darkflow-run.sh
@@ -20,7 +28,7 @@ sleep 1
 nohup /usr/local/bin/bash ~/.darkflow/darkflow-run.sh >/dev/null 2>> ~/.darkflow/worker.err.log &
 ```
 
-If no worker was running, leave it stopped (the first-time start is the user's call) and just note it.
+If no worker was running, just note that the user should start it themselves when ready. (You may stop/kill the worker on request — that needs no credentials — but never start or restart it.)
 
 ## Step 2 — Ensure `.darkflow.d/state/config.json` is in `.gitignore`
 

@@ -2,12 +2,13 @@
 
 Dark Flow is a workflow installer for AI-assisted development projects.
 
-> **After updating Dark Flow, restart the global worker in the background yourself** so the new code takes effect — a running worker holds the old script in memory, so a self-update has no effect until the worker is restarted:
+> **Never start, restart, or relaunch the global worker yourself — always ask the user to do it from their own terminal.** The worker's `claude`/`codex` engine authenticates from the user's interactive shell (keychain / env credentials that a Claude Code session does **not** have). A worker you launch inherits your credential-less environment, so every routine fails with `Not logged in · Please run /login` until the user relaunches it themselves. A running worker also holds the old script in memory, so after a self-update tell the user to restart it:
 > ```bash
+> # the USER runs this in their own terminal (where `claude -p "ok"` works):
 > pkill -f /.darkflow/darkflow-run.sh
 > nohup /usr/local/bin/bash ~/.darkflow/darkflow-run.sh >/dev/null 2>> ~/.darkflow/worker.err.log &
 > ```
-> The first-time start on a fresh machine is the user's call, but restarting after a self-update (or when explicitly asked) is your job — do it in the background, don't wait for the user.
+> Stopping/killing the worker on request is fine (no credentials needed). Starting or restarting it is always the user's action — do not run it for them, not even in the background, not even when explicitly asked to "restart it"; instead, print the command above and ask them to run it.
 
 ## What's in this repo
 
