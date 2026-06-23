@@ -1,5 +1,5 @@
 .PHONY: help up down web logs restart ps db-shell docker-up \
-        worker-run worker-start worker-stop worker-status worker-logs
+        worker-run worker-start worker-reload worker-stop worker-status worker-logs
 
 WORKER := $(HOME)/.darkflow/darkflow-run.sh
 
@@ -45,6 +45,13 @@ worker-start: ## Start the global Dark Flow worker in the background (serves eve
 		nohup bash "$(WORKER)" >/dev/null 2>>"$(HOME)/.darkflow/worker.err.log" & \
 		sleep 1; echo "Worker started (PID $$(pgrep -f "$(WORKER)" | head -1)). Logs: ~/.darkflow/worker.log"; \
 	fi
+
+worker-reload: ## Restart the global worker in the background (kills old, starts fresh — use after self-update)
+	@if [ ! -f "$(WORKER)" ]; then echo "Worker not installed at $(WORKER) — run install.sh --self-update first."; exit 1; fi
+	@pkill -f "$(WORKER)" 2>/dev/null && echo "Stopped old worker." || echo "No worker was running."
+	@sleep 1
+	@nohup bash "$(WORKER)" >/dev/null 2>>"$(HOME)/.darkflow/worker.err.log" &
+	@sleep 1; echo "Worker reloaded (PID $$(pgrep -f "$(WORKER)" | head -1)). Logs: ~/.darkflow/worker.log"
 
 worker-stop: ## Stop the global Dark Flow worker
 	@pkill -f "$(WORKER)" 2>/dev/null && echo "Worker stopped." || echo "Worker was not running."

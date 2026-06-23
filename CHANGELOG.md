@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.11.1] — 2026-06-23
+
+- **Docs** — new `make worker-reload` target in the repo `Makefile`: kills the running global worker and starts a fresh one in the background in one step. `worker-run`/`worker-start` deliberately refuse to start when a worker is already running (anti-double-start guard), so reloading after a self-update previously meant `worker-stop` + `worker-start` by hand. Source-repo convenience only — not part of the installed-project Makefile block. `Makefile`.
+
 ## [3.11.0] — 2026-06-23
 
 - **Workflow / Docs** — the agent must no longer start, restart, or relaunch the global worker. The worker's `claude`/`codex` engine authenticates from the user's interactive shell (keychain / env credentials a Claude Code session does not have); a worker the agent launches inherits a credential-less environment and every routine fails with `Not logged in · Please run /login`. Flipped the instruction in the root `CLAUDE.md` blockquote and in the `/darkflow:self-update` slash command (Step 1b → "Ask the user to restart the global worker"): the agent now prints the restart command and asks the user to run it in their own terminal. Stopping/killing the worker on request is still allowed (needs no credentials). `CLAUDE.md`, `templates/.claude/commands/darkflow/self-update.md`.
