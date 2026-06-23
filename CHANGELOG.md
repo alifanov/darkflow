@@ -16,7 +16,7 @@ Categories:
 
 ## [3.11.1] — 2026-06-23
 
-- **Docs** — new `make worker-reload` target in the repo `Makefile`: kills the running global worker and starts a fresh one in the background in one step. `worker-run`/`worker-start` deliberately refuse to start when a worker is already running (anti-double-start guard), so reloading after a self-update previously meant `worker-stop` + `worker-start` by hand. Source-repo convenience only — not part of the installed-project Makefile block. `Makefile`.
+- **Docs** — new `make worker-reload` target in the repo `Makefile`: stops the running global worker, then runs a fresh one in the **foreground** (live logs; Ctrl-C to stop). `worker-run`/`worker-start` deliberately refuse to start when a worker is already running (anti-double-start guard), so reloading after a self-update previously meant `worker-stop` + `worker-run` by hand. Source-repo convenience only — not part of the installed-project Makefile block. `Makefile`.
 
 ## [3.11.0] — 2026-06-23
 
