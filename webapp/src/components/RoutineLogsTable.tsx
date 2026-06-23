@@ -11,6 +11,7 @@ export interface RoutineLogItem {
   costUsd: number | null;
   totalTokens: number | null;
   timestamp: string;
+  project?: string;
 }
 
 type SortKey = "time" | "status";
@@ -47,12 +48,15 @@ export function RoutineLogsTable({ logs }: { logs: RoutineLogItem[] }) {
 
   const arrow = (key: SortKey) => (sortKey === key ? (sortDir === "asc" ? " ▲" : " ▼") : "");
 
+  const showProject = logs.some((l) => l.project != null);
+
   return (
     <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
             <SortHeader label="Time" onClick={() => toggleSort("time")} suffix={arrow("time")} />
+            {showProject && <Header label="Project" />}
             <Header label="Routine" />
             <Header label="Summary" />
             <SortHeader label="Status" onClick={() => toggleSort("status")} suffix={arrow("status")} />
@@ -73,6 +77,7 @@ export function RoutineLogsTable({ logs }: { logs: RoutineLogItem[] }) {
               totalTokens={l.totalTokens}
               timestamp={l.timestamp}
               isError={l.isError}
+              project={l.project}
             />
           ))}
         </tbody>

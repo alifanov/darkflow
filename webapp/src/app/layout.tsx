@@ -44,6 +44,13 @@ export default function RootLayout({
             >
               Analytics
             </Link>
+            <Link
+              href="/logs"
+              className="no-underline cursor-pointer hover:opacity-80 transition-opacity"
+              style={{ color: "var(--muted)" }}
+            >
+              Global logs
+            </Link>
           </nav>
           <GlobalWorkerStatus />
         </header>

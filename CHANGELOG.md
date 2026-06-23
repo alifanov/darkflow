@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.12.0] — 2026-06-23
+
+- **Web UI** — new **Global logs** page (`/logs`, third item in the top nav) showing routine runs aggregated across **all** projects in one table, with an added Project column. On top, a small per-minute bar chart of the last 24 hours stacks successful (green) vs failed (red) runs — bar height = tasks/minute. Error detection reuses the existing `exit:` summary marker. New `webapp/src/app/logs/page.tsx` and `webapp/src/components/GlobalLogsChart.tsx`; `RoutineLogsTable`/`LogRow` gained an optional `project` column (per-project pages render unchanged).
+
 ## [3.11.1] — 2026-06-23
 
 - **Docs** — new `make worker-reload` target in the repo `Makefile`: stops the running global worker, then runs a fresh one in the **foreground** (live logs; Ctrl-C to stop). `worker-run`/`worker-start` deliberately refuse to start when a worker is already running (anti-double-start guard), so reloading after a self-update previously meant `worker-stop` + `worker-run` by hand. Source-repo convenience only — not part of the installed-project Makefile block. `Makefile`.

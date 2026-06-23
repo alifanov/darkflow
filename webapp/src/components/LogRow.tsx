@@ -14,6 +14,7 @@ interface LogRowProps {
   totalTokens?: number | null;
   timestamp: string;
   isError?: boolean;
+  project?: string;
 }
 
 // The worker writes each routine's outcome as `ran <name> — ok` on success or
@@ -22,7 +23,7 @@ export function logIsError(summary: string): boolean {
   return summary.includes("exit:");
 }
 
-export function LogRow({ routine, summary, output, costUsd, totalTokens, timestamp, isError }: LogRowProps) {
+export function LogRow({ routine, summary, output, costUsd, totalTokens, timestamp, isError, project }: LogRowProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -38,6 +39,11 @@ export function LogRow({ routine, summary, output, costUsd, totalTokens, timesta
         <td className="py-3 px-4 text-xs font-mono" style={{ color: "var(--muted)" }}>
           <LocalTime date={timestamp} />
         </td>
+        {project != null && (
+          <td className="py-3 px-4 text-sm" style={{ color: "var(--muted)" }}>
+            {project}
+          </td>
+        )}
         <td className="py-3 px-4">
           <span
             className="rounded-full px-2 py-0.5 text-xs font-medium font-mono"
@@ -78,7 +84,7 @@ export function LogRow({ routine, summary, output, costUsd, totalTokens, timesta
       </tr>
       {open && output && (
         <tr style={{ borderBottom: "1px solid var(--border)" }}>
-          <td colSpan={7} className="px-4 pb-4 pt-1">
+          <td colSpan={project != null ? 8 : 7} className="px-4 pb-4 pt-1">
             <div
               className="text-xs overflow-auto max-h-[500px] p-3 rounded prose prose-invert prose-xs max-w-none"
               style={{ background: "var(--bg)", color: "var(--text)", lineHeight: 1.5 }}
