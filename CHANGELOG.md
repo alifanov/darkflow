@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.13.0] — 2026-06-25
+
+- **Workflow** — the dispatcher now backfills missing `status:*` labels. Slash commands are prompted to set `status:proposed` on create, but LLM agents don't always comply, and unlike the missing-`priority:*` case there was no deterministic repair — so an issue filed without a status sat **untriaged** (`status:none`) forever and never reached the approval queue. New `backfill_missing_status()` in `darkflow-run.sh` (mirrors `backfill_missing_priority()`): any OPEN issue with a routine `source:*` label but no `status:*` gets `status:proposed`. Left untouched — `needs-human` (mailbox/human-attention channel, untriaged is correct there), `source:manual`/no-source, and deprecated `status:blocked`.
+
 ## [3.12.0] — 2026-06-23
 
 - **Web UI** — new **Global logs** page (`/logs`, third item in the top nav) showing routine runs aggregated across **all** projects in one table, with an added Project column. On top, a small per-minute bar chart of the last 24 hours stacks successful (green) vs failed (red) runs — bar height = tasks/minute. Error detection reuses the existing `exit:` summary marker. New `webapp/src/app/logs/page.tsx` and `webapp/src/components/GlobalLogsChart.tsx`; `RoutineLogsTable`/`LogRow` gained an optional `project` column (per-project pages render unchanged).

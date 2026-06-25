@@ -1318,6 +1318,55 @@ backfill_missing_priority() {
   ' 2>/dev/null || printf '%s' "$issues_json"
 }
 
+# ── Backfill missing status labels ────────────────────────────────────────────
+# Invariant (docs/github-issues.md): every agent-filed issue MUST carry exactly
+# one status:* label so the state machine works and the Web UI can triage it.
+# Slash commands are prompted to set status:proposed on create, but LLM agents
+# don't comply 100% of the time (same reason backfill_missing_priority exists),
+# and there was no deterministic repair — so an issue created without a status
+# stayed "untriaged" (status:none) forever, never reaching the approval queue.
+# Enforce it here: any OPEN issue carrying a routine `source:*` label (NOT
+# `source:manual`) but no status:* label gets `status:proposed`. Left untouched:
+# `needs-human` issues (mailbox / human-attention channel — untriaged is correct
+# there), `source:manual` / no-source issues (a human is already involved), and
+# `status:blocked` (deprecated; convert_blocked_to_needs_human handles it). Like
+# backfill_missing_priority, echoes the issues JSON back with the label injected.
+backfill_missing_status() {
+  local issues_json="$1"
+  [[ -z "$issues_json" ]] && { printf '%s' "$issues_json"; return 0; }
+  if ! command -v gh &>/dev/null || ! command -v jq &>/dev/null; then
+    printf '%s' "$issues_json"; return 0
+  fi
+
+  local missing
+  missing=$(echo "$issues_json" | jq -r '
+    .[] | select(.state == "OPEN")
+        | select(all(.labels[]; .name != "needs-human" and .name != "status:blocked"))
+        | select(any(.labels[]; (.name | startswith("source:")) and .name != "source:manual"))
+        | select(all(.labels[]; (.name | startswith("status:")) | not))
+        | .number
+  ' 2>/dev/null) || { printf '%s' "$issues_json"; return 0; }
+  [[ -z "$missing" ]] && { printf '%s' "$issues_json"; return 0; }
+
+  local num relabelled=""
+  while IFS= read -r num; do
+    [[ -z "$num" ]] && continue
+    if gh issue edit "$num" --add-label "status:proposed" >/dev/null 2>&1; then
+      log "STATUS #${num} backfilled status:proposed (was untriaged)"
+      relabelled+="${num} "
+    else
+      log "STATUS #${num} failed to backfill status:proposed"
+    fi
+  done <<< "$missing"
+
+  echo "$issues_json" | jq -c --arg done "$relabelled" '
+    ($done | split(" ") | map(select(length > 0) | tonumber)) as $nums
+    | map(if (.number as $n | $nums | index($n))
+          then .labels += [{"name": "status:proposed"}]
+          else . end)
+  ' 2>/dev/null || printf '%s' "$issues_json"
+}
+
 apply_pending_statuses() {
   local webapp_url repo_url pending_json count
   webapp_url=$(global_val "webapp_url" "")
@@ -1416,6 +1465,8 @@ sync_webapp() {
   close_routine_below_priority "$issues"
   # Guarantee every open issue carries a priority before it reaches the Web UI.
   issues=$(backfill_missing_priority "$issues")
+  # Guarantee every routine-filed issue carries a status (else it sits untriaged).
+  issues=$(backfill_missing_status "$issues")
 
   now_iso=$(date -u +%FT%TZ)
 
