@@ -11,7 +11,7 @@ Before proposing or making **any** change — especially in analysis/optimizatio
 file issues — honor every constraint in `.darkflow.d/constraints.md`. If a finding would violate
 a constraint, drop it: do not file the issue and do not make the change.
 
-**Communication language:** English — use it ONLY for human-facing text you write *about* the work: GitHub issues, comments, commit messages, PR descriptions, and console/chat output.
+**Communication language:** Russian — use it ONLY for human-facing text you write *about* the work: GitHub issues, comments, commit messages, PR descriptions, and console/chat output.
 **Product language:** English — everything shipped *inside* the product is always written in English, regardless of the communication language: source code, identifiers, code comments, UI copy, user-facing strings, logs, and in-product docs. Setting the communication language to anything other than English never changes this.
 **Main branch:** `main`
 **Fix Issues strategy:** open a pull request, then merge into `main` with `Closes #N`.
