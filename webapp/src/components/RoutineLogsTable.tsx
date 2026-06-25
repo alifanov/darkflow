@@ -16,10 +16,12 @@ export interface RoutineLogItem {
 
 type SortKey = "time" | "status";
 type SortDir = "asc" | "desc";
+type StatusFilter = "all" | "errors" | "success";
 
 export function RoutineLogsTable({ logs }: { logs: RoutineLogItem[] }) {
   const [sortKey, setSortKey] = useState<SortKey>("time");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [filter, setFilter] = useState<StatusFilter>("all");
 
   function toggleSort(key: SortKey) {
     if (key === sortKey) {
@@ -32,7 +34,9 @@ export function RoutineLogsTable({ logs }: { logs: RoutineLogItem[] }) {
   }
 
   const sorted = useMemo(() => {
-    const arr = logs.map((l) => ({ ...l, isError: logIsError(l.summary) }));
+    let arr = logs.map((l) => ({ ...l, isError: logIsError(l.summary) }));
+    if (filter === "errors") arr = arr.filter((l) => l.isError);
+    else if (filter === "success") arr = arr.filter((l) => !l.isError);
     arr.sort((a, b) => {
       let cmp = 0;
       if (sortKey === "status") {
@@ -44,14 +48,32 @@ export function RoutineLogsTable({ logs }: { logs: RoutineLogItem[] }) {
       return sortDir === "asc" ? cmp : -cmp;
     });
     return arr;
-  }, [logs, sortKey, sortDir]);
+  }, [logs, sortKey, sortDir, filter]);
 
   const arrow = (key: SortKey) => (sortKey === key ? (sortDir === "asc" ? " ▲" : " ▼") : "");
 
   const showProject = logs.some((l) => l.project != null);
 
   return (
-    <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
+    <div>
+      <div className="flex gap-2 mb-3">
+        {(["all", "errors", "success"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className="text-xs px-3 py-1 rounded-full capitalize cursor-pointer"
+            style={{
+              border: "1px solid var(--border)",
+              background: filter === f ? "var(--surface)" : "transparent",
+              color: filter === f ? "var(--text)" : "var(--muted)",
+              fontWeight: filter === f ? 600 : 400,
+            }}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+      <div style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
@@ -82,6 +104,7 @@ export function RoutineLogsTable({ logs }: { logs: RoutineLogItem[] }) {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

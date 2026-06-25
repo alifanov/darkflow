@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.14.0] — 2026-06-25
+
+- **Web UI** — the **Global logs** table now has an All / Errors / Success filter (pills above the table). Defaults to All; reuses the existing `logIsError()` rule, so no schema or query changes. `webapp/src/components/RoutineLogsTable.tsx` only.
+
 ## [3.13.0] — 2026-06-25
 
 - **Workflow** — the dispatcher now backfills missing `status:*` labels. Slash commands are prompted to set `status:proposed` on create, but LLM agents don't always comply, and unlike the missing-`priority:*` case there was no deterministic repair — so an issue filed without a status sat **untriaged** (`status:none`) forever and never reached the approval queue. New `backfill_missing_status()` in `darkflow-run.sh` (mirrors `backfill_missing_priority()`): any OPEN issue with a routine `source:*` label but no `status:*` gets `status:proposed`. Left untouched — `needs-human` (mailbox/human-attention channel, untriaged is correct there), `source:manual`/no-source, and deprecated `status:blocked`.
