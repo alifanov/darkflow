@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
   // Merge the canonical catalog (ALL_ROUTINES) with the project's DB overrides.
   // Iterating the catalog — instead of only emitting existing RoutineConfig rows —
   // means a newly-shipped routine (e.g. uptime-check) auto-propagates to every
-  // project's routines.yml without requiring a manual Save in the settings UI.
+  // project's effective schedule without requiring a manual Save in the settings UI.
   // It also drops orphaned rows for routines Dark Flow no longer ships, since a
   // name absent from ALL_ROUTINES is never emitted.
   //

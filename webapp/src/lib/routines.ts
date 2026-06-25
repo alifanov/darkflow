@@ -1,12 +1,12 @@
 // Canonical Dark Flow routine catalog — the single source of truth for which
 // routines exist. Imported by the settings UI (RoutineConfigForm) AND by the
-// /api/projects/by-repo endpoint that generates each project's routines.yml.
+// /api/projects/by-repo endpoint that serves each project's effective schedule.
 //
 // IMPORTANT: when a routine is removed from Dark Flow, delete it here. The
 // by-repo endpoint filters project RoutineConfig rows against KNOWN_ROUTINE_NAMES
-// so that orphaned DB rows (left over from a removed routine) are never emitted
-// into routines.yml. Without that filter a removed routine keeps shipping a
-// `name: enabled: true` block whose command file no longer exists, which bricks
+// so that orphaned DB rows (left over from a removed routine) are never served
+// to the worker. Without that filter a removed routine keeps shipping an
+// `enabled: true` entry whose command file no longer exists, which bricks
 // the worker's preflight check on every existing install.
 
 export interface RoutineDef {

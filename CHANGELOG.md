@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.14.1] — 2026-06-25
+
+- **Docs** — removed stale `routines.yml` references from webapp comments. The per-project `routines.yml` is gone — routine schedules live in the DB and the worker fetches them via `/api/projects/by-repo`. Fixed the now-misleading comments in `by-repo/route.ts` and `lib/routines.ts` (no behavior change).
+
 ## [3.14.0] — 2026-06-25
 
 - **Web UI** — the **Global logs** table now has an All / Errors / Success filter (pills above the table). Defaults to All; reuses the existing `logIsError()` rule, so no schema or query changes. `webapp/src/components/RoutineLogsTable.tsx` only.
