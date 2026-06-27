@@ -38,6 +38,13 @@ export default function RootLayout({
               Projects
             </Link>
             <Link
+              href="/approvals"
+              className="no-underline cursor-pointer hover:opacity-80 transition-opacity"
+              style={{ color: "var(--muted)" }}
+            >
+              Needs approval
+            </Link>
+            <Link
               href="/analytics"
               className="no-underline cursor-pointer hover:opacity-80 transition-opacity"
               style={{ color: "var(--muted)" }}

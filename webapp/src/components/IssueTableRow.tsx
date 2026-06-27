@@ -50,6 +50,8 @@ interface IssueTableRowProps {
   showLaunch?: boolean;
   /** Issue priority is below the project's configured minimum — flagged in the list. */
   belowThreshold?: boolean;
+  /** When set, renders a leading "Project" cell (used by the global approvals page). */
+  project?: { name: string; href: string };
 }
 
 const MD_COMPONENTS = {
@@ -103,7 +105,7 @@ function Markdown({ children }: { children: string }) {
   );
 }
 
-export function IssueTableRow({ issue, showApprove, showClose, showTaskLink, showLaunch, belowThreshold }: IssueTableRowProps) {
+export function IssueTableRow({ issue, showApprove, showClose, showTaskLink, showLaunch, belowThreshold, project }: IssueTableRowProps) {
   const [open, setOpen] = useState(false);
   const bg = STATUS_COLORS[issue.status] ?? STATUS_COLORS.none;
   const color = STATUS_TEXT[issue.status] ?? "var(--muted)";
@@ -124,6 +126,13 @@ export function IssueTableRow({ issue, showApprove, showClose, showTaskLink, sho
           }),
         }}
       >
+        {project && (
+          <td className="py-3 px-4 text-xs">
+            <a href={project.href} className="cursor-pointer hover:underline" style={{ color: "var(--accent)" }}>
+              {project.name}
+            </a>
+          </td>
+        )}
         <td className="py-3 px-4 font-mono text-xs" style={{ color: "var(--muted)", width: "3.5rem" }}>
           #{issue.number}
         </td>
@@ -202,7 +211,7 @@ export function IssueTableRow({ issue, showApprove, showClose, showTaskLink, sho
       </tr>
       {open && hasContent && (
         <tr style={{ borderBottom: "1px solid var(--border)" }}>
-          <td colSpan={5} className="px-4 pb-4 pt-1">
+          <td colSpan={project ? 6 : 5} className="px-4 pb-4 pt-1">
             <div
               className="text-xs overflow-auto max-h-[500px] p-3 rounded prose prose-invert prose-xs max-w-none"
               style={{ background: "var(--bg)", color: "var(--text)", lineHeight: 1.5 }}

@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.15.0] — 2026-06-27
+
+- **Webapp** — new global **Needs approval** page (`/approvals`, linked in the top nav) listing every `status:proposed` issue across all projects in one table, with a **Project** column and the standard per-issue actions (Approve / Launch in cmux / Close / + Task). Saves walking into each project to triage. `IssueTableRow` gained an optional `project` prop that renders the leading project cell.
+
 ## [3.14.2] — 2026-06-27
 
 - **Installer** — the legacy-cleanup step (`install.sh`) now also removes the stale **per-project `.darkflow.d/darkflow-run.sh`** (the old worker copy — one global `~/.darkflow/darkflow-run.sh` services every project now) and **`routines.yml.bak-stagger`** (cron-stagger backup). Previously the cleanup loop dropped `.darkflow`, `routines.yml`, `get-config.sh`, and `mailbox/` but left those two behind, so every upgraded project kept two dead tracked files. Manually cleaned them out of all 16 existing projects.
