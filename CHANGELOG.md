@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.14.2] — 2026-06-27
+
+- **Installer** — the legacy-cleanup step (`install.sh`) now also removes the stale **per-project `.darkflow.d/darkflow-run.sh`** (the old worker copy — one global `~/.darkflow/darkflow-run.sh` services every project now) and **`routines.yml.bak-stagger`** (cron-stagger backup). Previously the cleanup loop dropped `.darkflow`, `routines.yml`, `get-config.sh`, and `mailbox/` but left those two behind, so every upgraded project kept two dead tracked files. Manually cleaned them out of all 16 existing projects.
+
 ## [3.14.1] — 2026-06-25
 
 - **Docs** — removed stale `routines.yml` references from webapp comments. The per-project `routines.yml` is gone — routine schedules live in the DB and the worker fetches them via `/api/projects/by-repo`. Fixed the now-misleading comments in `by-repo/route.ts` and `lib/routines.ts` (no behavior change).

@@ -384,11 +384,12 @@ cleanup_legacy_project_files() {
   # stale per-project cache/operational files so nothing reads a stale copy.
   # .darkflow.d/ itself stays — it's the runtime dir (state, metrics, logs).
   local _removed=false f
-  for f in ".darkflow" ".darkflow.d/routines.yml" ".darkflow.d/get-config.sh"; do
+  for f in ".darkflow" ".darkflow.d/routines.yml" ".darkflow.d/routines.yml.bak-stagger" \
+           ".darkflow.d/get-config.sh" ".darkflow.d/darkflow-run.sh"; do
     [[ -e "$f" ]] && { rm -f "$f"; _removed=true; }
   done
   [[ -d ".darkflow.d/mailbox" ]] && { rm -rf ".darkflow.d/mailbox"; _removed=true; }
-  [[ "$_removed" == true ]] && success "Removed legacy per-project config/helpers (.darkflow, routines.yml, get-config.sh, mailbox) — now centralized"
+  [[ "$_removed" == true ]] && success "Removed legacy per-project config/helpers (.darkflow, routines.yml, get-config.sh, per-project darkflow-run.sh, mailbox) — now centralized"
   return 0
 }
 
