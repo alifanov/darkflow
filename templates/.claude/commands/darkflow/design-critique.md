@@ -18,7 +18,7 @@ After the critique is complete, create a GitHub issue for each significant findi
   - `priority:high` — broken or confusing user journeys, low design score on key flows
   - `priority:medium` — friction points, persona test failures, inconsistent patterns
   - **minor UX polish / low-impact scoring gaps → do NOT create an issue** — note them under Recommendations in the snapshot only
-- Do not create issues for findings already tracked in open GitHub issues
+- Do not create issues for findings already tracked or already dismissed — run `gh issue list --state all --json number,title,state,labels --limit 200` and skip any finding that matches an open issue **or** one a human already closed without a merged fix (rejected/wontfix). Re-file only if a previously-fixed problem has demonstrably regressed.
 
 **Issue format (required):**
 

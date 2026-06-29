@@ -40,7 +40,7 @@ If a recent commit changed code in an area whose docs were not touched, that is 
 Create a GitHub issue for each significant mismatch. Group trivially related mismatches into one issue (e.g. "Sync data-model.md with 3 new fields") rather than one issue per field.
 
 - Labels: `status:proposed`, `source:docs`, priority by impact (`priority:high` = docs actively misleading agents/devs, `priority:medium` = stale). **Cosmetic / minor drift → do NOT create an issue** — list it in the snapshot only
-- Do not create issues for drift already tracked in open GitHub issues
+- Do not create issues for drift already tracked or already dismissed — run `gh issue list --state all --json number,title,state,labels --limit 200` and skip any drift that matches an open issue **or** one a human already closed without a merged fix (rejected/wontfix). Re-file only if a previously-fixed drift has demonstrably regressed.
 - Do not create issues for missing/stub files that were never written — list those in the snapshot only
 
 **Issue format (required):**

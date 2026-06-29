@@ -46,7 +46,7 @@ fallow is deterministic but context-blind. Before filing anything, filter out fa
 - **Dead code that is actually live:** public API surface (package `exports`/`main`/`types`), framework entry points (Next.js `page.tsx`/`route.ts`/`layout.tsx`, `app/**`, `pages/**`), dynamically referenced symbols (string-keyed lookups, DI containers, reflection), test fixtures, generated files, type-only re-exports consumed downstream. Read the gotchas reference in the skill for the full list.
 - **Duplication that is intentional:** generated code, vendored snapshots, deliberately decoupled copies. Only propose extraction when the blocks are genuinely the same concern.
 - **Complexity that is inherent:** a parser or state machine may legitimately be complex. Propose refactors only where complexity is accidental and the file changes often (cross-reference `git log` churn).
-- **Cross-check open issues:** `gh issue list --state open --json number,title,labels --limit 200` — skip anything already tracked.
+- **Cross-check existing issues:** `gh issue list --state all --json number,title,state,labels --limit 200` — skip anything already tracked in an open issue **or** already dismissed (closed without a merged fix — rejected/wontfix). Re-file only if a previously-fixed problem has demonstrably regressed.
 
 Rank survivors by: **impact** (bundle/maintenance/risk reduction) × **confidence** (how sure you are it is truly safe).
 

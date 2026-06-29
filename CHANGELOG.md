@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [3.16.0] — 2026-06-29
+
+- **Updated routine** — issue-filing routines now dedupe against `--state all` instead of `--state open`, so a finding a human already rejected/closed without a fix is no longer re-filed as a fresh `status:proposed` issue on the next scheduled run (the cause of "I dismissed it and it came back"). Re-files only on a demonstrated regression. Applied to: `security-audit`, `architecture-review`, `build-optimization`, `design-audit`, `design-critique`, `design-harden`, `docs-audit`, `code-health`. `uptime-check` is intentionally left open-only (a repeat outage *should* re-alert).
+
+---
+
 ## [3.15.1] — 2026-06-29
 
 - **Webapp** — added `webapp/.dockerignore` to exclude `node_modules`, `.next`, `.pnpm-store`, `.env*`, and `tsconfig.tsbuildinfo` from the Docker build context; reduces context size from ~1.1 GB to <10 MB and prevents `.env` from leaking into image layers

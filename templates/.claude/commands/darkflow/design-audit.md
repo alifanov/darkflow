@@ -18,7 +18,7 @@ After the audit is complete, create a GitHub issue for each significant finding:
   - `priority:high` — broken layouts, inaccessible elements, missing critical states
   - `priority:medium` — visual inconsistency, spacing issues, unclear hierarchy
   - **polish / minor refinements → do NOT create an issue** — note them under Recommendations in the snapshot only
-- Do not create issues for findings already tracked in open GitHub issues
+- Do not create issues for findings already tracked or already dismissed — run `gh issue list --state all --json number,title,state,labels --limit 200` and skip any finding that matches an open issue **or** one a human already closed without a merged fix (rejected/wontfix). Re-file only if a previously-fixed problem has demonstrably regressed.
 
 **Issue format (required):**
 
@@ -47,7 +47,7 @@ After the performance audit is complete, create a GitHub issue for each signific
   - `priority:high` — LCP > 2.5s, CLS > 0.1, or bundle size regressions blocking interaction
   - `priority:medium` — measurable slowdowns, large unoptimized assets, render-blocking resources
   - **minor / nice-to-have optimizations → do NOT create an issue** — note them under Recommendations in the snapshot only
-- Do not create issues for findings already tracked in open GitHub issues or covered by `build-optimization`
+- Do not create issues for findings already tracked, already dismissed, or covered by `build-optimization` — run `gh issue list --state all --json number,title,state,labels --limit 200` and skip any finding that matches an open issue **or** one a human already closed without a merged fix (rejected/wontfix). Re-file only if a previously-fixed problem has demonstrably regressed.
 
 **Issue format (required):**
 

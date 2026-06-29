@@ -80,7 +80,7 @@ Rank opportunities by: **impact** (time saved per run × runs/week) vs **effort*
 
 ## Step 4 — Create issues for opportunities
 
-Create a GitHub issue for each significant, independent optimization. Group trivially related changes into one issue (e.g., "Add .dockerignore and fix layer ordering" → one issue). Do not create issues for already-tracked open issues.
+Create a GitHub issue for each significant, independent optimization. Group trivially related changes into one issue (e.g., "Add .dockerignore and fix layer ordering" → one issue). Do not create issues for findings already tracked or already dismissed — run `gh issue list --state all --json number,title,state,labels --limit 200` and skip any optimization that matches an open issue **or** one a human already closed without a merged fix (rejected/wontfix). Re-file only if a previously-fixed problem has demonstrably regressed.
 
 - Labels: `status:proposed`, `source:build`, priority by impact:
   - `priority:high` — large, safe time savings (e.g., 5+ min per CI run, or image 2× smaller)

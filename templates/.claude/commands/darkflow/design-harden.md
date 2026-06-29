@@ -18,7 +18,7 @@ After the hardening review is complete, create a GitHub issue for each gap found
   - `priority:high` — missing error states on critical flows, broken overflow, untranslated strings in production
   - `priority:medium` — edge cases that cause layout breaks, unhandled empty states
   - **cosmetic overflow / optional i18n gaps / low-risk edge cases → do NOT create an issue** — note them under Recommendations in the snapshot only
-- Do not create issues for findings already tracked in open GitHub issues
+- Do not create issues for findings already tracked or already dismissed — run `gh issue list --state all --json number,title,state,labels --limit 200` and skip any finding that matches an open issue **or** one a human already closed without a merged fix (rejected/wontfix). Re-file only if a previously-fixed problem has demonstrably regressed.
 
 **Issue format (required):**
 
