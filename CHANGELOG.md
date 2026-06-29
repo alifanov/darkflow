@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.15.1] — 2026-06-29
+
+- **Webapp** — added `webapp/.dockerignore` to exclude `node_modules`, `.next`, `.pnpm-store`, `.env*`, and `tsconfig.tsbuildinfo` from the Docker build context; reduces context size from ~1.1 GB to <10 MB and prevents `.env` from leaking into image layers
+
 ## [3.15.0] — 2026-06-27
 
 - **Webapp** — new global **Needs approval** page (`/approvals`, linked in the top nav) listing every `status:proposed` issue across all projects in one table, with a **Project** column and the standard per-issue actions (Approve / Launch in cmux / Close / + Task). Saves walking into each project to triage. `IssueTableRow` gained an optional `project` prop that renders the leading project cell.
