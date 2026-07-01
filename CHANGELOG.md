@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [3.17.3] — 2026-07-01
+
+- **Webapp** — projects list gets an All / Active / Paused filter (`?active=all|active|inactive`) next to the project count, so paused projects can be hidden or isolated at a glance.
+
+---
+
 ## [3.17.2] — 2026-07-01
 
 - **Webapp** — moved the "Routines active" master switch from the Routines tab to the Settings tab (next to Name), since it's a project-level flag rather than a per-routine one.

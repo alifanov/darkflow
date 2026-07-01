@@ -1,9 +1,21 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ProjectRow } from "@/components/ProjectRow";
 import { GhTokenForm } from "@/components/GhTokenForm";
 import { IssuesActivityChart, type IssueActivityDay } from "@/components/IssuesActivityChart";
 
 export const dynamic = "force-dynamic";
+
+const ACTIVE_FILTERS = [
+  { key: "all", label: "All" },
+  { key: "active", label: "Active" },
+  { key: "inactive", label: "Paused" },
+] as const;
+type ActiveFilterKey = (typeof ACTIVE_FILTERS)[number]["key"];
+
+function isActiveFilterKey(v: string | undefined): v is ActiveFilterKey {
+  return v === "all" || v === "active" || v === "inactive";
+}
 
 type DayCount = { day: Date; count: bigint };
 
@@ -59,7 +71,14 @@ async function getRoutineErrorCounts(): Promise<Map<string, number>> {
   return new Map(rows.map((r) => [r.projectId, Number(r.count)]));
 }
 
-export default async function ProjectsPage() {
+export default async function ProjectsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ active?: string }>;
+}) {
+  const { active } = await searchParams;
+  const activeFilter: ActiveFilterKey = isActiveFilterKey(active) ? active : "all";
+
   const [rawProjects, settings, issueActivity, routineErrors] = await Promise.all([
     prisma.project.findMany({
       include: {
@@ -80,12 +99,18 @@ export default async function ProjectsPage() {
     getRoutineErrorCounts(),
   ]);
 
-  const projects = [...rawProjects].sort((a, b) => {
-    const aProposed = a.issues.some((i) => i.status === "proposed") ? 1 : 0;
-    const bProposed = b.issues.some((i) => i.status === "proposed") ? 1 : 0;
-    if (bProposed !== aProposed) return bProposed - aProposed;
-    return b._count.issues - a._count.issues;
-  });
+  const projects = rawProjects
+    .filter((p) => {
+      if (activeFilter === "active") return p.active;
+      if (activeFilter === "inactive") return !p.active;
+      return true;
+    })
+    .sort((a, b) => {
+      const aProposed = a.issues.some((i) => i.status === "proposed") ? 1 : 0;
+      const bProposed = b.issues.some((i) => i.status === "proposed") ? 1 : 0;
+      if (bProposed !== aProposed) return bProposed - aProposed;
+      return b._count.issues - a._count.issues;
+    });
 
   return (
     <div>
@@ -109,6 +134,26 @@ export default async function ProjectsPage() {
             {projects.length}
           </span>
         )}
+        <div className="flex items-center gap-1 ml-2">
+          {ACTIVE_FILTERS.map((f) => {
+            const isSelected = f.key === activeFilter;
+            const href = f.key === "all" ? "/" : `/?active=${f.key}`;
+            return (
+              <Link
+                key={f.key}
+                href={href}
+                className="rounded-full px-3 py-1 text-xs font-medium"
+                style={{
+                  background: isSelected ? "var(--accent)" : "var(--surface)",
+                  color: isSelected ? "#fff" : "var(--muted)",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                {f.label}
+              </Link>
+            );
+          })}
+        </div>
       </div>
       {projects.length === 0 ? (
         <p style={{ color: "var(--muted)" }}>
