@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [3.17.2] — 2026-07-01
+
+- **Webapp** — moved the "Routines active" master switch from the Routines tab to the Settings tab (next to Name), since it's a project-level flag rather than a per-routine one.
+
+---
+
 ## [3.17.1] — 2026-07-01
 
 - **Webapp** — the projects table now shows each project's active/paused state: a green/gray dot next to the name (green = routines active, gray = paused), and the whole row dims when paused.

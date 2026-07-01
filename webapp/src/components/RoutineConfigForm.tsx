@@ -82,16 +82,14 @@ interface RoutineConfigFormProps {
   projectId: string;
   routineConfigs: RoutineConfig[];
   modules: string[];
-  active: boolean;
 }
 
-export function RoutineConfigForm({ projectId, routineConfigs, modules, active }: RoutineConfigFormProps) {
+export function RoutineConfigForm({ projectId, routineConfigs, modules }: RoutineConfigFormProps) {
   const router = useRouter();
 
   const [routines, setRoutines] = useState<RoutineState[]>(
     buildInitialRoutines(routineConfigs, modules)
   );
-  const [isActive, setIsActive] = useState(active);
 
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -147,56 +145,12 @@ export function RoutineConfigForm({ projectId, routineConfigs, modules, active }
     });
   };
 
-  const toggleActive = async (next: boolean) => {
-    setIsActive(next);
-    setStatus("saving");
-    setErrorMsg("");
-    try {
-      const res = await fetch(`/api/projects/${projectId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ active: next }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? "Save failed");
-      }
-      setStatus("saved");
-      router.refresh();
-      if (savedTimer.current) clearTimeout(savedTimer.current);
-      savedTimer.current = setTimeout(() => setStatus("idle"), 2000);
-    } catch (e) {
-      setStatus("error");
-      setErrorMsg(e instanceof Error ? e.message : "Save failed");
-    }
-  };
-
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>
-          Routines
-        </h2>
-        <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: "var(--text)" }}>
-          <input
-            type="checkbox"
-            checked={isActive}
-            onChange={(e) => toggleActive(e.target.checked)}
-            className="cursor-pointer"
-            style={{ accentColor: "var(--accent)" }}
-          />
-          Routines active
-        </label>
-      </div>
-      {!isActive && (
-        <p className="text-sm" style={{ color: "var(--muted)" }}>
-          Off — the worker will not run any routine for this project, regardless of the
-          per-routine toggles below.
-        </p>
-      )}
-      <div style={{ opacity: isActive ? 1 : 0.45 }}>
-        <RoutineTable rows={routines} onChange={updateRoutine} />
-      </div>
+      <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>
+        Routines
+      </h2>
+      <RoutineTable rows={routines} onChange={updateRoutine} />
 
       <div className="flex items-center gap-3 mt-1 h-5 text-sm">
         {status === "saving" && (

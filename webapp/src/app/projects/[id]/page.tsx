@@ -277,7 +277,6 @@ export default async function ProjectPage({
           projectId={project.id}
           routineConfigs={project.routineConfigs}
           modules={project.modules}
-          active={project.active}
         />
       )}
 
@@ -296,6 +295,7 @@ export default async function ProjectPage({
           projectId={project.id}
           initialValues={{
             name: project.name,
+            active: project.active,
             slug: project.slug ?? null,
             domain: project.domain ?? null,
             localPath: project.localPath ?? null,

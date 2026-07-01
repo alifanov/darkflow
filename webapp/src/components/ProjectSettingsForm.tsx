@@ -27,6 +27,7 @@ interface ProjectSettingsFormProps {
   projectId: string;
   initialValues: {
     name: string;
+    active: boolean;
     slug: string | null;
     domain: string | null;
     localPath: string | null;
@@ -85,6 +86,7 @@ export function ProjectSettingsForm({ projectId, initialValues }: ProjectSetting
   const router = useRouter();
 
   const [name, setName] = useState(initialValues.name);
+  const [active, setActive] = useState(initialValues.active);
   const [slug, setSlug] = useState(initialValues.slug ?? "");
   const [domain, setDomain] = useState(initialValues.domain ?? "");
   const [localPath, setLocalPath] = useState(initialValues.localPath ?? "");
@@ -111,6 +113,7 @@ export function ProjectSettingsForm({ projectId, initialValues }: ProjectSetting
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
+          active,
           slug: slug || null,
           domain: domain || null,
           localPath: localPath || null,
@@ -145,6 +148,23 @@ export function ProjectSettingsForm({ projectId, initialValues }: ProjectSetting
           Project
         </h3>
         <InputField label="Name" value={name} onChange={setName} placeholder="My App" />
+
+        <div className="flex flex-col gap-1">
+          <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: "var(--text)" }}>
+            <input
+              type="checkbox"
+              checked={active}
+              onChange={(e) => setActive(e.target.checked)}
+              className="cursor-pointer"
+              style={{ accentColor: "var(--accent)" }}
+            />
+            Routines active
+          </label>
+          <span className="text-xs" style={{ color: "var(--muted)" }}>
+            Off pauses every routine for this project, regardless of the per-routine toggles on the Routines tab.
+          </span>
+        </div>
+
         <InputField label="Slug" value={slug} onChange={setSlug} placeholder="my-app" hint="Lowercase, dash-separated identifier" />
         <InputField label="Domain" value={domain} onChange={setDomain} placeholder="app.example.com" hint="Production domain where the project is deployed" />
         <InputField label="Local path" value={localPath} onChange={setLocalPath} placeholder="/Users/you/code/my-app" hint="Absolute path to this project's checkout on the host — used by the “Fix in cmux” button" />
