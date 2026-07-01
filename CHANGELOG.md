@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [3.17.4] — 2026-07-01
+
+- **Webapp** — the projects list All/Active/Paused filter is now remembered across visits: selecting a filter sets a `projectsFilter` cookie (1yr), and a plain visit to `/` with no `?active=` query param falls back to that cookie instead of always resetting to "All". A `?active=` in the URL still takes precedence, so links/bookmarks keep working as before.
+
+---
+
 ## [3.17.3] — 2026-07-01
 
 - **Webapp** — projects list gets an All / Active / Paused filter (`?active=all|active|inactive`) next to the project count, so paused projects can be hidden or isolated at a glance.

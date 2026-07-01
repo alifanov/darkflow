@@ -1,17 +1,13 @@
-import Link from "next/link";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { ProjectRow } from "@/components/ProjectRow";
+import { ProjectFilterLinks } from "@/components/ProjectFilterLinks";
 import { GhTokenForm } from "@/components/GhTokenForm";
 import { IssuesActivityChart, type IssueActivityDay } from "@/components/IssuesActivityChart";
 
 export const dynamic = "force-dynamic";
 
-const ACTIVE_FILTERS = [
-  { key: "all", label: "All" },
-  { key: "active", label: "Active" },
-  { key: "inactive", label: "Paused" },
-] as const;
-type ActiveFilterKey = (typeof ACTIVE_FILTERS)[number]["key"];
+type ActiveFilterKey = "all" | "active" | "inactive";
 
 function isActiveFilterKey(v: string | undefined): v is ActiveFilterKey {
   return v === "all" || v === "active" || v === "inactive";
@@ -77,7 +73,13 @@ export default async function ProjectsPage({
   searchParams: Promise<{ active?: string }>;
 }) {
   const { active } = await searchParams;
-  const activeFilter: ActiveFilterKey = isActiveFilterKey(active) ? active : "all";
+  const cookieStore = await cookies();
+  const cookieFilter = cookieStore.get("projectsFilter")?.value;
+  const activeFilter: ActiveFilterKey = isActiveFilterKey(active)
+    ? active
+    : isActiveFilterKey(cookieFilter)
+      ? cookieFilter
+      : "all";
 
   const [rawProjects, settings, issueActivity, routineErrors] = await Promise.all([
     prisma.project.findMany({
@@ -134,26 +136,7 @@ export default async function ProjectsPage({
             {projects.length}
           </span>
         )}
-        <div className="flex items-center gap-1 ml-2">
-          {ACTIVE_FILTERS.map((f) => {
-            const isSelected = f.key === activeFilter;
-            const href = f.key === "all" ? "/" : `/?active=${f.key}`;
-            return (
-              <Link
-                key={f.key}
-                href={href}
-                className="rounded-full px-3 py-1 text-xs font-medium"
-                style={{
-                  background: isSelected ? "var(--accent)" : "var(--surface)",
-                  color: isSelected ? "#fff" : "var(--muted)",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                {f.label}
-              </Link>
-            );
-          })}
-        </div>
+        <ProjectFilterLinks activeFilter={activeFilter} />
       </div>
       {projects.length === 0 ? (
         <p style={{ color: "var(--muted)" }}>
