@@ -19,6 +19,7 @@ model Project {
   localPath     String?
   repoUrl       String    @unique
   branch        String    @default("main")
+  active        Boolean   @default(true)
   language      String    @default("English")
   mergeStrategy String    @default("pr")
   minPriority   String    @default("medium")

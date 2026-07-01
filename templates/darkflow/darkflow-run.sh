@@ -1771,7 +1771,9 @@ require_cwd_project() {
 # ── Mode: list ────────────────────────────────────────────────────────────────
 
 mode_list() {
-  local name cron enabled last_run last_str
+  local name cron enabled last_run last_str proj_active
+  proj_active=$(jq -r '.active | select(. != null)' "$PROJECT_CFG_JSON" 2>/dev/null)
+  [[ "$proj_active" == "false" ]] && echo "PROJECT: paused (Settings → Routines → \"Routines active\" is off)"
   printf "%-25s %-20s %-9s %s\n" "ROUTINE" "CRON" "ENABLED" "LAST RUN"
   printf "%-25s %-20s %-9s %s\n" "-------" "----" "-------" "--------"
   while IFS= read -r name; do
@@ -1796,6 +1798,18 @@ mode_dispatch() {
   now=$(now_epoch)
 
   rotate_log
+
+  # Project-level master switch (Settings → Routines → "Routines active"). Read
+  # with a null-only filter, NOT the `// empty` path `darkflow_val()` uses —
+  # jq's `//` treats `false` as empty too, which would silently re-enable a
+  # switched-off project. Same trap the `enabled` per-routine field avoids
+  # below via `select(. != null)`.
+  local proj_active
+  proj_active=$(jq -r '.active | select(. != null)' "$PROJECT_CFG_JSON" 2>/dev/null)
+  if [[ "$proj_active" == "false" ]]; then
+    log "DISPATCH skipped — project routines are switched off (Settings → Routines)"
+    return 0
+  fi
 
   local any_due=false
   while IFS= read -r name; do

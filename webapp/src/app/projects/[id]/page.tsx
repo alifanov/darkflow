@@ -277,6 +277,7 @@ export default async function ProjectPage({
           projectId={project.id}
           routineConfigs={project.routineConfigs}
           modules={project.modules}
+          active={project.active}
         />
       )}
 

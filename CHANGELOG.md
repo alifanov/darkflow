@@ -14,6 +14,13 @@ Categories:
 
 ---
 
+## [3.17.0] — 2026-07-01
+
+- **Webapp** — new project-level **"Routines active"** master switch on the Routines settings tab. Turning it off pauses every routine for that project — the global worker's dispatch pass returns immediately without checking any per-routine schedule — without having to disable each routine individually. Adds `Project.active` (Postgres migration, default `true`).
+- **Worker** — `darkflow-run.sh` reads the new `active` flag with a null-only jq filter (not the `// empty` path other config reads use, since that would also swallow `false`) before every dispatch pass; `--list` prints a "PROJECT: paused" header when off.
+
+---
+
 ## [3.16.0] — 2026-06-29
 
 - **Updated routine** — issue-filing routines now dedupe against `--state all` instead of `--state open`, so a finding a human already rejected/closed without a fix is no longer re-filed as a fresh `status:proposed` issue on the next scheduled run (the cause of "I dismissed it and it came back"). Re-files only on a demonstrated regression. Applied to: `security-audit`, `architecture-review`, `build-optimization`, `design-audit`, `design-critique`, `design-harden`, `docs-audit`, `code-health`. `uptime-check` is intentionally left open-only (a repeat outage *should* re-alert).

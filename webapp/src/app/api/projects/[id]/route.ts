@@ -37,6 +37,7 @@ interface SettingsPatchBody {
   domain?: string | null;
   localPath?: string | null;
   branch?: string;
+  active?: boolean;
   language?: string;
   mergeStrategy?: string;
   minPriority?: string;
@@ -76,6 +77,7 @@ export async function PATCH(
         ...(body.domain !== undefined && { domain: body.domain }),
         ...(body.localPath !== undefined && { localPath: body.localPath }),
         ...(body.branch !== undefined && { branch: body.branch }),
+        ...(body.active !== undefined && { active: body.active }),
         ...(body.language !== undefined && { language: body.language }),
         ...(body.mergeStrategy !== undefined && { mergeStrategy: body.mergeStrategy }),
         ...(body.minPriority !== undefined && { minPriority: body.minPriority }),
