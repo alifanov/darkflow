@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ProjectConstraintsFormProps {
   projectId: string;
@@ -17,26 +17,40 @@ export function ProjectConstraintsForm({
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const save = async () => {
-    setStatus("saving");
-    setErrorMsg("");
-    try {
-      const res = await fetch(`/api/projects/${projectId}/constraints`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ constraints: text }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? "Save failed");
-      }
-      setStatus("saved");
-      setTimeout(() => setStatus("idle"), 3000);
-    } catch (e) {
-      setStatus("error");
-      setErrorMsg(e instanceof Error ? e.message : "Save failed");
+  const skipNextSave = useRef(true);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced auto-save: fires shortly after the text changes, skipping the
+  // initial mount so loading the form doesn't trigger a save.
+  useEffect(() => {
+    if (skipNextSave.current) {
+      skipNextSave.current = false;
+      return;
     }
-  };
+    const timer = setTimeout(async () => {
+      setStatus("saving");
+      setErrorMsg("");
+      try {
+        const res = await fetch(`/api/projects/${projectId}/constraints`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ constraints: text }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error ?? "Save failed");
+        }
+        setStatus("saved");
+        if (savedTimer.current) clearTimeout(savedTimer.current);
+        savedTimer.current = setTimeout(() => setStatus("idle"), 2000);
+      } catch (e) {
+        setStatus("error");
+        setErrorMsg(e instanceof Error ? e.message : "Save failed");
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text]);
 
   return (
     <section className="flex flex-col gap-4 max-w-2xl">
@@ -74,25 +88,15 @@ export function ProjectConstraintsForm({
         </span>
       </div>
 
-      <div className="flex items-center gap-3">
-        <button
-          onClick={save}
-          disabled={status === "saving" || !hasLocalPath}
-          className="text-sm px-4 py-2 rounded cursor-pointer font-medium"
-          style={{
-            background: "var(--accent)",
-            color: "#fff",
-            border: "none",
-            opacity: status === "saving" || !hasLocalPath ? 0.6 : 1,
-          }}
-        >
-          {status === "saving" ? "Saving…" : "Save constraints"}
-        </button>
+      <div className="flex items-center gap-3 h-5 text-sm">
+        {status === "saving" && (
+          <span style={{ color: "var(--muted)" }}>Saving…</span>
+        )}
         {status === "saved" && (
-          <span className="text-sm" style={{ color: "var(--green)" }}>Saved ✓</span>
+          <span style={{ color: "var(--green)" }}>Saved ✓</span>
         )}
         {status === "error" && (
-          <span className="text-sm" style={{ color: "var(--red)" }}>{errorMsg || "Failed to save"}</span>
+          <span style={{ color: "var(--red)" }}>{errorMsg || "Failed to save"}</span>
         )}
       </div>
     </section>

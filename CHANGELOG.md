@@ -14,6 +14,10 @@ Categories:
 
 ---
 
+## [3.17.5] — 2026-07-01
+
+- **Webapp** — removed the "Save settings" / "Save constraints" buttons on the project Settings tab; both forms now auto-save 600ms after any field change (debounced), matching the Routines tab behavior.
+
 ## [3.17.4] — 2026-07-01
 
 - **Webapp** — the projects list All/Active/Paused filter is now remembered across visits: selecting a filter sets a `projectsFilter` cookie (1yr), and a plain visit to `/` with no `?active=` query param falls back to that cookie instead of always resetting to "All". A `?active=` in the URL still takes precedence, so links/bookmarks keep working as before.
