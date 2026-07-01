@@ -140,6 +140,7 @@ export default async function ProjectsPage() {
                     index={idx + 1}
                     id={p.id}
                     name={p.name}
+                    active={p.active}
                     domain={p.domain}
                     branch={p.branch}
                     language={p.language}

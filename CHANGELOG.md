@@ -14,6 +14,12 @@ Categories:
 
 ---
 
+## [3.17.1] — 2026-07-01
+
+- **Webapp** — the projects table now shows each project's active/paused state: a green/gray dot next to the name (green = routines active, gray = paused), and the whole row dims when paused.
+
+---
+
 ## [3.17.0] — 2026-07-01
 
 - **Webapp** — new project-level **"Routines active"** master switch on the Routines settings tab. Turning it off pauses every routine for that project — the global worker's dispatch pass returns immediately without checking any per-routine schedule — without having to disable each routine individually. Adds `Project.active` (Postgres migration, default `true`).

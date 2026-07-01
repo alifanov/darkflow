@@ -42,6 +42,7 @@ interface ProjectRowProps {
   index: number;
   id: string;
   name: string;
+  active: boolean;
   domain: string | null;
   branch: string | null;
   language: string;
@@ -57,6 +58,7 @@ export function ProjectRow({
   index,
   id,
   name,
+  active,
   domain,
   branch,
   language,
@@ -83,7 +85,7 @@ export function ProjectRow({
       }}
       role="link"
       tabIndex={0}
-      style={{ borderBottom: "1px solid var(--border)" }}
+      style={{ borderBottom: "1px solid var(--border)", opacity: active ? 1 : 0.5 }}
     >
       {/* Index */}
       <td className="py-3 px-4 font-mono text-xs" style={{ color: "var(--muted)", width: "2.5rem" }}>
@@ -92,7 +94,19 @@ export function ProjectRow({
 
       {/* Name */}
       <td className="py-3 px-4 font-semibold" style={{ color: "var(--text)" }}>
-        {name}
+        <span className="flex items-center gap-2">
+          <span
+            title={active ? "Routines active" : "Routines paused (Settings → Routines)"}
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              flexShrink: 0,
+              background: active ? "var(--green)" : "var(--muted)",
+            }}
+          />
+          {name}
+        </span>
       </td>
 
       {/* Domain */}
