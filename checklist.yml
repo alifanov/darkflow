@@ -32,26 +32,23 @@ items:
   - { id: dir-docs-design-assets,  group: docs,       type: dir, path: docs/design/assets,       fix: mkdir, desc: "Design assets" }
   - { id: dir-docs-insights-qual,  group: docs,       type: dir, path: docs/insights/qualitative, fix: mkdir, desc: "Qualitative insights" }
   - { id: dir-docs-decisions,      group: docs,       type: dir, path: docs/decisions,           fix: mkdir, desc: "Architecture decision records" }
-  - { id: dir-issue-template,      group: docs,       type: dir, path: .github/ISSUE_TEMPLATE,   fix: mkdir, desc: "GitHub issue template dir" }
   - { id: dir-darkflow-d,          group: dispatcher, type: dir, path: .darkflow.d,              fix: mkdir, desc: "Dispatcher dir" }
   - { id: dir-darkflow-state,      group: dispatcher, type: dir, path: .darkflow.d/state,        fix: mkdir, desc: "Dispatcher state dir" }
 
   # ── Core files (docs) ────────────────────────────────────────────────────────
   - { id: file-docs-readme,        group: docs,       type: file, path: docs/README.md,                                template: docs/README.md,                                fix: copy-template, desc: "Docs index" }
   - { id: file-agent-workflow,     group: docs,       type: file, path: docs/agent-workflow.md,                        template: docs/agent-workflow.md,                        fix: copy-template, desc: "Agent workflow doc" }
-  - { id: file-github-issues,      group: docs,       type: file, path: docs/github-issues.md,                         template: docs/github-issues.md,                         fix: copy-template, desc: "GitHub issues guide" }
+  - { id: file-tasks-doc,          group: docs,       type: file, path: docs/tasks.md,                                 template: docs/tasks.md,                                 fix: copy-template, desc: "Task field taxonomy guide" }
   - { id: file-auto-approve,       group: docs,       type: file, path: docs/auto-approve.md,                          template: docs/auto-approve.md,                          fix: copy-template, desc: "Auto-approve allowlist" }
   - { id: file-adr-template,       group: docs,       type: file, path: docs/decisions/TEMPLATE.md,                    template: docs/decisions/TEMPLATE.md,                    fix: copy-template, desc: "ADR template" }
-  - { id: file-issue-template,     group: docs,       type: file, path: .github/ISSUE_TEMPLATE/recommendation.yml,     template: .github/ISSUE_TEMPLATE/recommendation.yml,     fix: copy-template, desc: "Recommendation issue template" }
 
   # ── Project operational files ────────────────────────────────────────────────
-  # The worker, slash commands, the config fetcher (get-config.sh) and the mailbox
-  # scripts are NOT per-project anymore — they live in ~/.darkflow/ + user scope and
-  # are (re)installed by install.sh's global_bootstrap. Project settings and the
-  # routine schedule live in the Web UI (DB), fetched on demand. So a project owns
-  # only docs scaffolding, the CLAUDE.md include, the Makefile block, and (opt-in)
-  # the CI-gate workflow — everything below.
-  - { id: wf-ci-gate,              group: dispatcher, type: file, path: .github/workflows/darkflow-ci-gate.yml,               template: .github/workflows/darkflow-ci-gate.yml,              fix: copy-template, when: module.ci-gate, desc: "CI gate GitHub Actions workflow" }
+  # The worker, slash commands, the config fetcher (get-config.sh), the task CLI
+  # (df) and the mailbox scripts are NOT per-project anymore — they live in
+  # ~/.darkflow/ + user scope and are (re)installed by install.sh's
+  # global_bootstrap. Project settings and the routine schedule live in the Web
+  # UI (DB), fetched on demand. So a project owns only docs scaffolding, the
+  # CLAUDE.md include, and the Makefile block — everything below.
 
   # ── Dark Flow instruction file + CLAUDE.md reference ────────────────────────
   - { id: file-darkflow-claude,    group: docs,       type: file,   path: .darkflow.d/claude.md,  fix: copy-template, template: darkflow/claude.md, desc: "Dark Flow instructions for Claude" }

@@ -1,6 +1,6 @@
 # Analytics Review
 
-Daily review of product analytics and recent commits — creates `status:proposed` GitHub issues with prioritised recommendations.
+Daily review of product analytics and recent commits — creates proposed tasks with prioritised recommendations.
 
 ---
 
@@ -29,13 +29,12 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 ## Required integrations
 
 - **Analytics MCP** (PostHog, Mixpanel, etc.) configured in project `.claude/settings.json`
-- **`gh` CLI** authenticated — for creating GitHub issues
 
 ---
 
 ## What gets created
 
-Issues with labels: `status:proposed`, `source:posthog`, `priority:*`
+Tasks with: `status=proposed`, `source=posthog`, `priority=*`
 
 The routine writes an analytics snapshot to `docs/insights/analytics/YYYY-MM-DD.md` before posting recommendations.
 
@@ -44,4 +43,4 @@ The routine writes an analytics snapshot to `docs/insights/analytics/YYYY-MM-DD.
 ## Notes
 
 - If no analytics MCP is available, simplify the instructions to commit review only
-- Exclude topics handled by other routines (ads, infrastructure) to avoid duplicate issues
+- Exclude topics handled by other routines (ads, infrastructure) to avoid duplicate tasks

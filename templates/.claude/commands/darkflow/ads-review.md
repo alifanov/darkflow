@@ -1,4 +1,4 @@
-Review paid ads performance (Google Ads, Meta Ads, or equivalent) and create status:proposed GitHub issues.
+Review paid ads performance (Google Ads, Meta Ads, or equivalent) and create tasks.
 
 ## Step 1 — Read project config
 
@@ -24,11 +24,11 @@ For each finding:
 - Compare to the previous 7-day period
 - Suggest a concrete action (pause keyword, increase budget, adjust bid, add negative keyword, etc.)
 
-Create a GitHub issue for each significant finding. Use labels: `status:proposed`, `source:ads`, `priority:*`.
+Create a task for each significant finding. Use `--source ads` and a priority.
 
-Priority vocabulary: `priority:critical` / `priority:high` / `priority:medium` / `priority:low`. **Only create issues for `critical` / `high` / `medium`** — `low`-priority findings are skipped (record them under Hypotheses in the snapshot instead).
+Priority vocabulary: `critical` / `high` / `medium` / `low`. **Only create tasks for `critical` / `high` / `medium`** — `low`-priority findings are skipped (record them under Hypotheses in the snapshot instead).
 
-**Issue format (required):**
+**Task format (required):**
 
 - **Title**: action-oriented verb — "Pause wasted-spend keyword X", "Increase budget on campaign Y", "Add negative keyword Z" — never just a description of the observation
 - **Body**:
@@ -44,7 +44,16 @@ Priority vocabulary: `priority:critical` / `priority:high` / `priority:medium` /
   - [ ] <additional criterion if needed>
   ```
 
-Language for all GitHub issues and output: the `language` value from `.darkflow.d/state/config.json`.
+Create with:
+```bash
+~/.darkflow/df task create --title "<title>" --source ads \
+  --priority <critical|high|medium> --status proposed --body "$(cat <<'EOF'
+<body as above>
+EOF
+)"
+```
+
+Language for all tasks and output: the `language` value from `.darkflow.d/state/config.json`.
 
 ## Step 3 — Write docs snapshot
 
@@ -80,7 +89,7 @@ Write `docs/insights/ads/YYYY-MM-DD.md` (use today's date; append a new section 
 
 ## Hypotheses
 
-<pre-threshold signals that aren't yet ready for a GitHub issue — see agent-workflow.md>
+<pre-threshold signals that aren't yet ready for a task — see agent-workflow.md>
 
 ## Recommendations
 
@@ -91,9 +100,9 @@ Write `docs/insights/ads/YYYY-MM-DD.md` (use today's date; append a new section 
 
 Save an ads snapshot so the Dark Flow worker can forward it to the web UI.
 
-Run `gh issue list --state open --json number,labels --limit 200`, then:
-- Count issues with label `source:ads` → `openIssues`
-- Count those with `priority:critical` or `priority:high` → `criticalOpen`
+Run `~/.darkflow/df task list --source ads --state open`, then:
+- Count → `openIssues`
+- Count those with priority `critical` or `high` → `criticalOpen`
 - Derive `status`: `"warning"` if criticalOpen > 0, `"ok"` otherwise
 
 Write `.darkflow.d/state/metrics/ads.json` (create parent directories if needed):

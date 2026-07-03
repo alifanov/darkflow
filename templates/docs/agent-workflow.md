@@ -2,25 +2,25 @@
 
 Rules for AI agents (Claude Code et al.): when to read and when to write in each documentation layer. Complete layer map and update frequencies — in [`docs/README.md`](./README.md).
 
-## GitHub Issues — recommendation cycle
+## Tasks — recommendation cycle
 
-Full label spec and agent loop — in [`github-issues.md`](./github-issues.md).
+Full field spec and agent loop — in [`tasks.md`](./tasks.md).
 
 **Before each session** check the approved task queue:
 ```bash
-gh issue list --label "status:approved" --state open --json number,title,labels,body --limit 20
+~/.darkflow/df task list --status approved --state open
 ```
-If there are approved issues matching the current context — take them first. Before starting: `status:approved` → `status:in-progress` + comment with branch link.
+If there are approved tasks matching the current context — take them first. Before starting: `approved` → `in-progress` + comment with branch link.
 
-**After analyzing an `insights/*` snapshot** — turn each recommendation into an issue:
+**After analyzing an `insights/*` snapshot** — turn each recommendation into a task:
 ```bash
-gh issue create --title "..." \
-  --label "status:proposed,source:<...>,priority:<...>" \
+~/.darkflow/df task create --title "..." \
+  --source <...> --priority <...> --status proposed \
   --body "<context + link to snapshot + acceptance criteria>"
 ```
-The snapshot entry remains the source of truth; the issue = the work artifact.
+The snapshot entry remains the source of truth; the task = the work artifact.
 
-**If an issue is closed with `status:rejected`** — do not recreate the same recommendation without new data. In the next snapshot: "Not recreating — rejected in #N".
+**If a task is closed as `rejected`** — do not recreate the same recommendation without new data. In the next snapshot: "Not recreating — rejected as task #N".
 
 ---
 
@@ -90,9 +90,9 @@ Minimum a file must contain:
 
 ### From observations to hypotheses
 
-Not every anomaly immediately becomes a GitHub issue. Before creating one, verify the signal is strong enough.
+Not every anomaly immediately becomes a task. Before creating one, verify the signal is strong enough.
 
-**Threshold for creating a GitHub issue:**
+**Threshold for creating a task:**
 - The same anomaly appears in **3 or more consecutive snapshots** for one source, OR
 - **Two or more independent sources** point to the same problem area in the same time window
 
@@ -103,10 +103,10 @@ Not every anomaly immediately becomes a GitHub issue. Before creating one, verif
 
 - **H1**: [what we think is causing the drop] — [expected impact if confirmed] — [what data would confirm it]
   - Evidence: 2026-05-27 (−12% conversion), 2026-05-28 (−8%)
-  - Status: 2/3 snapshots — not yet ready for issue
+  - Status: 2/3 snapshots — not yet ready for a task
 ```
 
-**When the threshold is reached:** create the GitHub issue and include in its body a `Based on:` line with links to the supporting snapshots. This ensures every issue has a documented evidence trail.
+**When the threshold is reached:** create the task and include in its body a `Based on:` line with links to the supporting snapshots. This ensures every task has a documented evidence trail.
 
 ### What to update in other layers
 

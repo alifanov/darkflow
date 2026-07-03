@@ -1,4 +1,4 @@
-Review Google Search Console data **and** run a technical + on-page SEO audit, then create status:proposed GitHub issues with concrete fixes.
+Review Google Search Console data **and** run a technical + on-page SEO audit, then create tasks with concrete fixes.
 
 This routine has two halves:
 1. **GSC data** — what's actually happening in search (positions, CTR, impressions, indexing).
@@ -25,7 +25,7 @@ Connect the GSC MCP in your project's .claude/settings.json to enable it.
 
 Do not fall back to browser automation for GSC data.
 
-Check Google Search Console data for the last week using MCP tools. Analyse positions, CTR, impressions, and indexing issues. For each meaningful finding, suggest a concrete fix and file it as an issue (see issue format below) with `source:gsc`.
+Check Google Search Console data for the last week using MCP tools. Analyse positions, CTR, impressions, and indexing issues. For each meaningful finding, suggest a concrete fix and file it as a task (see task format below) with `--source gsc`.
 
 ## Step 3 — Technical + on-page SEO audit
 
@@ -55,11 +55,11 @@ Check, in priority order:
 - Mobile viewport configured; no obvious mobile-breaking layout
 - Obvious performance regressions affecting Core Web Vitals (giant unoptimized images, render-blocking assets) — flag, don't deep-profile
 
-For each real issue found, file an issue (format below) with `source:seo`. Prefer a small number of high-impact, specific issues over an exhaustive nitpick list — group trivial same-type findings (e.g. "Add meta descriptions to 6 blog pages") into one issue.
+For each real issue found, file a task (format below) with `--source seo`. Prefer a small number of high-impact, specific tasks over an exhaustive nitpick list — group trivial same-type findings (e.g. "Add meta descriptions to 6 blog pages") into one task.
 
-## Issue format (required, both sources)
+## Task format (required, both sources)
 
-Add all recommendations as GitHub Issues to the project's remote GitHub repo. Labels: `status:proposed`, `source:gsc` **or** `source:seo`, plus `area:*`, `priority:*`, `effort:*` as appropriate.
+Add all recommendations as tasks with `--source gsc` **or** `--source seo` and a priority.
 
 - **Title**: action-oriented verb — "Improve title tag on /pricing", "Add JSON-LD Product schema to product pages", "Fix missing meta descriptions on /blog/*" — never just a statement of the finding ("Low CTR on /pricing", "No structured data")
 - **Body**:
@@ -75,16 +75,30 @@ Add all recommendations as GitHub Issues to the project's remote GitHub repo. La
   - [ ] <additional criterion if needed>
   ```
 
+Create with:
+```bash
+~/.darkflow/df task create --title "<title>" --source <gsc|seo> \
+  --priority <critical|high|medium|low> --status proposed --body "$(cat <<'EOF'
+<body as above>
+EOF
+)"
+```
+
 Before posting recommendations, write the snapshots:
 - GSC snapshot → `docs/insights/search-console/YYYY-MM-DD.md`
 - SEO audit snapshot → `docs/insights/seo-audit/YYYY-MM-DD.md`
 
-Language for all GitHub issues and output: the `language` value from `.darkflow.d/state/config.json`.
+Language for all tasks and output: the `language` value from `.darkflow.d/state/config.json`.
 
 ## Step 4 — After completing
 
-Run `gh issue list --state open --json number,labels --limit 200`, then:
-- Count open issues with label `source:gsc` **or** `source:seo` → `openIssues`
+Run both and combine:
+```bash
+jq -s 'add | length' \
+  <(~/.darkflow/df task list --source gsc --state open) \
+  <(~/.darkflow/df task list --source seo --state open)
+```
+- That count → `openIssues`
 - Derive `status`: `"warning"` if openIssues > 5, `"ok"` otherwise
 
 Write `.darkflow.d/state/metrics/gsc.json` (create parent directories if needed):

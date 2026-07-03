@@ -14,7 +14,7 @@ Monthly production-readiness review using `impeccable:harden` — edge cases, i1
 ## What it does
 
 1. Runs `/impeccable:harden` against the project's UI
-2. Creates `status:proposed` GitHub issues for each gap (labels: `source:design`, `priority:high` / `medium`; low-risk gaps are noted in the snapshot, not filed)
+2. Creates a proposed task for each gap (`source=design`, `priority=high` / `medium`; low-risk gaps are noted in the snapshot, not filed)
 3. Writes a snapshot to `docs/insights/design-harden/YYYY-MM-DD.md`
 4. Writes metrics to `.darkflow.d/state/metrics/design-harden.json`
 

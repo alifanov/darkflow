@@ -30,25 +30,24 @@ All routines and their default cron expressions:
 
 | Routine | Cron | Description |
 |---|---|---|
-| `fix-issues` | `0 * * * *` | Hourly — picks up `status:approved` issues, implements, merges |
-| `fix-ci-issue` | `*/15 * * * *` | Every 15 min — picks up a `source:ci` issue, pushes a fix; retries up to 3x, then `needs-human` *(optional, `ci-gate` module)* |
-| `analytics-review` | `0 8 * * *` | Daily 8:00 — PostHog + recent commits → GitHub issues |
-| `observability-check` | `30 8 * * *` | Daily 8:30 — errors / latency → GitHub issues |
-| `gsc-check` | `0 8 * * 1` | Weekly Mon 8:00 — Google Search Console + technical/on-page SEO audit → GitHub issues |
-| `coolify-check-deployment` | `0 9 * * *` | Daily 9:00 — deployment status → `critical` issue on failed deploy |
+| `fix-issues` | `0 * * * *` | Hourly — picks up approved tasks, implements, commits directly to the base branch (PR mode optional per project) |
+| `analytics-review` | `0 8 * * *` | Daily 8:00 — PostHog + recent commits → tasks |
+| `observability-check` | `30 8 * * *` | Daily 8:30 — errors / latency → tasks |
+| `gsc-check` | `0 8 * * 1` | Weekly Mon 8:00 — Google Search Console + technical/on-page SEO audit → tasks |
+| `coolify-check-deployment` | `0 9 * * *` | Daily 9:00 — deployment status → `critical` task on failed deploy |
 | `claude-md-update` | `0 9 * * 1-5` | Weekdays 9:00 — regenerates CLAUDE.md from codebase |
-| `architecture-review` | `0 2 * * 0` | Weekly Sun 2:00 — architectural analysis → GitHub issues |
-| `security-audit` | `0 3 * * 0` | Weekly Sun 3:00 — full security review → GitHub issues |
-| `build-optimization` | `0 4 * * 0` | Weekly Sun 4:00 — build + deploy pipeline analysis → GitHub issues |
-| `uptime-check` | `0 */4 * * *` | Every 4 hours — DNS + HTTP + page-load check → **auto-approved** `critical` issue if site down |
-| `docs-audit` | `0 5 * * 0` | Weekly Sun 5:00 — docs ↔ code drift check → GitHub issues |
-| `code-health` | `0 7 * * 0` | Weekly Sun 7:00 — fallow audit (dead code, dupes, cycles, complexity) → GitHub issues *(optional, TS/JS only)* |
-| `product-overview` | `0 7 * * 1` | Weekly Mon 7:00 — product overview digest (writes snapshot, no issues) |
-| `vulnerability-check` | `0 6 * * *` | Daily 6:00 — GitHub Dependabot + code/secret scanning alerts → GitHub issues |
-| `ads-review` | `0 8 * * 1` | Weekly Mon 8:00 — paid ads performance → GitHub issues |
-| `design-audit` | `0 10 * * 6` | Weekly Sat 10:00 — `impeccable:audit` five-dimension quality check → GitHub issues |
-| `design-critique` | `0 11 * * 6` | Weekly Sat 11:00 — `impeccable:critique` scored review + persona tests → GitHub issues |
-| `design-harden` | `0 10 1 * *` | Monthly 1st 10:00 — `impeccable:harden` edge cases, i18n, error states → GitHub issues |
+| `architecture-review` | `0 2 * * 0` | Weekly Sun 2:00 — architectural analysis → tasks |
+| `security-audit` | `0 3 * * 0` | Weekly Sun 3:00 — full security review → tasks |
+| `build-optimization` | `0 4 * * 0` | Weekly Sun 4:00 — build + deploy pipeline analysis → tasks |
+| `uptime-check` | `0 */4 * * *` | Every 4 hours — DNS + HTTP + page-load check → **auto-approved** `critical` task if site down |
+| `docs-audit` | `0 5 * * 0` | Weekly Sun 5:00 — docs ↔ code drift check → tasks |
+| `code-health` | `0 7 * * 0` | Weekly Sun 7:00 — fallow audit (dead code, dupes, cycles, complexity) → tasks *(optional, TS/JS only)* |
+| `product-overview` | `0 7 * * 1` | Weekly Mon 7:00 — product overview digest (writes snapshot, no tasks) |
+| `vulnerability-check` | `0 6 * * *` | Daily 6:00 — GitHub Dependabot + code/secret scanning alerts → tasks |
+| `ads-review` | `0 8 * * 1` | Weekly Mon 8:00 — paid ads performance → tasks |
+| `design-audit` | `0 10 * * 6` | Weekly Sat 10:00 — `impeccable:audit` five-dimension quality check → tasks |
+| `design-critique` | `0 11 * * 6` | Weekly Sat 11:00 — `impeccable:critique` scored review + persona tests → tasks |
+| `design-harden` | `0 10 1 * *` | Monthly 1st 10:00 — `impeccable:harden` edge cases, i18n, error states → tasks |
 
 Cron times are in the machine's local timezone.
 

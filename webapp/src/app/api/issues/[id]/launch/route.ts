@@ -34,7 +34,7 @@ export async function POST(
     // shell command cmux runs.
     const prompt =
       `Issue #${n} помечен needs-human и требует ручного вмешательства. ` +
-      `Посмотри его: gh issue view ${n}. ` +
+      `Посмотри его: df task view ${n}. ` +
       `Разберись, почему он заблокирован, и давай вместе доведём до решения.`;
     const safePrompt = prompt.replace(/'/g, "");
     // --worktree isolates each fix in its own git worktree so several issues can be

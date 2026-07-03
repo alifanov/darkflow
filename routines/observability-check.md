@@ -1,6 +1,6 @@
 # Observability Check
 
-Daily check of application errors, slow endpoints, database query performance, and request volumes. Creates `status:proposed` GitHub issues with prioritised findings.
+Daily check of application errors, slow endpoints, database query performance, and request volumes. Creates proposed tasks with prioritised findings.
 
 ---
 
@@ -29,7 +29,6 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 ## Required integrations
 
 - **Observability MCP** configured in project `.claude/settings.json`
-- **`gh` CLI** authenticated — for creating GitHub issues
 
 ---
 
@@ -97,9 +96,9 @@ Store credentials in your project `.env` (referenced by the env block above), ne
 
 ## What gets created
 
-Issues with labels: `status:proposed`, `source:signoz` (or relevant), `priority:*`
+Tasks with: `status=proposed`, `source=signoz` (or relevant), `priority=*`
 
-**Additive index additions are created directly as `status:approved`** (auto-approved — see [`docs/auto-approve.md`](../docs/auto-approve.md)); query rewrites, N+1 fixes, and caching stay `status:proposed`.
+**Additive index additions are created directly as `status=approved`** (auto-approved — see [`docs/auto-approve.md`](../docs/auto-approve.md)); query rewrites, N+1 fixes, and caching stay `status=proposed`.
 
 ---
 

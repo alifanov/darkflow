@@ -1,4 +1,4 @@
-Check application errors, slow endpoints, database performance, and request volumes, then create status:proposed GitHub issues.
+Check application errors, slow endpoints, database performance, and request volumes, then create tasks.
 
 ## Step 1 — Read project config
 
@@ -24,13 +24,13 @@ For each finding:
 - Compare to the previous period (yesterday / last week)
 - Suggest a concrete fix (add index, cache result, paginate query, etc.)
 
-Create a GitHub issue for each significant finding. Use labels: `status:proposed`, `source:signoz` (or the relevant observability tool), `priority:*`, `effort:*`.
+Create a task for each significant finding. Use `--source signoz` (or the relevant observability tool) and a priority.
 
-**Auto-approve — additive index only.** When the finding is purely *adding a database index* (no schema/data change, no query rewrite), create the issue directly as `status:approved` instead of `status:proposed`, and add the line *"Auto-approved — see `docs/auto-approve.md`."* to the issue body. This applies **only** to plain index additions — query rewrites, N+1 fixes, caching, denormalization, and any change that alters behavior or data stay `status:proposed` for human review.
+**Auto-approve — additive index only.** When the finding is purely *adding a database index* (no schema/data change, no query rewrite), create the task directly with `--status approved` instead of `--status proposed`, and add the line *"Auto-approved — see `docs/auto-approve.md`."* to the task body. This applies **only** to plain index additions — query rewrites, N+1 fixes, caching, denormalization, and any change that alters behavior or data stay `--status proposed` for human review.
 
-Priority vocabulary: `priority:critical` / `priority:high` / `priority:medium` / `priority:low`. **Only create issues for `critical` / `high` / `medium`** — `low`-priority findings are skipped (record them under Hypotheses in the snapshot instead).
+Priority vocabulary: `critical` / `high` / `medium` / `low`. **Only create tasks for `critical` / `high` / `medium`** — `low`-priority findings are skipped (record them under Hypotheses in the snapshot instead).
 
-**Issue format (required):**
+**Task format (required):**
 
 - **Title**: action-oriented verb — "Add index on X", "Cache Y endpoint", "Fix N+1 in Z" — never just a description of the symptom ("Slow endpoint detected", "High error rate on X")
 - **Body**:
@@ -46,7 +46,16 @@ Priority vocabulary: `priority:critical` / `priority:high` / `priority:medium` /
   - [ ] <additional criterion if needed>
   ```
 
-Language for all GitHub issues and output: the `language` value from `.darkflow.d/state/config.json`.
+Create with:
+```bash
+~/.darkflow/df task create --title "<title>" --source signoz \
+  --priority <critical|high|medium> --status <approved|proposed> --body "$(cat <<'EOF'
+<body as above>
+EOF
+)"
+```
+
+Language for all tasks and output: the `language` value from `.darkflow.d/state/config.json`.
 
 ## Step 3 — Write docs snapshot
 
@@ -77,7 +86,7 @@ Write `docs/insights/observability/YYYY-MM-DD.md` (use today's date; append a ne
 
 ## Hypotheses
 
-<pre-threshold signals that aren't yet ready for a GitHub issue — see agent-workflow.md>
+<pre-threshold signals that aren't yet ready for a task — see agent-workflow.md>
 
 ## Recommendations
 
@@ -88,9 +97,9 @@ Write `docs/insights/observability/YYYY-MM-DD.md` (use today's date; append a ne
 
 Save an observability snapshot so the Dark Flow worker can forward it to the web UI.
 
-Run `gh issue list --state open --json number,labels --limit 200`, then:
-- Count issues with label `source:signoz` (or the relevant observability tool) → `openIssues`
-- Count those with `priority:critical` or `priority:high` → `criticalOpen`
+Run `~/.darkflow/df task list --source signoz --state open` (or the relevant observability tool's source), then:
+- Count → `openIssues`
+- Count those with priority `critical` or `high` → `criticalOpen`
 - Derive `status`: `"critical"` if criticalOpen > 0, `"warning"` if openIssues > 5, `"ok"` otherwise
 
 Write `.darkflow.d/state/metrics/observability.json` (create parent directories if needed):

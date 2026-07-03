@@ -34,8 +34,7 @@ Agent rules "when to read / when to write" — in [`agent-workflow.md`](./agent-
 | **decisions/** | Accepted decisions (ADRs) | As made |
 | `decisions/TEMPLATE.md` | ADR template (context → decision → verification) | — |
 | **Process** | Agent and team working agreements | As changed |
-| `github-issues.md` | GitHub Issues label taxonomy + agent triage loop | Quarterly |
-| `.github/ISSUE_TEMPLATE/recommendation.yml` | Issue creation form | As changed |
+| `tasks.md` | Task field taxonomy + agent triage loop | Quarterly |
 
 ## Reading order for newcomer / AI agent
 

@@ -1,6 +1,6 @@
 An interactive grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates the project's documentation inline.
 
-This command is **interactive** — it asks questions and waits for your answers. It does **not** create GitHub issues, snapshots, or run autonomously. Use it during planning/design, before writing code, to pressure-test a plan and keep `docs/` honest.
+This command is **interactive** — it asks questions and waits for your answers. It does **not** create tasks, snapshots, or run autonomously. Use it during planning/design, before writing code, to pressure-test a plan and keep `docs/` honest.
 
 ## Step 0 — Read project config
 

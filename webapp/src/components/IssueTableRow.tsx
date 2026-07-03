@@ -38,7 +38,6 @@ interface IssueTableRowProps {
     title: string;
     body: string | null;
     status: string;
-    pendingStatus: string | null;
     priority: string | null;
     url: string | null;
     needsHuman: boolean;
@@ -109,7 +108,6 @@ export function IssueTableRow({ issue, showApprove, showClose, showTaskLink, sho
   const [open, setOpen] = useState(false);
   const bg = STATUS_COLORS[issue.status] ?? STATUS_COLORS.none;
   const color = STATUS_TEXT[issue.status] ?? "var(--muted)";
-  const isPending = issue.pendingStatus !== null;
   const hasBody = !!issue.body;
   const comments = issue.comments ?? [];
   const hasContent = hasBody || comments.length > 0;
@@ -157,7 +155,7 @@ export function IssueTableRow({ issue, showApprove, showClose, showTaskLink, sho
                 href={issue.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                title="Open issue on GitHub"
+                title="Open"
                 className="cursor-pointer hover:underline"
               >
                 {issue.title}
@@ -179,15 +177,6 @@ export function IssueTableRow({ issue, showApprove, showClose, showTaskLink, sho
             <span className="rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ background: bg, color }}>
               {issue.status}
             </span>
-            {isPending && (
-              <span
-                className="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide"
-                style={{ background: "transparent", color: "var(--muted)", border: "1px dashed var(--border)" }}
-                title="Pending sync with GitHub"
-              >
-                pending sync
-              </span>
-            )}
           </div>
         </td>
         <td className="py-3 px-4">

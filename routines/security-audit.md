@@ -1,6 +1,6 @@
 # Security Audit
 
-Weekly security review — static analysis of the codebase and live application check (HTTP headers, TLS, CSP, exposed endpoints). Creates `status:proposed` GitHub issues for each finding.
+Weekly security review — static analysis of the codebase and live application check (HTTP headers, TLS, CSP, exposed endpoints). Creates an approved task for each finding.
 
 ---
 
@@ -26,15 +26,9 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 
 ---
 
-## Required integrations
-
-- **`gh` CLI** authenticated — for creating GitHub issues
-
----
-
 ## What gets created
 
-Issues with labels: `status:approved`, `source:security-review`, `priority:critical` / `high` / `medium` (`low`-severity findings are noted in the snapshot, not filed)
+Tasks with: `status=approved`, `source=security-review`, `priority=critical` / `high` / `medium` (`low`-severity findings are noted in the snapshot, not filed)
 
 Security findings are **auto-approved** — `fix-issues` picks them up without a manual review step. See [`docs/auto-approve.md`](../docs/auto-approve.md) for the full allowlist and how to extend it.
 

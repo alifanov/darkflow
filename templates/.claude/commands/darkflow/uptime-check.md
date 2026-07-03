@@ -1,6 +1,6 @@
-Check whether this project's website is actually up: resolve DNS, hit the URL, verify the HTTP status is healthy, and confirm the page really loads (not a blank/error/maintenance page). If the site is **down or broken**, create an auto-approved `priority:critical` GitHub issue so `fix-issues` picks it up immediately and restores it.
+Check whether this project's website is actually up: resolve DNS, hit the URL, verify the HTTP status is healthy, and confirm the page really loads (not a blank/error/maintenance page). If the site is **down or broken**, create an auto-approved critical-priority task so `fix-issues` picks it up immediately and restores it.
 
-This is an **active health check**: when the site is healthy it does nothing but write a snapshot. When the site is broken it files a critical, auto-approved issue describing exactly what failed (DNS, HTTP status, or empty/error body) so the fix can start without waiting for human triage.
+This is an **active health check**: when the site is healthy it does nothing but write a snapshot. When the site is broken it files a critical, auto-approved task describing exactly what failed (DNS, HTTP status, or empty/error body) so the fix can start without waiting for human triage.
 
 > **Note — cheap pre-flight.** The dispatcher (`darkflow-run.sh`) runs a fast bash `curl` probe *before* launching this agent. On the common happy path (site returns 2xx with a real body) it writes the snapshot + metrics itself and **skips this agent entirely** — so on healthy runs you are not invoked at all. This agent runs only when the probe finds the site down/broken or can't decide (no `site_url`, DNS failure, etc.). When you *are* invoked, perform the full check below from scratch (the probe is only a coarse filter) and file the issue.
 
@@ -67,19 +67,19 @@ Inspect `/tmp/uptime_body.html`:
 - Body contains an obvious failure marker (case-insensitive): `Bad Gateway`, `Gateway Timeout`, `Service Unavailable`, `no available server` / `no server available` (Traefik/Coolify when the backend is down — note these can come with an HTTP **200**), `Application error`, `This site can't be reached`, default `Welcome to nginx`, an unstyled framework error stack, or a maintenance page when none is expected → status **down**, reason `error_page` (quote the marker found).
 - Otherwise → status **ok**. Note the `<title>` for the snapshot.
 
-## Step 4 — File a critical issue if down
+## Step 4 — File a critical task if down
 
 Only when status is **down**:
 
-First check for an already-open uptime issue to avoid duplicates:
+First check for an already-open uptime task to avoid duplicates:
 ```bash
-gh issue list --label "source:uptime" --state open --json number,title --limit 20
+~/.darkflow/df task list --source uptime --state open
 ```
-If an open `source:uptime` issue already describes the same outage, add a comment with the new timestamp/details instead of opening a duplicate.
+If an open uptime task already describes the same outage, add a comment with the new timestamp/details instead of opening a duplicate.
 
-Otherwise create the issue **auto-approved** so `fix-issues` acts immediately:
+Otherwise create the task **auto-approved** so `fix-issues` acts immediately:
 
-- Labels: `status:approved`, `source:uptime`, `priority:critical`
+- `--source uptime --priority critical --status approved`
 - Title: action-oriented — e.g. "Site down: <host> returns 502" / "Site down: <host> DNS does not resolve" / "Site down: <host> serves empty page"
 - Body:
   ```
@@ -98,9 +98,18 @@ Otherwise create the issue **auto-approved** so `fix-issues` acts immediately:
   - [ ] uptime-check passes on the next run
   ```
 
+Create with:
+```bash
+~/.darkflow/df task create --title "<title>" --source uptime \
+  --priority critical --status approved --body "$(cat <<'EOF'
+<body as above>
+EOF
+)"
+```
+
 Security-style auto-approval applies: a down production site is an emergency. `fix-issues` runs its normal quality checks and escalates to `needs-human` if the fix requires secret rotation or infrastructure changes it can't perform.
 
-Language for all GitHub issues and output: the `language` value from `.darkflow.d/state/config.json`.
+Language for all tasks and output: the `language` value from `.darkflow.d/state/config.json`.
 
 ## Step 5 — Write snapshot and metrics
 

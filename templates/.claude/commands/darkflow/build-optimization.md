@@ -1,4 +1,4 @@
-Analyze how this project builds and deploys — map the full pipeline, find bottlenecks and inefficiencies, and create `status:proposed` GitHub issues with concrete optimization proposals. Each issue should describe the problem, what to change, and a measurable acceptance criterion.
+Analyze how this project builds and deploys — map the full pipeline, find bottlenecks and inefficiencies, and create tasks with concrete optimization proposals. Each task should describe the problem, what to change, and a measurable acceptance criterion.
 
 This is a **proposal-only audit**: it identifies opportunities and proposes changes. It does not apply changes itself (that is a human/`fix-issues` decision).
 
@@ -78,16 +78,16 @@ Check each area below. For each finding, note the area, current state, proposed 
 
 Rank opportunities by: **impact** (time saved per run × runs/week) vs **effort** (lines of config changed).
 
-## Step 4 — Create issues for opportunities
+## Step 4 — Create tasks for opportunities
 
-Create a GitHub issue for each significant, independent optimization. Group trivially related changes into one issue (e.g., "Add .dockerignore and fix layer ordering" → one issue). Do not create issues for findings already tracked or already dismissed — run `gh issue list --state all --json number,title,state,labels --limit 200` and skip any optimization that matches an open issue **or** one a human already closed without a merged fix (rejected/wontfix). Re-file only if a previously-fixed problem has demonstrably regressed.
+Create a task for each significant, independent optimization. Group trivially related changes into one task (e.g., "Add .dockerignore and fix layer ordering" → one task). Do not create tasks for findings already tracked or already dismissed — run `~/.darkflow/df task list --source build --state all` and skip any optimization that matches an existing task **or** one a human already closed without a merged fix (rejected). Re-file only if a previously-fixed problem has demonstrably regressed.
 
-- Labels: `status:proposed`, `source:build`, priority by impact:
-  - `priority:high` — large, safe time savings (e.g., 5+ min per CI run, or image 2× smaller)
-  - `priority:medium` — moderate improvement (1–5 min, meaningful size reduction)
-  - **minor / nice-to-have → do NOT create an issue** — note it in the snapshot only
+- `--source build`, priority by impact:
+  - `high` — large, safe time savings (e.g., 5+ min per CI run, or image 2× smaller)
+  - `medium` — moderate improvement (1–5 min, meaningful size reduction)
+  - **minor / nice-to-have → do NOT create a task** — note it in the snapshot only
 
-**Issue format (required):**
+**Task format (required):**
 
 - **Title**: action-oriented verb — "Add pnpm store cache to CI", "Fix Docker layer order to restore cache hits", "Switch to multi-stage build to reduce image size" — never a vague statement
 - **Body**:
@@ -103,7 +103,16 @@ Create a GitHub issue for each significant, independent optimization. Group triv
   - [ ] <secondary check if needed>
   ```
 
-Language for all GitHub issues and output: the `language` value from `.darkflow.d/state/config.json`.
+Create with:
+```bash
+~/.darkflow/df task create --title "<title>" --source build \
+  --priority <high|medium> --status proposed --body "$(cat <<'EOF'
+<body as above>
+EOF
+)"
+```
+
+Language for all tasks and output: the `language` value from `.darkflow.d/state/config.json`.
 
 ## Step 5 — Write snapshot and metrics
 
@@ -135,9 +144,9 @@ Write `docs/insights/build-optimization/YYYY-MM-DD.md` (use today's date; append
 
 Save a snapshot so the Dark Flow worker can forward it to the web UI.
 
-Run `gh issue list --state open --json number,labels --limit 200`, then:
-- Count issues with label `source:build` → `openIssues`
-- Count those with `priority:critical` or `priority:high` → `criticalOpen`
+Run `~/.darkflow/df task list --source build --state open`, then:
+- Count → `openIssues`
+- Count those with priority `critical` or `high` → `criticalOpen`
 - Derive `status`: `"warning"` if `criticalOpen > 0`, `"warning"` if `openIssues > 5`, `"ok"` otherwise
 
 Write `.darkflow.d/state/metrics/build-optimization.json` (create parent directories if needed):

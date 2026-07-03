@@ -1,6 +1,6 @@
 # GSC Check
 
-Weekly SEO routine with two halves: (1) a review of Google Search Console data — positions, CTR, impressions, indexing issues — and (2) a technical + on-page SEO audit of the codebase / live pages. Creates `status:proposed` GitHub issues with concrete fixes.
+Weekly SEO routine with two halves: (1) a review of Google Search Console data — positions, CTR, impressions, indexing issues — and (2) a technical + on-page SEO audit of the codebase / live pages. Creates proposed tasks with concrete fixes.
 
 ---
 
@@ -31,14 +31,13 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 - **Google Search Console MCP** configured in project `.claude/settings.json`
   - Property must be verified in GSC for your domain
   - Optional: if the GSC MCP is missing, the routine skips the GSC half and still runs the SEO audit
-- **`gh` CLI** authenticated — for creating GitHub issues
 - Optional `site_url=` in `.darkflow` — enables live-page spot-checks during the SEO audit (auto-discovered from Coolify/Vercel/Netlify/CNAME if unset)
 
 ---
 
 ## What gets created
 
-Issues with labels: `status:proposed`, `source:gsc` (GSC-data findings) or `source:seo` (audit findings), `area:*`, `priority:*`, `effort:*`
+Tasks with: `status=proposed`, `source=gsc` (GSC-data findings) or `source=seo` (audit findings), `priority=*`
 
 The routine writes two snapshots before posting recommendations:
 - `docs/insights/search-console/YYYY-MM-DD.md` — GSC data

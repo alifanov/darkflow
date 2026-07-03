@@ -1,0 +1,174 @@
+#!/usr/bin/env bash
+# df — Dark Flow task CLI. Talks to the webapp's /api/tasks/* endpoints so
+# routines and the worker never need `gh issue *` for task tracking.
+#
+# Installed globally at ~/.darkflow/df. Project identity is the git remote
+# `origin` URL (normalized the same way as darkflow-run.sh); webapp base URL
+# comes from ~/.darkflow/config (webapp_url=...), same as get-config.sh.
+set -euo pipefail
+
+GLOBAL_CFG="${HOME}/.darkflow/config"
+
+_normalize_repo_url() {
+  local u="$1"
+  u="${u%.git}"
+  if [[ "$u" == git@*:* ]]; then
+    local host="${u#git@}"; host="${host%%:*}"
+    u="https://${host}/${u#*:}"
+  elif [[ "$u" == ssh://* ]]; then
+    u="${u#ssh://}"; u="https://${u#git@}"
+  fi
+  u="${u/https:\/\/*@/https:\/\/}"
+  printf '%s' "$u"
+}
+
+_repo_url() {
+  local remote
+  remote=$(git remote get-url origin 2>/dev/null || echo "")
+  if [[ -n "$remote" ]]; then
+    _normalize_repo_url "$remote"
+  elif command -v gh &>/dev/null; then
+    gh repo view --json url -q .url 2>/dev/null || echo ""
+  fi
+}
+
+_webapp_url() {
+  grep -E '^webapp_url=' "$GLOBAL_CFG" 2>/dev/null | head -1 | cut -d= -f2-
+}
+
+_urlencode() {
+  python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$1" 2>/dev/null \
+    || printf '%s' "$1" | sed 's/:/%3A/g; s|/|%2F|g'
+}
+
+_api() {
+  local method="$1" path="$2" data="${3:-}" base
+  base=$(_webapp_url)
+  [[ -n "$base" ]] || { echo "df: webapp_url not set in ${GLOBAL_CFG}" >&2; exit 1; }
+  if [[ -n "$data" ]]; then
+    curl -fsS -m 20 -X "$method" "${base}${path}" -H "Content-Type: application/json" -d "$data"
+  else
+    curl -fsS -m 20 -X "$method" "${base}${path}"
+  fi
+}
+
+command -v jq &>/dev/null || { echo "df: jq is required" >&2; exit 1; }
+command -v curl &>/dev/null || { echo "df: curl is required" >&2; exit 1; }
+
+REPO_URL=$(_repo_url)
+[[ -n "$REPO_URL" ]] || { echo "df: could not resolve repo URL (no git remote 'origin')" >&2; exit 1; }
+REPO_Q=$(_urlencode "$REPO_URL")
+
+usage() {
+  cat >&2 <<'EOF'
+usage:
+  df task list [--status S] [--source S] [--action S] [--state open|closed|all] [--needs-human]
+  df task view <n>
+  df task create --title T [--body B] [--priority critical|high|medium|low] [--source S] [--status S] [--action reply|fix] [--needs-human]
+  df task set-status <n> <status>
+  df task set-action <n> reply|fix
+  df task needs-human <n>
+  df task comment <n> --body B
+  df task close <n> [--reason rejected]
+EOF
+  exit 1
+}
+
+[[ $# -ge 2 && "$1" == "task" ]] || usage
+sub="$2"
+shift 2
+
+case "$sub" in
+  list)
+    qs="repoUrl=${REPO_Q}"
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --status) qs+="&status=$(_urlencode "$2")"; shift 2 ;;
+        --source) qs+="&source=$(_urlencode "$2")"; shift 2 ;;
+        --action) qs+="&action=$(_urlencode "$2")"; shift 2 ;;
+        --state) qs+="&state=$(_urlencode "$2")"; shift 2 ;;
+        --needs-human) qs+="&needsHuman=true"; shift ;;
+        *) usage ;;
+      esac
+    done
+    _api GET "/api/tasks?${qs}"
+    ;;
+
+  view)
+    n="${1:?number required}"
+    _api GET "/api/tasks/${n}?repoUrl=${REPO_Q}"
+    ;;
+
+  create)
+    title="" body="" priority="medium" source="manual" status="" action="" needs_human=false
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --title) title="$2"; shift 2 ;;
+        --body) body="$2"; shift 2 ;;
+        --priority) priority="$2"; shift 2 ;;
+        --source) source="$2"; shift 2 ;;
+        --status) status="$2"; shift 2 ;;
+        --action) action="$2"; shift 2 ;;
+        --needs-human) needs_human=true; shift ;;
+        *) usage ;;
+      esac
+    done
+    [[ -n "$title" ]] || usage
+    payload=$(jq -n \
+      --arg repoUrl "$REPO_URL" --arg title "$title" --arg body "$body" \
+      --arg priority "$priority" --arg source "$source" --arg status "$status" --arg action "$action" \
+      --argjson needsHuman "$needs_human" '
+      {repoUrl:$repoUrl, title:$title, priority:$priority, source:$source, needsHuman:$needsHuman}
+      + (if $body != "" then {body:$body} else {} end)
+      + (if $status != "" then {status:$status} else {} end)
+      + (if $action != "" then {action:$action} else {} end)')
+    resp=$(_api POST "/api/tasks" "$payload")
+    if echo "$resp" | jq -e '.skipped' >/dev/null 2>&1; then
+      echo "$resp" | jq -r '.reason'
+    else
+      echo "$resp" | jq -r '.number'
+    fi
+    ;;
+
+  set-status)
+    n="${1:?number required}"; status="${2:?status required}"
+    _api PATCH "/api/tasks/${n}?repoUrl=${REPO_Q}" "$(jq -n --arg s "$status" '{status:$s}')" >/dev/null
+    ;;
+
+  set-action)
+    n="${1:?number required}"; action="${2:?action required}"
+    _api PATCH "/api/tasks/${n}?repoUrl=${REPO_Q}" "$(jq -n --arg a "$action" '{action:$a}')" >/dev/null
+    ;;
+
+  needs-human)
+    n="${1:?number required}"
+    # Pulls the task off the approved queue and flags it for a human — mirrors
+    # what "approve" undoes (approve always clears needsHuman).
+    _api PATCH "/api/tasks/${n}?repoUrl=${REPO_Q}" '{"needsHuman":true,"status":"proposed"}' >/dev/null
+    ;;
+
+  comment)
+    n="${1:?number required}"; shift
+    body=""
+    while [[ $# -gt 0 ]]; do
+      case "$1" in --body) body="$2"; shift 2 ;; *) usage ;; esac
+    done
+    [[ -n "$body" ]] || usage
+    _api POST "/api/tasks/${n}/comment?repoUrl=${REPO_Q}" "$(jq -n --arg b "$body" '{body:$b}')" >/dev/null
+    ;;
+
+  close)
+    n="${1:?number required}"; shift
+    reason=""
+    while [[ $# -gt 0 ]]; do
+      case "$1" in --reason) reason="$2"; shift 2 ;; *) usage ;; esac
+    done
+    if [[ "$reason" == "rejected" ]]; then
+      _api PATCH "/api/tasks/${n}?repoUrl=${REPO_Q}" '{"state":"closed","status":"rejected"}' >/dev/null
+    else
+      _api PATCH "/api/tasks/${n}?repoUrl=${REPO_Q}" '{"state":"closed"}' >/dev/null
+    fi
+    ;;
+
+  *) usage ;;
+esac

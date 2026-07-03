@@ -1,6 +1,6 @@
 # Ads Review
 
-Weekly review of paid ads performance (Google Ads, Meta Ads, or equivalent) — creates `status:proposed` GitHub issues with prioritised optimisation recommendations.
+Weekly review of paid ads performance (Google Ads, Meta Ads, or equivalent) — creates proposed tasks with prioritised optimisation recommendations.
 
 ---
 
@@ -29,13 +29,12 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 ## Required integrations
 
 - Ads platform access (Google Ads MCP, Meta Ads API, or equivalent) configured in project `.claude/settings.json`
-- **`gh` CLI** authenticated — for creating GitHub issues
 
 ---
 
 ## What gets created
 
-Issues with labels: `status:proposed`, `source:ads`, `priority:*`
+Tasks with: `status=proposed`, `source=ads`, `priority=*`
 
 The routine writes an ads snapshot to `docs/insights/ads/YYYY-MM-DD.md` before posting recommendations.
 
@@ -44,4 +43,4 @@ The routine writes an ads snapshot to `docs/insights/ads/YYYY-MM-DD.md` before p
 ## Notes
 
 - Covers paid campaigns only — organic search is handled by `gsc-check`
-- Analytics attribution (ROAS from PostHog) is covered by `analytics-review` — avoid duplicate issues
+- Analytics attribution (ROAS from PostHog) is covered by `analytics-review` — avoid duplicate tasks

@@ -1,6 +1,6 @@
 # Architecture Review
 
-Weekly automated architectural analysis of the codebase — identifies structural problems, anti-patterns, coupling issues, and improvement opportunities. Creates `status:proposed` GitHub issues for each finding.
+Weekly automated architectural analysis of the codebase — identifies structural problems, anti-patterns, coupling issues, and improvement opportunities. Creates a proposed task for each finding.
 
 Uses the **[improve-codebase-architecture](https://github.com/mattpocock/skills)** skill by Matt Pocock.
 
@@ -40,16 +40,15 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 
 ## Required integrations
 
-- **`gh` CLI** authenticated — for creating GitHub issues
 - **improve-codebase-architecture skill** installed (see Prerequisites above)
 
 ---
 
 ## What gets created
 
-Issues with labels: `status:proposed`, `source:arch-review`, `priority:medium` (architectural debt is rarely urgent; `low`-level debt is noted in the snapshot, not filed as an issue)
+Tasks with: `status=proposed`, `source=arch-review`, `priority=medium` (architectural debt is rarely urgent; `low`-level debt is noted in the snapshot, not filed as a task)
 
-Large findings (multi-day work) should be broken into sub-issues before approving.
+Large findings (multi-day work) should be broken into sub-tasks before approving.
 
 ---
 
@@ -70,5 +69,5 @@ Runs first in the Sunday audit cluster, with gaps so routines don't overlap.
 ## Notes
 
 - Use **Opus** — this skill reads the entire codebase; Sonnet misses inter-module patterns
-- Architectural issues are typically `priority:medium` — they compound over time but rarely block releases (`low`-level debt is recorded in the snapshot rather than filed)
+- Architectural issues are typically `priority=medium` — they compound over time but rarely block releases (`low`-level debt is recorded in the snapshot rather than filed)
 - If the codebase is large, add to instructions: "Focus on `src/` and ignore `node_modules/`, `dist/`, generated files"

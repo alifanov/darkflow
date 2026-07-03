@@ -14,7 +14,7 @@ Weekly design quality check using `impeccable:audit` — five-dimension technica
 ## What it does
 
 1. Runs `/impeccable:audit` against the project's UI
-2. Creates `status:proposed` GitHub issues for each finding (labels: `source:design`, `priority:high` / `medium`; polish-level findings are noted in the snapshot, not filed)
+2. Creates a proposed task for each finding (`source=design`, `priority=high` / `medium`; polish-level findings are noted in the snapshot, not filed)
 3. Writes a snapshot to `docs/insights/design-audit/YYYY-MM-DD.md`
 4. Writes metrics to `.darkflow.d/state/metrics/design-audit.json`
 
@@ -28,4 +28,4 @@ Disable without removing: toggle it off in the Web UI (Settings → Routine sche
 
 - Complements `design-critique` (same day, 11:00) — audit is technical quality, critique is user-facing quality
 - `design-harden` runs monthly (1st of month) for production-readiness edge cases
-- Issues are created with `status:proposed` — human triage required before `fix-issues` picks them up
+- Tasks are created with `status=proposed` — human triage required before `fix-issues` picks them up

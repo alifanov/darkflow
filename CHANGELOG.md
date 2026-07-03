@@ -6,13 +6,24 @@ Format: `## [version] — YYYY-MM-DD` followed by categorised changes.
 Categories:
 - **New routine** — new routine file added to `routines/`
 - **Updated routine** — existing routine instruction changed
-- **New label** — new GitHub label added to taxonomy
-- **Updated label** — label color or description changed
-- **Workflow** — changes to `agent-workflow.md` or `github-issues.md`
+- **Workflow** — changes to `agent-workflow.md` or `tasks.md`
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
 ---
+
+## [4.0.0] — 2026-07-03
+
+- **Breaking / Installer** — Dark Flow no longer uses GitHub Issues as its task queue. Tasks now live in Dark Flow's own Postgres `Issue` table and are created/read/updated exclusively through a new `~/.darkflow/df` CLI (`df task list/view/create/set-status/set-action/needs-human/comment/close`) talking to new `/api/tasks/*` webapp routes — no more `gh` round-trips, no more GitHub Issues mirror/reconcile layer, no more approve/reject lag.
+  - Removed the webapp's GitHub mirror entirely: `github-status.ts`, the `/api/ingest` issue wipe-and-recreate block, `/api/pending-status`, and the `pendingStatus`/`pendingStatusAt`/`pendingComment` columns. Approve/reject/close now write the DB directly.
+  - `darkflow-run.sh` lost ~450 lines of GitHub-issue reconciliation: `apply_pending_statuses`, `close_rejected_issues`, `close_routine_below_priority`, `backfill_missing_priority`, `backfill_missing_status`, `convert_blocked_to_needs_human`, `enrich_needs_human_comments`, `validate_gh_token`, `check_gh_auth`, `resolve_gh_token`. `revive_stuck_issues` and `recover_crashed_fix_issues` were rewritten against `df`. `gh` is no longer a worker dependency (still used ad hoc by `vulnerability-check` for Dependabot/code-scanning/secret-scanning alerts, which are GitHub features unrelated to Issues).
+  - Every routine template (`fix-issues`, `mailbox-check`, `add-issue`, `vulnerability-check`, and all producer routines) rewritten to create/query tasks via `df` instead of `gh issue`.
+  - `fix-issues` now defaults to **direct commit to the base branch** (no PR, no `Closes #N`) — `mergeStrategy=pr` remains available as an opt-in per-project setting, now referencing "Task #N" in the PR body instead.
+  - Removed the CI-gate module entirely: `templates/.github/workflows/darkflow-ci-gate.yml`, the `fix-ci-issue` routine, `--with-ci-gate`/`--no-ci-gate` flags. It ran in GitHub Actions and can't reach a local webapp.
+  - Removed `templates/.github/ISSUE_TEMPLATE/recommendation.yml`, `setup_labels()`, and the `--no-labels` flag — no more GitHub label taxonomy to provision.
+  - `docs/github-issues.md` renamed to `docs/tasks.md`, rewritten around task fields (`status`/`source`/`priority`/`needsHuman`/`action`) instead of GitHub labels.
+  - Added `scripts/import-github-issues.sh` — one-time, idempotent importer that pulls a project's still-open GitHub issues into the new task store (does not modify or close the GitHub issues).
+- **Docs** — `docs/agent-workflow.md`, `docs/auto-approve.md`, `docs/README.md`, and this project's own `.darkflow.d/claude.md` updated to reference tasks/`df` instead of GitHub Issues/`gh`.
 
 ## [3.17.5] — 2026-07-01
 

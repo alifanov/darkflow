@@ -1,4 +1,4 @@
-Run a production-readiness check on the interface — edge cases, i18n, error states, overflow — then create `status:proposed` GitHub issues for each gap.
+Run a production-readiness check on the interface — edge cases, i18n, error states, overflow — then create tasks for each gap.
 
 ## Step 1 — Read project config
 
@@ -13,14 +13,14 @@ If `.darkflow.d/state/config.json` is missing, continue with defaults.
 
 /impeccable:harden
 
-After the hardening review is complete, create a GitHub issue for each gap found:
-- Labels: `status:proposed`, `source:design`, priority based on risk:
-  - `priority:high` — missing error states on critical flows, broken overflow, untranslated strings in production
-  - `priority:medium` — edge cases that cause layout breaks, unhandled empty states
-  - **cosmetic overflow / optional i18n gaps / low-risk edge cases → do NOT create an issue** — note them under Recommendations in the snapshot only
-- Do not create issues for findings already tracked or already dismissed — run `gh issue list --state all --json number,title,state,labels --limit 200` and skip any finding that matches an open issue **or** one a human already closed without a merged fix (rejected/wontfix). Re-file only if a previously-fixed problem has demonstrably regressed.
+After the hardening review is complete, create a task for each gap found:
+- `--source design`, priority based on risk:
+  - `high` — missing error states on critical flows, broken overflow, untranslated strings in production
+  - `medium` — edge cases that cause layout breaks, unhandled empty states
+  - **cosmetic overflow / optional i18n gaps / low-risk edge cases → do NOT create a task** — note them under Recommendations in the snapshot only
+- Do not create tasks for findings already tracked or already dismissed — run `~/.darkflow/df task list --source design --state all` and skip any finding that matches an existing task **or** one a human already closed without a merged fix (rejected). Re-file only if a previously-fixed problem has demonstrably regressed.
 
-**Issue format (required):**
+**Task format (required):**
 
 - **Title**: action-oriented verb — "Add error state to checkout form", "Fix text overflow in user name field at 320px", "Handle empty state on notifications panel" — never a bare observation
 - **Body**:
@@ -36,7 +36,16 @@ After the hardening review is complete, create a GitHub issue for each gap found
   - [ ] <verifiable outcome 2 if needed>
   ```
 
-Language for all GitHub issues and output: the `language` value from `.darkflow.d/state/config.json`.
+Create with:
+```bash
+~/.darkflow/df task create --title "<title>" --source design \
+  --priority <high|medium> --status proposed --body "$(cat <<'EOF'
+<body as above>
+EOF
+)"
+```
+
+Language for all tasks and output: the `language` value from `.darkflow.d/state/config.json`.
 
 ## Step 3 — Write snapshot
 
@@ -68,9 +77,9 @@ Write `docs/insights/design-harden/YYYY-MM-DD.md` (use today's date; append a ne
 
 ## Step 4 — Write metrics
 
-Run `gh issue list --state open --json number,labels --limit 200`, then:
-- Count issues with label `source:design` → `openIssues`
-- Count those with `priority:critical` or `priority:high` → `criticalOpen`
+Run `~/.darkflow/df task list --source design --state open`, then:
+- Count → `openIssues`
+- Count those with priority `critical` or `high` → `criticalOpen`
 - Derive `status`: `"warning"` if `criticalOpen > 0`, `"ok"` otherwise
 
 Write `.darkflow.d/state/metrics/design-harden.json` (create parent directories if needed):

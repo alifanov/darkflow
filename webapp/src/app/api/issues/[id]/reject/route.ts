@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { applyStatusToGitHub } from "@/lib/github-status";
 
 export async function POST(
   _req: NextRequest,
@@ -8,17 +7,13 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const issue = await prisma.issue.findUnique({ where: { id }, select: { id: true } });
-    if (!issue) {
+    const result = await prisma.issue.updateMany({
+      where: { id },
+      data: { status: "rejected", state: "closed", closedAt: new Date() },
+    });
+    if (result.count === 0) {
       return NextResponse.json({ error: "Issue not found" }, { status: 404 });
     }
-    // Reject closes the GitHub issue; on success drop the row (closed issues
-    // don't live in the DB anymore — see ingest).
-    const r = await applyStatusToGitHub(id, "rejected");
-    if (!r.ok) {
-      return NextResponse.json({ error: `GitHub update failed: ${r.error}` }, { status: 502 });
-    }
-    await prisma.issue.deleteMany({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("reject issue:", err);

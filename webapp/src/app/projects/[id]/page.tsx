@@ -349,7 +349,6 @@ function IssuesTab({
     title: string;
     body: string | null;
     status: string;
-    pendingStatus: string | null;
     priority: string | null;
     url: string | null;
     needsHuman: boolean;

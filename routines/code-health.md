@@ -1,8 +1,8 @@
 # Code Health
 
-Weekly codebase-intelligence audit powered by **[fallow](https://github.com/fallow-rs/fallow)** — finds unused code, duplication, circular dependencies, complexity hotspots, and dependency hygiene problems, then creates `status:proposed` GitHub issues for the high-confidence ones.
+Weekly codebase-intelligence audit powered by **[fallow](https://github.com/fallow-rs/fallow)** — finds unused code, duplication, circular dependencies, complexity hotspots, and dependency hygiene problems, then creates proposed tasks for the high-confidence ones.
 
-fallow is a deterministic Rust-native static analyzer for **TypeScript/JavaScript only**. It does the heavy analysis; the routine triages its findings (filtering false positives — public APIs, framework entry points, dynamic refs) and files concrete issues. This is the cheap, deterministic complement to `architecture-review` (which is LLM-driven structural judgment): they are wired not to overlap — fallow owns dead code / dupes / deps / complexity, `architecture-review` owns coupling and design.
+fallow is a deterministic Rust-native static analyzer for **TypeScript/JavaScript only**. It does the heavy analysis; the routine triages its findings (filtering false positives — public APIs, framework entry points, dynamic refs) and files concrete tasks. This is the cheap, deterministic complement to `architecture-review` (which is LLM-driven structural judgment): they are wired not to overlap — fallow owns dead code / dupes / deps / complexity, `architecture-review` owns coupling and design.
 
 This is a **proposal-only** routine — it never applies changes itself (implementation goes through the normal approve → `fix-issues` path).
 
@@ -39,7 +39,7 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 |---|---|
 | Cron | `0 7 * * 0` (weekly Sun 7:00) |
 | Folder | Project root (`/path/to/your-project`) |
-| Model | Sonnet (recommended — fallow does the analysis deterministically; the model only triages JSON → issues) |
+| Model | Sonnet (recommended — fallow does the analysis deterministically; the model only triages JSON → tasks) |
 | Permission mode | `bypassPermissions` (default; override per project in the Web UI) |
 | Run manually | `~/.darkflow/darkflow-run.sh code-health` |
 
@@ -47,7 +47,6 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 
 ## Required integrations
 
-- **`gh` CLI** authenticated — for creating GitHub issues
 - **fallow agent skill** installed (see Prerequisites above)
 - **`npx`** available (Node.js) — to run `npx fallow audit --json`
 
@@ -55,7 +54,7 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 
 ## What gets created
 
-Issues with labels: `status:proposed`, `source:code-health`, `priority:high` / `medium` (low-confidence or minor findings are noted in the snapshot, not filed)
+Tasks with: `status=proposed`, `source=code-health`, `priority=high` / `medium` (low-confidence or minor findings are noted in the snapshot, not filed)
 
 A dated snapshot at `docs/insights/code-health/YYYY-MM-DD.md` and a metrics file at `.darkflow.d/state/metrics/code-health.json`.
 
@@ -80,5 +79,5 @@ Runs in the Sunday audit cluster with gaps so routines don't overlap (6:00 is ta
 - **TypeScript/JavaScript only.** On non-TS/JS projects the routine writes a "skipped" snapshot and files nothing — don't enable the module on Python/Go/Rust repos.
 - Use **Sonnet** — fallow's output is deterministic, so the model only needs to triage and judge, not analyze the whole codebase. Bump to Opus only if false-positive filtering on a large/dynamic codebase proves unreliable.
 - **Judgment matters.** fallow is context-blind: it flags public API surface, framework entry points (`app/**`, `route.ts`), and dynamically-referenced symbols as "dead". The command filters these before filing — never blindly trust `auto_fixable`.
-- Findings already tracked in open GitHub issues are skipped to avoid duplicates; deliberately-skipped false positives are recorded in the snapshot so the next audit doesn't re-litigate them.
+- Findings already tracked in open tasks are skipped to avoid duplicates; deliberately-skipped false positives are recorded in the snapshot so the next audit doesn't re-litigate them.
 - The skill is version-matched to fallow, so CLI changes ship with the skill — no need to maintain command syntax in this repo.

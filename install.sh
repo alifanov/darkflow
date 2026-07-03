@@ -18,7 +18,6 @@ PROJECT_NAME=""
 LANGUAGE=""
 MAIN_BRANCH=""
 MERGE_STRATEGY=""
-SKIP_LABELS=false
 SKIP_CLAUDE_SNIPPET=false
 FORCE=false
 DRY_RUN=false
@@ -38,7 +37,6 @@ MOD_DOCS_AUDIT=""
 MOD_PRODUCT_OVERVIEW=""
 MOD_IMPECCABLE=""
 MOD_FALLOW=""
-MOD_CI_GATE=""
 
 OBS_TOOL=""
 OBS_URL=""
@@ -76,7 +74,6 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --name)               PROJECT_NAME="$2"; shift 2 ;;
     --lang)               LANGUAGE="$2"; shift 2 ;;
-    --no-labels)          SKIP_LABELS=true; shift ;;
     --no-claude)          SKIP_CLAUDE_SNIPPET=true; shift ;;
     --force)              FORCE=true; shift ;;
     --dry-run)            DRY_RUN=true; shift ;;
@@ -86,7 +83,7 @@ while [[ $# -gt 0 ]]; do
                           MOD_ADS=true; MOD_COOLIFY=true; MOD_CLAUDE_UPDATE=true
                           MOD_ARCH_REVIEW=true; MOD_MAILBOX=true
                           MOD_DOCS_AUDIT=true; MOD_PRODUCT_OVERVIEW=true
-                          MOD_IMPECCABLE=true; MOD_FALLOW=true; MOD_CI_GATE=true
+                          MOD_IMPECCABLE=true; MOD_FALLOW=true
                           shift ;;
     --with-analytics)     MOD_ANALYTICS=true; shift ;;
     --with-observability) MOD_OBSERVABILITY=true; shift ;;
@@ -112,8 +109,6 @@ while [[ $# -gt 0 ]]; do
     --no-impeccable)         MOD_IMPECCABLE=false; shift ;;
     --with-fallow)           MOD_FALLOW=true; shift ;;
     --no-fallow)             MOD_FALLOW=false; shift ;;
-    --with-ci-gate)          MOD_CI_GATE=true; shift ;;
-    --no-ci-gate)            MOD_CI_GATE=false; shift ;;
     --obs-tool)           OBS_TOOL="$2"; shift 2 ;;
     --obs-url)            OBS_URL="$2"; shift 2 ;;
     --obs-api-key)        OBS_API_KEY="$2"; shift 2 ;;
@@ -148,11 +143,9 @@ while [[ $# -gt 0 ]]; do
       echo "  --with-product-overview  Weekly product overview digest routine"
       echo "  --with-impeccable     Weekly design quality routines (audit + critique + monthly harden)"
       echo "  --with-fallow         Weekly code-health audit via fallow (TS/JS only) + skill"
-      echo "  --with-ci-gate        GitHub Actions workflow: failing lint/test auto-files an issue"
       echo "  --branch NAME         Main branch name (default: main)"
-      echo "  --merge-pr            Fix issues via pull requests (default)"
-      echo "  --merge-direct        Fix issues by committing directly to main branch"
-      echo "  --no-labels           Skip GitHub label setup"
+      echo "  --merge-direct        Fix tasks by committing directly to main branch (default)"
+      echo "  --merge-pr            Fix tasks via pull requests"
       echo "  --no-claude           Skip CLAUDE.md creation"
       echo "  --target DIR          Install into DIR instead of current directory"
       echo "  --self-update         Refresh only the global worker + user-scope commands (no project work)"
@@ -278,7 +271,7 @@ ALL_DF_COMMANDS=(
   gsc-check ads-review coolify-check-deployment claude-md-update security-audit
   vulnerability-check architecture-review update-config docs-audit product-overview
   build-optimization csp-setup uptime-check grill design-audit design-critique
-  design-harden mailbox-check code-health fix-ci-issue
+  design-harden mailbox-check code-health
 )
 
 # Fetch a template (local clone or remote) to dest, always overwriting.
@@ -322,6 +315,9 @@ install_global_helpers() {
   gb_fetch "darkflow/get-config.sh" "${GLOBAL_DIR}/get-config.sh" \
     && chmod +x "${GLOBAL_DIR}/get-config.sh" \
     || warn "Could not fetch get-config.sh"
+  gb_fetch "darkflow/df" "${GLOBAL_DIR}/df" \
+    && chmod +x "${GLOBAL_DIR}/df" \
+    || warn "Could not fetch df (task CLI)"
   gb_fetch "darkflow/mailbox/fetch.py" "${GLOBAL_DIR}/mailbox/fetch.py" || warn "Could not fetch mailbox/fetch.py"
   gb_fetch "darkflow/mailbox/send.py"  "${GLOBAL_DIR}/mailbox/send.py"  || warn "Could not fetch mailbox/send.py"
   success "Installed global helpers (get-config.sh, mailbox) into ${GLOBAL_DIR}/"
@@ -498,7 +494,6 @@ if [[ "$MODE" == "update" ]]; then
   [[ "$MODULES" == *"product-overview"* && -z "$MOD_PRODUCT_OVERVIEW" ]] && MOD_PRODUCT_OVERVIEW=true
   [[ "$MODULES" == *"impeccable"*       && -z "$MOD_IMPECCABLE"       ]] && MOD_IMPECCABLE=true
   [[ "$MODULES" == *"fallow"*           && -z "$MOD_FALLOW"           ]] && MOD_FALLOW=true
-  [[ "$MODULES" == *"ci-gate"*          && -z "$MOD_CI_GATE"          ]] && MOD_CI_GATE=true
 fi
 
 # ── Mode header ───────────────────────────────────────────────────────────────
@@ -549,7 +544,7 @@ if [[ -z "$LANGUAGE" ]]; then
     LANGUAGE="English"
   else
     echo ""
-    echo -e "${BOLD}Communication language${RESET} — for GitHub issues, comments, commits, and chat. The product itself always stays in English."
+    echo -e "${BOLD}Communication language${RESET} — for tasks, comments, commits, and chat. The product itself always stays in English."
     echo ""
     echo "  1) English (default)"
     echo "  2) Russian"
@@ -576,32 +571,34 @@ info "Language: ${LANGUAGE}"
 # ── Branch & merge strategy ───────────────────────────────────────────────────
 
 if [[ -z "$MAIN_BRANCH" ]]; then
+  # Note: on an unborn HEAD (fresh repo, zero commits) some git versions write
+  # "HEAD" to stdout AND exit non-zero, so `cmd 2>/dev/null || echo fallback`
+  # would concatenate both into one two-line string. Capture then validate.
+  _git_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+  [[ -z "$_git_branch" || "$_git_branch" == "HEAD" || "$_git_branch" == *$'\n'* ]] && _git_branch="main"
   if [[ "$NON_INTERACTIVE" == true || ! -t 0 ]]; then
-    MAIN_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
-    [[ "$MAIN_BRANCH" == "HEAD" ]] && MAIN_BRANCH="main"
+    MAIN_BRANCH="$_git_branch"
   else
-    _detected=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
-    [[ "$_detected" == "HEAD" ]] && _detected="main"
     echo ""
-    read -rp "Main branch name [${_detected}]: " _branch_input
-    MAIN_BRANCH="${_branch_input:-$_detected}"
+    read -rp "Main branch name [${_git_branch}]: " _branch_input
+    MAIN_BRANCH="${_branch_input:-$_git_branch}"
   fi
 fi
 
 if [[ -z "$MERGE_STRATEGY" ]]; then
   if [[ "$NON_INTERACTIVE" == true || ! -t 0 ]]; then
-    MERGE_STRATEGY="pr"
+    MERGE_STRATEGY="direct"
   else
     echo ""
     echo -e "${BOLD}Fix Issues merge strategy${RESET}"
     echo ""
-    echo "  1) Pull request — agent opens a PR, then merges it (default, safer, auditable)"
-    echo "  2) Direct commit — agent commits and pushes directly to ${MAIN_BRANCH} (faster)"
+    echo "  1) Direct commit — agent commits and pushes directly to ${MAIN_BRANCH} (default, faster)"
+    echo "  2) Pull request — agent opens a PR, then merges it (safer, auditable)"
     echo ""
     read -rp "  Choice [1]: " _merge_choice
     case "${_merge_choice:-1}" in
-      2) MERGE_STRATEGY="direct" ;;
-      *) MERGE_STRATEGY="pr" ;;
+      2) MERGE_STRATEGY="pr" ;;
+      *) MERGE_STRATEGY="direct" ;;
     esac
     echo ""
   fi
@@ -644,12 +641,11 @@ ask_module MOD_ADS            "Paid Ads"            "(Google Ads, Meta…) — i
 ask_module MOD_COOLIFY        "Coolify"             "deployment status check — one daily routine"
 ask_module MOD_CLAUDE_UPDATE  "CLAUDE.md update"    "weekday routine that re-generates CLAUDE.md from codebase" false
 ask_module MOD_ARCH_REVIEW    "Architecture review" "installs improve-codebase-architecture skill + weekly routine" false
-ask_module MOD_DOCS_AUDIT     "Docs audit"          "weekly docs <-> code drift check -> GitHub issues" false
+ask_module MOD_DOCS_AUDIT     "Docs audit"          "weekly docs <-> code drift check -> tasks" false
 ask_module MOD_PRODUCT_OVERVIEW "Product overview"  "weekly product digest: state + changes + bugs + hypotheses" false
 ask_module MOD_IMPECCABLE     "Design quality"      "weekly design audit + critique (impeccable skill) + monthly harden" false
 ask_module MOD_FALLOW         "Code health"         "weekly fallow audit (dead code, dupes, cycles, complexity) — TS/JS only" false
-ask_module MOD_MAILBOX        "Mailbox"             "(IMAP+SMTP) — hourly inbox check → GitHub issues + automated replies" false
-ask_module MOD_CI_GATE        "CI gate"             "GitHub Actions: failing lint/test auto-files an issue for the fix-issues worker" false
+ask_module MOD_MAILBOX        "Mailbox"             "(IMAP+SMTP) — hourly inbox check → tasks + automated replies" false
 
 # ── Observability integration ─────────────────────────────────────────────────
 
@@ -862,69 +858,6 @@ sync_makefile() {
   rm -f "$_mkfile_tmp"
 }
 
-# ── GitHub labels ─────────────────────────────────────────────────────────────
-
-setup_labels() {
-  if [[ "$SKIP_LABELS" == true ]]; then
-    info "Skipping labels (--no-labels)"
-    return
-  fi
-  if ! command -v gh &>/dev/null; then
-    warn "gh not found — skipping label setup. Install: https://cli.github.com/"
-    return
-  fi
-  if ! gh auth status &>/dev/null 2>&1; then
-    warn "gh not authenticated — run 'gh auth login' then re-run with --no-labels"
-    return
-  fi
-  if [[ "$DRY_RUN" == true ]]; then
-    info "Would set up GitHub labels (additive, safe)"
-    return
-  fi
-
-  _do_label() {
-    local name="$1" color="$2" desc="$3"
-    if gh label create "$name" --color "$color" --description "$desc" 2>/dev/null; then
-      success "label: $name"
-    else
-      gh label edit "$name" --color "$color" --description "$desc" 2>/dev/null && \
-        changed "label: $name" || true
-    fi
-  }
-
-  info "Setting up GitHub labels..."
-  _do_label "status:proposed"        "fbca04" "Created by agent, awaiting human decision"
-  _do_label "status:approved"        "0e8a16" "Human approved — agent may pick up"
-  _do_label "status:rejected"        "b60205" "Won't do — do not recreate without new data"
-  _do_label "status:in-progress"     "1d76db" "Agent started; comment has branch/PR link"
-  _do_label "source:posthog"         "5319e7" "From insights/analytics/* (PostHog/HogQL)"
-  _do_label "source:gsc"             "5319e7" "From insights/search-console/* (GSC)"
-  _do_label "source:seo"             "5319e7" "From technical/on-page SEO audit (gsc-check)"
-  _do_label "source:ads"             "5319e7" "From insights/ads/* (Google Ads)"
-  _do_label "source:signoz"          "5319e7" "From SigNoz observability"
-  _do_label "source:security-review" "5319e7" "From security audit"
-  _do_label "source:arch-review"     "5319e7" "From architecture-review routine"
-  _do_label "source:user-feedback"   "5319e7" "From insights/qualitative/*"
-  _do_label "source:manual"          "5319e7" "Hypothesis without data source"
-  _do_label "source:mailbox"         "5319e7" "From inbox email — incoming customer requests"
-  _do_label "source:build"           "5319e7" "From build/deploy optimization audit"
-  _do_label "source:uptime"          "5319e7" "From uptime / site health check"
-  _do_label "source:design"          "5319e7" "From design quality routines (impeccable:audit/critique/harden)"
-  _do_label "source:code-health"     "5319e7" "From fallow code-health audit (dead code, dupes, cycles, complexity)"
-  _do_label "source:ci"              "5319e7" "From CI gate — failing lint/test in GitHub Actions"
-  _do_label "source:docs"            "5319e7" "From docs-audit doc/code drift findings"
-  _do_label "source:infra"           "5319e7" "From Coolify / deployment health checks"
-  _do_label "source:vulnerability-report" "5319e7" "From GitHub Dependabot / Code Scanning / Secret Scanning"
-  _do_label "ci-retry"               "e99695" "CI auto-fix in progress — fix-ci-issue retries up to 3x before escalating to needs-human"
-  _do_label "action:reply"           "0052cc" "Approved mailbox issue — agent will send email reply"
-  _do_label "action:fix"             "0052cc" "Approved mailbox issue — agent will make a code change"
-  _do_label "needs-human"            "8b5cf6" "Agent blocked — requires human action (credentials, config, external service)"
-  _do_label "priority:critical"      "b60205" "Breaks revenue or disables a feature right now"
-  _do_label "priority:high"          "d93f0b" "This week"
-  _do_label "priority:medium"        "fbca04" "This month"
-  _do_label "priority:low"           "cccccc" "Someday / nice-to-have (issues are NOT auto-created)"
-}
-
 # ── CLAUDE.md ─────────────────────────────────────────────────────────────────
 
 # Generates the standalone Dark Flow instructions file (.darkflow.d/claude.md).
@@ -934,25 +867,25 @@ generate_darkflow_md() {
 ## Documentation & Agent Workflow
 
 @docs/agent-workflow.md
-@docs/github-issues.md
+@docs/tasks.md
 @docs/auto-approve.md
 @.darkflow.d/constraints.md
 
 ### Project constraints
 
 Before proposing or making **any** change — especially in analysis/optimization routines that
-file issues — honor every constraint in `.darkflow.d/constraints.md`. If a finding would violate
-a constraint, drop it: do not file the issue and do not make the change.
+file tasks — honor every constraint in `.darkflow.d/constraints.md`. If a finding would violate
+a constraint, drop it: do not file the task and do not make the change.
 
 HEREDOC
 
-  echo "**Communication language:** ${LANGUAGE} — use it ONLY for human-facing text you write *about* the work: GitHub issues, comments, commit messages, PR descriptions, and console/chat output."
+  echo "**Communication language:** ${LANGUAGE} — use it ONLY for human-facing text you write *about* the work: tasks, comments, commit messages, PR descriptions, and console/chat output."
   echo "**Product language:** English — everything shipped *inside* the product is always written in English, regardless of the communication language: source code, identifiers, code comments, UI copy, user-facing strings, logs, and in-product docs. Setting the communication language to anything other than English never changes this."
   echo "**Main branch:** \`${MAIN_BRANCH}\`"
   if [[ "$MERGE_STRATEGY" == "direct" ]]; then
     echo "**Fix Issues strategy:** commit and push directly to \`${MAIN_BRANCH}\` — no pull requests."
   else
-    echo "**Fix Issues strategy:** open a pull request, then merge into \`${MAIN_BRANCH}\` with \`Closes #N\`."
+    echo "**Fix Issues strategy:** open a pull request referencing \"Task #N\", then merge into \`${MAIN_BRANCH}\`."
   fi
   echo "**Workspace rule:** never create a git worktree (\`git worktree add\`) — always work in the project root on \`${MAIN_BRANCH}\`. If the PR strategy needs a feature branch, create it in place with \`git checkout -b\` based off \`${MAIN_BRANCH}\`."
   echo ""
@@ -962,10 +895,10 @@ HEREDOC
 
 Check approved task queue:
 ```bash
-gh issue list --label "status:approved" --state open --json number,title,labels,body --limit 20
+~/.darkflow/df task list --status approved --state open
 ```
-If there are approved issues matching the current context — pick them first.
-Before starting: set `status:in-progress`, leave a comment with the branch name.
+If there are approved tasks matching the current context — pick them first.
+Before starting: set status to `in-progress`, leave a comment with the branch name.
 
 ### When to read docs
 
@@ -999,27 +932,29 @@ HEREDOC
   echo ""
   echo "Scheduled Claude Code agents that run this workflow automatically:"
   echo ""
-  echo "- **Fix issues** (Hourly) — picks up \`status:approved\` issues → PR → merge to ${MAIN_BRANCH}"
-  [[ "$MOD_ANALYTICS"     == true ]] && echo "- **Analytics review** (Daily 8:00) — PostHog + recent commits → GitHub issues"
+  if [[ "$MERGE_STRATEGY" == "direct" ]]; then
+    echo "- **Fix issues** (Hourly) — picks up an approved task → commit + push to ${MAIN_BRANCH}"
+  else
+    echo "- **Fix issues** (Hourly) — picks up an approved task → PR → merge to ${MAIN_BRANCH}"
+  fi
+  [[ "$MOD_ANALYTICS"     == true ]] && echo "- **Analytics review** (Daily 8:00) — PostHog + recent commits → tasks"
   if [[ "$MOD_OBSERVABILITY" == true ]]; then
     local _obs_label="${OBS_TOOL:-Observability tool}"
-    echo "- **Observability check** (Daily 8:30) — ${_obs_label}: errors / slow queries / latency → GitHub issues"
+    echo "- **Observability check** (Daily 8:30) — ${_obs_label}: errors / slow queries / latency → tasks"
   fi
-  [[ "$MOD_GSC"           == true ]] && echo "- **GSC check** (Weekly Mon 8:00) — Google Search Console + technical/on-page SEO audit → GitHub issues"
-  [[ "$MOD_ADS"           == true ]] && echo "- **Ads review** (Weekly Mon 8:00) — paid ads performance → GitHub issues"
-  [[ "$MOD_COOLIFY"       == true ]] && echo "- **Coolify check deployment** (Daily 9:00) — deploy status → critical issue on failure"
+  [[ "$MOD_GSC"           == true ]] && echo "- **GSC check** (Weekly Mon 8:00) — Google Search Console + technical/on-page SEO audit → tasks"
+  [[ "$MOD_ADS"           == true ]] && echo "- **Ads review** (Weekly Mon 8:00) — paid ads performance → tasks"
+  [[ "$MOD_COOLIFY"       == true ]] && echo "- **Coolify check deployment** (Daily 9:00) — deploy status → critical task on failure"
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- **CLAUDE.md update** (Weekdays 9:00) — re-generates this file from codebase"
-  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Architecture review** (Weekly Sun 2:00) — \`/improve-codebase-architecture\` → GitHub issues"
-  [[ "$MOD_MAILBOX"       == true ]] && echo "- **Mailbox check** (Hourly) — IMAP inbox → GitHub issues with \`action:reply\` / \`action:fix\` choice; approved replies sent via SMTP"
-  echo "- **Build optimization** (Weekly Sun 4:00) — build + deploy pipeline analysis → GitHub issues"
-  echo "- **Uptime check** (Every 4h) — DNS + HTTP + page-load check; site down → auto-approved critical issue"
-  [[ "$MOD_DOCS_AUDIT"    == true ]] && echo "- **Docs audit** (Weekly Sun 5:00) — docs ↔ code drift → GitHub issues"
-  [[ "$MOD_FALLOW"        == true ]] && echo "- **Code health** (Weekly Sun 7:00) — \`/darkflow:code-health\` fallow audit (dead code, dupes, cycles, complexity) → GitHub issues"
-  [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design audit** (Weekly Sat 10:00) — \`/impeccable:audit\` five-dimension quality check → GitHub issues"
-  [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design critique** (Weekly Sat 11:00) — \`/impeccable:critique\` scored review + persona tests → GitHub issues"
-  [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design harden** (Monthly 1st 10:00) — \`/impeccable:harden\` edge cases, i18n, error states → GitHub issues"
-  [[ "$MOD_CI_GATE"    == true ]] && echo "- **CI gate** (GitHub Actions, on push) — failing lint/test → auto-filed \`source:ci\` issue"
-  [[ "$MOD_CI_GATE"    == true ]] && echo "- **Fix CI issue** (Every 15 min) — \`/darkflow:fix-ci-issue\` picks up a \`source:ci\` issue, pushes a fix; retries up to 3x, then escalates to \`needs-human\`"
+  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Architecture review** (Weekly Sun 2:00) — \`/improve-codebase-architecture\` → tasks"
+  [[ "$MOD_MAILBOX"       == true ]] && echo "- **Mailbox check** (Hourly) — IMAP inbox → tasks with reply/fix action choice; approved replies sent via SMTP"
+  echo "- **Build optimization** (Weekly Sun 4:00) — build + deploy pipeline analysis → tasks"
+  echo "- **Uptime check** (Every 4h) — DNS + HTTP + page-load check; site down → auto-approved critical task"
+  [[ "$MOD_DOCS_AUDIT"    == true ]] && echo "- **Docs audit** (Weekly Sun 5:00) — docs ↔ code drift → tasks"
+  [[ "$MOD_FALLOW"        == true ]] && echo "- **Code health** (Weekly Sun 7:00) — \`/darkflow:code-health\` fallow audit (dead code, dupes, cycles, complexity) → tasks"
+  [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design audit** (Weekly Sat 10:00) — \`/impeccable:audit\` five-dimension quality check → tasks"
+  [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design critique** (Weekly Sat 11:00) — \`/impeccable:critique\` scored review + persona tests → tasks"
+  [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design harden** (Monthly 1st 10:00) — \`/impeccable:harden\` edge cases, i18n, error states → tasks"
   echo ""
   echo "Schedule: managed in the Web UI (Settings → Routine schedule)  |  Worker: one global \`~/.darkflow/darkflow-run.sh\` services every project"
   echo "Run any routine manually (from this project dir): \`~/.darkflow/darkflow-run.sh <name>\`"
@@ -1032,26 +967,25 @@ HEREDOC
   echo "Workflow commands: \`/darkflow:add-issue\`, \`/darkflow:update\`, \`/darkflow:install\`."
   echo ""
   echo "Routine commands (run any routine interactively or use as the routine prompt):"
-  echo "- \`/darkflow:fix-issues\` — pick up one approved issue and close it"
-  [[ "$MOD_ANALYTICS"     == true ]] && echo "- \`/darkflow:analytics-review\` — PostHog + commits → GitHub issues"
-  [[ "$MOD_OBSERVABILITY" == true ]] && echo "- \`/darkflow:observability-check\` — errors / slow queries / latency → GitHub issues"
-  [[ "$MOD_GSC"           == true ]] && echo "- \`/darkflow:gsc-check\` — Google Search Console + technical/on-page SEO audit → GitHub issues"
-  [[ "$MOD_ADS"           == true ]] && echo "- \`/darkflow:ads-review\` — paid ads performance → GitHub issues"
+  echo "- \`/darkflow:fix-issues\` — pick up one approved task and close it"
+  [[ "$MOD_ANALYTICS"     == true ]] && echo "- \`/darkflow:analytics-review\` — PostHog + commits → tasks"
+  [[ "$MOD_OBSERVABILITY" == true ]] && echo "- \`/darkflow:observability-check\` — errors / slow queries / latency → tasks"
+  [[ "$MOD_GSC"           == true ]] && echo "- \`/darkflow:gsc-check\` — Google Search Console + technical/on-page SEO audit → tasks"
+  [[ "$MOD_ADS"           == true ]] && echo "- \`/darkflow:ads-review\` — paid ads performance → tasks"
   [[ "$MOD_COOLIFY"       == true ]] && echo "- \`/darkflow:coolify-check-deployment\` — deployment status check"
   [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- \`/darkflow:claude-md-update\` — regenerate CLAUDE.md from codebase"
-  [[ "$MOD_DOCS_AUDIT"        == true ]] && echo "- \`/darkflow:docs-audit\` — docs <-> code drift check → GitHub issues"
+  [[ "$MOD_DOCS_AUDIT"        == true ]] && echo "- \`/darkflow:docs-audit\` — docs <-> code drift check → tasks"
   [[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && echo "- \`/darkflow:product-overview\` — product overview digest"
-  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- \`/darkflow:architecture-review\` — architectural analysis → GitHub issues"
+  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- \`/darkflow:architecture-review\` — architectural analysis → tasks"
   [[ "$MOD_MAILBOX"       == true ]] && echo "- \`/darkflow:mailbox-check\` — read new mail and send approved replies via SMTP"
-  [[ "$MOD_CI_GATE"       == true ]] && echo "- \`/darkflow:fix-ci-issue\` — pick up a \`source:ci\` issue and push a fix (retries up to 3x, then needs-human)"
-  echo "- \`/darkflow:security-audit\` — full security review (static + runtime) → GitHub issues"
-  echo "- \`/darkflow:build-optimization\` — build + deploy optimization analysis → GitHub issues"
+  echo "- \`/darkflow:security-audit\` — full security review (static + runtime) → tasks"
+  echo "- \`/darkflow:build-optimization\` — build + deploy optimization analysis → tasks"
   echo "- \`/darkflow:csp-setup\` — wire CSP violation reporting → PostHog or internal endpoint (one-time setup)"
-  echo "- \`/darkflow:uptime-check\` — DNS + HTTP + page-load check; site down → auto-approved critical issue"
-  [[ "$MOD_FALLOW"        == true ]] && echo "- \`/darkflow:code-health\` — fallow audit (dead code, dupes, cycles, complexity) → GitHub issues"
-  [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-audit\` — five-dimension design quality check → GitHub issues"
-  [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-critique\` — scored design review with persona tests → GitHub issues"
-  [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-harden\` — production-readiness review (edge cases, i18n, error states) → GitHub issues"
+  echo "- \`/darkflow:uptime-check\` — DNS + HTTP + page-load check; site down → auto-approved critical task"
+  [[ "$MOD_FALLOW"        == true ]] && echo "- \`/darkflow:code-health\` — fallow audit (dead code, dupes, cycles, complexity) → tasks"
+  [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-audit\` — five-dimension design quality check → tasks"
+  [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-critique\` — scored design review with persona tests → tasks"
+  [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-harden\` — production-readiness review (edge cases, i18n, error states) → tasks"
   echo ""
   echo "Interactive commands (planning/design, human-in-the-loop — no issues or snapshots):"
   echo "- \`/darkflow:grill\` — pressure-test a plan against the domain model; updates glossary + ADRs inline"
@@ -1138,7 +1072,6 @@ run_checklist() {
       product-overview) [[ "$MOD_PRODUCT_OVERVIEW" == true ]] ;;
       impeccable)    [[ "$MOD_IMPECCABLE"    == true ]] ;;
       fallow)        [[ "$MOD_FALLOW"        == true ]] ;;
-      ci-gate)       [[ "$MOD_CI_GATE"       == true ]] ;;
       *) return 1 ;;
     esac
   }
@@ -1318,7 +1251,7 @@ run_checklist() {
 
 # ── Web UI sync ───────────────────────────────────────────────────────────────
 
-# Registers this project (incl. its localPath) and pushes GitHub issues to the
+# Registers this project (incl. its localPath) and pushes project metadata to the
 # web UI via the global worker's --sync (run from the project dir, which the
 # worker resolves from cwd). localPath is what lets the global worker discover it.
 web_sync() {
@@ -1326,7 +1259,7 @@ web_sync() {
   _url=$(read_config webapp_url "$WEBAPP_URL")
   if [[ -n "$_url" && -x "${GLOBAL_DIR}/darkflow-run.sh" ]]; then
     if bash "${GLOBAL_DIR}/darkflow-run.sh" --sync >/dev/null 2>&1; then
-      success "Registered project + synced GitHub issues to web UI (${_url})"
+      success "Registered project + synced metadata to web UI (${_url})"
     else
       info "Web UI sync skipped — run 'make df-sync' to retry"
     fi
@@ -1347,7 +1280,6 @@ make_dir "docs/spec/screens"
 make_dir "docs/design/assets"
 make_dir "docs/insights/qualitative"
 make_dir "docs/decisions"
-make_dir ".github/ISSUE_TEMPLATE"
 make_dir ".darkflow.d"
 make_dir ".darkflow.d/state"
 
@@ -1362,23 +1294,17 @@ header "2/4  Template files"
 
 smart_update_template "docs/README.md"             "docs/README.md"
 smart_update_template "docs/agent-workflow.md"     "docs/agent-workflow.md"
-smart_update_template "docs/github-issues.md"      "docs/github-issues.md"
+smart_update_template "docs/tasks.md"              "docs/tasks.md"
 smart_update_template "docs/auto-approve.md"       "docs/auto-approve.md"
 smart_update_template "docs/decisions/TEMPLATE.md" "docs/decisions/TEMPLATE.md"
-smart_update_template ".github/ISSUE_TEMPLATE/recommendation.yml" \
-                      ".github/ISSUE_TEMPLATE/recommendation.yml"
 
 [[ "$DRY_RUN" == false && -f "docs/README.md" ]] && inject_name "docs/README.md"
 
-# The worker, slash commands, the config fetcher (get-config.sh) and the mailbox
-# scripts are all installed once into ~/.darkflow/ + user scope by global_bootstrap
-# (below) — projects no longer carry any operational scripts. The only per-project
-# files Dark Flow writes are docs scaffolding, the CLAUDE.md include, and (opt-in)
-# the CI-gate workflow.
-if [[ "$MOD_CI_GATE" == true ]]; then
-  make_dir ".github/workflows"
-  smart_update_template ".github/workflows/darkflow-ci-gate.yml" ".github/workflows/darkflow-ci-gate.yml"
-fi
+# The worker, slash commands, the config fetcher (get-config.sh), the task CLI
+# (df) and the mailbox scripts are all installed once into ~/.darkflow/ + user
+# scope by global_bootstrap (below) — projects no longer carry any operational
+# scripts. The only per-project files Dark Flow writes are docs scaffolding and
+# the CLAUDE.md include.
 
 # Install / refresh the single global worker + all user-scope slash commands, and
 # clean up any legacy per-project worker/command copies left by older installs.
@@ -1402,7 +1328,6 @@ if [[ "$DRY_RUN" == false ]]; then
   [[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && _local_mods="${_local_mods}product-overview,"
   [[ "$MOD_IMPECCABLE"        == true ]] && _local_mods="${_local_mods}impeccable,"
   [[ "$MOD_FALLOW"            == true ]] && _local_mods="${_local_mods}fallow,"
-  [[ "$MOD_CI_GATE"           == true ]] && _local_mods="${_local_mods}ci-gate,"
   register_project "${_local_mods%,}"
 
   # Integration credentials — always live in the project's main .env. We append
@@ -1448,10 +1373,9 @@ if [[ "$DRY_RUN" == false ]]; then
 fi
 
 
-# ── 5. GitHub labels, CLAUDE.md, Makefile ────────────────────────────────────
+# ── 5. CLAUDE.md, Makefile ────────────────────────────────────────────────────
 
-header "4/4  Labels, CLAUDE.md, Makefile"
-setup_labels
+header "4/4  CLAUDE.md, Makefile"
 sync_claude_md
 sync_makefile
 
@@ -1540,8 +1464,8 @@ elif [[ "$MODE" == "fresh" ]]; then
   echo "  1. Fill in docs/product/ — what are you building and for whom"
   echo "  2. Fill in docs/spec/    — user flows, screens, data model"
   echo "  3. Fill in docs/design/  — tokens, components, voice and tone"
-  echo "  4. Commit: git add docs/ .github/ISSUE_TEMPLATE/ CLAUDE.md .darkflow.d/claude.md && git commit -m 'chore: install dark-flow'"
-  echo "  5. Open ${WEBAPP_URL} in a browser — projects and issues sync automatically"
+  echo "  4. Commit: git add docs/ CLAUDE.md .darkflow.d/claude.md && git commit -m 'chore: install dark-flow'"
+  echo "  5. Open ${WEBAPP_URL} in a browser — projects sync automatically"
 else
   echo -e "${GREEN}${BOLD}Dark Flow updated to v${LATEST_VERSION}${RESET}"
   echo ""
@@ -1554,28 +1478,27 @@ echo ""
 echo -e "${BOLD}Routines${RESET}"
 echo ""
 if [[ "$MERGE_STRATEGY" == "direct" ]]; then
-  echo "  fix-issues           0 * * * *      Picks up status:approved → commit → push to ${MAIN_BRANCH}"
+  echo "  fix-issues           0 * * * *      Picks up an approved task → commit → push to ${MAIN_BRANCH}"
 else
-  echo "  fix-issues           0 * * * *      Picks up status:approved → PR → merge into ${MAIN_BRANCH}"
+  echo "  fix-issues           0 * * * *      Picks up an approved task → PR → merge into ${MAIN_BRANCH}"
 fi
-echo "  security-audit       0 3 * * 0      Full security review → GitHub issues"
-echo "  build-optimization   0 4 * * 0      Build + deploy pipeline analysis → GitHub issues"
-echo "  uptime-check         0 */4 * * *    DNS + HTTP + page-load check → critical issue if site down"
-echo "  vulnerability-check  0 6 * * *      GitHub Dependabot + code scanning → GitHub issues"
-[[ "$MOD_ANALYTICS"     == true ]] && echo "  analytics-review     0 8 * * *      PostHog + commits → GitHub issues"
-[[ "$MOD_OBSERVABILITY" == true ]] && echo "  observability-check  30 8 * * *     Errors / latency → GitHub issues"
-[[ "$MOD_GSC"           == true ]] && echo "  gsc-check            0 8 * * 1      Google Search Console + SEO audit → GitHub issues"
-[[ "$MOD_ADS"           == true ]] && echo "  ads-review           0 8 * * 1      Paid ads performance → GitHub issues"
-[[ "$MOD_COOLIFY"       == true ]] && echo "  coolify-check-deploy 0 9 * * *      Deployment status → critical issue on failure"
+echo "  security-audit       0 3 * * 0      Full security review → tasks"
+echo "  build-optimization   0 4 * * 0      Build + deploy pipeline analysis → tasks"
+echo "  uptime-check         0 */4 * * *    DNS + HTTP + page-load check → critical task if site down"
+echo "  vulnerability-check  0 6 * * *      GitHub Dependabot + code scanning → tasks"
+[[ "$MOD_ANALYTICS"     == true ]] && echo "  analytics-review     0 8 * * *      PostHog + commits → tasks"
+[[ "$MOD_OBSERVABILITY" == true ]] && echo "  observability-check  30 8 * * *     Errors / latency → tasks"
+[[ "$MOD_GSC"           == true ]] && echo "  gsc-check            0 8 * * 1      Google Search Console + SEO audit → tasks"
+[[ "$MOD_ADS"           == true ]] && echo "  ads-review           0 8 * * 1      Paid ads performance → tasks"
+[[ "$MOD_COOLIFY"       == true ]] && echo "  coolify-check-deploy 0 9 * * *      Deployment status → critical task on failure"
 [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "  claude-md-update     0 9 * * 1-5    Re-generates CLAUDE.md from codebase"
-[[ "$MOD_DOCS_AUDIT"        == true ]] && echo "  docs-audit           0 5 * * 0      Docs <-> code drift → GitHub issues"
+[[ "$MOD_DOCS_AUDIT"        == true ]] && echo "  docs-audit           0 5 * * 0      Docs <-> code drift → tasks"
 [[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && echo "  product-overview     0 7 * * 1      Product overview digest"
-[[ "$MOD_ARCH_REVIEW"   == true ]] && echo "  architecture-review  0 2 * * 0      Architectural analysis → GitHub issues"
-[[ "$MOD_FALLOW"        == true ]] && echo "  code-health          0 7 * * 0      fallow audit (dead code, dupes, cycles) → GitHub issues"
-[[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-audit         0 10 * * 6     Design quality check (impeccable:audit) → GitHub issues"
-[[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-critique      0 11 * * 6     Scored design review (impeccable:critique) → GitHub issues"
-[[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-harden        0 10 1 * *     Production-readiness review (impeccable:harden) → GitHub issues"
-[[ "$MOD_CI_GATE"       == true ]] && echo "  fix-ci-issue         */15 * * * *   Picks up source:ci issue → push fix; retries up to 3x, then needs-human"
+[[ "$MOD_ARCH_REVIEW"   == true ]] && echo "  architecture-review  0 2 * * 0      Architectural analysis → tasks"
+[[ "$MOD_FALLOW"        == true ]] && echo "  code-health          0 7 * * 0      fallow audit (dead code, dupes, cycles) → tasks"
+[[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-audit         0 10 * * 6     Design quality check (impeccable:audit) → tasks"
+[[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-critique      0 11 * * 6     Scored design review (impeccable:critique) → tasks"
+[[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-harden        0 10 1 * *     Production-readiness review (impeccable:harden) → tasks"
 echo ""
 echo -e "  ${DIM}These are the default schedules. Enable/disable routines and override their"
 echo -e "  cron per project in the Web UI (Settings → Routine schedule).${RESET}"

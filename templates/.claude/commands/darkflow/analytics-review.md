@@ -1,4 +1,4 @@
-Review analytics and recent commits, then create status:proposed GitHub issues.
+Review analytics and recent commits, then create tasks.
 
 ## Step 1 — Read project config
 
@@ -33,9 +33,9 @@ Based on this, suggest improvements.
 
 Before making recommendations, get data on: new user funnel, errors, any anomalies.
 
-Add all recommendations as GitHub Issues to the remote GitHub repository of this project. Use labels: `status:proposed`, `source:posthog`, `area:*`, `priority:*`, `effort:*`.
+Add all recommendations as tasks. Use `--source posthog` and a priority.
 
-**Issue format (required):**
+**Task format (required):**
 
 - **Title**: action-oriented verb — "Add X to onboarding funnel", "Fix drop-off on Y step", "Instrument Z event" — never just a statement of observation ("Low conversion on step 2", "Anomaly detected in signups")
 - **Body**:
@@ -51,13 +51,22 @@ Add all recommendations as GitHub Issues to the remote GitHub repository of this
   - [ ] <additional criterion if needed>
   ```
 
+Create with:
+```bash
+~/.darkflow/df task create --title "<title>" --source posthog \
+  --priority <critical|high|medium|low> --status proposed --body "$(cat <<'EOF'
+<body as above>
+EOF
+)"
+```
+
 Do NOT create recommendations about paid ads — that is handled by `/darkflow:ads-review`.
 
-Do NOT create PostHog alerts, insights, dashboards, or any other PostHog artifacts. PostHog access is read-only here: only query data. All recommendations go out as GitHub Issues — never as PostHog alerts on changes/anomalies.
+Do NOT create PostHog alerts, insights, dashboards, or any other PostHog artifacts. PostHog access is read-only here: only query data. All recommendations go out as tasks — never as PostHog alerts on changes/anomalies.
 
 Write an analytics snapshot to `docs/insights/analytics/YYYY-MM-DD.md` before posting recommendations.
 
-Language for all GitHub issues and output: the `language` value from `.darkflow.d/state/config.json`.
+Language for all tasks and output: the `language` value from `.darkflow.d/state/config.json`.
 
 ## Step 3 — After completing
 

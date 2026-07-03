@@ -26,11 +26,7 @@ GLOBAL_DIR="${HOME}/.darkflow"
 GLOBAL_CFG="${GLOBAL_DIR}/config"          # webapp_url=, version=
 GLOBAL_LOG="${GLOBAL_DIR}/worker.log"
 USER_CMD_DIR="${HOME}/.claude/commands/darkflow"   # slash commands live in user scope
-
-# Snapshot of any GH_TOKEN inherited from the environment, so resolve_gh_token can
-# restore this baseline between projects instead of leaking one project's token
-# into the next.
-ENV_GH_TOKEN="${GH_TOKEN:-}"
+DF_BIN="${GLOBAL_DIR}/df"                          # task CLI — talks to /api/tasks/*
 
 # ── Per-project paths ─────────────────────────────────────────────────────────
 # (Re)computed by set_project() for each project the global worker services.
@@ -72,7 +68,6 @@ set_project() {
   _REPO_URL_CACHE=""
   mkdir -p "$STATE_DIR" 2>/dev/null || true
   cd "$PROJECT_ROOT" 2>/dev/null || return 1
-  resolve_gh_token
   fetch_project_config || return 1   # not registered / server down → caller skips this project
   return 0
 }
@@ -202,30 +197,6 @@ _init_log_prefix() {
   _LOG_PREFIX=""
   [[ -n "$ver" ]]  && _LOG_PREFIX=" [v${ver}]"
   [[ -n "$name" ]] && _LOG_PREFIX+=" [${name}]"
-}
-
-# ── GitHub token bootstrap ────────────────────────────────────────────────────
-# Priority: shared webapp global token > gh auth token. Tokens are no longer
-# stored per project (the Web UI holds one shared token). Reset to the inherited
-# environment baseline first so a token resolved for one project never leaks into
-# the next.
-resolve_gh_token() {
-  local webapp_url webapp_tok tok
-  if [[ -n "$ENV_GH_TOKEN" ]]; then export GH_TOKEN="$ENV_GH_TOKEN"; else unset GH_TOKEN; fi
-  if command -v curl &>/dev/null; then
-    webapp_url=$(global_val webapp_url '')
-    if [[ -n "$webapp_url" ]]; then
-      webapp_tok=$(curl -fsS -m 5 "${webapp_url}/api/settings/gh-token" 2>/dev/null \
-        | grep -o '"ghToken":"[^"]*"' | cut -d'"' -f4 || true)
-      if [[ -n "$webapp_tok" && "$webapp_tok" != "null" ]]; then
-        export GH_TOKEN="$webapp_tok"
-        return 0
-      fi
-    fi
-  fi
-  if [[ -z "${GH_TOKEN:-}" ]] && command -v gh &>/dev/null; then
-    tok=$(gh auth token 2>/dev/null) && export GH_TOKEN="$tok" || true
-  fi
 }
 
 # ── Cron field matching ────────────────────────────────────────────────────────
@@ -579,20 +550,6 @@ run_in_pgid() {
 
 # ── Routine execution ─────────────────────────────────────────────────────────
 
-# Validates the active GH token by hitting a lightweight endpoint.
-# Returns 0 if valid, 1 if expired/invalid (sets _GH_TOKEN_ERROR to the reason).
-_GH_TOKEN_ERROR=""
-validate_gh_token() {
-  _GH_TOKEN_ERROR=""
-  local out
-  out=$(gh api rate_limit --jq '.rate.limit' 2>&1)
-  if [[ $? -ne 0 ]]; then
-    _GH_TOKEN_ERROR=$(echo "$out" | head -2 | tr '\n' ' ')
-    return 1
-  fi
-  return 0
-}
-
 # ── Uptime cheap pre-flight ───────────────────────────────────────────────────
 # A plain curl probe is enough to confirm a healthy site, so the (Sonnet) agent
 # is only worth launching when the site is actually down/broken or the probe is
@@ -695,8 +652,8 @@ uptime_preflight() {
 
 # ── Mailbox cheap pre-flight ──────────────────────────────────────────────────
 # The mailbox-check agent only has work when there is incoming mail to triage OR
-# approved reply issues to send. Both are cheap to count without an LLM: a
-# read-only IMAP UNSEEN search (`fetch.py --count`) and a `gh issue list`.
+# approved reply tasks to send. Both are cheap to count without an LLM: a
+# read-only IMAP UNSEEN search (`fetch.py --count`) and a `df task list`.
 # Returns 0 (caller SKIPS the agent) only when both are zero or the mailbox is
 # not configured. Returns 1 to escalate: mail waiting, replies pending, or the
 # probe can't decide (IMAP error, missing python3). Sets _MAILBOX_SUMMARY /
@@ -706,30 +663,28 @@ _MAILBOX_SUMMARY=""
 _MAILBOX_ESCALATE_REASON=""
 _MAILBOX_CONFIG_ERROR=false
 
-# Files a single needs-human issue telling the human to configure (or disable)
+# Files a single needs-human task telling the human to configure (or disable)
 # the mailbox routine. Deduped: never opens a second one while the first is open.
-# Best-effort — silently degrades to just a summary when gh/jq are unavailable.
+# Best-effort — silently degrades to just a summary when df/jq are unavailable.
 # Sets _MAILBOX_SUMMARY.
 mailbox_file_config_issue() {
-  if ! command -v gh &>/dev/null || ! command -v jq &>/dev/null; then
-    _MAILBOX_SUMMARY="mailbox routine enabled but not configured (MAILBOX_* missing) — gh/jq unavailable to file a needs-human issue"
+  if [[ ! -x "$DF_BIN" ]] || ! command -v jq &>/dev/null; then
+    _MAILBOX_SUMMARY="mailbox routine enabled but not configured (MAILBOX_* missing) — df/jq unavailable to file a needs-human task"
     return 0
   fi
 
   local existing
-  existing=$(gh issue list --state open \
-               --label "needs-human" --label "source:mailbox" \
-               --search "Configure mailbox integration in:title" \
-               --json number --jq 'length' 2>/dev/null || echo "")
+  existing=$("$DF_BIN" task list --state open --needs-human --source mailbox 2>/dev/null \
+               | jq '[.[] | select(.title == "Configure mailbox integration (MAILBOX_* in .env)")] | length' 2>/dev/null || echo "")
   if [[ "$existing" =~ ^[1-9][0-9]*$ ]]; then
-    _MAILBOX_SUMMARY="mailbox routine enabled but not configured — needs-human issue already open"
+    _MAILBOX_SUMMARY="mailbox routine enabled but not configured — needs-human task already open"
     return 0
   fi
 
-  local url num
-  url=$(gh issue create \
+  local num
+  num=$("$DF_BIN" task create \
     --title "Configure mailbox integration (MAILBOX_* in .env)" \
-    --label "needs-human,source:mailbox,priority:high" \
+    --source mailbox --priority high --needs-human \
     --body "$(cat <<'BODY'
 ## Mailbox routine is enabled but not configured
 
@@ -760,13 +715,12 @@ Or, if you don't want the mailbox integration, disable the routine instead: togg
 - [ ] `.env` has the `MAILBOX_*` vars **or** `mailbox-check` is disabled
 - [ ] `mailbox-check` no longer reports "not configured"
 BODY
-)" 2>/dev/null) || url=""
+)" 2>/dev/null) || num=""
 
-  num=$(printf '%s' "$url" | grep -oE '[0-9]+$' || true)
-  if [[ -n "$num" ]]; then
-    _MAILBOX_SUMMARY="mailbox routine enabled but not configured — filed needs-human issue #${num}"
+  if [[ "$num" =~ ^[0-9]+$ ]]; then
+    _MAILBOX_SUMMARY="mailbox routine enabled but not configured — filed needs-human task #${num}"
   else
-    _MAILBOX_SUMMARY="mailbox routine enabled but not configured — failed to file needs-human issue (check gh auth)"
+    _MAILBOX_SUMMARY="mailbox routine enabled but not configured — failed to file needs-human task"
   fi
 }
 
@@ -775,12 +729,11 @@ mailbox_preflight() {
   _MAILBOX_ESCALATE_REASON=""
   _MAILBOX_CONFIG_ERROR=false
 
-  # 1. Approved reply issues waiting to be sent (cheap; needs no IMAP).
-  if command -v gh &>/dev/null && command -v jq &>/dev/null; then
+  # 1. Approved reply tasks waiting to be sent (cheap; needs no IMAP).
+  if [[ -x "$DF_BIN" ]] && command -v jq &>/dev/null; then
     local reply_count
-    reply_count=$(gh issue list --state open \
-                    --label "status:approved" --label "source:mailbox" --label "action:reply" \
-                    --json number --jq 'length' 2>/dev/null || echo "")
+    reply_count=$("$DF_BIN" task list --status approved --source mailbox --action reply --state open 2>/dev/null \
+                    | jq 'length' 2>/dev/null || echo "")
     if [[ "$reply_count" =~ ^[1-9][0-9]*$ ]]; then
       _MAILBOX_ESCALATE_REASON="${reply_count} approved reply(ies) to send"
       return 1
@@ -855,43 +808,26 @@ run_routine() {
       ;;
   esac
 
-  if [[ "$name" == "fix-issues" ]] && command -v gh &>/dev/null; then
-    # Guard: validate GH token before launching Claude. A stale token causes
-    # every gh call inside the session to fail silently with 403, producing a
-    # "ran ok" summary that hides the real problem.
-    if ! validate_gh_token; then
-      local webapp_hint; webapp_hint=$(global_val "webapp_url" "")
-      local fix_hint="set a valid GitHub token in the Web UI"
-      [[ -n "$webapp_hint" ]] && fix_hint+=" (${webapp_hint})"
-      log "SKIP   ${name} — GitHub token invalid or expired (${_GH_TOKEN_ERROR:-unknown}). Fix: ${fix_hint}"
-      local skip_ts; skip_ts=$(date -u +%FT%TZ)
-      write_state "$name" "$(( $(now_epoch) - $(now_epoch) % 60 ))"
-      PENDING_LOGS+=("{\"routine\":\"${name}\",\"summary\":\"skipped ${name} — GitHub token invalid or expired\",\"timestamp\":\"${skip_ts}\"}")
-      return 0
-    fi
-
-    # Flush any webapp-approved issues to GitHub labels before checking the count,
-    # otherwise issues approved via the web UI won't have the label yet and get skipped.
-    apply_pending_statuses
-    # Count approved issues fix-issues should act on. status:approved is the
-    # single source of truth: needs-human / status:blocked are kept mutually
-    # exclusive with it at write time (every path that adds needs-human strips
-    # status:approved, and approving strips needs-human), so we no longer
-    # re-filter them here. The one exclusion left is action:reply — those are
-    # mailbox-owned (mailbox-check sends the reply), not a code task for us.
+  if [[ "$name" == "fix-issues" ]] && [[ -x "$DF_BIN" ]]; then
+    # Revive anything stuck in-progress before checking the queue, so a task
+    # stranded by a crashed previous run is immediately eligible again.
+    revive_stuck_issues
+    # Count approved tasks fix-issues should act on. status:approved is the
+    # single source of truth: needs-human is kept mutually exclusive with it at
+    # write time (every path that sets needs-human moves status off approved,
+    # and approving always clears needs-human), so no re-filter needed here.
+    # The one exclusion left is action:reply — those are mailbox-owned
+    # (mailbox-check sends the reply), not a code task for us.
     local approved_count
-    approved_count=$(gh issue list --state open --label "status:approved" \
-                       --json number,labels \
-                       --jq '[.[] | select((.labels | map(.name)) as $l
-                                | ($l | index("action:reply") | not))] | length' \
-                       2>/dev/null || echo "")
-    if [[ "$approved_count" == "0" ]]; then
-      log "SKIP   ${name} — no actionable status:approved issues"
+    approved_count=$("$DF_BIN" task list --status approved --state open 2>/dev/null \
+                       | jq '[.[] | select(.action != "reply")] | length' 2>/dev/null || echo "")
+    if [[ "$approved_count" == "0" || -z "$approved_count" ]]; then
+      log "SKIP   ${name} — no actionable approved tasks"
       local skip_now skip_ts
       skip_now=$(now_epoch)
       write_state "$name" "$(( skip_now - skip_now % 60 ))"
       skip_ts=$(date -u +%FT%TZ)
-      PENDING_LOGS+=("{\"routine\":\"${name}\",\"summary\":\"skipped fix-issues — no approved issues\",\"timestamp\":\"${skip_ts}\"}")
+      PENDING_LOGS+=("{\"routine\":\"${name}\",\"summary\":\"skipped fix-issues — no approved tasks\",\"timestamp\":\"${skip_ts}\"}")
       return 0
     fi
   fi
@@ -1025,402 +961,70 @@ run_routine() {
   return $exit_code
 }
 
-# ── Apply pending status changes ──────────────────────────────────────────────
-# Pulls pending approve/reject decisions from the web UI and applies them to
-# GitHub via `gh issue edit`. Runs right before sync_webapp so the subsequent
-# `gh issue list` reflects the new labels and ingest can clear pendingStatus.
-
-STATUS_LABELS_ALL=(status:proposed status:approved status:rejected status:in-progress status:blocked)
-
-# ── GitHub auth guard ─────────────────────────────────────────────────────────
-# Returns 0 if gh is authenticated, 1 otherwise (with a log entry).
-check_gh_auth() {
-  local err status
-  err=$(gh auth status 2>&1)
-  status=$?
-  if [ $status -ne 0 ]; then
-    # gh auth status can exit non-zero when GH_TOKEN has issues but a local
-    # account is still active — treat "Active account: true" as authenticated.
-    echo "$err" | grep -q "Active account: true" && return 0
-    log "GH_AUTH gh not authenticated — run 'gh auth login'. Details: $(echo "$err" | head -3 | tr '\n' ' ')"
-    return 1
-  fi
-  return 0
-}
-
-# ── Deprecate status:blocked → needs-human ────────────────────────────────────
-# "blocked" used to mean "checks failed, a human must look" — but the agent can
-# do nothing with it, so it is now folded into needs-human. Relabel every open
-# issue still carrying status:blocked so the change sticks in GitHub (the next
-# sync, and any other project, will then see it as needs-human). Reuses the
-# issues_json already fetched by sync_webapp.
-convert_blocked_to_needs_human() {
-  local issues_json="$1"
-  [[ -z "$issues_json" ]] && return 0
-  ! command -v gh &>/dev/null && return 0
-  ! command -v jq &>/dev/null && return 0
-
-  local blocked
-  blocked=$(echo "$issues_json" | jq -r '
-    .[] | select(.state == "OPEN")
-        | select(any(.labels[]; .name == "status:blocked"))
-        | .number
-  ' 2>/dev/null) || return 0
-  [[ -z "$blocked" ]] && return 0
-
-  local num gh_err
-  while IFS= read -r num; do
-    [[ -z "$num" ]] && continue
-    if gh_err=$(gh issue edit "$num" \
-         --remove-label "status:blocked" \
-         --remove-label "status:approved" \
-         --add-label "needs-human" 2>&1 >/dev/null); then
-      log "MIGRATE #${num} status:blocked → needs-human (deprecated)"
-    else
-      log "MIGRATE #${num} failed to relabel: $(echo "$gh_err" | head -2 | tr '\n' ' ')"
-    fi
-  done <<< "$blocked"
-}
-
-# ── Enrich needs-human issues with their GitHub comments ──────────────────────
-# needs-human issues carry an agent comment explaining what a human must do.
-# Fetch those comments (bounded — only for needs-human issues) and attach them
-# to each issue object so the webapp can show them. Echoes the (possibly
-# enriched) issues_json on stdout; on any failure echoes the input unchanged.
-enrich_needs_human_comments() {
-  local issues_json="$1"
-  [[ -z "$issues_json" ]] && { echo "[]"; return 0; }
-  if ! command -v gh &>/dev/null || ! command -v jq &>/dev/null; then
-    echo "$issues_json"; return 0
-  fi
-
-  local nums
-  nums=$(echo "$issues_json" | jq -r '.[] | select(.needsHuman == true) | .number' 2>/dev/null) || {
-    echo "$issues_json"; return 0
-  }
-  [[ -z "$nums" ]] && { echo "$issues_json"; return 0; }
-
-  local comments_map="{}" num c
-  while IFS= read -r num; do
-    [[ -z "$num" ]] && continue
-    c=$(gh issue view "$num" --json comments \
-          --jq '[.comments[] | {author: (.author.login // "unknown"), body: .body, createdAt: .createdAt}]' \
-          2>/dev/null) || c="[]"
-    [[ -z "$c" ]] && c="[]"
-    comments_map=$(jq -c --arg n "$num" --argjson c "$c" '. + {($n): $c}' <<< "$comments_map" 2>/dev/null) || comments_map="{}"
-  done <<< "$nums"
-
-  echo "$issues_json" | jq -c --argjson m "$comments_map" \
-    'map(. + {comments: ($m[(.number|tostring)] // null)})' 2>/dev/null || echo "$issues_json"
-}
-
-# ── Auto-revive stuck in-progress issues ──────────────────────────────────────
-# If an issue has been in status:in-progress for >1h (per updatedAt), treat it
-# as crashed/stalled, drop status:in-progress and set status:approved so the
-# next fix-issues run will pick it up again. Reuses the issues_json already
-# fetched by sync_webapp to avoid an extra `gh issue list` call.
+# ── Auto-revive stuck in-progress tasks ───────────────────────────────────────
+# If a task has been in status "in-progress" for >1h (per updatedAt), treat it
+# as crashed/stalled and set it back to "approved" so the next fix-issues run
+# picks it up again.
 
 STUCK_IN_PROGRESS_THRESHOLD=3600
 
 revive_stuck_issues() {
-  local issues_json="$1"
-  [[ -z "$issues_json" ]] && return 0
-  ! command -v gh &>/dev/null && return 0
-  ! command -v jq &>/dev/null && return 0
+  [[ -x "$DF_BIN" ]] || return 0
+  command -v jq &>/dev/null || return 0
 
-  local now_secs threshold_iso
+  local stuck_json now_secs threshold_iso
+  stuck_json=$("$DF_BIN" task list --status in-progress --state open 2>/dev/null) || return 0
+  [[ -z "$stuck_json" || "$stuck_json" == "[]" ]] && return 0
+
   now_secs=$(now_epoch)
-  threshold_iso=$(epoch_fmt $(( now_secs - STUCK_IN_PROGRESS_THRESHOLD )) "%Y-%m-%dT%H:%M:%SZ" 2>/dev/null) || threshold_iso=""
-  [[ -z "$threshold_iso" ]] && return 0
+  threshold_iso=$(epoch_fmt $(( now_secs - STUCK_IN_PROGRESS_THRESHOLD )) "%Y-%m-%dT%H:%M:%SZ" 2>/dev/null) || return 0
 
   local stuck
-  stuck=$(echo "$issues_json" | jq -r --arg cutoff "$threshold_iso" '
-    .[] | select(.state == "OPEN")
-        | select(any(.labels[]; .name == "status:in-progress"))
-        | select(.updatedAt < $cutoff)
-        | .number
-  ' 2>/dev/null) || return 0
+  stuck=$(echo "$stuck_json" | jq -r --arg cutoff "$threshold_iso" '.[] | select(.updatedAt < $cutoff) | .number' 2>/dev/null) || return 0
   [[ -z "$stuck" ]] && return 0
 
-  local num gh_err
+  local num
   while IFS= read -r num; do
     [[ -z "$num" ]] && continue
-    if gh_err=$(gh issue edit "$num" \
-         --remove-label "status:in-progress" \
-         --add-label "status:approved" 2>&1 >/dev/null); then
+    if "$DF_BIN" task set-status "$num" approved >/dev/null 2>&1; then
       log "REVIVE #${num} stuck >1h in-progress → approved"
     else
-      log "REVIVE #${num} failed to relabel: $(echo "$gh_err" | head -2 | tr '\n' ' ')"
+      log "REVIVE #${num} failed to revive"
     fi
   done <<< "$stuck"
 }
 
-# ── Recover an issue stranded by a crashed fix-issues run ─────────────────────
+# ── Recover a task stranded by a crashed fix-issues run ───────────────────────
 # When a fix-issues agent dies mid-run (e.g. the Claude API drops the socket),
-# it has usually already set status:in-progress + posted a "starting work"
-# comment, but never created a branch/PR. The 1h auto-revive (revive_stuck_issues)
-# eventually rescues it, but that's an hour of the issue looking "in progress"
+# it has usually already set status "in-progress" and posted a "starting work"
+# comment, but never landed the fix. The 1h auto-revive (revive_stuck_issues)
+# eventually rescues it, but that's an hour of the task looking "in progress"
 # with nothing happening. This runs immediately after a non-zero fix-issues exit
-# and reverts any open status:in-progress issue back to status:approved — UNLESS
-# an open PR already references it (then the agent did land work; leave it for a
-# human to merge). fix-issues is single-instance, so a crash strands exactly the
-# issue it was holding.
+# and reverts every open in-progress task back to approved. fix-issues is
+# single-instance, so a crash strands exactly the task it was holding.
 recover_crashed_fix_issues() {
-  ! command -v gh &>/dev/null && return 0
-  ! command -v jq &>/dev/null && return 0
+  [[ -x "$DF_BIN" ]] || return 0
+  command -v jq &>/dev/null || return 0
 
   local in_prog
-  in_prog=$(gh issue list --state open --label "status:in-progress" \
-              --json number --jq '.[].number' 2>/dev/null) || return 0
+  in_prog=$("$DF_BIN" task list --status in-progress --state open 2>/dev/null | jq -r '.[].number' 2>/dev/null) || return 0
   [[ -z "$in_prog" ]] && return 0
-
-  # One call: concatenate every open PR's body + title + branch so we can cheaply
-  # tell whether a given issue already has a PR (a landed/partial run we must keep).
-  local pr_refs
-  pr_refs=$(gh pr list --state open --json number,body,title,headRefName \
-              --jq '.[] | ((.body // "") + " " + (.title // "") + " " + (.headRefName // ""))' \
-              2>/dev/null) || pr_refs=""
 
   local num
   while IFS= read -r num; do
     [[ -z "$num" ]] && continue
-    if [[ -n "$pr_refs" ]] && echo "$pr_refs" | grep -Eq "(#${num}([^0-9]|\$)|fix/${num}-)"; then
-      log "RECOVER #${num} has an open PR — leaving status:in-progress for a human"
-      continue
-    fi
-    if gh issue edit "$num" \
-         --remove-label "status:in-progress" \
-         --add-label "status:approved" >/dev/null 2>&1; then
-      log "RECOVER #${num} fix-issues crashed before landing → back to status:approved"
+    if "$DF_BIN" task set-status "$num" approved >/dev/null 2>&1; then
+      log "RECOVER #${num} fix-issues crashed before landing → back to approved"
     fi
   done <<< "$in_prog"
 }
 
-close_rejected_issues() {
-  local issues_json="$1"
-  [[ -z "$issues_json" ]] && return 0
-  ! command -v gh &>/dev/null && return 0
-  ! command -v jq &>/dev/null && return 0
-
-  local rejected
-  rejected=$(echo "$issues_json" | jq -r '
-    .[] | select(.state == "OPEN")
-        | select(any(.labels[]; .name == "status:rejected"))
-        | .number
-  ' 2>/dev/null) || return 0
-  [[ -z "$rejected" ]] && return 0
-
-  local num
-  while IFS= read -r num; do
-    [[ -z "$num" ]] && continue
-    gh issue close "$num" >/dev/null 2>&1 && log "CLOSE #${num} closed (status:rejected)"
-  done <<< "$rejected"
-}
-
-# ── Auto-discard routine-created issues below the project's minimum priority ───
-# Policy (docs/github-issues.md): routines file issues only at or above the
-# project's configured `min_priority` (set via the Web UI Settings slider; default
-# `medium`). Findings below that threshold belong in the run snapshot, not the
-# backlog. Agents don't always obey the prompt, so enforce it here: any OPEN issue
-# whose `priority:*` label ranks below the threshold AND carries a routine
-# `source:*` label (i.e. NOT `source:manual`) is commented and closed before it
-# ever reaches the Web UI approval queue. Manually-filed issues (`source:manual`,
-# or no source at all), anything already `status:in-progress`, and `needs-human`
-# issues (an intentional human-attention channel) are left untouched. Issues with
-# no priority:* label yet are also left for backfill_missing_priority() to handle.
-#
-# Rank: critical=0, high=1, medium=2, low=3. "Below threshold" = rank > threshold
-# rank. At the default `medium` (rank 2) this closes only `low` (rank 3),
-# identical to the historical low-only behavior.
-close_routine_below_priority() {
-  local issues_json="$1"
-  [[ -z "$issues_json" ]] && return 0
-  ! command -v gh &>/dev/null && return 0
-  ! command -v jq &>/dev/null && return 0
-
-  local threshold threshold_rank
-  threshold=$(darkflow_val "min_priority" "medium")
-  case "$threshold" in
-    critical) threshold_rank=0 ;;
-    high)     threshold_rank=1 ;;
-    medium)   threshold_rank=2 ;;
-    low)      threshold_rank=3 ;;
-    *)        threshold_rank=2; threshold="medium" ;;
-  esac
-  # `low` threshold allows everything through — nothing to close.
-  [[ "$threshold_rank" -ge 3 ]] && return 0
-
-  local below
-  below=$(echo "$issues_json" | jq -r --argjson t "$threshold_rank" '
-    def prank(n): {"priority:critical":0,"priority:high":1,"priority:medium":2,"priority:low":3}[n];
-    .[] | select(.state == "OPEN")
-        | select(any(.labels[]; (.name | startswith("source:")) and .name != "source:manual"))
-        | select(all(.labels[]; .name != "status:in-progress"))
-        | select(all(.labels[]; .name != "needs-human"))
-        | . as $i
-        | ([$i.labels[] | prank(.name)] | map(select(. != null)) | min) as $pr
-        | select($pr != null and $pr > $t)
-        | $i.number
-  ' 2>/dev/null) || return 0
-  [[ -z "$below" ]] && return 0
-
-  local num
-  while IFS= read -r num; do
-    [[ -z "$num" ]] && continue
-    gh issue comment "$num" --body "Auto-closed by Dark Flow: this project files routine issues only at priority \`${threshold}\` or higher — lower-priority findings belong in the run snapshot, not the backlog. Re-open or re-file with a higher priority if this needs action." >/dev/null 2>&1 || true
-    gh issue close "$num" >/dev/null 2>&1 && log "CLOSE #${num} closed (routine issue below min_priority=${threshold})"
-  done <<< "$below"
-}
-
-# ── Backfill missing priority labels ──────────────────────────────────────────
-# Invariant (docs/github-issues.md): every issue MUST carry a priority:* label so
-# it sorts and triages correctly in the Web UI approval queue. Slash commands set
-# it from prose instructions, but LLM agents don't comply 100% of the time, so a
-# large share of issues historically landed with no priority — sorting last and
-# showing "—" in the queue. Enforce the invariant deterministically here: any OPEN
-# issue with no priority:* label gets `priority:medium` (the safe default — it
-# stays visible in the queue, unlike `low` which routines auto-discard). Echoes
-# the issues JSON back with the label injected for the numbers we relabelled, so
-# the parse below and the webapp sync reflect reality without a second gh fetch.
-backfill_missing_priority() {
-  local issues_json="$1"
-  [[ -z "$issues_json" ]] && { printf '%s' "$issues_json"; return 0; }
-  if ! command -v gh &>/dev/null || ! command -v jq &>/dev/null; then
-    printf '%s' "$issues_json"; return 0
-  fi
-
-  local missing
-  missing=$(echo "$issues_json" | jq -r '
-    .[] | select(.state == "OPEN")
-        | select(all(.labels[]; (.name | startswith("priority:")) | not))
-        | .number
-  ' 2>/dev/null) || { printf '%s' "$issues_json"; return 0; }
-  [[ -z "$missing" ]] && { printf '%s' "$issues_json"; return 0; }
-
-  local num relabelled=""
-  while IFS= read -r num; do
-    [[ -z "$num" ]] && continue
-    if gh issue edit "$num" --add-label "priority:medium" >/dev/null 2>&1; then
-      log "PRIORITY #${num} backfilled priority:medium (was unset)"
-      relabelled+="${num} "
-    else
-      log "PRIORITY #${num} failed to backfill priority:medium"
-    fi
-  done <<< "$missing"
-
-  # Inject priority:medium only into the issues we actually relabelled on GitHub,
-  # so the in-memory snapshot can never drift from the repo's real labels.
-  echo "$issues_json" | jq -c --arg done "$relabelled" '
-    ($done | split(" ") | map(select(length > 0) | tonumber)) as $nums
-    | map(if (.number as $n | $nums | index($n))
-          then .labels += [{"name": "priority:medium"}]
-          else . end)
-  ' 2>/dev/null || printf '%s' "$issues_json"
-}
-
-# ── Backfill missing status labels ────────────────────────────────────────────
-# Invariant (docs/github-issues.md): every agent-filed issue MUST carry exactly
-# one status:* label so the state machine works and the Web UI can triage it.
-# Slash commands are prompted to set status:proposed on create, but LLM agents
-# don't comply 100% of the time (same reason backfill_missing_priority exists),
-# and there was no deterministic repair — so an issue created without a status
-# stayed "untriaged" (status:none) forever, never reaching the approval queue.
-# Enforce it here: any OPEN issue carrying a routine `source:*` label (NOT
-# `source:manual`) but no status:* label gets `status:proposed`. Left untouched:
-# `needs-human` issues (mailbox / human-attention channel — untriaged is correct
-# there), `source:manual` / no-source issues (a human is already involved), and
-# `status:blocked` (deprecated; convert_blocked_to_needs_human handles it). Like
-# backfill_missing_priority, echoes the issues JSON back with the label injected.
-backfill_missing_status() {
-  local issues_json="$1"
-  [[ -z "$issues_json" ]] && { printf '%s' "$issues_json"; return 0; }
-  if ! command -v gh &>/dev/null || ! command -v jq &>/dev/null; then
-    printf '%s' "$issues_json"; return 0
-  fi
-
-  local missing
-  missing=$(echo "$issues_json" | jq -r '
-    .[] | select(.state == "OPEN")
-        | select(all(.labels[]; .name != "needs-human" and .name != "status:blocked"))
-        | select(any(.labels[]; (.name | startswith("source:")) and .name != "source:manual"))
-        | select(all(.labels[]; (.name | startswith("status:")) | not))
-        | .number
-  ' 2>/dev/null) || { printf '%s' "$issues_json"; return 0; }
-  [[ -z "$missing" ]] && { printf '%s' "$issues_json"; return 0; }
-
-  local num relabelled=""
-  while IFS= read -r num; do
-    [[ -z "$num" ]] && continue
-    if gh issue edit "$num" --add-label "status:proposed" >/dev/null 2>&1; then
-      log "STATUS #${num} backfilled status:proposed (was untriaged)"
-      relabelled+="${num} "
-    else
-      log "STATUS #${num} failed to backfill status:proposed"
-    fi
-  done <<< "$missing"
-
-  echo "$issues_json" | jq -c --arg done "$relabelled" '
-    ($done | split(" ") | map(select(length > 0) | tonumber)) as $nums
-    | map(if (.number as $n | $nums | index($n))
-          then .labels += [{"name": "status:proposed"}]
-          else . end)
-  ' 2>/dev/null || printf '%s' "$issues_json"
-}
-
-apply_pending_statuses() {
-  local webapp_url repo_url pending_json count
-  webapp_url=$(global_val "webapp_url" "")
-  [[ -z "$webapp_url" ]] && return 0
-  ! command -v gh   &>/dev/null && return 0
-  ! command -v jq   &>/dev/null && return 0
-  ! command -v curl &>/dev/null && return 0
-
-  check_gh_auth || return 0
-
-  repo_url=$(_get_repo_url_cached)
-  [[ -z "$repo_url" ]] && { log "PENDING skipped (could not resolve repo URL)"; return 0; }
-
-  pending_json=$(curl -fsS -m 10 -G \
-    --data-urlencode "repoUrl=${repo_url}" \
-    "${webapp_url}/api/pending-status" 2>/dev/null) || return 0
-
-  count=$(echo "$pending_json" | jq '.pending | length' 2>/dev/null || echo 0)
-  [[ "$count" == "0" || -z "$count" ]] && return 0
-
-  log "PENDING applying ${count} status change(s)"
-
-  local remove_args=()
-  local lbl
-  for lbl in "${STATUS_LABELS_ALL[@]}"; do
-    remove_args+=(--remove-label "$lbl")
-  done
-
-  local i num target
-  for ((i=0; i<count; i++)); do
-    num=$(echo "$pending_json" | jq -r ".pending[$i].number")
-    target=$(echo "$pending_json" | jq -r ".pending[$i].pendingStatus")
-    [[ -z "$num" || -z "$target" || "$target" == "null" ]] && continue
-    if [[ "$target" == "closed" ]]; then
-      gh issue edit "$num" "${remove_args[@]}" --remove-label "needs-human" >/dev/null 2>&1 || true
-      gh issue close "$num" >/dev/null 2>&1 && log "PENDING #${num} closed (needs-human resolved)" || \
-        log "PENDING #${num} failed to close"
-    elif gh_err=$(gh issue edit "$num" "${remove_args[@]}" --remove-label "needs-human" --add-label "status:${target}" 2>&1 >/dev/null); then
-      # Strip needs-human: approving (or rejecting) overrides the human-gate, and
-      # fix-issues now trusts status:approved alone — leaving needs-human on would
-      # silently keep the issue parked. Mirrors the webapp approve path.
-      log "PENDING #${num} → status:${target}"
-      if [[ "$target" == "rejected" ]]; then
-        gh issue close "$num" >/dev/null 2>&1 && log "PENDING #${num} closed (rejected)"
-      fi
-    else
-      log "PENDING #${num} failed to apply status:${target}: $(echo "$gh_err" | head -2 | tr '\n' ' ')"
-    fi
-  done
-}
-
 # ── Webapp sync ───────────────────────────────────────────────────────────────
-# Called after any routine actually ran. POSTs issue data and project metadata
-# to the Dark Flow webapp API (/api/ingest) using the webapp_url from ~/.darkflow/config.
+# Called after any routine actually ran. POSTs project metadata (analytics,
+# security/architecture rollups, logs, routine schedule, commits, alerts) to the
+# Dark Flow webapp API (/api/ingest) using the webapp_url from ~/.darkflow/config.
+# Tasks themselves are NOT part of this payload — routines write them directly
+# via `df` (see /api/tasks/*), so there is nothing to mirror or reconcile here.
 
 sync_webapp() {
   local webapp_url
@@ -1431,20 +1035,13 @@ sync_webapp() {
     return 0
   fi
 
-  if ! command -v gh &>/dev/null || ! command -v jq &>/dev/null || ! command -v curl &>/dev/null; then
-    log "WEBAPP skipped (gh, jq, or curl missing)"
+  if ! command -v jq &>/dev/null || ! command -v curl &>/dev/null; then
+    log "WEBAPP skipped (jq or curl missing)"
     PENDING_LOGS=()
     return 0
   fi
 
-  if ! check_gh_auth; then
-    PENDING_LOGS=()
-    return 0
-  fi
-
-  apply_pending_statuses
-
-  local repo_url issues now_iso gh_err
+  local repo_url now_iso
   repo_url=$(_get_repo_url_cached)
   if [[ -z "$repo_url" ]]; then
     log "WEBAPP skipped (could not determine repo URL)"
@@ -1452,47 +1049,7 @@ sync_webapp() {
     return 0
   fi
 
-  issues=$(gh issue list --state all --json number,title,body,state,labels,url,updatedAt,createdAt,closedAt --limit 300 2>/dev/null) || {
-    gh_err=$(gh issue list --state all --json number,title,body,state,labels,url,updatedAt,createdAt,closedAt --limit 300 2>&1 || true)
-    log "WEBAPP skipped (gh issue list failed: $(echo "$gh_err" | head -2 | tr '\n' ' '))"
-    PENDING_LOGS=()
-    return 0
-  }
-
-  convert_blocked_to_needs_human "$issues"
-  revive_stuck_issues "$issues"
-  close_rejected_issues "$issues"
-  close_routine_below_priority "$issues"
-  # Guarantee every open issue carries a priority before it reaches the Web UI.
-  issues=$(backfill_missing_priority "$issues")
-  # Guarantee every routine-filed issue carries a status (else it sits untriaged).
-  issues=$(backfill_missing_status "$issues")
-
   now_iso=$(date -u +%FT%TZ)
-
-  # Parse each issue's labels into structured fields
-  local issues_json
-  issues_json=$(printf '%s\n' "$issues" | jq '
-    def label_prefix(p): [.labels[].name | select(startswith(p)) | ltrimstr(p)][0] // null;
-    def has_label(n): [.labels[].name] | index(n) != null;
-    map({
-      number,
-      title,
-      body,
-      state,
-      url,
-      createdAt,
-      closedAt,
-      # "blocked" is deprecated: an agent cannot act on it, so it folds into
-      # needs-human. Drop the blocked status and flag the issue for a human.
-      status:     ((label_prefix("status:") // "none") | if . == "blocked" then "none" else . end),
-      priority:   label_prefix("priority:"),
-      source:     label_prefix("source:"),
-      needsHuman: (has_label("needs-human") or has_label("status:blocked"))
-    })
-  ') || { log "WEBAPP skipped (jq parse error)"; PENDING_LOGS=(); return 0; }
-
-  issues_json=$(enrich_needs_human_comments "$issues_json")
 
   # Read project metadata from the fetched config JSON
   local proj_name proj_domain proj_branch proj_lang proj_merge proj_modules proj_version
@@ -1552,18 +1109,17 @@ sync_webapp() {
     [[ -z "$commits_json" ]] && commits_json="[]"
   fi
 
-  # Assemble payload. The issue/log/commit arrays can be large (up to 300 issues
-  # with full bodies), so they go into a temp file read by jq via --slurpfile —
-  # passing them as --argjson argv could overflow ARG_MAX ("jq: Argument list too
-  # long") and silently drop the sync. Only the small scalar fields stay on the
-  # command line. Each *_json var is already valid JSON, so concatenating them
-  # builds the context object without another jq invocation.
+  # Assemble payload. The log/commit arrays can be sizeable, so they go into a
+  # temp file read by jq via --slurpfile — passing them as --argjson argv could
+  # overflow ARG_MAX ("jq: Argument list too long") and silently drop the sync.
+  # Only the small scalar fields stay on the command line. Each *_json var is
+  # already valid JSON, so concatenating them builds the context object without
+  # another jq invocation.
   local tmp_ctx
   tmp_ctx=$(mktemp "${TMPDIR:-/tmp}/darkflow-ctx.XXXXXX") || {
     log "WEBAPP skipped (mktemp failed)"; PENDING_LOGS=(); return 0; }
   {
     printf '{"modules":%s'      "$modules_json"
-    printf ',"issues":%s'       "$issues_json"
     printf ',"analytics":%s'    "$analytics_json"
     printf ',"security":%s'     "$security_json"
     printf ',"architecture":%s' "$architecture_json"
@@ -1594,7 +1150,6 @@ sync_webapp() {
       mergeStrategy:    $merge,
       modules:          $c.modules,
       darkflowVersion:  $version,
-      issues:           $c.issues,
       logs:             $c.logs,
       routines:         $c.routines,
       commits:          $c.commits,
@@ -1673,7 +1228,6 @@ send_heartbeat() {
   webapp_url=$(global_val "webapp_url" "")
   [[ -z "$webapp_url" ]] && return 0
   ! command -v curl &>/dev/null && return 0
-  ! command -v gh   &>/dev/null && return 0
 
   local repo_url
   repo_url=$(_get_repo_url_cached)
@@ -1921,10 +1475,10 @@ mode_watch() {
           continue
         fi
         # Dispatch each project in its OWN subshell so projects run in PARALLEL.
-        # The fork gives the child private copies of PROJECT_ROOT/LOG/GH_TOKEN/
-        # PENDING_LOGS, so the loop's next set_project can't clobber a still-running
-        # child (and per-project token isolation is exact). Cross-project isolation
-        # already holds: per-project lock dir, separate git repos/cwd. The global
+        # The fork gives the child private copies of PROJECT_ROOT/LOG/PENDING_LOGS,
+        # so the loop's next set_project can't clobber a still-running child.
+        # Cross-project isolation already holds: per-project lock dir, separate
+        # git repos/cwd. The global
         # /tmp/darkflow-slots semaphore still caps total agent sessions on the
         # machine. We do NOT wait on these children: the per-project lock makes a
         # re-dispatch of a busy project fail fast next tick, so the count of live
@@ -2023,14 +1577,14 @@ mode_self_test() {
 # running any routine. Useful right after install to populate the dashboard.
 
 mode_sync() {
-  if ! command -v gh &>/dev/null || ! command -v jq &>/dev/null || ! command -v curl &>/dev/null; then
-    echo "darkflow-run: --sync requires gh, jq, and curl" >&2
+  if ! command -v jq &>/dev/null || ! command -v curl &>/dev/null; then
+    echo "darkflow-run: --sync requires jq and curl" >&2
     exit 1
   fi
   log "SYNC   manual web UI sync"
   send_heartbeat "idle"
   sync_webapp
-  echo "Synced GitHub issues and project metadata to the web UI."
+  echo "Synced project metadata to the web UI."
 }
 
 # ── Main ──────────────────────────────────────────────────────────────────────

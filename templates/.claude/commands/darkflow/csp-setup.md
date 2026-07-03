@@ -80,6 +80,6 @@ Then append the reporting directives from Step 4a or 4b. Notes:
 
 ## Step 7 — Report
 
-Summarize: which file holds the CSP, the destination chosen (PostHog region + endpoint, or internal `/api/csp-report` → which logger/backend), the final policy, and the build/test result. No GitHub issues and no metrics snapshot are created — this is a setup command.
+Summarize: which file holds the CSP, the destination chosen (PostHog region + endpoint, or internal `/api/csp-report` → which logger/backend), the final policy, and the build/test result. No tasks and no metrics snapshot are created — this is a setup command.
 
 Once violations start flowing: for PostHog, open the **CSP Violation Reports** dashboard (create it from the template if absent, in the correct EU/US cloud); for the internal endpoint, query your observability backend for `csp-violation` logs/spans.

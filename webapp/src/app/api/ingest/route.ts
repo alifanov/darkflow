@@ -1,21 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-interface IngestIssue {
-  number: number;
-  title: string;
-  body?: string;
-  state?: string;
-  url?: string;
-  status?: string;
-  priority?: string;
-  source?: string;
-  needsHuman?: boolean;
-  comments?: { author?: string; body?: string; createdAt?: string }[] | null;
-  createdAt?: string;
-  closedAt?: string;
-}
-
 interface IngestAnalytics {
   usersTotal?: number;
   visitors7d?: number;
@@ -83,7 +68,6 @@ interface IngestBody {
   obsUrl?: string;
   posthogProjectId?: string;
   darkflowVersion?: string;
-  issues?: IngestIssue[];
   analytics?: IngestAnalytics;
   security?: IngestSecurity;
   architecture?: IngestArchitecture;
@@ -144,72 +128,6 @@ export async function POST(req: NextRequest) {
       where: { id: project.id },
       data: { localPath: incomingLocalPath },
     });
-  }
-
-  if (body.issues !== undefined) {
-    // Snapshot pending statuses so we can preserve those still in flight
-    // (worker hasn't yet applied them in GitHub).
-    const existingPending = await prisma.issue.findMany({
-      where: { projectId: project.id, pendingStatus: { not: null } },
-      select: { number: true, pendingStatus: true, pendingStatusAt: true, pendingComment: true },
-    });
-    const pendingByNumber = new Map(
-      existingPending.map((i) => [i.number, i])
-    );
-
-    // Closed issues no longer live in the DB — the UI deletes them on close/
-    // reject, so re-ingesting them from `gh issue list --state all` would
-    // resurrect rows the user just dismissed. Keep only open ones.
-    const openIssues = body.issues.filter((i) => (i.state ?? "open") !== "closed");
-
-    await prisma.issue.deleteMany({ where: { projectId: project.id } });
-    if (openIssues.length > 0) {
-      await prisma.issue.createMany({
-        data: openIssues.map((i) => {
-          // "blocked" is deprecated — an agent can't act on it, so fold it into
-          // needs-human (a human must intervene) and drop the blocked status.
-          const isBlocked = i.status === "blocked";
-          const newStatus = isBlocked ? "none" : (i.status ?? "none");
-          const needsHuman = isBlocked || (i.needsHuman ?? false);
-          const prevPending = pendingByNumber.get(i.number);
-          // Keep pendingStatus until GitHub actually reflects it (i.e. the worker
-          // applied it). We deliberately do NOT expire it on a timer: a human's
-          // approval recorded in the DB is the source of truth and must survive a
-          // worker that's offline for hours/days, not get silently dropped. It
-          // clears the moment GitHub reflects the pending target. The UI
-          // surfaces age via pendingStatusAt so a genuinely stuck decision is visible.
-          //
-          // "closed" is a *state* transition (open→closed), not a status:* label
-          // value, so it never equals newStatus (which only holds proposed/
-          // approved/rejected/in-progress/none). Clear it once GitHub reports the
-          // issue closed; otherwise compare against the status target as usual.
-          const githubReflectsPending =
-            prevPending?.pendingStatus === "closed"
-              ? i.state === "closed"
-              : prevPending?.pendingStatus === newStatus;
-          const stillPending =
-            prevPending && !githubReflectsPending ? prevPending : null;
-          return {
-            projectId: project.id,
-            number: i.number,
-            title: i.title,
-            body: i.body ?? null,
-            state: i.state ?? "open",
-            url: i.url ?? null,
-            status: newStatus,
-            pendingStatus: stillPending?.pendingStatus ?? null,
-            pendingStatusAt: stillPending?.pendingStatusAt ?? null,
-            pendingComment: stillPending?.pendingComment ?? null,
-            priority: i.priority ?? null,
-            source: i.source ?? null,
-            needsHuman,
-            comments: i.comments ?? undefined,
-            createdAt: i.createdAt ? new Date(i.createdAt) : null,
-            closedAt: i.closedAt ? new Date(i.closedAt) : null,
-          };
-        }),
-      });
-    }
   }
 
   if (body.analytics) {

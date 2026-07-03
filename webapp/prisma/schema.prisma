@@ -71,16 +71,14 @@ model Issue {
   state           String    @default("open")
   url             String?
   status          String    @default("none")
-  pendingStatus   String?
-  pendingStatusAt DateTime?
-  pendingComment  String?
   priority        String?
   source          String?
+  action          String?
   needsHuman      Boolean   @default(false)
   comments        Json?
-  // GitHub's real lifecycle timestamps (nullable — old rows / pre-update workers
-  // don't supply them). Held verbatim from GitHub so they survive the
-  // delete+recreate the ingest route does on every sync.
+  // Lifecycle timestamps. createdAt is set once on POST /api/tasks; closedAt
+  // is set when state transitions to "closed". Nullable for old rows imported
+  // before this field existed.
   createdAt       DateTime?
   closedAt        DateTime?
   updatedAt       DateTime  @updatedAt

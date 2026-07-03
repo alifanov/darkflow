@@ -1,4 +1,4 @@
-Audit the `docs/` knowledge base against the actual code and recent history — find drift between what the docs claim and what the code does — then create status:proposed GitHub issues for each significant mismatch.
+Audit the `docs/` knowledge base against the actual code and recent history — find drift between what the docs claim and what the code does — then create tasks for each significant mismatch.
 
 This is a **verification check**: it answers "are the docs still true?" It does not rewrite docs (that is a human/`fix-issues` decision) and it does not produce a product narrative (that is `/darkflow:product-overview`).
 
@@ -35,15 +35,15 @@ git diff --stat HEAD~30..HEAD 2>/dev/null
 
 If a recent commit changed code in an area whose docs were not touched, that is a strong drift signal.
 
-## Step 3 — Create issues for drift
+## Step 3 — Create tasks for drift
 
-Create a GitHub issue for each significant mismatch. Group trivially related mismatches into one issue (e.g. "Sync data-model.md with 3 new fields") rather than one issue per field.
+Create a task for each significant mismatch. Group trivially related mismatches into one task (e.g. "Sync data-model.md with 3 new fields") rather than one task per field.
 
-- Labels: `status:proposed`, `source:docs`, priority by impact (`priority:high` = docs actively misleading agents/devs, `priority:medium` = stale). **Cosmetic / minor drift → do NOT create an issue** — list it in the snapshot only
-- Do not create issues for drift already tracked or already dismissed — run `gh issue list --state all --json number,title,state,labels --limit 200` and skip any drift that matches an open issue **or** one a human already closed without a merged fix (rejected/wontfix). Re-file only if a previously-fixed drift has demonstrably regressed.
-- Do not create issues for missing/stub files that were never written — list those in the snapshot only
+- `--source docs`, priority by impact (`high` = docs actively misleading agents/devs, `medium` = stale). **Cosmetic / minor drift → do NOT create a task** — list it in the snapshot only
+- Do not create tasks for drift already tracked or already dismissed — run `~/.darkflow/df task list --source docs --state all` and skip any drift that matches an existing task **or** one a human already closed without a merged fix (rejected). Re-file only if a previously-fixed drift has demonstrably regressed.
+- Do not create tasks for missing/stub files that were never written — list those in the snapshot only
 
-**Issue format (required):**
+**Task format (required):**
 
 - **Title**: action-oriented verb — "Sync X with code", "Document Y", "Remove stale Z from docs" — never just a statement ("Docs are outdated")
 - **Body**:
@@ -58,7 +58,16 @@ Create a GitHub issue for each significant mismatch. Group trivially related mis
   - [ ] <doc file matches code reality on this point>
   ```
 
-Language for all GitHub issues and output: the `language` value from `.darkflow.d/state/config.json`.
+Create with:
+```bash
+~/.darkflow/df task create --title "<title>" --source docs \
+  --priority <high|medium> --status proposed --body "$(cat <<'EOF'
+<body as above>
+EOF
+)"
+```
+
+Language for all tasks and output: the `language` value from `.darkflow.d/state/config.json`.
 
 ## Step 4 — Write docs snapshot
 
@@ -85,7 +94,7 @@ Write `docs/insights/docs-audit/YYYY-MM-DD.md` (use today's date; append a new s
 
 ## Hypotheses
 
-<pre-threshold signals that aren't yet ready for a GitHub issue — see agent-workflow.md>
+<pre-threshold signals that aren't yet ready for a task — see agent-workflow.md>
 
 ## Recommendations
 
@@ -96,9 +105,9 @@ Write `docs/insights/docs-audit/YYYY-MM-DD.md` (use today's date; append a new s
 
 Save a docs-audit snapshot so the Dark Flow worker can forward it to the web UI.
 
-Run `gh issue list --state open --json number,labels --limit 200`, then:
-- Count issues with label `source:docs` → `openIssues`
-- Count those with `priority:critical` or `priority:high` → `criticalOpen`
+Run `~/.darkflow/df task list --source docs --state open`, then:
+- Count → `openIssues`
+- Count those with priority `critical` or `high` → `criticalOpen`
 - Derive `status`: `"warning"` if criticalOpen > 0, `"warning"` if openIssues > 5, `"ok"` otherwise
 
 Write `.darkflow.d/state/metrics/docs-audit.json` (create parent directories if needed):

@@ -1,4 +1,4 @@
-Pick up one status:approved GitHub issue, implement the fix, and close it.
+Pick up one approved task, implement the fix, and close it.
 
 ## Step 1 — Read project config
 
@@ -6,60 +6,53 @@ Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from th
 
 Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
 - `branch` → main branch name (default: main)
-- `mergeStrategy` → `pr` or `direct` (default: pr)
-- `language` → output/issue language (default: English)
+- `mergeStrategy` → `pr` or `direct` (default: direct)
+- `language` → output/task language (default: English)
 
 If `.darkflow.d/state/config.json` is missing, continue with the defaults.
 
-## Step 2 — Pick the next issue
+## Step 2 — Pick the next task
 
-Pick exactly **one** open issue with the `status:approved` label, choosing strictly by priority. The priority order, highest first, is:
+Pick exactly **one** open task with `status:approved`, choosing strictly by priority. The priority order, highest first, is:
 
 1. `priority:critical`
 2. `priority:high`
 3. `priority:medium`
 4. `priority:low`
-5. `status:approved` without any `priority:*` label (treat as lowest)
+5. `status:approved` with no priority set (treat as lowest)
 
-The canonical labels are `critical/high/medium/low`, but some agents tag issues with the equivalent `p0/p1/p2/p3` scheme (`p0`=critical, `p1`=high, `p2`=medium, `p3`=low). Treat those as **aliases** — an issue must never be stranded just because it carries `priority:p2` instead of `priority:medium`. Within a level, take the **oldest** issue (smallest number).
+Within a level, take the **oldest** task (smallest number).
 
-Skip issues that are not actually actionable here, even if they still carry `status:approved`:
+Skip tasks that are not actually actionable here, even if they still carry `status:approved`:
 - `action:reply` — handled exclusively by `mailbox-check`.
-- `source:ci` — handled exclusively by `fix-ci-issue` (it has its own bounded-retry logic); picking it here would bypass the retry cap.
 - `needs-human` — already parked for a human (failed checks or an external blocker); re-running only posts duplicate comments.
 
-Rank every selectable issue and take the single best one — one query, no per-level loop:
+Rank every selectable task and take the single best one — pipe `df task list`'s JSON through `jq`:
 
 ```bash
-n=$(gh issue list --state open --label "status:approved" \
-      --json number,labels \
-      --jq '
-        def prio($l):
-          if   ($l|index("priority:critical")) or ($l|index("priority:p0")) then 0
-          elif ($l|index("priority:high"))     or ($l|index("priority:p1")) then 1
-          elif ($l|index("priority:medium"))   or ($l|index("priority:p2")) then 2
-          elif ($l|index("priority:low"))      or ($l|index("priority:p3")) then 3
+n=$(~/.darkflow/df task list --status approved --state open | jq -r '
+        def prio($p):
+          if   $p == "critical" then 0
+          elif $p == "high"     then 1
+          elif $p == "medium"   then 2
+          elif $p == "low"      then 3
           else 4 end;
-        [ .[]
-          | (.labels | map(.name)) as $l
-          | select(($l | index("action:reply")   | not)
-               and ($l | index("source:ci")      | not)
-               and ($l | index("needs-human")    | not))
-          | {number, rank: prio($l)} ]
+        [ .[] | select(.action != "reply" and .needsHuman != true)
+              | {number, rank: prio(.priority)} ]
         | sort_by([.rank, .number]) | .[0].number // empty')
 ```
 
 If `$n` is empty, stop — skip the run.
 
-## Step 3 — Read the issue
+## Step 3 — Read the task
 
-Fetch the full issue content before touching any code:
+Fetch the full task content before touching any code:
 
 ```bash
-gh issue view $n --json title,body,comments,labels
+~/.darkflow/df task view $n
 ```
 
-Read the title, body, and all comments carefully. If the issue references other issues or PRs, read those too.
+Read the title, body, and all comments carefully. If the task references other tasks, read those too.
 
 ## Step 4 — Do the work
 
@@ -80,19 +73,17 @@ Detect the project's tech stack and run all available checks. Stop at the first 
 | Go | `go vet ./...` → `go test ./...` → `go build ./...` |
 | Other | Check for `Makefile` targets `lint`, `test`, `build` and run those that exist |
 
-**Skip the `build` step when the CI gate is active.** If `.darkflow.d/state/config.json`'s `modules` includes `ci-gate` (or `.github/workflows/darkflow-ci-gate.yml` exists), do **not** run `build` locally — the CI gate verifies the build on push/PR. Still run `lint` and `test`.
-
 **If the fix requires human intervention** (examples: missing environment variable, external credentials, third-party service setup, infrastructure change, secret rotation, manual config change that the agent cannot perform):
 - Do NOT attempt the fix
-- Leave a comment on the issue explaining exactly what human action is needed
-- **Before commenting, check the existing comments — if you (the bot) already left an equivalent `needs-human` explanation, do NOT post another one; just ensure the labels are correct and stop.**
-- Move the issue out of the queue so the next run does not re-pick it: `gh issue edit $n --add-label needs-human --remove-label status:approved`
+- Leave a comment on the task explaining exactly what human action is needed
+- **Before commenting, check the existing comments — if you (the bot) already left an equivalent `needs-human` explanation, do NOT post another one; just stop.**
+- Move the task out of the queue so the next run does not re-pick it: `~/.darkflow/df task needs-human $n`
 - Stop the run
 
 **If any check fails:**
 - Do NOT merge or push
-- Leave a comment on the issue: what failed and the relevant error output (truncated to ~20 lines)
-- Failed checks need a human to look — the agent can't get past them on its own. Move the issue out of the queue: `gh issue edit $n --add-label needs-human --remove-label status:approved`
+- Leave a comment on the task: what failed and the relevant error output (truncated to ~20 lines)
+- Failed checks need a human to look — the agent can't get past them on its own. Move the task out of the queue: `~/.darkflow/df task needs-human $n`
 - Stop the run
 
 **If all checks pass (or no checks apply), proceed:**
@@ -113,20 +104,23 @@ Skip this step if the fix is purely internal (refactor, test, build config) with
 Always work in the project root on the configured base branch — never run `git worktree add` or check work out into a separate directory. The dispatcher runs you in `cwd = project root`; keep it that way. If the PR strategy needs a feature branch, create it **in place** with `git checkout -b <branch>` on top of the configured base branch, then switch back when done — do not spin up a worktree.
 
 **Branch rule — never cherry-pick to main/master on your own:**
-The base branch is the `branch` value from `.darkflow.d/state/config.json` (it may be `main`, `master`, `dev`, `develop`, or anything else — always read it from config, never assume `main`). If it is a non-main/non-master branch, land the fix **only** on that branch. Do NOT cherry-pick, merge, or push to `main` or `master` independently — that is a human decision. Leave the fix in the configured branch and close the issue.
+The base branch is the `branch` value from `.darkflow.d/state/config.json` (it may be `main`, `master`, `dev`, `develop`, or anything else — always read it from config, never assume `main`). If it is a non-main/non-master branch, land the fix **only** on that branch. Do NOT cherry-pick, merge, or push to `main` or `master` independently — that is a human decision. Leave the fix in the configured branch and close the task.
 
-**If `merge_strategy=pr`:**
-From the project root, create a feature branch in place with `git checkout -b` based off the `branch` value from `.darkflow.d/state/config.json`, implement and commit there, then open a pull request targeting `branch` with `Closes #N` in the description and merge it into that branch. No worktree — the branch lives in the same working directory.
-
-**If `merge_strategy=direct`:**
+**If `merge_strategy=direct` (the default):**
 Commit and push directly to the `branch` value from `.darkflow.d/state/config.json`.
 
-After landing, leave a comment on the issue with a brief summary of what was done:
-- What was broken or missing
-- What files were changed and how
-- Any documentation that was updated
+**If `merge_strategy=pr`:**
+From the project root, create a feature branch in place with `git checkout -b` based off the `branch` value from `.darkflow.d/state/config.json`, implement and commit there, then open a pull request targeting `branch` referencing "Task #N" in the description (there is no GitHub issue to auto-close — the task lives in Dark Flow's own queue) and merge it into that branch. No worktree — the branch lives in the same working directory.
 
-Then close the issue.
+After landing, leave a comment on the task with a brief summary of what was done:
+```bash
+~/.darkflow/df task comment $n --body "<summary: what was broken/missing, files changed, docs updated>"
+```
 
-Language for GitHub comments and output: the `language` value from `.darkflow.d/state/config.json`. Code and everything shipped inside the product stays in English regardless of this value.
+Then close it:
+```bash
+~/.darkflow/df task close $n
+```
+
+Language for task comments and output: the `language` value from `.darkflow.d/state/config.json`. Code and everything shipped inside the product stays in English regardless of this value.
 

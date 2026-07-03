@@ -45,11 +45,11 @@ Read `.darkflow.d/claude.md`. Update the two lines in-place:
 
 ```bash
 # macOS
-sed -i '' "s/^\*\*Language:\*\* .*/\*\*Language:\*\* <NEW_LANG> — use this language for GitHub issues, comments, commit messages, and all agent-facing text./" .darkflow.d/claude.md
+sed -i '' "s/^\*\*Language:\*\* .*/\*\*Language:\*\* <NEW_LANG> — use this language for tasks, comments, commit messages, and all agent-facing text./" .darkflow.d/claude.md
 sed -i '' "s/^\*\*Main branch:\*\* .*/\*\*Main branch:\*\* \`<NEW_BRANCH>\`/" .darkflow.d/claude.md
 
 # Linux
-sed -i "s/^\*\*Language:\*\* .*/\*\*Language:\*\* <NEW_LANG> — use this language for GitHub issues, comments, commit messages, and all agent-facing text./" .darkflow.d/claude.md
+sed -i "s/^\*\*Language:\*\* .*/\*\*Language:\*\* <NEW_LANG> — use this language for tasks, comments, commit messages, and all agent-facing text./" .darkflow.d/claude.md
 sed -i "s/^\*\*Main branch:\*\* .*/\*\*Main branch:\*\* \`<NEW_BRANCH>\`/" .darkflow.d/claude.md
 ```
 

@@ -1,4 +1,4 @@
-Run a scored design review with persona tests and automated detection, then create `status:proposed` GitHub issues for each finding.
+Run a scored design review with persona tests and automated detection, then create tasks for each finding.
 
 ## Step 1 — Read project config
 
@@ -13,14 +13,14 @@ If `.darkflow.d/state/config.json` is missing, continue with defaults.
 
 /impeccable:critique
 
-After the critique is complete, create a GitHub issue for each significant finding:
-- Labels: `status:proposed`, `source:design`, priority based on impact:
-  - `priority:high` — broken or confusing user journeys, low design score on key flows
-  - `priority:medium` — friction points, persona test failures, inconsistent patterns
-  - **minor UX polish / low-impact scoring gaps → do NOT create an issue** — note them under Recommendations in the snapshot only
-- Do not create issues for findings already tracked or already dismissed — run `gh issue list --state all --json number,title,state,labels --limit 200` and skip any finding that matches an open issue **or** one a human already closed without a merged fix (rejected/wontfix). Re-file only if a previously-fixed problem has demonstrably regressed.
+After the critique is complete, create a task for each significant finding:
+- `--source design`, priority based on impact:
+  - `high` — broken or confusing user journeys, low design score on key flows
+  - `medium` — friction points, persona test failures, inconsistent patterns
+  - **minor UX polish / low-impact scoring gaps → do NOT create a task** — note them under Recommendations in the snapshot only
+- Do not create tasks for findings already tracked or already dismissed — run `~/.darkflow/df task list --source design --state all` and skip any finding that matches an existing task **or** one a human already closed without a merged fix (rejected). Re-file only if a previously-fixed problem has demonstrably regressed.
 
-**Issue format (required):**
+**Task format (required):**
 
 - **Title**: action-oriented verb — "Fix confusing CTA hierarchy on pricing page", "Clarify empty state on projects list", "Improve onboarding flow for first-time users" — never a bare observation
 - **Body**:
@@ -36,7 +36,16 @@ After the critique is complete, create a GitHub issue for each significant findi
   - [ ] <verifiable outcome 2 if needed>
   ```
 
-Language for all GitHub issues and output: the `language` value from `.darkflow.d/state/config.json`.
+Create with:
+```bash
+~/.darkflow/df task create --title "<title>" --source design \
+  --priority <high|medium> --status proposed --body "$(cat <<'EOF'
+<body as above>
+EOF
+)"
+```
+
+Language for all tasks and output: the `language` value from `.darkflow.d/state/config.json`.
 
 ## Step 3 — Write snapshot
 
@@ -77,9 +86,9 @@ Write `docs/insights/design-critique/YYYY-MM-DD.md` (use today's date; append a 
 
 ## Step 4 — Write metrics
 
-Run `gh issue list --state open --json number,labels --limit 200`, then:
-- Count issues with label `source:design` → `openIssues`
-- Count those with `priority:critical` or `priority:high` → `criticalOpen`
+Run `~/.darkflow/df task list --source design --state open`, then:
+- Count → `openIssues`
+- Count those with priority `critical` or `high` → `criticalOpen`
 - Derive `status`: `"warning"` if `criticalOpen > 0`, `"warning"` if `openIssues > 5`, `"ok"` otherwise
 
 Write `.darkflow.d/state/metrics/design-critique.json` (create parent directories if needed):

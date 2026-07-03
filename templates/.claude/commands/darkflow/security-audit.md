@@ -1,4 +1,4 @@
-Run a full security review — static code analysis and live app check — then create status:proposed GitHub issues for each finding.
+Run a full security review — static code analysis and live app check — then create tasks for each finding.
 
 ## Step 1 — Read project config
 
@@ -13,13 +13,13 @@ If `.darkflow.d/state/config.json` is missing, continue with the default.
 
 /security-review
 
-After the review is complete, create a GitHub issue for each finding:
-- Labels: `status:approved`, `source:security-review`, priority = severity (`priority:critical` / `priority:high` / `priority:medium`)
-- **`low`-severity findings: do NOT create an issue** — note them in the snapshot only
+After the review is complete, create a task for each finding:
+- `--source security-review`, `--status approved`, priority = severity (`critical` / `high` / `medium`)
+- **`low`-severity findings: do NOT create a task** — note them in the snapshot only
 - Security findings are auto-approved — see `docs/auto-approve.md`
-- Do not create issues for findings already tracked or already dismissed — run `gh issue list --state all --json number,title,state,labels --limit 200` and skip any finding that matches an open issue **or** one a human already closed without a merged fix (rejected/wontfix). Re-file only if a previously-fixed problem has demonstrably regressed.
+- Do not create tasks for findings already tracked or already dismissed — run `~/.darkflow/df task list --source security-review --state all` and skip any finding that matches an existing task **or** one a human already closed without a merged fix (rejected). Re-file only if a previously-fixed problem has demonstrably regressed.
 
-**Issue format (required):**
+**Task format (required):**
 
 - **Title**: action-oriented verb — "Fix X", "Restrict Y", "Add Z" — never just a statement of the finding ("X is vulnerable", "Found Y")
 - **Body**:
@@ -35,7 +35,16 @@ After the review is complete, create a GitHub issue for each finding:
   - [ ] <verifiable outcome 2 if needed>
   ```
 
-Language for all GitHub issues and output: the `language` value from `.darkflow.d/state/config.json`.
+Create with:
+```bash
+~/.darkflow/df task create --title "<title>" --source security-review \
+  --priority <critical|high|medium> --status approved --body "$(cat <<'EOF'
+<body as above>
+EOF
+)"
+```
+
+Language for all tasks and output: the `language` value from `.darkflow.d/state/config.json`.
 
 ## Step 3 — Write docs snapshot
 
@@ -58,7 +67,7 @@ Write `docs/insights/security/YYYY-MM-DD.md` (use today's date; append a new sec
 
 ## Hypotheses
 
-<pre-threshold signals that aren't yet ready for a GitHub issue — see agent-workflow.md>
+<pre-threshold signals that aren't yet ready for a task — see agent-workflow.md>
 
 ## Recommendations
 
@@ -69,9 +78,9 @@ Write `docs/insights/security/YYYY-MM-DD.md` (use today's date; append a new sec
 
 Save a security snapshot so the Dark Flow worker can forward it to the web UI.
 
-Run `gh issue list --state open --json number,labels --limit 200`, then:
-- Count issues with label `source:security-review` → `openIssues`
-- Count those with `priority:critical` or `priority:high` → `criticalOpen`
+Run `~/.darkflow/df task list --source security-review --state open`, then:
+- Count → `openIssues`
+- Count those with priority `critical` or `high` → `criticalOpen`
 - Derive `status`: `"critical"` if criticalOpen > 0, `"warning"` if openIssues > 5, `"ok"` otherwise
 
 Write `.darkflow.d/state/metrics/security.json` (create parent directories if needed):
