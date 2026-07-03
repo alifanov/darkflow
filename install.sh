@@ -987,7 +987,7 @@ HEREDOC
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-critique\` — scored design review with persona tests → tasks"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-harden\` — production-readiness review (edge cases, i18n, error states) → tasks"
   echo ""
-  echo "Interactive commands (planning/design, human-in-the-loop — no issues or snapshots):"
+  echo "Interactive commands (planning/design, human-in-the-loop — no tasks or snapshots):"
   echo "- \`/darkflow:grill\` — pressure-test a plan against the domain model; updates glossary + ADRs inline"
 }
 
