@@ -12,6 +12,10 @@ Categories:
 
 ---
 
+## [4.0.1] — 2026-07-03
+
+- **Installer** — fixed a standalone `echo` in `generate_darkflow_md()` (the "Interactive commands" line) that still said "no issues or snapshots", missed by the v4.0.0 GitHub-Issues-to-tasks migration pass. Caught via `darkflow:self-update` on this repo.
+
 ## [4.0.0] — 2026-07-03
 
 - **Breaking / Installer** — Dark Flow no longer uses GitHub Issues as its task queue. Tasks now live in Dark Flow's own Postgres `Issue` table and are created/read/updated exclusively through a new `~/.darkflow/df` CLI (`df task list/view/create/set-status/set-action/needs-human/comment/close`) talking to new `/api/tasks/*` webapp routes — no more `gh` round-trips, no more GitHub Issues mirror/reconcile layer, no more approve/reject lag.
