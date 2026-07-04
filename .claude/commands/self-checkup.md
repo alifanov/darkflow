@@ -1,5 +1,5 @@
 ---
-description: Audit Dark Flow itself — repo consistency, all installed projects, routine configs, leftover worktrees, logs, DB, GitHub labels — and emit recommendations grouped by priority
+description: Audit Dark Flow itself — repo consistency, all installed projects, routine configs, leftover worktrees, logs, DB, task store — and emit recommendations grouped by priority
 ---
 
 Run a full control-plane health audit of Dark Flow. You are running this **from the Dark
@@ -25,9 +25,14 @@ any file.**
   psql "$DATABASE_URL" -At -c '<SQL>'
   ```
   If Postgres is unreachable, print a clear note and still run Step 1 (static, no DB) and
-  Step 5 (GitHub via `gh`). Suggest `make up` to start Postgres.
+  Step 5 (git worktrees, filesystem-only). Every other step needs the DB (Step 6 now reads
+  the task store from Postgres, not GitHub) — note them as skipped. Suggest `make up` to
+  start Postgres.
 - Read the current version from `VERSION` — this is the source of truth for "outdated".
-- Confirm `gh auth status` works; if not, note that Step 5 will be skipped.
+- `gh` is no longer required to run this audit — Step 6 now reads the task store via `df`/
+  `psql`, not `gh issue`. `gh auth status` only matters for the Step 2 token check below
+  (which covers `vulnerability-check`, the one remaining routine that calls `gh api` for
+  security alerts).
 
 ---
 
@@ -43,17 +48,15 @@ Cross-check that the repo's own pieces don't contradict each other. Report every
 - **Commands**: every command in `install.sh`'s `ALL_DF_COMMANDS` array must have an
   existing template at `templates/.claude/commands/darkflow/<name>.md`, and vice-versa.
   Flag any command listed with no template file, and any template with no array entry.
-- **Labels**: grep the command templates and `routines/` docs for label references
-  (`source:*`, `status:*`, `action:*`, `priority:*`, `needs-human`, `area:db`, `ci-retry`).
-  Every referenced label must be created by a `_do_label` call in `install.sh`. The
-  canonical set is:
-  `action:fix, action:reply, area:db, ci-retry, needs-human, priority:critical,
-  priority:high, priority:low, priority:medium, source:ads, source:build, source:ci,
-  source:code-health, source:design, source:gsc, source:mailbox, source:manual,
-  source:posthog, source:security-review, source:seo, source:signoz, source:uptime,
-  source:user-feedback, status:approved, status:in-progress, status:proposed,
-  status:rejected`.
-  Flag labels referenced but never created, and labels created but referenced nowhere.
+- **Task field values**: `install.sh` no longer provisions any label taxonomy (task queue
+  moved to the `Issue` table's `status`/`priority`/`source`/`action`/`needsHuman` columns —
+  there's nothing left to "create"). Grep the command templates and `routines/` docs for
+  `df task create --status/--priority/--source/--action` values and flag any that drift from
+  the canonical set below (typo or a routine inventing a new value the webapp/UI doesn't
+  render):
+  `action: fix, reply; priority: critical, high, medium, low; source: ads, build, ci,
+  code-health, design, gsc, mailbox, manual, posthog, security-review, seo, signoz, uptime,
+  user-feedback; status: proposed, approved, rejected, in-progress, none`.
 - **Modules**: the `_module_active()` case statement in `install.sh` must list every
   `MOD_*` module flag defined in the script (a known past gotcha — docs-audit and
   product-overview were once missing from it). Diff the two sets.
@@ -81,12 +84,20 @@ Worker version + liveness are now **global** (one worker for all projects), stor
 
 ```bash
 psql "$DATABASE_URL" -At -F$'\t' -c '
-  SELECT "workerVersion", "workerLastSeen", "workerRoutine" FROM "Settings" WHERE id = '"'"'global'"'"';'
+  SELECT "workerVersion", "workerLastSeen", "workerRoutine",
+         ("ghToken" IS NOT NULL AND "ghToken" <> '"'"''"'"') AS has_gh_token
+  FROM "Settings" WHERE id = '"'"'global'"'"';'
 ```
 - **Version**: `workerVersion` vs `VERSION` → `missing` (null) / `outdated` (lower) / `current`.
   Outdated → run `install.sh --self-update`.
 - **Worker liveness**: offline if `workerLastSeen` is older than **90 seconds** (matches
   `GlobalWorkerStatus.tsx`).
+- **GitHub token**: `has_gh_token = f` (null/empty `Settings.ghToken`) → `high` — the only
+  remaining `gh`-dependent routine, `vulnerability-check` (Dependabot/code-scanning/secret-
+  scanning alerts), fails silently. `fix-issues` and `mailbox-check` no longer touch `gh` at
+  all (task queue moved to `df`/Postgres); `fix-issues` only needs it if a project opted into
+  `mergeStrategy: pr`. **Never print the token value.** Cross-check with `gh auth status`
+  from Step 0.
 
 ---
 
@@ -116,16 +127,10 @@ pattern (likely a systemic break, not a one-off).
 
 Run these checks:
 
-- **Stuck approvals** — decisions the worker never synced back to GitHub:
-  ```bash
-  psql "$DATABASE_URL" -At -F$'\t' -c $'
-    SELECT p.name, i.number, i.title, i."pendingStatus", i."pendingStatusAt"
-    FROM "Issue" i JOIN "Project" p ON p.id = i."projectId"
-    WHERE i."pendingStatus" IS NOT NULL
-      AND i."pendingStatusAt" < now() - interval \'1 hour\'
-    ORDER BY i."pendingStatusAt";'
-  ```
 - **Stale human review** — `Issue.needsHuman = true AND updatedAt < now() - interval '24 hours'`.
+  (Approvals/rejections write to the `Issue` row directly now — there's no more pending-sync
+  state to get stuck in; the old `pendingStatus`/`pendingStatusAt` columns were dropped in
+  v4.0.0 along with the GitHub mirror.)
 - **Alert buildup** — group `ProjectAlert` by `severity`; flag any `error`/`critical`:
   ```bash
   psql "$DATABASE_URL" -At -F$'\t' -c '
@@ -177,51 +182,51 @@ gone dirs). Never run removals here — this command only reads and reports.
 
 ---
 
-## Step 6 — GitHub issues & label problems (per repo, `gh`)
+## Step 6 — Task store problems (per project, `df`)
 
-For each project's `repoUrl`, derive `owner/repo`, then with `gh`:
+Tasks live in Dark Flow's own Postgres `Issue` table now — read them via `~/.darkflow/df`
+(from inside each project's `localPath`) or directly via `psql`, never via `gh issue`.
 
-- **Label taxonomy**: `gh label list --repo <owner/repo> --limit 200 --json name -q '.[].name'`
-  and diff against the canonical set from Step 1. **`--limit 200` is mandatory** — `gh label
-  list` silently caps at 30 labels by default, so omitting it makes every repo look like it's
-  missing `priority:*` / `needs-human` / `action:*` (false positives). Report **missing
-  required labels** (Dark Flow routines depend on them) and note stray extras separately
-  (lower priority).
-- **Untriaged / stuck issues**:
+- **Untriaged / stuck tasks** — for each project:
   ```bash
-  gh issue list --repo <owner/repo> --state open --json number,title,labels,updatedAt --limit 100
+  cd "<localPath>" && ~/.darkflow/df task list --state open
   ```
-  Flag open issues with **no `status:*` label**, open issues missing any `source:*`, and
-  issues that have been `status:approved` for a long time (pipeline stuck — worker not
-  picking them up).
-- **Conflicting labels**: any single issue carrying contradictory states (e.g.
-  `status:approved` + `status:rejected`, or `status:proposed` + `status:in-progress`).
-- **Invariant violation — approved must be actionable** (`high`): flag any open issue with
-  `status:approved` AND (`needs-human` OR `status:blocked`). These are mutually exclusive by
-  design — a park label silently drops the issue from the `fix-issues` queue, so it shows as
-  "approved" in the UI yet never runs. Every write path is supposed to strip `status:approved`
-  when adding a park label (and strip the park label on approve); a survivor means a path
-  missed it. Fix per issue: `gh issue edit <n> --repo <owner/repo> --remove-label needs-human`
-  (approve wins) **or** `--remove-label status:approved` (genuinely needs a human) — decide by
-  whether a human still must act. (`status:approved` + `action:reply` is **not** a violation —
-  those are mailbox-owned and handled by `mailbox-check`.)
+  Flag open tasks with `status = none` (never triaged), tasks missing `source`, and tasks
+  that have been `status = approved` for a long time (pipeline stuck — worker not picking
+  them up). Cross-check ages directly against `Issue.updatedAt`/`createdAt`:
+  ```bash
+  psql "$DATABASE_URL" -At -F$'\t' -c $'
+    SELECT p.name, i.number, i.title, i.status, i."needsHuman", i."createdAt", i."updatedAt"
+    FROM "Issue" i JOIN "Project" p ON p.id = i."projectId"
+    WHERE i.state = \'open\' ORDER BY p.name, i."createdAt";'
+  ```
+- **Invariant violation — approved must be actionable** (`high`): flag any open task with
+  `status = 'approved' AND "needsHuman" = true`. These are mutually exclusive by design — a
+  human-review flag silently drops the task from the `fix-issues` queue, so it shows as
+  "approved" in the UI yet never runs. Fix per task: `~/.darkflow/df task set-status <n>
+  proposed` (send back for review) **or** `~/.darkflow/df task needs-human <n>` is already
+  set and should be cleared once a human has acted — decide by whether a human still must
+  act. (`status = approved` + `action = reply` is **not** a violation — those are
+  mailbox-owned and handled by `mailbox-check`.)
 - **Worker log ↔ queue mismatch** (`high`) — the symptom the maintainer asked to catch:
   the worker keeps logging that it has nothing to do while the queue actually has work. Read
   the global log `~/.darkflow/worker.log` and each project's `<localPath>/.darkflow.d/darkflow-run.log`
-  (tail ~200 lines), and cross-check the **recent** entries against the live GitHub queue:
-  - `SKIP fix-issues — no actionable status:approved issues` recurring **while** the repo has
-    ≥1 open `status:approved` issue without `action:reply` → the issue is being parked
-    invisibly (almost always the approved+needs-human invariant above). Name the issue #s.
+  (tail ~200 lines), and cross-check the **recent** entries against the live task queue
+  (`df task list --status approved --state open` or the `psql` query above):
+  - `SKIP fix-issues — no actionable status:approved issues` (or equivalent) recurring
+    **while** the project has ≥1 open `approved` task without `action = reply` → the task is
+    being parked invisibly (almost always the approved+needs-human invariant above). Name
+    the task #s.
   - `SKIP <path> — not a registered project or config fetch failed` recurring for a project
-    that **is** in the `Project` table → config-fetch is flaky. Check the repo URL match: the
-    worker looks the project up by `gh repo view --json url -q .url` against `Project.repoUrl`
-    (exact); a `git@…`/`.git`-suffixed origin or a stale `gh` auth makes every tick skip it.
+    that **is** in the `Project` table → config-fetch is flaky. Check the repo URL match
+    against `Project.repoUrl` (exact); a `git@…`/`.git`-suffixed origin makes every tick
+    skip it.
   - `WATCH skipped (another dispatch is running, PID …)` for the **same PID** across many
     minutes → a dispatch is wedged (or a stale lock). Note the PID and whether it's still alive.
   For each, report the project, the log line (with timestamp), and the contradicting queue
   fact, plus the concrete fix.
-- If `gh` is unauthenticated or a repo is inaccessible, note it and skip that repo (don't
-  fail the whole audit).
+- If a project's webapp/DB is unreachable, note it and skip that project (don't fail the
+  whole audit).
 
 ---
 
@@ -306,7 +311,69 @@ baseline cron** side by side and the concrete fix (e.g. `set cron to "0 2 * * 0"
 
 ---
 
-## Step 8 — Recommendations grouped by priority
+## Step 8 — Worker host health (processes, locks, logs, disk)
+
+These checks inspect the **machine the global worker runs on**. Failures here never reach
+`RoutineLog` (Step 3), so they're invisible to every other step. The worker is one global
+daemon (`~/.darkflow/darkflow-run.sh`); paths below are machine-global except the per-project
+lock/log (reuse `localPath` from Step 2). Read-only — never start/restart the worker or delete
+anything; only report and suggest.
+
+- **Duplicate / missing worker daemon** — exactly one daemon should run:
+  ```bash
+  pgrep -fl /.darkflow/darkflow-run.sh
+  ```
+  - **0 processes** → not running. Note it (the **user** must start it themselves — never start
+    it for them). `high` only if the queue actually has actionable `status:approved` work.
+  - **1 process** → `✓`.
+  - **≥2 processes** → `critical`: two daemons race the same projects (double-runs, token burn,
+    lock thrash) — almost always a restart without `pkill`. Report all PIDs; the fix is for the
+    user to `pkill -f /.darkflow/darkflow-run.sh` and then start exactly one fresh.
+
+- **Worker stderr crash log** — a daemon that dies mid-tick leaves the trace only here, never in
+  the DB:
+  ```bash
+  ls -lh ~/.darkflow/worker.err.log 2>/dev/null
+  tail -200 ~/.darkflow/worker.err.log 2>/dev/null
+  ```
+  Scan the tail for recent fatal markers: `Not logged in`, `Please run /login`, `execvp`,
+  `command not found`, `Permission denied`, `Traceback`, `Killed`, `Cannot allocate`. A recent
+  (within ~24h) auth/exec error → `critical` (every routine is failing before it can log).
+
+- **Stale locks & slots** — the worker auto-reclaims dead-PID locks on its next tick, so a
+  lingering lock whose owner PID is dead **while no live worker exists** signals a wedged/crashed
+  dispatch:
+  - Global concurrency slots: `${TMPDIR:-/tmp}/darkflow-slots/slot-*.lock` (each file is
+    `PID:project-path`):
+    ```bash
+    for f in "${TMPDIR:-/tmp}"/darkflow-slots/slot-*.lock; do
+      [ -e "$f" ] || continue
+      pid=$(cut -d: -f1 "$f"); kill -0 "$pid" 2>/dev/null && st=alive || st=DEAD
+      echo "$f  pid=$pid  $st  $(cut -d: -f2- "$f")"
+    done
+    ```
+  - Per-project dispatch lock: `<localPath>/.darkflow.d/state/.lock/pid`:
+    ```bash
+    pid=$(cat "<localPath>/.darkflow.d/state/.lock/pid" 2>/dev/null) \
+      && { kill -0 "$pid" 2>/dev/null && echo "lock held by alive $pid" || echo "STALE lock, dead pid $pid"; }
+    ```
+  Flag any DEAD-owner slot/lock as `medium`. Cleanup (suggest only, when no worker runs):
+  `rm -rf "<localPath>/.darkflow.d/state/.lock"` or `rm -f` the stale slot file.
+
+- **Disk & log growth** — worktrees (Step 5) and logs accumulate with no rotation:
+  ```bash
+  df -h "$HOME/.darkflow"
+  du -sh ~/.darkflow/worker.log ~/.darkflow/worker.err.log 2>/dev/null
+  du -sh "<localPath>/.darkflow.d/darkflow-run.log" 2>/dev/null   # per project
+  ```
+  - Free space on the `~/.darkflow` filesystem under ~2 GB → `high` (worktree creation and
+    `claude` sessions will start failing).
+  - Any single log file over ~100 MB → `medium`; over ~500 MB → `high`. Suggest truncating
+    (`: > <logfile>`) — there is no built-in rotation.
+
+---
+
+## Step 9 — Recommendations grouped by priority
 
 Synthesize everything above into recommendations. **No cap on the number** — include every
 real finding worth acting on. Each recommendation:
@@ -344,12 +411,16 @@ Print one markdown report **на русском языке**:
 ### 5. Незакрытые git worktree
 <по проектам: кол-во + пути/ветки, или «✓ чисто»>
 
-### 6. GitHub: issues и лейблы
-<находки по репозиториям, или «✓ проблем нет»>
+### 6. Очередь задач (task store)
+<находки по проектам, или «✓ проблем нет»>
 
 ### 7. Конфигурация рутин
 <по проектам: слишком частые / дрейф расписания / дрейф модели / неизвестные / молчащие,
 или «✓ проблем нет». Для слишком частых — actual cron vs baseline cron>
+
+### 8. Здоровье хоста воркера
+<процессы воркера (дубли/нет) / фаталы в worker.err.log / зависшие lock и slot / диск и рост
+логов, или «✓ проблем нет»>
 
 ## Рекомендации
 

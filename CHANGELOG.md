@@ -12,6 +12,12 @@ Categories:
 
 ---
 
+## [4.1.0] — 2026-07-04
+
+- **Webapp** — task list titles opened the GitHub Issues URL (`issue.url`) instead of an in-app view. Added a task detail page (`/tasks/[id]`) and pointed the title link at it; the GitHub URL, when present, now shows as a small secondary "↗" link instead. Extracted the shared markdown renderer out of `IssueTableRow` into `components/Markdown.tsx` so the new detail page reuses it.
+- **Docs** — the globally-installed `/darkflow` command still read the task queue via `gh issue list --label "status:..."`, a leftover from before the v4.0.0 migration off GitHub Issues. Rewritten to use `~/.darkflow/df task list` instead; dropped the GitHub-label health check.
+- **Docs** — `self-checkup`'s Step 6 (GitHub issues & labels) rewritten to audit the Postgres task store via `df`/`psql` instead of `gh issue`/`gh label`. Also fixed two more GitHub-migration leftovers found in the same pass: Step 1's label-taxonomy check referenced `install.sh`'s now-removed `_do_label` provisioning, and Step 4's "stuck approvals" query selected `Issue.pendingStatus`/`pendingStatusAt`, columns dropped in v4.0.0 (the query would have errored).
+
 ## [4.0.1] — 2026-07-03
 
 - **Installer** — fixed a standalone `echo` in `generate_darkflow_md()` (the "Interactive commands" line) that still said "no issues or snapshots", missed by the v4.0.0 GitHub-Issues-to-tasks migration pass. Caught via `darkflow:self-update` on this repo.
