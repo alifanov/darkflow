@@ -100,7 +100,9 @@ export async function GET(req: NextRequest) {
 
   const state = sp.get("state") ?? "open";
   const where: Prisma.IssueWhereInput = { projectId: project.id };
-  if (state !== "all") where.state = state;
+  // Older rows (bulk GitHub Issues import) stored state as "OPEN"/"CLOSED";
+  // match case-insensitively so `--state open` sees them too.
+  if (state !== "all") where.state = { equals: state, mode: "insensitive" };
   const status = sp.get("status");
   if (status) where.status = status;
   const source = sp.get("source");
