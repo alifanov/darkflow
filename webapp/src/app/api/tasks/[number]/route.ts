@@ -54,8 +54,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ nu
   if (body.needsHuman !== undefined) data.needsHuman = body.needsHuman;
   if (body.action !== undefined) data.action = body.action;
   if (body.state !== undefined) {
-    data.state = body.state;
-    if (body.state === "closed") data.closedAt = new Date();
+    const state = body.state.toLowerCase();
+    data.state = state;
+    if (state === "closed") data.closedAt = new Date();
   }
 
   try {
