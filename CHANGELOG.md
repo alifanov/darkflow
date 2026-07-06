@@ -12,6 +12,11 @@ Categories:
 
 ---
 
+## [4.4.0] — 2026-07-06
+
+- **Make / ops — launchd supervision for web + worker.** Replaced the `nohup`/`pkill` worker targets with launchd-backed ones (`gui/$UID/com.darkflow.{web,worker}`): `make reload` loads-or-restarts both services (rebuilds the webapp first), plus `web-start`/`web-restart`/`web-stop`/`web-status`/`web-logs` and the matching `worker-*` targets. Services auto-restart and survive reboot/logout. `worker-start`/`reload`/`stop`/`status` now `launchctl bootstrap`/`kickstart -k`/`bootout`/`print` instead of managing a bare background process. Documented in README's make-targets table; CLAUDE.md's "never start the worker yourself" note updated to point at `make reload` (and to flag that `launchctl bootstrap`/`kickstart` still must run from the user's own session for keychain access).
+- **Webapp — exclude `needsHuman` tasks from the proposed count/sort.** The projects list counted and sorted on `status === "proposed"`, which included human-parked tasks; both the sort key and `proposedCount` now require `!i.needsHuman`, matching the approvals queue.
+
 ## [4.3.0] — 2026-07-06
 
 - **Routine — migrated `fix-ci-issue` off GitHub Issues onto the `df` task store.** The v4.0.0 migration (`5e4180c`) deleted `templates/.claude/commands/darkflow/fix-ci-issue.md` — it was still built entirely on `gh issue list --label source:ci --label status:approved` — but left the routine in the catalog (`routines.ts`, module `ci-gate`) and enabled on three projects (`Vargi`, `qabot`, `secscanner`). Result: those projects kept running the stale installed `gh`-based command, which failed with `exit:1` on **100% of runs, every 15 min** (self-checkup caught secscanner 24/24, qabot 23/24 over 24h).

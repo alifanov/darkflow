@@ -81,6 +81,9 @@ the webapp comes up in a container on the same **http://localhost:5555**.
 | `make restart` | Restart Docker services |
 | `make ps` | Show container status |
 | `make db-shell` | Open psql inside the Postgres container |
+| `make reload` | Load (first run) or restart (afterwards) webapp + worker under launchd — auto-restart, survives reboot |
+| `make web-stop` / `worker-stop` | Stop one of the two launchd-supervised services |
+| `make web-status` / `worker-status`, `make web-logs` / `worker-logs` | Check status / tail logs for one service |
 
 Tasks live entirely in Dark Flow's own Postgres database — no external app or token is needed for Approve / Reject.
 

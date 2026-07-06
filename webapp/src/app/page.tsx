@@ -108,8 +108,8 @@ export default async function ProjectsPage({
       return true;
     })
     .sort((a, b) => {
-      const aProposed = a.issues.some((i) => i.status === "proposed") ? 1 : 0;
-      const bProposed = b.issues.some((i) => i.status === "proposed") ? 1 : 0;
+      const aProposed = a.issues.some((i) => i.status === "proposed" && !i.needsHuman) ? 1 : 0;
+      const bProposed = b.issues.some((i) => i.status === "proposed" && !i.needsHuman) ? 1 : 0;
       if (bProposed !== aProposed) return bProposed - aProposed;
       return b._count.issues - a._count.issues;
     });
@@ -172,7 +172,7 @@ export default async function ProjectsPage({
                     domain={p.domain}
                     branch={p.branch}
                     language={p.language}
-                    proposedCount={p.issues.filter((i) => i.status === "proposed").length}
+                    proposedCount={p.issues.filter((i) => i.status === "proposed" && !i.needsHuman).length}
                     approvedCount={p.issues.filter((i) => i.status === "approved").length}
                     needsHumanCount={p.issues.filter((i) => i.needsHuman).length}
                     totalIssues={p._count.issues}
