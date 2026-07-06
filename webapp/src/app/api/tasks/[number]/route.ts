@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isTaskStatus, TASK_STATUSES } from "@/lib/task-status";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ nu
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  if (body.status !== undefined && !isTaskStatus(body.status)) {
+    return NextResponse.json({ error: `status must be one of: ${TASK_STATUSES.join(", ")}` }, { status: 400 });
   }
 
   const project = await prisma.project.findUnique({ where: { repoUrl }, select: { id: true } });

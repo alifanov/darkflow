@@ -60,6 +60,12 @@ while IFS= read -r issue; do
   labels=$(echo "$issue" | jq -r '.labels[].name')
   status=$(grep -oE '^status:.*' <<< "$labels" | head -1 | cut -d: -f2- || true)
   [[ "$status" == "blocked" ]] && status=""
+  # Old GitHub label taxonomy had more values than the current status enum
+  # (proposed/approved/in-progress/closed) — fold anything else into closed.
+  case "$status" in
+    proposed|approved|in-progress|"") ;;
+    *) status="closed" ;;
+  esac
   priority_raw=$(grep -oE '^priority:.*' <<< "$labels" | head -1 | cut -d: -f2- || true)
   case "$priority_raw" in
     p0) priority="critical" ;; p1) priority="high" ;; p2) priority="medium" ;; p3) priority="low" ;;

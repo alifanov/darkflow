@@ -12,6 +12,10 @@ Categories:
 
 ---
 
+## [4.2.1] — 2026-07-06
+
+- **Webapp — validate `status` on write.** `PATCH /api/tasks/[number]` and `POST /api/tasks` wrote whatever string was sent, unchecked — the same gap that let legacy values (`done`/`resolved`/`needs-info`/`none`) drift into the database before 4.2.0's cleanup. Both now reject any `status` outside `proposed | approved | in-progress | closed` with a 400. `scripts/import-github-issues.sh` updated to fold old GitHub label values (`rejected`, `needs-info`, `done`, ...) into `closed` before posting, so importing a still-open GitHub issue with a stale label no longer 400s.
+
 ## [4.2.0] — 2026-07-06
 
 - **Workflow — simplified task lifecycle, dropped `state`.** `Issue.state` (`open`/`closed`) was a leftover from the pre-4.0.0 GitHub Issues mirror, where it shadowed GitHub's own open/closed field separately from Dark Flow's `status` labels. It never earned its keep as an independent column: `status` already drifted into free-text territory (stray `done`/`resolved`/`needs-info`/`none` values from older versions), and closing a task never consistently updated `status` either — so "is this open" required checking both fields, and every list query needed a `state:{in:["OPEN","open"]}` case-insensitivity workaround from the old GitHub-casing days (verified 0 uppercase rows remain in the live table).

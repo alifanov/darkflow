@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { isTaskStatus, TASK_STATUSES } from "@/lib/task-status";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,9 @@ export async function POST(req: NextRequest) {
   }
   if (!body.repoUrl || !body.title) {
     return NextResponse.json({ error: "repoUrl and title are required" }, { status: 400 });
+  }
+  if (body.status !== undefined && !isTaskStatus(body.status)) {
+    return NextResponse.json({ error: `status must be one of: ${TASK_STATUSES.join(", ")}` }, { status: 400 });
   }
 
   const project = await prisma.project.findUnique({
