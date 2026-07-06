@@ -12,6 +12,10 @@ Categories:
 
 ---
 
+## [4.1.2] — 2026-07-06
+
+- **Webapp** — fixed approved tasks looping back into the global "Needs approval" queue forever. `fix-issues` bounces a task it can't finish itself (missing external credentials, waiting on a third party, etc.) back to `status: "proposed"` via `df task needs-human`, which is correct — but the global `/approvals` page filtered on `status` alone, so a re-bounced task was indistinguishable from a brand-new proposal and kept inviting re-approval instead of "Close after doing the manual step." `/approvals` now excludes `needsHuman: true` rows (they already have a dedicated "Needs Human" card on the project page), and `IssueTableRow` shows a "needs human" badge wherever such a task is still listed.
+
 ## [4.1.1] — 2026-07-06
 
 - **Webapp** — the task table's title link (added in 4.1.0 to point at `/tasks/[id]`) still surfaced the string "GitHub" in two spots left over from the old GitHub Issues mirror: the row's secondary "↗" tooltip (`title="Open on GitHub"`) and the detail page's external-link label (`GitHub ↗`). `issue.url` is no longer populated for any task created through `df`/`/api/tasks` — it's a dead field except on rows imported before the v4.0.0 migration — so labeling it "GitHub" is both stale and misleading. Reworded both to generic "external link" text.

@@ -128,6 +128,15 @@ export function IssueTableRow({ issue, showApprove, showClose, showTaskLink, sho
             <span className="rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ background: bg, color }}>
               {issue.status}
             </span>
+            {issue.needsHuman && (
+              <span
+                className="rounded-full px-2.5 py-0.5 text-xs font-medium"
+                style={{ background: "#3a2a0a", color: "var(--yellow, #d29922)" }}
+                title="Was approved, then bounced back — needs a manual step, then Close (not Approve)"
+              >
+                needs human
+              </span>
+            )}
           </div>
         </td>
         <td className="py-3 px-4">
