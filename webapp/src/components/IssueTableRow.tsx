@@ -107,7 +107,7 @@ export function IssueTableRow({ issue, showApprove, showClose, showTaskLink, sho
                 href={issue.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                title="Open on GitHub"
+                title="Open external link"
                 className="shrink-0 cursor-pointer hover:underline"
                 style={{ color: "var(--muted)" }}
               >

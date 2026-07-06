@@ -12,6 +12,10 @@ Categories:
 
 ---
 
+## [4.1.1] — 2026-07-06
+
+- **Webapp** — the task table's title link (added in 4.1.0 to point at `/tasks/[id]`) still surfaced the string "GitHub" in two spots left over from the old GitHub Issues mirror: the row's secondary "↗" tooltip (`title="Open on GitHub"`) and the detail page's external-link label (`GitHub ↗`). `issue.url` is no longer populated for any task created through `df`/`/api/tasks` — it's a dead field except on rows imported before the v4.0.0 migration — so labeling it "GitHub" is both stale and misleading. Reworded both to generic "external link" text.
+
 ## [4.1.0] — 2026-07-04
 
 - **Webapp** — task list titles opened the GitHub Issues URL (`issue.url`) instead of an in-app view. Added a task detail page (`/tasks/[id]`) and pointed the title link at it; the GitHub URL, when present, now shows as a small secondary "↗" link instead. Extracted the shared markdown renderer out of `IssueTableRow` into `components/Markdown.tsx` so the new detail page reuses it.

@@ -69,7 +69,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
         )}
         {issue.url && (
           <a href={issue.url} target="_blank" rel="noopener noreferrer" className="cursor-pointer text-sm hover:underline" style={{ color: "var(--muted)" }}>
-            GitHub ↗
+            External link ↗
           </a>
         )}
       </div>
