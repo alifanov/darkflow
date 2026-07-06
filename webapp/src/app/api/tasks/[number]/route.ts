@@ -27,7 +27,6 @@ interface PatchTaskBody {
   priority?: string;
   needsHuman?: boolean;
   action?: string | null;
-  state?: "open" | "closed";
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ number: string }> }) {
@@ -49,15 +48,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ nu
   }
 
   const data: Record<string, unknown> = {};
-  if (body.status !== undefined) data.status = body.status;
+  if (body.status !== undefined) {
+    data.status = body.status;
+    if (body.status === "closed") data.closedAt = new Date();
+  }
   if (body.priority !== undefined) data.priority = body.priority;
   if (body.needsHuman !== undefined) data.needsHuman = body.needsHuman;
   if (body.action !== undefined) data.action = body.action;
-  if (body.state !== undefined) {
-    const state = body.state.toLowerCase();
-    data.state = state;
-    if (state === "closed") data.closedAt = new Date();
-  }
 
   try {
     const task = await prisma.issue.update({

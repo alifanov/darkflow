@@ -30,7 +30,7 @@ Skip tasks that are not actually actionable here, even if they still carry `stat
 Rank every selectable task and take the single best one — pipe `df task list`'s JSON through `jq`:
 
 ```bash
-n=$(~/.darkflow/df task list --status approved --state open | jq -r '
+n=$(~/.darkflow/df task list --status approved | jq -r '
         def prio($p):
           if   $p == "critical" then 0
           elif $p == "high"     then 1

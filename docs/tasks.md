@@ -8,18 +8,18 @@ See also: [`decisions/`](./decisions/) for the ADR explaining why this approach 
 
 ## Task fields
 
-Every task carries: `number` (per-project, human-facing "#N"), `title`, `body`, `state` (`open` | `closed`), `status`, `priority`, `source`, `action` (mailbox only), `needsHuman`, and `comments`.
+Every task carries: `number` (per-project, human-facing "#N"), `title`, `body`, `status`, `priority`, `source`, `action` (mailbox only), `needsHuman`, and `comments`.
 
 ### `status` — lifecycle (state machine)
 
-Exactly one status at a time.
+Exactly one status at a time. There is no separate open/closed field — `closed` is a status value, so any status other than `closed` is implicitly "open" and vice versa.
 
 | Value | When it's set | Who sets it |
 |---|---|---|
 | `proposed` | Default when the agent creates a task | Agent |
 | `approved` | Human approved — agent may pick it up | Human (or Agent for categories in [`auto-approve.md`](./auto-approve.md)) |
-| `rejected` | Won't do. Task is closed with this status | Human |
 | `in-progress` | Agent started work; left a comment with a summary | Agent |
+| `closed` | Terminal — either the agent shipped the fix, or a human declined it (Reject) or dismissed it (Close). Comments explain which. | Agent or Human |
 
 `needsHuman` (boolean) — the agent can't proceed on its own (missing access, config, failed checks, external service). See the task's comments for what's needed. Mutually exclusive with `approved`: every path that sets `needsHuman` moves status off `approved`, and approving always clears `needsHuman`.
 
@@ -85,7 +85,7 @@ Exactly one, and it is **required** — every task must carry a priority. Replac
 
 2. **Before starting any session** — checks the approved queue:
    ```bash
-   ~/.darkflow/df task list --status approved --state open
+   ~/.darkflow/df task list --status approved
    ```
    If there's an approved task matching the current context — pick it up first.
 
@@ -100,7 +100,7 @@ Exactly one, and it is **required** — every task must carry a priority. Replac
 ### Human
 
 - Reviews tasks with `status=proposed` in the Web UI → approves or rejects.
-- On reject — the task is closed with `status=rejected`. The agent **does not recreate** it in future snapshots without new data; the snapshot notes: "Not recreating — rejected as task #N."
+- On reject — the task is closed (`status=closed`). The agent **does not recreate** it in future snapshots without new data; the snapshot notes: "Not recreating — declined as task #N."
 
 ---
 
@@ -108,5 +108,5 @@ Exactly one, and it is **required** — every task must carry a priority. Replac
 
 - **Don't encode dates in `source`** (`posthog-2026-05-16`) — use `--source posthog` + a link to the snapshot in the body.
 - **Don't encode priority in the title** (`[SEO/P0]`) — use `--priority critical`.
-- **Don't recreate a rejected task** without new data — note in the snapshot: "Not recreating — rejected as task #N."
+- **Don't recreate a declined task** without new data — note in the snapshot: "Not recreating — declined as task #N."
 - **Don't close a task manually as "done"** without a summary comment — leave a comment describing what was done before closing, for traceability.

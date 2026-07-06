@@ -69,7 +69,7 @@ usage:
   df task set-action <n> reply|fix
   df task needs-human <n>
   df task comment <n> --body B
-  df task close <n> [--reason rejected]
+  df task close <n>
 EOF
   exit 1
 }
@@ -158,16 +158,8 @@ case "$sub" in
     ;;
 
   close)
-    n="${1:?number required}"; shift
-    reason=""
-    while [[ $# -gt 0 ]]; do
-      case "$1" in --reason) reason="$2"; shift 2 ;; *) usage ;; esac
-    done
-    if [[ "$reason" == "rejected" ]]; then
-      _api PATCH "/api/tasks/${n}?repoUrl=${REPO_Q}" '{"state":"closed","status":"rejected"}' >/dev/null
-    else
-      _api PATCH "/api/tasks/${n}?repoUrl=${REPO_Q}" '{"state":"closed"}' >/dev/null
-    fi
+    n="${1:?number required}"
+    _api PATCH "/api/tasks/${n}?repoUrl=${REPO_Q}" '{"status":"closed"}' >/dev/null
     ;;
 
   *) usage ;;

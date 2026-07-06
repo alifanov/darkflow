@@ -8,7 +8,7 @@ Full field spec and agent loop — in [`tasks.md`](./tasks.md).
 
 **Before each session** check the approved task queue:
 ```bash
-~/.darkflow/df task list --status approved --state open
+~/.darkflow/df task list --status approved
 ```
 If there are approved tasks matching the current context — take them first. Before starting: `approved` → `in-progress` + comment with branch link.
 
@@ -20,7 +20,7 @@ If there are approved tasks matching the current context — take them first. Be
 ```
 The snapshot entry remains the source of truth; the task = the work artifact.
 
-**If a task is closed as `rejected`** — do not recreate the same recommendation without new data. In the next snapshot: "Not recreating — rejected as task #N".
+**If a task is closed as declined (Reject)** — do not recreate the same recommendation without new data. In the next snapshot: "Not recreating — declined as task #N".
 
 ---
 

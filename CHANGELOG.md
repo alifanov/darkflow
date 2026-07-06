@@ -12,6 +12,15 @@ Categories:
 
 ---
 
+## [4.2.0] — 2026-07-06
+
+- **Workflow — simplified task lifecycle, dropped `state`.** `Issue.state` (`open`/`closed`) was a leftover from the pre-4.0.0 GitHub Issues mirror, where it shadowed GitHub's own open/closed field separately from Dark Flow's `status` labels. It never earned its keep as an independent column: `status` already drifted into free-text territory (stray `done`/`resolved`/`needs-info`/`none` values from older versions), and closing a task never consistently updated `status` either — so "is this open" required checking both fields, and every list query needed a `state:{in:["OPEN","open"]}` case-insensitivity workaround from the old GitHub-casing days (verified 0 uppercase rows remain in the live table).
+  - **Schema** — dropped `Issue.state` entirely. `status` is now the single lifecycle field: `proposed | approved | in-progress | closed`. `rejected` is folded into `closed` (comments/context on the task explain a decline vs. a shipped fix — the Reject and Close buttons both land on `closed` now).
+  - **Migration** (`20260706120000_simplify_status_drop_state`) — for the live task store: any row with `state='closed'` or `status='rejected'` became `status='closed'`; legacy `none`/`done`/`needs-info`/`resolved` rows (509, all already closed) were deleted outright as unrecoverable pre-4.0.0 debris.
+  - **`df` CLI** — `task close` now sends `{"status":"closed"}` (dropped the dead `--reason rejected` flag, never referenced by any routine template). `task list --state open|closed|all` keeps working unchanged — the webapp now serves it as a compat alias over `status`.
+  - **Webapp** — every query that filtered on `state` now filters on `status != "closed"` instead; `/approvals`, the project page's status cards, and the task detail page updated to match the 4-value model.
+  - **Docs** — `docs/tasks.md` / `templates/docs/tasks.md` / `agent-workflow.md` rewritten around the 4-status model.
+
 ## [4.1.2] — 2026-07-06
 
 - **Webapp** — fixed approved tasks looping back into the global "Needs approval" queue forever. `fix-issues` bounces a task it can't finish itself (missing external credentials, waiting on a third party, etc.) back to `status: "proposed"` via `df task needs-human`, which is correct — but the global `/approvals` page filtered on `status` alone, so a re-bounced task was indistinguishable from a brand-new proposal and kept inviting re-approval instead of "Close after doing the manual step." `/approvals` now excludes `needsHuman: true` rows (they already have a dedicated "Needs Human" card on the project page), and `IssueTableRow` shows a "needs human" badge wherever such a task is still listed.

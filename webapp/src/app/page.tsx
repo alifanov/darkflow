@@ -84,9 +84,9 @@ export default async function ProjectsPage({
   const [rawProjects, settings, issueActivity, routineErrors] = await Promise.all([
     prisma.project.findMany({
       include: {
-        _count: { select: { issues: { where: { state: { in: ["OPEN", "open"] }, status: { not: "rejected" } } } } },
+        _count: { select: { issues: { where: { status: { not: "closed" } } } } },
         issues: {
-          where: { state: { in: ["OPEN", "open"] }, status: { not: "rejected" } },
+          where: { status: { not: "closed" } },
           select: { id: true, status: true, needsHuman: true },
         },
         routineLogs: {

@@ -68,16 +68,15 @@ model Issue {
   number          Int
   title           String
   body            String?
-  state           String    @default("open")
   url             String?
-  status          String    @default("none")
+  status          String    @default("proposed")
   priority        String?
   source          String?
   action          String?
   needsHuman      Boolean   @default(false)
   comments        Json?
   // Lifecycle timestamps. createdAt is set once on POST /api/tasks; closedAt
-  // is set when state transitions to "closed". Nullable for old rows imported
+  // is set when status transitions to "closed". Nullable for old rows imported
   // before this field existed.
   createdAt       DateTime?
   closedAt        DateTime?
@@ -86,8 +85,8 @@ model Issue {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, number])
-  @@index([state])
-  @@index([projectId, state])
+  @@index([status])
+  @@index([projectId, status])
   @@index([projectId, needsHuman])
   @@index([createdAt])
   @@index([closedAt])

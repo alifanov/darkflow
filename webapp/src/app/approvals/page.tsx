@@ -17,7 +17,7 @@ export default async function ApprovalsPage() {
         // "proposed" by fix-issues when it hit a manual step it can't do
         // itself — they belong on the project page's "Needs Human" card, not
         // back in this queue asking to be re-approved forever.
-        where: { status: "proposed", needsHuman: false, state: { in: ["OPEN", "open"] } },
+        where: { status: "proposed", needsHuman: false },
         orderBy: { number: "desc" },
       },
     },

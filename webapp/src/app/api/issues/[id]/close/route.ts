@@ -9,7 +9,7 @@ export async function POST(
     const { id } = await params;
     const result = await prisma.issue.updateMany({
       where: { id },
-      data: { state: "closed", closedAt: new Date() },
+      data: { status: "closed", closedAt: new Date() },
     });
     if (result.count === 0) {
       return NextResponse.json({ error: "Issue not found" }, { status: 404 });

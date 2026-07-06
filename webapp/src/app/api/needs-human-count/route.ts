@@ -7,7 +7,7 @@ export async function GET() {
   try {
     const count = await prisma.issue.count({
       where: {
-        state: { in: ["OPEN", "open"] },
+        status: { not: "closed" },
         OR: [{ needsHuman: true }, { status: "proposed" }],
       },
     });

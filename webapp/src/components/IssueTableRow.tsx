@@ -12,17 +12,15 @@ import { Markdown } from "@/components/Markdown";
 const STATUS_COLORS: Record<string, string> = {
   proposed: "#1f3a5f",
   approved: "#1a3a1a",
-  rejected: "#3a1a1a",
+  closed: "#3a1a1a",
   "in-progress": "#2a2a0a",
-  none: "#1a1a1a",
 };
 
 const STATUS_TEXT: Record<string, string> = {
   proposed: "var(--accent)",
   approved: "var(--green)",
-  rejected: "var(--red)",
+  closed: "var(--red)",
   "in-progress": "#e3b341",
-  none: "var(--muted)",
 };
 
 export interface IssueComment {
@@ -55,7 +53,7 @@ interface IssueTableRowProps {
 
 export function IssueTableRow({ issue, showApprove, showClose, showTaskLink, showLaunch, belowThreshold, project }: IssueTableRowProps) {
   const [open, setOpen] = useState(false);
-  const bg = STATUS_COLORS[issue.status] ?? STATUS_COLORS.none;
+  const bg = STATUS_COLORS[issue.status] ?? "#1a1a1a";
   const color = STATUS_TEXT[issue.status] ?? "var(--muted)";
   const hasBody = !!issue.body;
   const comments = issue.comments ?? [];

@@ -73,7 +73,6 @@ export async function POST(req: NextRequest) {
   const task = await createWithNextNumber(project.id, {
     title: body.title,
     body: body.body ?? null,
-    state: "open",
     status: body.status ?? "proposed",
     priority,
     source,
@@ -98,11 +97,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json([]);
   }
 
+  // `state` is a compat alias for callers still passing --state open|closed|all
+  // (df CLI, worker, routine templates) — "closed" is just a status value now.
   const state = sp.get("state") ?? "open";
   const where: Prisma.IssueWhereInput = { projectId: project.id };
-  // Older rows (bulk GitHub Issues import) stored state as "OPEN"/"CLOSED";
-  // match case-insensitively so `--state open` sees them too.
-  if (state !== "all") where.state = { equals: state, mode: "insensitive" };
+  if (state === "open") where.status = { not: "closed" };
+  else if (state === "closed") where.status = "closed";
   const status = sp.get("status");
   if (status) where.status = status;
   const source = sp.get("source");
@@ -118,7 +118,6 @@ export async function GET(req: NextRequest) {
       number: true,
       title: true,
       body: true,
-      state: true,
       status: true,
       priority: true,
       source: true,
