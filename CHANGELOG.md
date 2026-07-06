@@ -12,6 +12,14 @@ Categories:
 
 ---
 
+## [4.3.0] — 2026-07-06
+
+- **Routine — migrated `fix-ci-issue` off GitHub Issues onto the `df` task store.** The v4.0.0 migration (`5e4180c`) deleted `templates/.claude/commands/darkflow/fix-ci-issue.md` — it was still built entirely on `gh issue list --label source:ci --label status:approved` — but left the routine in the catalog (`routines.ts`, module `ci-gate`) and enabled on three projects (`Vargi`, `qabot`, `secscanner`). Result: those projects kept running the stale installed `gh`-based command, which failed with `exit:1` on **100% of runs, every 15 min** (self-checkup caught secscanner 24/24, qabot 23/24 over 24h).
+  - **Command** — rewrote `fix-ci-issue.md` on `~/.darkflow/df`: picks the oldest open `source:ci` + `status:approved` task (skipping `needs-human`), counts attempts from the task's `comments` JSON via the `<!-- darkflow:ci-attempt -->` marker, fixes with lint+test only (never `build` — the CI gate builds on push), and posts the attempt marker. Never closes the task — `close-on-green` still owns that so the ≤3 retry counter stays reliable. Escalates via `df task needs-human` after attempt 3 or when blocked.
+  - **Docs** — restored `routines/fix-ci-issue.md` reference doc.
+  - **Installer** — added `fix-ci-issue` to `ALL_DF_COMMANDS` (so `--self-update` fetches the command again) and wired the `ci-gate` module through `install.sh` (`MOD_CI_GATE` declaration, `MODULES`-string inference, `_module_active()` case, registration `_local_mods`) — it had no `ci-gate` handling at all.
+  - **Propagation** — run `install.sh --self-update` on the worker host to replace the stale installed command; the running worker re-reads the command file each dispatch, so no worker restart is needed.
+
 ## [4.2.1] — 2026-07-06
 
 - **Webapp — validate `status` on write.** `PATCH /api/tasks/[number]` and `POST /api/tasks` wrote whatever string was sent, unchecked — the same gap that let legacy values (`done`/`resolved`/`needs-info`/`none`) drift into the database before 4.2.0's cleanup. Both now reject any `status` outside `proposed | approved | in-progress | closed` with a 400. `scripts/import-github-issues.sh` updated to fold old GitHub label values (`rejected`, `needs-info`, `done`, ...) into `closed` before posting, so importing a still-open GitHub issue with a stale label no longer 400s.

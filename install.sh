@@ -37,6 +37,7 @@ MOD_DOCS_AUDIT=""
 MOD_PRODUCT_OVERVIEW=""
 MOD_IMPECCABLE=""
 MOD_FALLOW=""
+MOD_CI_GATE=""
 
 OBS_TOOL=""
 OBS_URL=""
@@ -271,7 +272,7 @@ ALL_DF_COMMANDS=(
   gsc-check ads-review coolify-check-deployment claude-md-update security-audit
   vulnerability-check architecture-review update-config docs-audit product-overview
   build-optimization csp-setup uptime-check grill design-audit design-critique
-  design-harden mailbox-check code-health
+  design-harden mailbox-check code-health fix-ci-issue
 )
 
 # Fetch a template (local clone or remote) to dest, always overwriting.
@@ -494,6 +495,7 @@ if [[ "$MODE" == "update" ]]; then
   [[ "$MODULES" == *"product-overview"* && -z "$MOD_PRODUCT_OVERVIEW" ]] && MOD_PRODUCT_OVERVIEW=true
   [[ "$MODULES" == *"impeccable"*       && -z "$MOD_IMPECCABLE"       ]] && MOD_IMPECCABLE=true
   [[ "$MODULES" == *"fallow"*           && -z "$MOD_FALLOW"           ]] && MOD_FALLOW=true
+  [[ "$MODULES" == *"ci-gate"*          && -z "$MOD_CI_GATE"          ]] && MOD_CI_GATE=true
 fi
 
 # ── Mode header ───────────────────────────────────────────────────────────────
@@ -1072,6 +1074,7 @@ run_checklist() {
       product-overview) [[ "$MOD_PRODUCT_OVERVIEW" == true ]] ;;
       impeccable)    [[ "$MOD_IMPECCABLE"    == true ]] ;;
       fallow)        [[ "$MOD_FALLOW"        == true ]] ;;
+      ci-gate)       [[ "$MOD_CI_GATE"       == true ]] ;;
       *) return 1 ;;
     esac
   }
@@ -1328,6 +1331,7 @@ if [[ "$DRY_RUN" == false ]]; then
   [[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && _local_mods="${_local_mods}product-overview,"
   [[ "$MOD_IMPECCABLE"        == true ]] && _local_mods="${_local_mods}impeccable,"
   [[ "$MOD_FALLOW"            == true ]] && _local_mods="${_local_mods}fallow,"
+  [[ "$MOD_CI_GATE"           == true ]] && _local_mods="${_local_mods}ci-gate,"
   register_project "${_local_mods%,}"
 
   # Integration credentials — always live in the project's main .env. We append
