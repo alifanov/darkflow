@@ -12,6 +12,14 @@ Categories:
 
 ---
 
+## [4.9.0] — 2026-07-07
+
+- **Self-checkup — новый шаг «Открытые pull requests по всем проектам» (Step 9).** `/self-checkup` теперь через `gh pr list` обходит все проекты с GitHub-чекаутом и ловит висящие незавершённые PR — именно то, что PR-стратегия `fix-issues` могла открыть, но не домержить:
+  - **Ready but unmerged** (`high`) — PR не draft и `mergeStateStatus = CLEAN`: готов, ждёт мержа → «доделать» (`gh pr merge`); кросс-чек с задачей `Task #N` из Step 6.
+  - **Blocked** (`medium`) — `DIRTY`/`BEHIND`/`BLOCKED`: конфликты/красные чеки/требуется ревью.
+  - **Stale draft / abandoned** (`medium`) — draft или без движения >7 дней; кросс-чек с брошенными worktree из Step 5.
+  - Только чтение — ничего не мержит/не закрывает. Recommendations сдвинут на Step 10, в формат отчёта добавлен раздел «9. Открытые pull requests».
+
 ## [4.8.0] — 2026-07-07
 
 - **Worker — opt-in worktree-изоляция для рутин (`worktree: true`).** Диспетчер `darkflow-run.sh` теперь умеет запускать движок (`claude`/`codex`) в одноразовом `git worktree add --detach`, а не в корне проекта:

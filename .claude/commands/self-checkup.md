@@ -373,7 +373,46 @@ anything; only report and suggest.
 
 ---
 
-## Step 9 — Recommendations grouped by priority
+## Step 9 — Open pull requests across all projects (`gh`)
+
+The PR-strategy `fix-issues` opens a pull request per task and is supposed to merge it into the
+base branch. A run that opens the PR but dies (or leaves it for human review) strands an **open
+PR that still needs finishing** — the exact thing to surface here: work that looks done but is
+actually parked. Audit every project that has a local GitHub checkout.
+
+Requires `gh` auth (checked in Step 0); if `gh auth status` failed there, note
+`gh не авторизован — проверка PR невозможна` once and skip this step. Reuse `name` + `localPath`
+from Step 2. For each project:
+
+- If `localPath` is null / missing / not a git repo → skip (already covered by Step 5's check).
+- If the origin isn't GitHub (`git -C "<localPath>" remote get-url origin` doesn't match
+  `github.com`) → note `не GitHub — пропуск` and skip (`gh` only speaks GitHub).
+- Otherwise list open PRs (run from the checkout so `gh` infers the repo):
+  ```bash
+  cd "<localPath>" && gh pr list --state open \
+    --json number,title,headRefName,isDraft,mergeStateStatus,reviewDecision,createdAt,updatedAt,url \
+    --limit 50
+  ```
+
+Classify per project (0 open PRs = `✓ нет висящих PR`). For each open PR report **number,
+title, branch, age** (from `createdAt`), and:
+
+- **Ready but unmerged** (`high`) — `isDraft = false` **and** `mergeStateStatus = CLEAN` (or
+  `UNSTABLE` with only non-blocking checks): mergeable and just waiting. This is the "finish it"
+  case — the fix-issues PR strategy opened it but never merged. Suggest `gh pr merge <n>` (or
+  reviewing then merging); note if it references a `Task #N` whose task is still open/in-progress
+  (cross-check Step 6's queue).
+- **Blocked** (`medium`) — `mergeStateStatus` is `DIRTY`/`BEHIND`/`BLOCKED` (conflicts, failing
+  checks, or required review): needs a human before it can land. Report the reason.
+- **Stale draft / abandoned** (`medium`) — `isDraft = true` **or** `updatedAt` older than ~7 days
+  with no movement: likely a crashed run. Flag for close-or-finish; cross-check whether its branch
+  shows up as a leftover worktree in Step 5.
+
+Read-only — never merge, close, or push here; only report and suggest the command.
+
+---
+
+## Step 10 — Recommendations grouped by priority
 
 Synthesize everything above into recommendations. **No cap on the number** — include every
 real finding worth acting on. Each recommendation:
@@ -421,6 +460,10 @@ Print one markdown report **на русском языке**:
 ### 8. Здоровье хоста воркера
 <процессы воркера (дубли/нет) / фаталы в worker.err.log / зависшие lock и slot / диск и рост
 логов, или «✓ проблем нет»>
+
+### 9. Открытые pull requests
+<по проектам: кол-во открытых PR + для каждого номер/ветка/возраст и статус (готов к мержу /
+заблокирован / черновик или заброшен), или «✓ нет висящих PR»>
 
 ## Рекомендации
 
