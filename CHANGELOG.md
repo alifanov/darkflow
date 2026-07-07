@@ -12,6 +12,16 @@ Categories:
 
 ---
 
+## [4.5.0] — 2026-07-07
+
+- **Docs — устранён дрейф между шаблоном `docs/`, установщиком и `CLAUDE.md`.**
+  - **`docs/README.md`** переписан: манифест больше не врёт. Файлы разделены на «Scaffolded on install» (реально копируются: README, agent-workflow, tasks, auto-approve, decisions/TEMPLATE + README) и «Created on demand» (папка есть, файл появляется при наличии контента). Добавлен блок «How this folder gets populated» — отсутствие файла означает «ещё не написан», а не «потерян».
+  - **Installer + `.darkflow.d/claude.md`** — убраны висячие ссылки на несуществующие `docs/design/voice-and-tone.md` и `docs/design/tokens.md` из «When to read docs» (UI/UX-задачи теперь ведут только на реально существующие `patterns.md` + `components.md`).
+  - **`insights/`** синхронизированы: в манифесте помечено, какие подпапки создаются только при включённом модуле (analytics/gsc/ads), добавлены `seo-audit` и `docs-audit`.
+  - **ADR-индекс** — новый `docs/decisions/README.md` (список принятых решений), копируется установщиком.
+  - **Рутина `docs-audit`** — новая проверка «README-манифест ↔ реальные файлы» (файл на диске без записи в манифесте = дрейф; `on demand`-запись без файла = не дрейф).
+  - Формулировка «5 layers» уточнена: «5 content layers + process files».
+
 ## [4.4.2] — 2026-07-07
 
 - **Worker — fix `Not logged in · Please run /login` on every routine that reaches the engine.** launchd does **not** source `~/.zshrc`, so the interactive login token the user's terminal `claude` relies on (`CLAUDE_CODE_OAUTH_TOKEN`) was invisible to the worker. Any routine that actually invoked `claude`/`codex` (e.g. `fix-ci-issue`) died with `is_error:true`, `"result":"Not logged in"` and 0 tokens; routines that skip before the engine (`fix-issues` with no approved tasks) looked "OK", masking the problem.

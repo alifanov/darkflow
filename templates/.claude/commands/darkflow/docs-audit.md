@@ -25,6 +25,7 @@ Check, layer by layer:
 - **`product/pricing.md` vs billing code/config** — if pricing/plans are encoded in code or config, flag mismatches.
 - **`CLAUDE.md` / `README.md` commands** — verify documented commands (build, test, dev, lint) exist in `package.json` / `Makefile` / `pyproject.toml`.
 - **`decisions/` (ADRs) vs current code** — flag any accepted decision the code now contradicts (a superseded ADR that was never marked superseded).
+- **`README.md` manifest vs the actual files** — compare the file manifest in `docs/README.md` against what really exists under `docs/`. Flag a file that exists on disk but is **not** listed in the manifest (undocumented doc), and a manifest entry that names a wrong path. Do **not** flag a manifest `on demand` entry that simply isn't written yet — that's expected, not drift.
 
 Use git history for context on *why* something drifted:
 

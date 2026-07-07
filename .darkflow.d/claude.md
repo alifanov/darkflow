@@ -28,7 +28,7 @@ Before starting: set status to `in-progress`, leave a comment with the branch na
 
 ### When to read docs
 
-- **Any UI/UX task** → `docs/design/voice-and-tone.md` + `docs/design/tokens.md` + `docs/design/patterns.md` + `docs/design/components.md`
+- **Any UI/UX task** → `docs/design/patterns.md` + `docs/design/components.md`
 - **Changing a user flow** → `docs/spec/flows/`
 - **Product / marketing decisions** → `docs/product/positioning.md` + `docs/product/audience.md` + `docs/product/pricing.md`
 - **Before architectural changes** → `docs/decisions/` (check for existing ADRs)

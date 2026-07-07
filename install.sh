@@ -1027,7 +1027,7 @@ Before starting: set status to `in-progress`, leave a comment with the branch na
 
 HEREDOC
 
-  echo "- **Any UI/UX task** → \`docs/design/voice-and-tone.md\` + \`docs/design/tokens.md\` + \`docs/design/patterns.md\` + \`docs/design/components.md\`"
+  echo "- **Any UI/UX task** → \`docs/design/patterns.md\` + \`docs/design/components.md\`"
   echo "- **Changing a user flow** → \`docs/spec/flows/\`"
   echo "- **Product / marketing decisions** → \`docs/product/positioning.md\` + \`docs/product/audience.md\` + \`docs/product/pricing.md\`"
   [[ "$MOD_ANALYTICS" == true ]] && echo "- **Working with analytics events** → \`docs/product/metrics.md\` (not guessing event names)"
@@ -1421,6 +1421,7 @@ smart_update_template "docs/agent-workflow.md"     "docs/agent-workflow.md"
 smart_update_template "docs/tasks.md"              "docs/tasks.md"
 smart_update_template "docs/auto-approve.md"       "docs/auto-approve.md"
 smart_update_template "docs/decisions/TEMPLATE.md" "docs/decisions/TEMPLATE.md"
+smart_update_template "docs/decisions/README.md"   "docs/decisions/README.md"
 
 [[ "$DRY_RUN" == false && -f "docs/README.md" ]] && inject_name "docs/README.md"
 
