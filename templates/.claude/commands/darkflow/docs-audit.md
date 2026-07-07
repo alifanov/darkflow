@@ -18,7 +18,7 @@ Read `docs/README.md` and `docs/agent-workflow.md` first to learn the layer map,
 Check, layer by layer:
 
 - **`spec/data-model.md` vs the real schema** — compare the documented data model against the ORM schema (`prisma/schema.prisma`, `models.py`, migrations, etc.). Flag entities/fields/relations that exist in code but not in docs, or vice versa.
-- **`spec/screens/inventory.md` vs routes/pages** — compare the documented screen list against actual routes/pages/views in the code. Flag screens added or removed in code but not reflected.
+- **`spec/screens.md` vs routes/pages** — compare the documented screen list against actual routes/pages/views in the code. Flag screens added or removed in code but not reflected.
 - **`spec/flows/*.md` vs implemented flows** — for documented flows (auth, checkout, onboarding…), check the steps still match the code.
 - **`product/metrics.md` vs instrumented events** — compare documented analytics event/metric **definitions** against event names actually fired in the code. Flag events in code that aren't documented, and documented events with no callsite.
 - **`design/components.md` vs the component registry** — compare documented components against what exists in the components directory.

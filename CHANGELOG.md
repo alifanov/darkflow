@@ -12,6 +12,13 @@ Categories:
 
 ---
 
+## [4.7.0] — 2026-07-07
+
+- **Docs — ещё два упрощения структуры `docs/`.**
+  - **`spec/screens/inventory.md` → `spec/screens.md`.** Целая папка ради одного файла — избыточно (в отличие от `spec/flows/`, который реально ветвится по флоу). Схлопнуто в плоский файл; из установщика и `checklist.yml` убрано создание/проверка каталога `spec/screens`.
+  - **`design/patterns.md` влит в `design/components.md`.** Оба тонкие, оба про UI, один и тот же read-trigger — теперь один дизайн-файл (реестр компонентов + секции состояний loading/empty/error/confirmation/toasts). Дизайн-слой = `components.md` + `assets/`.
+  - Обновлены все ссылки (`install.sh`, `templates/darkflow/claude.md`, `agent-workflow.md`, `flows/TEMPLATE.md`, `docs-audit.md`, `.darkflow.d/claude.md`, собственные `docs/`); в `checklist.yml` добавлена проверка `decisions/README.md`.
+
 ## [4.6.0] — 2026-07-07
 
 - **Docs — перекроен состав слоя `docs/`: убран маркетинговый раздув, закрыта дыра по архитектуре.**

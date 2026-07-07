@@ -26,7 +26,7 @@ The snapshot entry remains the source of truth; the task = the work artifact.
 
 ## When to read (before a task)
 
-- **Any UI / copywriting task** → `design/patterns.md` + `design/components.md`
+- **Any UI / copywriting task** → `design/components.md` (registry + UI-state patterns)
 - **Changing a user flow** → `spec/flows/` (checkout, auth, onboarding, etc.)
 - **Product / marketing decisions** → `product/positioning.md` + `product/product.md` + `product/pricing.md`
 - **Working with analytics events / metrics** → `product/metrics.md` (not guessing event names)
@@ -36,10 +36,10 @@ The snapshot entry remains the source of truth; the task = the work artifact.
 ## When to write (after a task)
 
 - **Changed a user flow** (auth, checkout, onboarding) → update corresponding `spec/flows/*.md`
-- **Added / removed a screen** → update `spec/screens/inventory.md`
+- **Added / removed a screen** → update `spec/screens.md`
 - **Changed the data model** → update summary in `spec/data-model.md`
 - **Changed pricing / billing** → update `product/pricing.md`
-- **Added a new UI component or pattern** → update `design/components.md` / `design/patterns.md`
+- **Added a new UI component or state pattern** → update `design/components.md`
 - **Made a non-trivial architectural / product decision** → add entry to `decisions/` in ADR format: context → decision → consequences
 - **Analytics observations by day** → `insights/analytics/YYYY-MM-DD.md` (don't multiply files — update today's file if already created)
 

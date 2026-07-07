@@ -26,9 +26,8 @@ schema: 1
 
 items:
   # ── Core directories ──────────────────────────────────────────────────────────
-  - { id: dir-docs-product,        group: docs,       type: dir, path: docs/product,             fix: mkdir, desc: "Product docs (positioning, audience, pricing)" }
+  - { id: dir-docs-product,        group: docs,       type: dir, path: docs/product,             fix: mkdir, desc: "Product docs (product, positioning, pricing)" }
   - { id: dir-docs-spec-flows,     group: docs,       type: dir, path: docs/spec/flows,          fix: mkdir, desc: "User flow specs" }
-  - { id: dir-docs-spec-screens,   group: docs,       type: dir, path: docs/spec/screens,        fix: mkdir, desc: "Screen inventory specs" }
   - { id: dir-docs-design-assets,  group: docs,       type: dir, path: docs/design/assets,       fix: mkdir, desc: "Design assets" }
   - { id: dir-docs-insights-qual,  group: docs,       type: dir, path: docs/insights/qualitative, fix: mkdir, desc: "Qualitative insights" }
   - { id: dir-docs-decisions,      group: docs,       type: dir, path: docs/decisions,           fix: mkdir, desc: "Architecture decision records" }
@@ -41,6 +40,7 @@ items:
   - { id: file-tasks-doc,          group: docs,       type: file, path: docs/tasks.md,                                 template: docs/tasks.md,                                 fix: copy-template, desc: "Task field taxonomy guide" }
   - { id: file-auto-approve,       group: docs,       type: file, path: docs/auto-approve.md,                          template: docs/auto-approve.md,                          fix: copy-template, desc: "Auto-approve allowlist" }
   - { id: file-adr-template,       group: docs,       type: file, path: docs/decisions/TEMPLATE.md,                    template: docs/decisions/TEMPLATE.md,                    fix: copy-template, desc: "ADR template" }
+  - { id: file-adr-index,          group: docs,       type: file, path: docs/decisions/README.md,                      template: docs/decisions/README.md,                      fix: copy-template, desc: "ADR index" }
 
   # ── Project operational files ────────────────────────────────────────────────
   # The worker, slash commands, the config fetcher (get-config.sh), the task CLI

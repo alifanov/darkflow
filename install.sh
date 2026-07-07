@@ -1027,7 +1027,7 @@ Before starting: set status to `in-progress`, leave a comment with the branch na
 
 HEREDOC
 
-  echo "- **Any UI/UX task** → \`docs/design/patterns.md\` + \`docs/design/components.md\`"
+  echo "- **Any UI/UX task** → \`docs/design/components.md\` (registry + UI-state patterns)"
   echo "- **Changing a user flow** → \`docs/spec/flows/\`"
   echo "- **Product / marketing decisions** → \`docs/product/positioning.md\` + \`docs/product/product.md\` + \`docs/product/pricing.md\`"
   [[ "$MOD_ANALYTICS" == true ]] && echo "- **Working with analytics events** → \`docs/product/metrics.md\` (not guessing event names)"
@@ -1040,11 +1040,11 @@ HEREDOC
   echo "### When to write docs"
   echo ""
   echo "- **Changed a user flow** → update \`docs/spec/flows/*.md\`"
-  echo "- **Added / removed a screen** → update \`docs/spec/screens/inventory.md\`"
+  echo "- **Added / removed a screen** → update \`docs/spec/screens.md\`"
   echo "- **Changed data model** → update \`docs/spec/data-model.md\`"
   echo "- **Changed system shape** (new service, integration, stack swap) → update \`docs/spec/architecture.md\`"
   echo "- **Changed pricing / billing** → update \`docs/product/pricing.md\`"
-  echo "- **Added UI component or pattern** → update \`docs/design/components.md\` / \`docs/design/patterns.md\`"
+  echo "- **Added UI component or state pattern** → update \`docs/design/components.md\`"
   echo "- **Made an architectural decision** → add ADR to \`docs/decisions/\` (context → decision → how to verify)"
   [[ "$MOD_ANALYTICS" == true ]] && echo "- **After analyzing analytics** → write snapshot to \`docs/insights/analytics/YYYY-MM-DD.md\`"
   [[ "$MOD_GSC"       == true ]] && echo "- **After checking GSC** → write snapshot to \`docs/insights/search-console/YYYY-MM-DD.md\`"
@@ -1401,7 +1401,6 @@ header "1/4  Docs structure"
 
 make_dir "docs/product"
 make_dir "docs/spec/flows"
-make_dir "docs/spec/screens"
 make_dir "docs/design/assets"
 make_dir "docs/insights/qualitative"
 make_dir "docs/decisions"

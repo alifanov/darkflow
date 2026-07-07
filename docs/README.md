@@ -38,10 +38,9 @@ gaps as drift (the `docs-audit` routine follows the same rule).
 | `product/glossary.md` | product · as changed | Domain terms and entities |
 | `spec/architecture.md` | spec · on system change | System map: stack, modules, entry points, integrations |
 | `spec/flows/*.md` | spec · weekly | User-flow descriptions (`TEMPLATE.md` inside) |
-| `spec/screens/inventory.md` | spec · weekly | Screen inventory |
+| `spec/screens.md` | spec · weekly | Screen inventory |
 | `spec/data-model.md` | spec · per migration | Data model summary (from ORM schema) |
-| `design/components.md` | design · weekly | Component registry |
-| `design/patterns.md` | design · situational | UI patterns and states (loading/empty/error) |
+| `design/components.md` | design · weekly | Component registry **+** UI-state patterns (loading/empty/error) |
 | `design/assets/` | design · situational | Logos, illustrations, OG images |
 | `decisions/NNNN-*.md` | decisions · as made | One accepted decision per file |
 
@@ -64,7 +63,7 @@ Once the docs are filled in, read them in this order (skip any not yet written):
 1. `product/product.md` — what is this, who it's for, key use cases
 2. `product/positioning.md` — what's different from the alternatives
 3. `spec/architecture.md` — how the system is put together
-4. `spec/data-model.md` + `spec/screens/inventory.md` — how it's built
-5. `design/components.md` + `design/patterns.md` — how we build UI
+4. `spec/data-model.md` + `spec/screens.md` — how it's built
+5. `design/components.md` — how we build UI (registry + state patterns)
 6. `product/metrics.md` + last 2–3 files from `insights/analytics/` — what's working now
 7. `decisions/README.md` + `decisions/` — what decisions have already been made
