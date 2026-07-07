@@ -28,6 +28,16 @@ GLOBAL_LOG="${GLOBAL_DIR}/worker.log"
 USER_CMD_DIR="${HOME}/.claude/commands/darkflow"   # slash commands live in user scope
 DF_BIN="${GLOBAL_DIR}/df"                          # task CLI — talks to /api/tasks/*
 
+# ── Engine credentials ────────────────────────────────────────────────────────
+# launchd does NOT source ~/.zshrc, so the interactive login token the user's
+# terminal `claude` relies on (CLAUDE_CODE_OAUTH_TOKEN and friends) is invisible
+# to the worker — every routine that reaches the engine fails with
+# "Not logged in · Please run /login". Source ~/.darkflow/env (git-ignored,
+# outside any repo) so those credentials reach `claude`/`codex` here too.
+if [[ -f "${GLOBAL_DIR}/env" ]]; then
+  set -a; source "${GLOBAL_DIR}/env"; set +a
+fi
+
 # ── Per-project paths ─────────────────────────────────────────────────────────
 # (Re)computed by set_project() for each project the global worker services.
 # LOG points at the global log until a project is selected so orchestration

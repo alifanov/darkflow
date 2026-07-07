@@ -12,6 +12,12 @@ Categories:
 
 ---
 
+## [4.4.2] — 2026-07-07
+
+- **Worker — fix `Not logged in · Please run /login` on every routine that reaches the engine.** launchd does **not** source `~/.zshrc`, so the interactive login token the user's terminal `claude` relies on (`CLAUDE_CODE_OAUTH_TOKEN`) was invisible to the worker. Any routine that actually invoked `claude`/`codex` (e.g. `fix-ci-issue`) died with `is_error:true`, `"result":"Not logged in"` and 0 tokens; routines that skip before the engine (`fix-issues` with no approved tasks) looked "OK", masking the problem.
+  - **`darkflow-run.sh`** now sources `~/.darkflow/env` (git-ignored, `set -a`) on launch, so credentials placed there reach the engine.
+  - **`install.sh`** seeds a commented `~/.darkflow/env` template (chmod 600) — the user fills in the token by hand; the installer never writes the secret.
+
 ## [4.4.1] — 2026-07-07
 
 - **Installer — generate the launchd agents instead of deleting them.** 4.4.0 added `make reload` and the `com.darkflow.{web,worker}` launchd targets to the Makefile, but nothing ever created the plists — and `install.sh`'s `worker_start_help()` actively **deleted** `com.darkflow.worker.plist` on every install/self-update while preaching the old `nohup` start. So `make reload` / `make worker-start` failed with `Bootstrap failed: 5` (missing worker plist) on every machine. `worker_start_help()` now writes both agents (macOS) via a new `write_launchd_plists()`:

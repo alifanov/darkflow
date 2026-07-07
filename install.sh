@@ -343,6 +343,20 @@ write_global_config() {
     echo "webapp_url=${url}"
     echo "version=${LATEST_VERSION}"
   } > "$cfg"
+
+  # Seed a credentials template the worker sources on launch. launchd does NOT
+  # read ~/.zshrc, so the interactive login token the user's terminal `claude`
+  # uses is invisible to the worker — routines fail with "Not logged in". The
+  # user fills this file in by hand; we never write the secret for them.
+  local envf="${GLOBAL_DIR}/env"
+  if [[ ! -f "$envf" ]]; then
+    {
+      echo "# Dark Flow worker credentials — sourced by darkflow-run.sh on launch."
+      echo "# launchd does not read ~/.zshrc, so put the engine login token here."
+      echo "# export CLAUDE_CODE_OAUTH_TOKEN=..."
+    } > "$envf"
+    chmod 600 "$envf"
+  fi
 }
 
 # Build a PATH for launchd agents (they do NOT inherit the login shell's PATH).
