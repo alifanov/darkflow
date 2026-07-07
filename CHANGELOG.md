@@ -12,6 +12,14 @@ Categories:
 
 ---
 
+## [4.4.1] — 2026-07-07
+
+- **Installer — generate the launchd agents instead of deleting them.** 4.4.0 added `make reload` and the `com.darkflow.{web,worker}` launchd targets to the Makefile, but nothing ever created the plists — and `install.sh`'s `worker_start_help()` actively **deleted** `com.darkflow.worker.plist` on every install/self-update while preaching the old `nohup` start. So `make reload` / `make worker-start` failed with `Bootstrap failed: 5` (missing worker plist) on every machine. `worker_start_help()` now writes both agents (macOS) via a new `write_launchd_plists()`:
+  - **Worker agent** (global) — always written; **web agent** — only inside the Dark Flow repo (detected via `webapp/package.json` → `darkflow-webapp`).
+  - **`_launchd_path()`** prepends the dirs holding `claude` and `node` to the agent PATH (launchd agents don't inherit the login shell PATH — the worker's engine wouldn't resolve otherwise), with a plist comment to adjust for an x86_64/Rosetta node.
+  - **Create-if-missing** — never clobbers a hand-tuned plist; writing the file never starts anything (Dark Flow still never auto-starts the worker — the operator bootstraps it so it inherits their keychain/login session).
+  - Start/stop hints updated to `make reload` / `launchctl bootstrap|bootout`, keeping the bare `nohup` path as a fallback.
+
 ## [4.4.0] — 2026-07-06
 
 - **Make / ops — launchd supervision for web + worker.** Replaced the `nohup`/`pkill` worker targets with launchd-backed ones (`gui/$UID/com.darkflow.{web,worker}`): `make reload` loads-or-restarts both services (rebuilds the webapp first), plus `web-start`/`web-restart`/`web-stop`/`web-status`/`web-logs` and the matching `worker-*` targets. Services auto-restart and survive reboot/logout. `worker-start`/`reload`/`stop`/`status` now `launchctl bootstrap`/`kickstart -k`/`bootout`/`print` instead of managing a bare background process. Documented in README's make-targets table; CLAUDE.md's "never start the worker yourself" note updated to point at `make reload` (and to flag that `launchctl bootstrap`/`kickstart` still must run from the user's own session for keychain access).

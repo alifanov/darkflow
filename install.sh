@@ -345,22 +345,129 @@ write_global_config() {
   } > "$cfg"
 }
 
-# Dark Flow does NOT auto-start the worker — the operator starts it manually for
-# full control. Remove any launchd agent left by an earlier install so nothing
-# auto-runs, then print how to start it.
-worker_start_help() {
-  [[ "$DRY_RUN" == true ]] && { info "Would print manual worker start instructions"; return; }
-  if [[ "$DETECTED_OS" == "macos" ]]; then
-    local plist="$HOME/Library/LaunchAgents/com.darkflow.worker.plist"
-    if [[ -f "$plist" ]]; then
-      launchctl unload "$plist" 2>/dev/null || true
-      rm -f "$plist"
-      info "Removed the auto-start launchd agent — the worker is manual now."
+# Build a PATH for launchd agents (they do NOT inherit the login shell's PATH).
+# Prepends the dirs holding `claude` and `node` so the worker's engine resolves.
+# Best-effort: on a Mac where `node` is an x86_64/Rosetta build the operator may
+# need to point PATH at an arm64 (nvm) node by hand — the plist comment says so.
+_launchd_path() {
+  local base="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" prefix="" bin d
+  for bin in claude node; do
+    d="$(command -v "$bin" 2>/dev/null || true)"
+    [[ -n "$d" ]] || continue
+    d="$(cd "$(dirname "$d")" && pwd)"
+    [[ ":${base}:${prefix}" == *":${d}:"* ]] || prefix+="${d}:"
+  done
+  printf '%s%s' "$prefix" "$base"
+}
+
+# Generate launchd agents (macOS) so `make reload` / `launchctl bootstrap` can
+# supervise the worker (and, inside the Dark Flow repo, the webapp). Writing the
+# file does NOT start anything — Dark Flow still never auto-starts the worker; the
+# operator bootstraps it themselves so it inherits their keychain/login session.
+# Create-if-missing: never clobber a hand-tuned plist.
+write_launchd_plists() {
+  [[ "$DETECTED_OS" == "macos" ]] || return 0
+  local la="$HOME/Library/LaunchAgents"; mkdir -p "$la"
+  local ld_path; ld_path="$(_launchd_path)"
+
+  local wplist="$la/com.darkflow.worker.plist"
+  if [[ ! -f "$wplist" ]]; then
+    cat > "$wplist" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.darkflow.worker</string>
+	<key>WorkingDirectory</key>
+	<string>${HOME}</string>
+	<!-- PATH must reach node + claude/codex; adjust if node is an x86_64/Rosetta build. -->
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/sh</string>
+		<string>-c</string>
+		<string>echo "=== up \$(date) (launchd) ===" &gt;&gt; ${GLOBAL_DIR}/worker.out.log; exec ${BASH_BIN} ${GLOBAL_DIR}/darkflow-run.sh</string>
+	</array>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>${ld_path}</string>
+	</dict>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>StandardOutPath</key>
+	<string>${GLOBAL_DIR}/worker.out.log</string>
+	<key>StandardErrorPath</key>
+	<string>${GLOBAL_DIR}/worker.err.log</string>
+</dict>
+</plist>
+EOF
+    success "Wrote launchd agent ${wplist}"
+  fi
+
+  # Web plist only in the Dark Flow control-plane repo — the webapp lives here.
+  if [[ -f "webapp/package.json" ]] && grep -q 'darkflow-webapp' webapp/package.json 2>/dev/null; then
+    local webplist="$la/com.darkflow.web.plist" pnpm_bin
+    pnpm_bin="$(command -v pnpm 2>/dev/null || echo pnpm)"
+    if [[ ! -f "$webplist" ]]; then
+      cat > "$webplist" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.darkflow.web</string>
+	<key>WorkingDirectory</key>
+	<string>$(pwd)/webapp</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/sh</string>
+		<string>-c</string>
+		<string>echo "=== up \$(date) (launchd) ===" &gt;&gt; ${GLOBAL_DIR}/web.out.log; exec ${pnpm_bin} start</string>
+	</array>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>${ld_path}</string>
+		<key>PORT</key>
+		<string>5555</string>
+	</dict>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>StandardOutPath</key>
+	<string>${GLOBAL_DIR}/web.out.log</string>
+	<key>StandardErrorPath</key>
+	<string>${GLOBAL_DIR}/web.err.log</string>
+</dict>
+</plist>
+EOF
+      success "Wrote launchd agent ${webplist}"
     fi
   fi
-  info "Start the global worker yourself (services every project, runs until stopped):"
+}
+
+# Dark Flow never auto-starts the worker — the operator starts it themselves so
+# it inherits their keychain/login session. install.sh writes the launchd agents
+# (create-if-missing) but leaves loading them to the operator.
+worker_start_help() {
+  [[ "$DRY_RUN" == true ]] && { info "Would write launchd agents + print worker start instructions"; return; }
+  write_launchd_plists
+  info "Start the global worker yourself (services every project; never auto-started):"
+  if [[ "$DETECTED_OS" == "macos" ]]; then
+    dim  "  make reload   # from the Dark Flow repo — loads web + worker under launchd (auto-restart)"
+    dim  "  # or just the worker:  launchctl bootstrap gui/\$(id -u) $HOME/Library/LaunchAgents/com.darkflow.worker.plist"
+    dim  "  # or a bare background process:"
+  fi
   dim  "  nohup ${BASH_BIN} ${GLOBAL_DIR}/darkflow-run.sh >/dev/null 2>> ${GLOBAL_DIR}/worker.err.log &"
-  dim  "Stop it with:  pkill -f ${GLOBAL_DIR}/darkflow-run.sh"
+  if [[ "$DETECTED_OS" == "macos" ]]; then
+    dim  "Stop it with:  launchctl bootout gui/\$(id -u)/com.darkflow.worker   (bare process: pkill -f ${GLOBAL_DIR}/darkflow-run.sh)"
+  else
+    dim  "Stop it with:  pkill -f ${GLOBAL_DIR}/darkflow-run.sh"
+  fi
 }
 
 # Remove the now-obsolete per-project worker + command copies. Only runs inside a
