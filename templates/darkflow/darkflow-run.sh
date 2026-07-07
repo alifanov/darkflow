@@ -52,6 +52,9 @@ PROJECT_CFG_JSON=""
 
 # Temp files registered here are removed by the EXIT trap even on signals.
 _CLEANUP_FILES=()
+# Throwaway git worktrees registered here are removed by the EXIT trap too, so a
+# crashed/killed run never leaks a checkout dir.
+_CLEANUP_WORKTREES=()
 
 # Accumulated routine log entries for this dispatch cycle (JSON lines)
 PENDING_LOGS=()
@@ -157,6 +160,7 @@ darkflow_val() {
     obs_tool)           jqexpr='.obsTool' ;;
     obs_url)            jqexpr='.obsUrl' ;;
     modules)            jqexpr='(.modules // []) | join(",")' ;;
+    worktree)           jqexpr='.worktree' ;;
     *)                  echo "$default"; return ;;
   esac
   val=$(jq -r "${jqexpr} // empty" "$PROJECT_CFG_JSON" 2>/dev/null)
@@ -495,6 +499,11 @@ semaphore_release() {
 
 _do_exit_cleanup() {
   [[ ${#_CLEANUP_FILES[@]} -gt 0 ]] && rm -f "${_CLEANUP_FILES[@]}" 2>/dev/null || true
+  local _wt
+  for _wt in "${_CLEANUP_WORKTREES[@]}"; do
+    [[ -n "$_wt" ]] || continue
+    git -C "$PROJECT_ROOT" worktree remove --force "$_wt" 2>/dev/null || rm -rf "$_wt"
+  done
   release_lock
   stop_heartbeat_loop
 }
@@ -801,6 +810,26 @@ mailbox_preflight() {
   esac
 }
 
+# Mirror the untracked build inputs a fresh worktree lacks — `node_modules` dirs
+# and `.env` files — from the project root into the worktree via symlinks, at the
+# same relative paths. Symlinks (not copies) so builds resolve deps and routines
+# read env vars without duplicating anything on disk. Covers monorepos (root +
+# nested app/package dirs); node_modules and .git are pruned so we don't descend
+# into them. ponytail: maxdepth 4 covers apps/*/  packages/*/; deepen if a project nests further.
+link_worktree_inputs() {
+  local src="$1" dst="$2" p rel
+  while IFS= read -r p; do
+    rel="${p#"$src"/}"
+    mkdir -p "$dst/$(dirname "$rel")" 2>/dev/null || true
+    [[ -e "$dst/$rel" ]] || ln -s "$p" "$dst/$rel" 2>/dev/null || true
+  done < <(find "$src" -maxdepth 4 -name node_modules -type d -prune -print 2>/dev/null || true)
+  while IFS= read -r p; do
+    rel="${p#"$src"/}"
+    mkdir -p "$dst/$(dirname "$rel")" 2>/dev/null || true
+    [[ -e "$dst/$rel" ]] || ln -s "$p" "$dst/$rel" 2>/dev/null || true
+  done < <(find "$src" -maxdepth 4 \( -name .git -o -name node_modules \) -prune -o -type f \( -name '.env' -o -name '.env.local' \) -print 2>/dev/null || true)
+}
+
 run_routine() {
   local name="$1" model="$2" permission_mode="$3" engine="${4:-claude}"
   local now exit_code=0
@@ -904,6 +933,27 @@ run_routine() {
   [[ -n "$model" ]] && _model_json=",\"model\":\"${engine}:${model}\""
   _stream_file=$(mktemp)
   _CLEANUP_FILES+=("$_stream_file")
+
+  # Optional worktree isolation: run the engine in a throwaway `git worktree` so
+  # parallel routines on the same project don't fight over the working tree. A
+  # worktree checks out tracked files only, so we symlink the untracked build
+  # inputs (node_modules, .env) back in. Opt-in per project via config
+  # `worktree: true`; default keeps the historical in-place behavior. The dir is
+  # torn down right after the run below, and the EXIT trap is a backstop on crash.
+  local _run_dir="$PROJECT_ROOT"
+  if [[ "$(darkflow_val worktree false)" == true ]]; then
+    local _wt; _wt=$(mktemp -d "${TMPDIR:-/tmp}/df-wt-${name}-XXXXXX")
+    if git -C "$PROJECT_ROOT" worktree add --detach "$_wt" HEAD >/dev/null 2>&1; then
+      _CLEANUP_WORKTREES+=("$_wt")
+      link_worktree_inputs "$PROJECT_ROOT" "$_wt"
+      _run_dir="$_wt"
+      log "WORKTREE ${name} — isolated run in ${_wt}"
+    else
+      rmdir "$_wt" 2>/dev/null || true
+      log "WARN   ${name} — worktree add failed, running in project root"
+    fi
+  fi
+
   if [[ "$engine" == "codex" ]]; then
     # Codex has no /darkflow:<name> slash command, so feed the routine's command
     # markdown directly as the prompt (same file Claude resolves the command
@@ -916,9 +966,9 @@ run_routine() {
     # Codex's stdout is already human-readable, so we store it verbatim.
     local _cmd_file="${USER_CMD_DIR}/${name}.md"
     if [[ -f "$_cmd_file" ]]; then
-      run_in_pgid codex exec --model "${model}" \
-        --dangerously-bypass-approvals-and-sandbox \
-        "$(cat "$_cmd_file")" > "$_stream_file" || exit_code=$?
+      ( cd "$_run_dir" && run_in_pgid codex exec --model "${model}" \
+          --dangerously-bypass-approvals-and-sandbox \
+          "$(cat "$_cmd_file")" ) > "$_stream_file" || exit_code=$?
     else
       log "ERROR  ${name} — engine=codex but command file missing: ${_cmd_file}"
       exit_code=1
@@ -929,8 +979,8 @@ run_routine() {
     # assistant text (.result) plus usage metrics (.total_cost_usd, .usage.*).
     # We persist cost + total tokens per run so the web UI can show which
     # routine consumes the most of the account's limits.
-    run_in_pgid claude -p "/darkflow:${name}" --model "${model}" "${perm_args[@]}" \
-      --output-format json > "$_stream_file" || exit_code=$?
+    ( cd "$_run_dir" && run_in_pgid claude -p "/darkflow:${name}" --model "${model}" "${perm_args[@]}" \
+        --output-format json ) > "$_stream_file" || exit_code=$?
     local _raw; _raw=$(cat "$_stream_file") || _raw=""
     if jq -e . >/dev/null 2>&1 <<< "$_raw"; then
       agent_output=$(jq -r '.result // ""' <<< "$_raw")
@@ -947,6 +997,14 @@ run_routine() {
   rm -f "$_stream_file"
   _CLEANUP_FILES=("${_CLEANUP_FILES[@]/$_stream_file}")
   semaphore_release
+
+  # Tear down the throwaway worktree now that the run is done. Symlinked
+  # node_modules/.env point at the real project files; `worktree remove` unlinks
+  # them without touching the targets. The EXIT trap still covers a crash above.
+  if [[ "$_run_dir" != "$PROJECT_ROOT" ]]; then
+    git -C "$PROJECT_ROOT" worktree remove --force "$_run_dir" 2>/dev/null || rm -rf "$_run_dir"
+    _CLEANUP_WORKTREES=("${_CLEANUP_WORKTREES[@]/$_run_dir}")
+  fi
 
   stop_heartbeat_loop
   send_heartbeat "idle"

@@ -110,7 +110,9 @@ prompts before bash commands.
 
 ## Worktree note
 
-Routines **never** create a git worktree. They always run in the project root (`cwd = project root`, enforced by the dispatcher) and work directly on the configured base branch. For PR-strategy `fix-issues`, the feature branch is created **in place** with `git checkout -b` based off the configured `branch=` (`main`, `master`, `dev`, … — whatever the project is set to) — never `git worktree add`, never a separate checkout directory.
+By default routines **never** create a git worktree. They run in the project root (`cwd = project root`) and work directly on the configured base branch. For PR-strategy `fix-issues`, the feature branch is created **in place** with `git checkout -b` based off the configured `branch=` (`main`, `master`, `dev`, … — whatever the project is set to) — never `git worktree add`, never a separate checkout directory. The routine agent itself must still never create its own worktree.
+
+**Opt-in isolation** (config `worktree: true`): the *dispatcher* runs each routine in a throwaway `git worktree add --detach` checkout, tears it down after the run (with an EXIT-trap backstop on crash), and symlinks the untracked build inputs (`node_modules`, `.env`/`.env.local` at every level up to 4 deep) back in so builds and env-reads work. Use this to let multiple routines run against the same project in parallel without fighting over the working tree. Caveat: a detached worktree can't `git checkout` the base branch (it's held by the root worktree), so PR-strategy `fix-issues` must merge server-side (`gh pr merge`), not via a local checkout of `main`.
 
 ## Adding a new routine
 

@@ -12,6 +12,14 @@ Categories:
 
 ---
 
+## [4.8.0] — 2026-07-07
+
+- **Worker — opt-in worktree-изоляция для рутин (`worktree: true`).** Диспетчер `darkflow-run.sh` теперь умеет запускать движок (`claude`/`codex`) в одноразовом `git worktree add --detach`, а не в корне проекта:
+  - **Снос в конце.** Worktree удаляется сразу после прогона; EXIT-trap (`_do_exit_cleanup` + `_CLEANUP_WORKTREES`) добивает его при краше/сигнале — папка не утекает.
+  - **Симлинки, не копии.** Новый `link_worktree_inputs` протаскивает в worktree untracked-входы сборки — все `node_modules` и `.env`/`.env.local` (до 4 уровней вглубь, покрывает `apps/*`, `packages/*`, `webapp/`) — симлинками, чтобы сборка резолвила зависимости и рутины читали переменные окружения без дублирования на диск.
+  - **По умолчанию выключено** (`darkflow_val worktree false`) — историческое in-place поведение и правило «no worktree» сохранены; включается на проект через конфиг.
+  - Каветат: detached-worktree не может `git checkout` базовую ветку (её держит корневой worktree), поэтому PR-стратегия `fix-issues` при включённой изоляции должна мержить server-side (`gh pr merge`).
+
 ## [4.7.0] — 2026-07-07
 
 - **Docs — ещё два упрощения структуры `docs/`.**
