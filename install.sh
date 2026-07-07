@@ -1029,12 +1029,12 @@ HEREDOC
 
   echo "- **Any UI/UX task** → \`docs/design/patterns.md\` + \`docs/design/components.md\`"
   echo "- **Changing a user flow** → \`docs/spec/flows/\`"
-  echo "- **Product / marketing decisions** → \`docs/product/positioning.md\` + \`docs/product/audience.md\` + \`docs/product/pricing.md\`"
+  echo "- **Product / marketing decisions** → \`docs/product/positioning.md\` + \`docs/product/product.md\` + \`docs/product/pricing.md\`"
   [[ "$MOD_ANALYTICS" == true ]] && echo "- **Working with analytics events** → \`docs/product/metrics.md\` (not guessing event names)"
   [[ "$MOD_ANALYTICS" == true ]] && echo "- **Context on what's working now** → last 2–3 files from \`docs/insights/analytics/\`"
   [[ "$MOD_GSC"       == true ]] && echo "- **SEO decisions** → last 2–3 files from \`docs/insights/search-console/\` and \`docs/insights/seo-audit/\`"
   [[ "$MOD_ADS"       == true ]] && echo "- **Ads campaigns** → last 2–3 files from \`docs/insights/ads/\`"
-  echo "- **Before architectural changes** → \`docs/decisions/\` (check for existing ADRs)"
+  echo "- **Before architectural changes** → \`docs/spec/architecture.md\` (current map) + \`docs/decisions/\` (check for existing ADRs)"
 
   echo ""
   echo "### When to write docs"
@@ -1042,6 +1042,7 @@ HEREDOC
   echo "- **Changed a user flow** → update \`docs/spec/flows/*.md\`"
   echo "- **Added / removed a screen** → update \`docs/spec/screens/inventory.md\`"
   echo "- **Changed data model** → update \`docs/spec/data-model.md\`"
+  echo "- **Changed system shape** (new service, integration, stack swap) → update \`docs/spec/architecture.md\`"
   echo "- **Changed pricing / billing** → update \`docs/product/pricing.md\`"
   echo "- **Added UI component or pattern** → update \`docs/design/components.md\` / \`docs/design/patterns.md\`"
   echo "- **Made an architectural decision** → add ADR to \`docs/decisions/\` (context → decision → how to verify)"
@@ -1422,6 +1423,7 @@ smart_update_template "docs/tasks.md"              "docs/tasks.md"
 smart_update_template "docs/auto-approve.md"       "docs/auto-approve.md"
 smart_update_template "docs/decisions/TEMPLATE.md" "docs/decisions/TEMPLATE.md"
 smart_update_template "docs/decisions/README.md"   "docs/decisions/README.md"
+[[ "$MOD_CI_GATE" == true ]] && smart_update_template "docs/ci-runner.md" "docs/ci-runner.md"
 
 [[ "$DRY_RUN" == false && -f "docs/README.md" ]] && inject_name "docs/README.md"
 

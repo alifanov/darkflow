@@ -26,11 +26,11 @@ The snapshot entry remains the source of truth; the task = the work artifact.
 
 ## When to read (before a task)
 
-- **Any UI / copywriting task** → `design/voice-and-tone.md` + `design/tokens.md` + `design/patterns.md` + `design/components.md`
+- **Any UI / copywriting task** → `design/patterns.md` + `design/components.md`
 - **Changing a user flow** → `spec/flows/` (checkout, auth, onboarding, etc.)
-- **Product / marketing decisions** → `product/positioning.md` + `product/audience.md` + `product/pricing.md`
+- **Product / marketing decisions** → `product/positioning.md` + `product/product.md` + `product/pricing.md`
 - **Working with analytics events / metrics** → `product/metrics.md` (not guessing event names)
-- **Before a major architectural change** → `decisions/` (check it doesn't contradict existing ADRs)
+- **Before a major architectural change** → `spec/architecture.md` for the current map, then `decisions/` (check it doesn't contradict existing ADRs)
 - **Context on "what's working / broken right now"** → last 2–3 files from `insights/analytics/`
 
 ## When to write (after a task)
@@ -111,8 +111,9 @@ Not every anomaly immediately becomes a task. Before creating one, verify the si
 ### What to update in other layers
 
 - **New event / metric in code** (new analytics event, new KPI) → `product/metrics.md`. This is about **definitions**, not values.
-- **New targeting segments, new landing pages for campaigns, budget/strategy change** → `product/marketing.md` / `product/gtm.md`.
-- **New SEO targets (keywords, pages), sitemap strategy change** → `product/marketing.md` or a new entry in `decisions/`.
+- **Changed the system shape** (new service, integration, stack swap) → `spec/architecture.md`.
+- **New targeting segments / audience shift** → `product/product.md` (audience section) or `product/positioning.md`.
+- **New SEO targets (keywords, pages), sitemap strategy change** → a new entry in `decisions/`; record results as snapshots under `insights/search-console/`.
 - **Decision made based on data** (launch an experiment, turn off a campaign, reprioritize roadmap) → ADR in `decisions/`: what we saw → what we decided → how we'll verify.
 
 `insights/` = observations over time (snapshots). `product/` = current definitions. `decisions/` = what we did about it. Don't mix layers.

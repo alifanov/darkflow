@@ -25,20 +25,18 @@ gaps as drift (the `docs-audit` routine follows the same rule).
 | `auto-approve.md` | Which findings a routine may auto-approve | As changed |
 | `decisions/TEMPLATE.md` | ADR template (context → decision → verification) | — |
 | `decisions/README.md` | ADR index (list of accepted decisions) | As made |
+| `ci-runner.md` | Self-hosted CI runner requirements (**only if `ci-gate` module enabled**) | As changed |
 
 **Created on demand** (folder exists; file appears when there's content):
 
 | File | Layer / frequency | Purpose |
 |---|---|---|
-| `product/product.md` | product · quarterly | Product description, pain points, audience, stage |
-| `product/audience.md` | product · quarterly | User segments |
-| `product/use-cases.md` | product · quarterly | Usage scenarios |
-| `product/competitors.md` | product · quarterly | Competitive landscape |
-| `product/positioning.md` | product · quarterly | Positioning, value prop |
+| `product/product.md` | product · quarterly | What/for whom/why + audience segments + key use cases + stage |
+| `product/positioning.md` | product · quarterly | Positioning, value prop, competitive landscape |
 | `product/pricing.md` | product · as changed | Pricing tiers, billing |
-| `product/marketing.md` | product · monthly | Marketing channels and messages |
 | `product/metrics.md` | product · monthly | North-star metrics + analytics event **definitions** |
 | `product/glossary.md` | product · as changed | Domain terms and entities |
+| `spec/architecture.md` | spec · on system change | System map: stack, modules, entry points, integrations |
 | `spec/flows/*.md` | spec · weekly | User-flow descriptions (`TEMPLATE.md` inside) |
 | `spec/screens/inventory.md` | spec · weekly | Screen inventory |
 | `spec/data-model.md` | spec · per migration | Data model summary (from ORM schema) |
@@ -63,9 +61,9 @@ module is enabled at install):
 
 Once the docs are filled in, read them in this order (skip any not yet written):
 
-1. `product/product.md` — what is this
-2. `product/audience.md` + `product/use-cases.md` — who and why
-3. `product/competitors.md` + `product/positioning.md` — what's different
+1. `product/product.md` — what is this, who it's for, key use cases
+2. `product/positioning.md` — what's different from the alternatives
+3. `spec/architecture.md` — how the system is put together
 4. `spec/data-model.md` + `spec/screens/inventory.md` — how it's built
 5. `design/components.md` + `design/patterns.md` — how we build UI
 6. `product/metrics.md` + last 2–3 files from `insights/analytics/` — what's working now

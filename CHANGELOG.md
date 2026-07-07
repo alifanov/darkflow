@@ -12,6 +12,14 @@ Categories:
 
 ---
 
+## [4.6.0] — 2026-07-07
+
+- **Docs — перекроен состав слоя `docs/`: убран маркетинговый раздув, закрыта дыра по архитектуре.**
+  - **Новый `spec/architecture.md`** — карта системы (стек, верхнеуровневые модули, точки входа, внешние интеграции, поток запроса, инварианты). Это тот документ, по которому AI-агент ориентируется в репозитории; раньше был только `data-model.md` (БД). Добавлен в «When to read/write» во всех shipped-конфигах.
+  - **`product/` сжат с 9 → 5 файлов.** `audience.md` + `use-cases.md` влиты в `product.md` (секции «Audience / segments» и «Key use cases»); `competitors.md` влит в `positioning.md` (секция «Competitive landscape»); `marketing.md` удалён (кампании/каналы живут в `insights/ads` и `insights/search-console`, не в product-слое). Осталось: product / positioning / pricing / metrics / glossary.
+  - **`ci-runner.md` подключён к установщику** — раньше файл-сирота (на него ссылается `fix-ci-issue`, но установщик не копировал). Теперь копируется при включённом модуле `ci-gate` и значится в манифесте.
+  - Обновлены все ссылки в `install.sh`, `templates/darkflow/claude.md`, `templates/docs/agent-workflow.md`, `.darkflow.d/claude.md` и собственных `docs/` репозитория; попутно вычищены висячие ссылки на несуществующие `design/voice-and-tone.md`, `design/tokens.md`, `product/gtm.md`.
+
 ## [4.5.0] — 2026-07-07
 
 - **Docs — устранён дрейф между шаблоном `docs/`, установщиком и `CLAUDE.md`.**

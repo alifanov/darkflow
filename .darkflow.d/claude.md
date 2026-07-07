@@ -30,14 +30,15 @@ Before starting: set status to `in-progress`, leave a comment with the branch na
 
 - **Any UI/UX task** → `docs/design/patterns.md` + `docs/design/components.md`
 - **Changing a user flow** → `docs/spec/flows/`
-- **Product / marketing decisions** → `docs/product/positioning.md` + `docs/product/audience.md` + `docs/product/pricing.md`
-- **Before architectural changes** → `docs/decisions/` (check for existing ADRs)
+- **Product / marketing decisions** → `docs/product/positioning.md` + `docs/product/product.md` + `docs/product/pricing.md`
+- **Before architectural changes** → `docs/spec/architecture.md` (current map) + `docs/decisions/` (check for existing ADRs)
 
 ### When to write docs
 
 - **Changed a user flow** → update `docs/spec/flows/*.md`
 - **Added / removed a screen** → update `docs/spec/screens/inventory.md`
 - **Changed data model** → update `docs/spec/data-model.md`
+- **Changed system shape** (new service, integration, stack swap) → update `docs/spec/architecture.md`
 - **Changed pricing / billing** → update `docs/product/pricing.md`
 - **Added UI component or pattern** → update `docs/design/components.md` / `docs/design/patterns.md`
 - **Made an architectural decision** → add ADR to `docs/decisions/` (context → decision → how to verify)
