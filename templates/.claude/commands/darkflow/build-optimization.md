@@ -7,7 +7,7 @@ This is a **proposal-only audit**: it identifies opportunities and proposes chan
 Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
 
 Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
-- `language` → output/issue language (default: English)
+- `language` → output/task language (default: English)
 - `mergeStrategy` → context for how fixes land (pr or direct)
 
 If `.darkflow.d/state/config.json` is missing, continue with defaults.

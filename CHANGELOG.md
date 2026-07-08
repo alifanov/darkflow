@@ -12,6 +12,10 @@ Categories:
 
 ---
 
+## [4.9.1] — 2026-07-08
+
+- **Команды — чистка рудиментной формулировки «issue» со времён GitHub Issues.** В 16 routine-командах (`ads-review`, `security-audit`, `analytics-review`, `architecture-review`, `build-optimization`, `code-health`, `coolify-check-deployment`, `design-audit`, `design-critique`, `design-harden`, `docs-audit`, `gsc-check`, `mailbox-check`, `observability-check`, `uptime-check`, `vulnerability-check`) шаг чтения конфига говорил `language → output/issue language` — наследие эпохи до перехода на собственный task-store. Заменено на `output/task language`, чтобы слово «issue» не подталкивало агента создавать GitHub Issues вместо `df task create`. Логику команд не трогали — все они и раньше создавали задачи через `~/.darkflow/df task create`.
+
 ## [4.9.0] — 2026-07-07
 
 - **Self-checkup — новый шаг «Открытые pull requests по всем проектам» (Step 9).** `/self-checkup` теперь через `gh pr list` обходит все проекты с GitHub-чекаутом и ловит висящие незавершённые PR — именно то, что PR-стратегия `fix-issues` могла открыть, но не домержить:

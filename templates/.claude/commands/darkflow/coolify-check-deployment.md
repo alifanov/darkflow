@@ -10,7 +10,7 @@ Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from th
 
 Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
 - `coolify_app` → Coolify app UUID for this project (optional; if missing, resolve it in Step 2)
-- `language` → output/issue language (default: English)
+- `language` → output/task language (default: English)
 
 If `.darkflow.d/state/config.json` is missing, continue normally.
 

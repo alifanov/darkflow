@@ -10,7 +10,7 @@ Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from th
 
 Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
 - `domain` → the public production URL to monitor (e.g. `https://example.com`)
-- `language` → output/issue language (default: English)
+- `language` → output/task language (default: English)
 
 If `.darkflow.d/state/config.json` is missing, continue with defaults.
 

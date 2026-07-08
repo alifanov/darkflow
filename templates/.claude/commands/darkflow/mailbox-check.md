@@ -7,7 +7,7 @@ Check the project's IMAP inbox for new messages, create tasks from them, and sen
 Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
 
 Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
-- `language` → output/issue language (default: English)
+- `language` → output/task language (default: English)
 - `branch` → main branch name
 - `mergeStrategy` → `pr` or `direct`
 
