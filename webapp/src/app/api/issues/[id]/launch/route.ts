@@ -49,16 +49,48 @@ export async function POST(
     const child = spawn(
       cmuxBin,
       ["new-workspace", "--name", wsName, "--cwd", localPath, "--command", command, "--focus", "true"],
-      { detached: true, stdio: "ignore" }
+      { stdio: ["ignore", "pipe", "pipe"] }
     );
 
-    await new Promise<void>((resolve, reject) => {
-      child.once("error", reject);
-      child.once("spawn", () => {
-        child.unref();
-        resolve();
+    // `cmux new-workspace` is a short-lived socket client: it prints
+    // "OK workspace:N" and exits on success, or an "Error: ..." line with a
+    // non-zero code on failure. Wait for the real exit and inspect it — do NOT
+    // report success on `spawn` alone. A common failure: when this dashboard
+    // runs under launchd, the cmux control socket refuses the detached session
+    // ("Failed to write to socket (Broken pipe, errno 32)") so no workspace is
+    // ever created. Surfacing that beats a silent, lying `{ ok: true }`.
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (d) => (stdout += d));
+    child.stderr.on("data", (d) => (stderr += d));
+
+    const exitCode = await new Promise<number>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        child.kill();
+        reject(new Error("cmux new-workspace timed out after 10s"));
+      }, 10_000);
+      child.once("error", (e) => {
+        clearTimeout(timer);
+        reject(e);
+      });
+      child.once("close", (code) => {
+        clearTimeout(timer);
+        resolve(code ?? 0);
       });
     });
+
+    if (exitCode !== 0 || !/\bOK\s+workspace:/i.test(stdout)) {
+      const detail =
+        (stderr || stdout).trim() || `cmux exited with code ${exitCode}`;
+      console.error("launch issue in cmux failed:", detail);
+      const hint = /broken pipe|write to socket/i.test(detail)
+        ? " (the cmux socket rejects launchd-detached processes — run the dashboard from an interactive session)"
+        : "";
+      return NextResponse.json(
+        { error: `cmux couldn't create the workspace: ${detail}${hint}` },
+        { status: 502 }
+      );
+    }
 
     // Bring the cmux app to the foreground (macOS). `--focus true` selects the new
     // workspace inside cmux, but the OS window still needs activating. Best-effort.

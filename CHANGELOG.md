@@ -12,6 +12,10 @@ Categories:
 
 ---
 
+## [4.9.2] — 2026-07-09
+
+- **Webapp (fix) — «Fix in cmux» перестал молча врать `{ ok: true }`.** Раньше route (`webapp/src/app/api/issues/[id]/launch/route.ts`) ждал только событие ОС `spawn` и рапортовал успех, даже когда сам `cmux new-workspace` падал и воркспейс не создавался. Классический случай: dashboard запущен под **launchd** (`com.darkflow.web`), а control-сокет cmux отвергает detached-сессию (`Failed to write to socket (Broken pipe, errno 32)`) — команда открывалась, но пустая, а кнопка показывала «всё ок». Теперь route дожидается реального `exit`, проверяет в выводе `OK workspace:` и на провал возвращает **502 с настоящим текстом ошибки** (+ подсказку про launchd при broken-pipe). Причина, по которой сокет не пускает launchd-процесс — та же, что в предупреждении про воркер в `CLAUDE.md`: launchd-процесс теряет интерактивную login/GUI-сессию. Чтобы кнопка снова создавала воркспейсы, webapp должен работать в интерактивной сессии пользователя.
+
 ## [4.9.1] — 2026-07-08
 
 - **Команды — чистка рудиментной формулировки «issue» со времён GitHub Issues.** В 16 routine-командах (`ads-review`, `security-audit`, `analytics-review`, `architecture-review`, `build-optimization`, `code-health`, `coolify-check-deployment`, `design-audit`, `design-critique`, `design-harden`, `docs-audit`, `gsc-check`, `mailbox-check`, `observability-check`, `uptime-check`, `vulnerability-check`) шаг чтения конфига говорил `language → output/issue language` — наследие эпохи до перехода на собственный task-store. Заменено на `output/task language`, чтобы слово «issue» не подталкивало агента создавать GitHub Issues вместо `df task create`. Логику команд не трогали — все они и раньше создавали задачи через `~/.darkflow/df task create`.
