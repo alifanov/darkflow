@@ -269,7 +269,7 @@ ALL_DF_COMMANDS=(
   gsc-check ads-review coolify-check-deployment claude-md-update security-audit
   vulnerability-check architecture-review update-config docs-audit product-overview
   build-optimization csp-setup uptime-check grill design-audit design-critique
-  design-harden mailbox-check code-health fix-ci-issue
+  design-harden mailbox-check code-health fix-ci-issue web-vitals
 )
 
 # Fetch a template (local clone or remote) to dest, always overwriting.

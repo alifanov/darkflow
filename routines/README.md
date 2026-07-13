@@ -119,6 +119,7 @@ By default routines **never** create a git worktree. They run in the project roo
 
 1. Add a prompt file: `templates/.claude/commands/darkflow/<name>.md`
 2. Add it to the catalog in `webapp/src/lib/routines.ts` (name, default cron/model, module gate)
-3. Document it here and in `routines/<name>.md`
+3. Add the name to `ALL_DF_COMMANDS` in `install.sh` — the installer fetches only the commands in that hardcoded list, so a routine missing from it never lands in `~/.claude/commands/darkflow/`
+4. Document it here and in `routines/<name>.md`
 
 New routines auto-propagate to every project via `/api/projects/by-repo` — no per-project edit needed.

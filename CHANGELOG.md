@@ -12,6 +12,10 @@ Categories:
 
 ---
 
+## [4.12.1] — 2026-07-13
+
+- **Installer** — add `web-vitals` to `ALL_DF_COMMANDS` in `install.sh` so the installer actually fetches the new command into `~/.claude/commands/darkflow/` (v4.12.0 shipped the routine but not the installer entry, so `/darkflow:web-vitals` never appeared). Documented the missing step in `routines/README.md` → "Adding a new routine".
+
 ## [4.12.0] — 2026-07-13
 
 - **New routine** — `web-vitals` (weekly Mon 6:00): measures Core Web Vitals (LCP, INP, CLS, TTFB, FCP) on the live production URL via the Google PageSpeed Insights API, prefers real-user CrUX field data over Lighthouse lab data, and files a human-triaged task (priority `high`/`medium`) when any metric lands in Google's "poor" band. Skips silently on non-public URLs; writes a dated snapshot + metrics JSON on every run. Added command (`templates/.claude/commands/darkflow/web-vitals.md`), catalog entry (`routines.ts`), and docs.
