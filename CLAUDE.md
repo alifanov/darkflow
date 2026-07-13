@@ -5,11 +5,13 @@ Dark Flow is a workflow installer for AI-assisted development projects.
 > **Never start, restart, or relaunch the global worker yourself — always ask the user to do it from their own terminal.** The worker's `claude`/`codex` engine authenticates from the user's interactive/login session (keychain / env credentials that a Claude Code session does **not** have). A worker you launch inherits your credential-less environment, so every routine fails with `Not logged in · Please run /login` until the user relaunches it themselves. This holds even for `launchctl bootstrap`/`kickstart` — loading a launchd agent still needs to happen from the user's own session for keychain access to work. A running worker also holds the old script in memory, so after a self-update tell the user to restart it:
 > ```bash
 > # the USER runs this in their own terminal:
-> make reload           # loads (first run) or restarts (afterwards) web + worker under launchd
+> make reload           # (re)starts the worker under launchd; the webapp does NOT run under launchd
+> make web              # runs the webapp interactively (required for the cmux launch buttons)
 > # or, if the worker is still a bare background process (pre-launchd):
 > pkill -f ~/.darkflow/darkflow-run.sh
 > nohup /usr/local/bin/bash ~/.darkflow/darkflow-run.sh >/dev/null 2>> ~/.darkflow/worker.err.log &
 > ```
+> The **webapp must run in the user's interactive session** (`make web`), not launchd: cmux's control socket rejects launchd-detached processes ("Broken pipe"), so the "Open in cmux" buttons would silently create no workspace. Same keychain/session reason as the worker.
 > Stopping/killing the worker on request is fine (no credentials needed). Starting or restarting it is always the user's action — do not run it for them, not even in the background, not even when explicitly asked to "restart it"; instead, print the command above and ask them to run it.
 
 ## What's in this repo

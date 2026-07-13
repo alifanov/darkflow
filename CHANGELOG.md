@@ -12,6 +12,15 @@ Categories:
 
 ---
 
+## [4.11.0] — 2026-07-13
+
+Webapp снят с launchd — теперь запускается **интерактивно** в сессии пользователя, чтобы работали кнопки «Open in cmux».
+
+- **Причина** — под launchd webapp отвязан от GUI/login-сессии, и control-socket cmux отклоняет его подключение (`Failed to write to socket, Broken pipe, errno 32`). `cmux new-workspace` падает, воркспейс не создаётся: cmux уже открыт, поэтому выглядит как «открылся, но сессия не стартует». Тот же класс проблемы, что и с воркером/keychain.
+- **Установщик** — `write_launchd_plists()` больше не создаёт `com.darkflow.web.plist`; при апгрейде старый plist выбутивается (`launchctl bootout`) и удаляется. Help-текст: `make reload` грузит только worker, webapp — через `make web`.
+- **Makefile** — `reload` перестал грузить web под launchd (только worker + освобождает :5555); удалены таргеты `web-start/web-restart/web-status/web-logs`; `web-stop` теперь выбутивает залётный launchd-инстанс. `web` помечен как обязательно интерактивный.
+- **Docs** — CLAUDE.md: webapp запускается интерактивно (`make web`), не под launchd; worker остаётся под launchd.
+
 ## [4.10.0] — 2026-07-13
 
 Миграция аналитики с **PostHog** на **OpenPanel** (open-source product analytics).

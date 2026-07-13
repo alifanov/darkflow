@@ -418,46 +418,16 @@ EOF
     success "Wrote launchd agent ${wplist}"
   fi
 
-  # Web plist only in the Dark Flow control-plane repo — the webapp lives here.
-  if [[ -f "webapp/package.json" ]] && grep -q 'darkflow-webapp' webapp/package.json 2>/dev/null; then
-    local webplist="$la/com.darkflow.web.plist" pnpm_bin
-    pnpm_bin="$(command -v pnpm 2>/dev/null || echo pnpm)"
-    if [[ ! -f "$webplist" ]]; then
-      cat > "$webplist" <<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-	<key>Label</key>
-	<string>com.darkflow.web</string>
-	<key>WorkingDirectory</key>
-	<string>$(pwd)/webapp</string>
-	<key>ProgramArguments</key>
-	<array>
-		<string>/bin/sh</string>
-		<string>-c</string>
-		<string>echo "=== up \$(date) (launchd) ===" &gt;&gt; ${GLOBAL_DIR}/web.out.log; exec ${pnpm_bin} start</string>
-	</array>
-	<key>EnvironmentVariables</key>
-	<dict>
-		<key>PATH</key>
-		<string>${ld_path}</string>
-		<key>PORT</key>
-		<string>5555</string>
-	</dict>
-	<key>RunAtLoad</key>
-	<true/>
-	<key>KeepAlive</key>
-	<true/>
-	<key>StandardOutPath</key>
-	<string>${GLOBAL_DIR}/web.out.log</string>
-	<key>StandardErrorPath</key>
-	<string>${GLOBAL_DIR}/web.err.log</string>
-</dict>
-</plist>
-EOF
-      success "Wrote launchd agent ${webplist}"
-    fi
+  # NOTE: no launchd agent for the webapp. cmux's control socket rejects
+  # launchd-detached processes ("Broken pipe, errno 32"), so the dashboard's cmux
+  # launch buttons would silently create no workspace. The webapp must run in the
+  # operator's interactive session — `make web` (or `cd webapp && PORT=5555 pnpm start`).
+  # Remove any stale web plist from an older install so nothing re-supervises it.
+  local webplist="$la/com.darkflow.web.plist"
+  if [[ -f "$webplist" ]]; then
+    launchctl bootout "gui/$(id -u)/com.darkflow.web" 2>/dev/null || true
+    rm -f "$webplist"
+    success "Removed obsolete launchd agent ${webplist} (webapp now runs interactively — see \`make web\`)"
   fi
 }
 
@@ -469,7 +439,8 @@ worker_start_help() {
   write_launchd_plists
   info "Start the global worker yourself (services every project; never auto-started):"
   if [[ "$DETECTED_OS" == "macos" ]]; then
-    dim  "  make reload   # from the Dark Flow repo — loads web + worker under launchd (auto-restart)"
+    dim  "  make reload   # from the Dark Flow repo — (re)loads the worker under launchd (auto-restart)"
+    dim  "  # then run the webapp interactively (needed for the cmux buttons):  make web"
     dim  "  # or just the worker:  launchctl bootstrap gui/\$(id -u) $HOME/Library/LaunchAgents/com.darkflow.worker.plist"
     dim  "  # or a bare background process:"
   fi
