@@ -156,7 +156,6 @@ darkflow_val() {
     merge_strategy)     jqexpr='.mergeStrategy' ;;
     min_priority)       jqexpr='.minPriority' ;;
     max_concurrent)     jqexpr='.maxConcurrent' ;;
-    posthog_project_id) jqexpr='.posthogProjectId' ;;
     obs_tool)           jqexpr='.obsTool' ;;
     obs_url)            jqexpr='.obsUrl' ;;
     modules)            jqexpr='(.modules // []) | join(",")' ;;

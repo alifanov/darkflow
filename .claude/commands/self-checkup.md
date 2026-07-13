@@ -55,7 +55,7 @@ Cross-check that the repo's own pieces don't contradict each other. Report every
   the canonical set below (typo or a routine inventing a new value the webapp/UI doesn't
   render):
   `action: fix, reply; priority: critical, high, medium, low; source: ads, build, ci,
-  code-health, design, gsc, mailbox, manual, posthog, security-review, seo, signoz, uptime,
+  code-health, design, gsc, mailbox, manual, openpanel, security-review, seo, signoz, uptime,
   user-feedback; status: proposed, approved, rejected, in-progress, none`.
 - **Modules**: the `_module_active()` case statement in `install.sh` must list every
   `MOD_*` module flag defined in the script (a known past gotcha — docs-audit and

@@ -51,7 +51,7 @@ Rule is universal — only the folder changes by data source:
 
 | Data source | Where to write snapshot | Triggers |
 |---|---|---|
-| Analytics, funnels, retention, metric investigation | `insights/analytics/YYYY-MM-DD.md` | Any HogQL queries, PostHog MCP, funnel analysis |
+| Analytics, funnels, retention, metric investigation | `insights/analytics/YYYY-MM-DD.md` | Any OpenPanel MCP queries, funnel analysis |
 | Google Search Console — positions, CTR, impressions, indexing | `insights/search-console/YYYY-MM-DD.md` | Any GSC data review, position checks, indexing audit |
 | SEO audit — technical + on-page (titles, meta, schema, crawlability) | `insights/seo-audit/YYYY-MM-DD.md` | On-page/technical SEO review, meta/heading/schema audit |
 | Paid ads — campaigns, keywords, spend, CPA, ROAS | `insights/ads/YYYY-MM-DD.md` | Any ads account check, campaign optimization |
@@ -71,7 +71,7 @@ Rule is universal — only the folder changes by data source:
 
 Minimum a file must contain:
 
-- Title + **data source** (what exactly was checked — GSC property, Ads account ID, PostHog project) + **period**
+- Title + **data source** (what exactly was checked — GSC property, Ads account ID, OpenPanel project) + **period**
 - **Key Metrics** — table "metric / value / vs previous snapshot"
 - Breakdowns that were requested (queries / pages / campaigns / keywords / funnels — as applicable)
 - Anomalies and errors

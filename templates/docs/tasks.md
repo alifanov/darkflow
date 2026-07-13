@@ -31,7 +31,7 @@ One value per task. The **task body** links directly to the specific snapshot or
 
 | Value | Source |
 |---|---|
-| `posthog` | `docs/insights/analytics/*.md` (PostHog / HogQL) |
+| `openpanel` | `docs/insights/analytics/*.md` (OpenPanel) |
 | `gsc` | `docs/insights/search-console/*.md` (Google Search Console) |
 | `seo` | `docs/insights/seo-audit/*.md` (technical/on-page SEO audit) |
 | `ads` | `docs/insights/ads/*.md` (Google Ads) |
@@ -106,7 +106,7 @@ Exactly one, and it is **required** — every task must carry a priority. Replac
 
 ## Antipatterns
 
-- **Don't encode dates in `source`** (`posthog-2026-05-16`) — use `--source posthog` + a link to the snapshot in the body.
+- **Don't encode dates in `source`** (`openpanel-2026-05-16`) — use `--source openpanel` + a link to the snapshot in the body.
 - **Don't encode priority in the title** (`[SEO/P0]`) — use `--priority critical`.
 - **Don't recreate a declined task** without new data — note in the snapshot: "Not recreating — declined as task #N."
 - **Don't close a task manually as "done"** without a summary comment — leave a comment describing what was done before closing, for traceability.

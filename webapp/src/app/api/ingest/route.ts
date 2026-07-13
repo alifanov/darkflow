@@ -66,7 +66,6 @@ interface IngestBody {
   modules?: string[];
   obsTool?: string;
   obsUrl?: string;
-  posthogProjectId?: string;
   darkflowVersion?: string;
   analytics?: IngestAnalytics;
   security?: IngestSecurity;
@@ -105,7 +104,6 @@ export async function POST(req: NextRequest) {
       modules: body.modules ?? [],
       obsTool: body.obsTool || null,
       obsUrl: body.obsUrl || null,
-      posthogProjectId: body.posthogProjectId || null,
       darkflowVersion: body.darkflowVersion || null,
       lastSyncedAt: new Date(),
     },

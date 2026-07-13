@@ -25,7 +25,6 @@ model Project {
   minPriority   String    @default("medium")
   modules            String[]
   maxConcurrent      Int       @default(3)
-  posthogProjectId   String?
   obsTool            String?
   obsUrl             String?
   darkflowVersion    String?

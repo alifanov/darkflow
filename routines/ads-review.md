@@ -43,4 +43,4 @@ The routine writes an ads snapshot to `docs/insights/ads/YYYY-MM-DD.md` before p
 ## Notes
 
 - Covers paid campaigns only — organic search is handled by `gsc-check`
-- Analytics attribution (ROAS from PostHog) is covered by `analytics-review` — avoid duplicate tasks
+- Analytics attribution (ROAS from OpenPanel) is covered by `analytics-review` — avoid duplicate tasks

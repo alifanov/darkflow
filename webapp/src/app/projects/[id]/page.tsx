@@ -301,7 +301,6 @@ export default async function ProjectPage({
             mergeStrategy: project.mergeStrategy,
             minPriority: project.minPriority,
             maxConcurrent: project.maxConcurrent,
-            posthogProjectId: project.posthogProjectId ?? null,
             obsTool: project.obsTool ?? null,
             obsUrl: project.obsUrl ?? null,
             settingsUpdatedAt: project.settingsUpdatedAt ?? null,

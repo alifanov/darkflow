@@ -28,13 +28,13 @@ The command reads `.darkflow` for the output language — no placeholders to rep
 
 ## Required integrations
 
-- **Analytics MCP** (PostHog, Mixpanel, etc.) configured in project `.claude/settings.json`
+- **OpenPanel MCP** (`read` client, scoped to this project) configured in project `.mcp.json`
 
 ---
 
 ## What gets created
 
-Tasks with: `status=proposed`, `source=posthog`, `priority=*`
+Tasks with: `status=proposed`, `source=openpanel`, `priority=*`
 
 The routine writes an analytics snapshot to `docs/insights/analytics/YYYY-MM-DD.md` before posting recommendations.
 

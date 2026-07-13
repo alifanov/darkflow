@@ -43,7 +43,6 @@ interface SettingsPatchBody {
   minPriority?: string;
   modules?: string[];
   maxConcurrent?: number;
-  posthogProjectId?: string | null;
   obsTool?: string | null;
   obsUrl?: string | null;
   routines?: RoutinePatch[];
@@ -83,7 +82,6 @@ export async function PATCH(
         ...(body.minPriority !== undefined && { minPriority: body.minPriority }),
         ...(body.modules !== undefined && { modules: body.modules }),
         ...(body.maxConcurrent !== undefined && { maxConcurrent: body.maxConcurrent }),
-        ...(body.posthogProjectId !== undefined && { posthogProjectId: body.posthogProjectId }),
         ...(body.obsTool !== undefined && { obsTool: body.obsTool }),
         ...(body.obsUrl !== undefined && { obsUrl: body.obsUrl }),
         settingsUpdatedAt: new Date(),

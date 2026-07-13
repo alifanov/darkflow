@@ -50,7 +50,7 @@ module is enabled at install):
 | Folder | Enabled by | Contents |
 |---|---|---|
 | `insights/qualitative/` | always | Interviews, feedback, session recordings |
-| `insights/analytics/` | analytics module | Analytics / HogQL snapshots |
+| `insights/analytics/` | analytics module | Analytics / OpenPanel snapshots |
 | `insights/search-console/` | gsc module | Google Search Console snapshots |
 | `insights/seo-audit/` | gsc module | SEO audit snapshots |
 | `insights/ads/` | ads module | Paid-ads snapshots |

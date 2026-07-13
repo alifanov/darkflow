@@ -31,7 +31,7 @@ All routines and their default cron expressions:
 | Routine | Cron | Description |
 |---|---|---|
 | `fix-issues` | `0 * * * *` | Hourly — picks up approved tasks, implements, commits directly to the base branch (PR mode optional per project) |
-| `analytics-review` | `0 8 * * *` | Daily 8:00 — PostHog + recent commits → tasks |
+| `analytics-review` | `0 8 * * *` | Daily 8:00 — OpenPanel + recent commits → tasks |
 | `observability-check` | `30 8 * * *` | Daily 8:30 — errors / latency → tasks |
 | `gsc-check` | `0 8 * * 1` | Weekly Mon 8:00 — Google Search Console + technical/on-page SEO audit → tasks |
 | `coolify-check-deployment` | `0 9 * * *` | Daily 9:00 — deployment status → `critical` task on failed deploy |

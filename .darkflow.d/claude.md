@@ -65,7 +65,7 @@ Routine commands (run any routine interactively or use as the routine prompt):
 - `/darkflow:fix-issues` — pick up one approved task and close it
 - `/darkflow:security-audit` — full security review (static + runtime) → tasks
 - `/darkflow:build-optimization` — build + deploy optimization analysis → tasks
-- `/darkflow:csp-setup` — wire CSP violation reporting → PostHog or internal endpoint (one-time setup)
+- `/darkflow:csp-setup` — wire CSP violation reporting → internal endpoint (one-time setup)
 - `/darkflow:uptime-check` — DNS + HTTP + page-load check; site down → auto-approved critical task
 
 Interactive commands (planning/design, human-in-the-loop — no tasks or snapshots):

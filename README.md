@@ -140,7 +140,7 @@ The real power comes from scheduling Claude agents that run the loop automatical
 | Routine | Cron | What it does |
 |---|---|---|
 | [**Fix issues**](routines/fix-issues.md) | `0 * * * *` | Hourly — picks up an approved task → implements → commits directly to the base branch (PR mode optional) |
-| [Analytics review](routines/analytics-review.md) | `0 8 * * *` | Daily 8:00 — PostHog + commits → proposed tasks |
+| [Analytics review](routines/analytics-review.md) | `0 8 * * *` | Daily 8:00 — OpenPanel + commits → proposed tasks |
 | [Observability check](routines/observability-check.md) | `30 8 * * *` | Daily 8:30 — SigNoz/errors/slow URLs → tasks |
 | [GSC check](routines/gsc-check.md) | `0 8 * * 1` | Weekly Mon 8:00 — Google Search Console + technical/on-page SEO audit → tasks |
 | [Ads review](routines/ads-review.md) | `0 8 * * 1` | Weekly Mon 8:00 — paid ads performance → tasks *(optional)* |
@@ -245,7 +245,7 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | Command | What it does |
 |---|---|
 | `/darkflow:fix-issues` | Pick up one approved task, implement, close |
-| `/darkflow:analytics-review` | PostHog + commits → tasks + analytics snapshot |
+| `/darkflow:analytics-review` | OpenPanel + commits → tasks + analytics snapshot |
 | `/darkflow:observability-check` | Errors / slow queries / latency → tasks |
 | `/darkflow:gsc-check` | Google Search Console + technical/on-page SEO audit → tasks |
 | `/darkflow:coolify-check-deployment` | Deployment status check → `critical` task on failed deploy |
@@ -264,7 +264,7 @@ Human-in-the-loop, for planning/design — these ask questions and wait for answ
 | Command | What it does |
 |---|---|
 | `/darkflow:grill` | Pressure-test a plan against the domain model — sharpens terminology, updates `docs/product/glossary.md` and `docs/decisions/` (ADRs) inline |
-| `/darkflow:csp-setup` | One-time setup — wire CSP violation reporting to PostHog (if present) or an internal `/api/csp-report` endpoint → your observability backend |
+| `/darkflow:csp-setup` | One-time setup — wire CSP violation reporting to an internal `/api/csp-report` endpoint → your observability backend |
 
 Routine commands automatically call `bash ~/.darkflow/get-config.sh` before running — this fetches the latest project settings (branch, language, merge strategy, modules, routine schedule) from the **Web UI Settings tab** into `.darkflow.d/state/config.json`. If the server is unreachable, commands fall back to the last fetched copy silently.
 

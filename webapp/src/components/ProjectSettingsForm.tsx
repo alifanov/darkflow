@@ -36,7 +36,6 @@ interface ProjectSettingsFormProps {
     mergeStrategy: string;
     minPriority: string;
     maxConcurrent: number;
-    posthogProjectId: string | null;
     obsTool: string | null;
     obsUrl: string | null;
     settingsUpdatedAt: Date | null;
@@ -97,7 +96,6 @@ export function ProjectSettingsForm({ projectId, initialValues }: ProjectSetting
     PRIORITY_LEVELS.includes(initialValues.minPriority) ? initialValues.minPriority : "medium",
   );
   const [maxConcurrent, setMaxConcurrent] = useState(String(initialValues.maxConcurrent));
-  const [posthogProjectId, setPosthogProjectId] = useState(initialValues.posthogProjectId ?? "");
   const [obsTool, setObsTool] = useState(initialValues.obsTool ?? "");
   const [obsUrl, setObsUrl] = useState(initialValues.obsUrl ?? "");
 
@@ -132,7 +130,6 @@ export function ProjectSettingsForm({ projectId, initialValues }: ProjectSetting
             mergeStrategy,
             minPriority,
             maxConcurrent: parseInt(maxConcurrent, 10) || 3,
-            posthogProjectId: posthogProjectId || null,
             obsTool: obsTool || null,
             obsUrl: obsUrl || null,
           }),
@@ -163,7 +160,6 @@ export function ProjectSettingsForm({ projectId, initialValues }: ProjectSetting
     mergeStrategy,
     minPriority,
     maxConcurrent,
-    posthogProjectId,
     obsTool,
     obsUrl,
   ]);
@@ -302,8 +298,6 @@ export function ProjectSettingsForm({ projectId, initialValues }: ProjectSetting
         <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: "var(--muted)" }}>
           Integrations
         </h3>
-        <InputField label="PostHog project ID" value={posthogProjectId} onChange={setPosthogProjectId} placeholder="phc_..." />
-
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--muted)" }}>
             Observability tool

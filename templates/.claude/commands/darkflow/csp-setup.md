@@ -17,28 +17,13 @@ Run `bash ~/.darkflow/get-config.sh` to refresh the project config, then read `.
 Determine, by reading the code (do not guess):
 
 1. **Where the site's response CSP is (or should be) set** — typically `middleware.ts` / `src/middleware.ts`, `next.config.{ts,js}` `async headers()`, or a `proxy.ts`. Note whether a `Content-Security-Policy` (enforced) or `Content-Security-Policy-Report-Only` header already exists, and its directives.
-2. **Whether PostHog is integrated in the app** — look for a `posthog-js` dependency, a provider/init, a public key (`NEXT_PUBLIC_POSTHOG_KEY` or a config constant), and the ingestion host actually used (`https://eu.i.posthog.com` or `https://us.i.posthog.com`). The region MUST match what the app already uses.
-3. **Otherwise, the project's server observability** — winston / a `logger` module / OpenTelemetry (e.g. SigNoz). Find the reusable logger the app already uses for server logs.
+2. **The project's server observability** — winston / a `logger` module / OpenTelemetry (e.g. SigNoz). Find the reusable logger the app already uses for server logs.
 
 ## Step 3 — Choose the destination
 
-- **PostHog present →** report to PostHog's CSP endpoint. Build the URI from the app's existing key + region host:
-  `<ingest-host>/report/?token=<key>` — the **trailing slash on `/report/` is required**; omitting it drops reports silently. Reference the existing env var / config constant, never hardcode the token literal.
-- **No PostHog, but server observability exists (SigNoz/OTel/winston) →** create an internal collector route and report to it (Step 4b).
-- **Neither →** still create the internal collector (Step 4b); it falls back to a structured `console.warn` that server log collection can pick up.
+Reports always go to an **internal collector route** on the app's own origin (`/api/csp-report`), which forwards each violation to the project's logger / observability backend. If the app has no reusable logger, the collector falls back to a structured `console.warn` that server log collection can pick up. (OpenPanel is product analytics and does not accept CSP violation reports, so there is no external destination here.)
 
-## Step 4a — Wire reporting (PostHog destination)
-
-Append to the CSP directive string:
-- `report-uri <ingest-host>/report/?token=<key>`
-- `report-to posthog`
-
-And wherever the CSP response header is set, also set a sibling header:
-- `Reporting-Endpoints: posthog="<ingest-host>/report/?token=<key>"`
-
-Add this to the **existing enforced policy** if there is one (so real violations users hit are captured). If the project has no CSP at all, add a baseline `Content-Security-Policy-Report-Only` (see Step 5) carrying these directives.
-
-## Step 4b — Wire reporting (internal endpoint → observability)
+## Step 4 — Wire reporting (internal endpoint → observability)
 
 1. Create a route handler at `app/api/csp-report/route.ts` (or `src/app/api/csp-report/route.ts` — match the project's App Router layout; for Pages Router use `pages/api/csp-report.ts`). It must:
    - Accept **POST** only; `export const dynamic = "force-dynamic"`.
@@ -68,7 +53,7 @@ font-src 'self' data: <discovered hosts>;
 worker-src 'self' blob:
 ```
 
-Then append the reporting directives from Step 4a or 4b. Notes:
+Then append the reporting directives from Step 4. Notes:
 - Err toward allowing what the app actually uses to keep noise low.
 - If the app runs inside an embedder (e.g. a Telegram Mini App), do not over-restrict `frame-ancestors` and allow the embedder's script/connect/img hosts.
 - If an enforced CSP already exists but is trivial (e.g. only `frame-ancestors`), leave it intact and add a SEPARATE Report-Only baseline so meaningful violations are actually surfaced.
@@ -80,6 +65,6 @@ Then append the reporting directives from Step 4a or 4b. Notes:
 
 ## Step 7 — Report
 
-Summarize: which file holds the CSP, the destination chosen (PostHog region + endpoint, or internal `/api/csp-report` → which logger/backend), the final policy, and the build/test result. No tasks and no metrics snapshot are created — this is a setup command.
+Summarize: which file holds the CSP, the internal `/api/csp-report` destination → which logger/backend, the final policy, and the build/test result. No tasks and no metrics snapshot are created — this is a setup command.
 
-Once violations start flowing: for PostHog, open the **CSP Violation Reports** dashboard (create it from the template if absent, in the correct EU/US cloud); for the internal endpoint, query your observability backend for `csp-violation` logs/spans.
+Once violations start flowing, query your observability backend for `csp-violation` logs/spans.

@@ -42,7 +42,6 @@ MOD_CI_GATE=""
 OBS_TOOL=""
 OBS_URL=""
 OBS_API_KEY=""
-POSTHOG_PROJECT_ID=""
 MAILBOX_IMAP_HOST=""
 MAILBOX_IMAP_PORT=""
 MAILBOX_IMAP_USER=""
@@ -113,7 +112,6 @@ while [[ $# -gt 0 ]]; do
     --obs-tool)           OBS_TOOL="$2"; shift 2 ;;
     --obs-url)            OBS_URL="$2"; shift 2 ;;
     --obs-api-key)        OBS_API_KEY="$2"; shift 2 ;;
-    --posthog-project-id) POSTHOG_PROJECT_ID="$2"; shift 2 ;;
     --webapp-url)         WEBAPP_URL="$2"; WEBAPP_URL_SET=true; shift 2 ;;
     --self-update)        SELF_UPDATE=true; NON_INTERACTIVE=true; shift ;;
     --branch)             MAIN_BRANCH="$2"; shift 2 ;;
@@ -133,7 +131,7 @@ while [[ $# -gt 0 ]]; do
       echo "  -y, --yes             Accept defaults non-interactively (no optional modules)"
       echo "  --dry-run             Show what would change without applying anything"
       echo "  --force               Overwrite locally-modified files; skip version check"
-      echo "  --with-analytics      Include analytics module (PostHog/Mixpanel)"
+      echo "  --with-analytics      Include analytics module (OpenPanel)"
       echo "  --with-observability  Include observability module (SigNoz/Datadog)"
       echo "  --with-gsc            Include Google Search Console module"
       echo "  --with-ads            Include paid ads module (Google Ads/Meta)"
@@ -225,7 +223,6 @@ read_config() {
     modules)            jqexpr='(.modules // []) | join(",")' ;;
     obs_tool)           jqexpr='.obsTool' ;;
     obs_url)            jqexpr='.obsUrl' ;;
-    posthog_project_id) jqexpr='.posthogProjectId' ;;
     *)                  echo "$default"; return ;;
   esac
   v=$(jq -r "${jqexpr} // empty" <<< "$_DF_CFG_JSON" 2>/dev/null)
@@ -549,13 +546,11 @@ register_project() {
     --arg version "$LATEST_VERSION" \
     --arg obsTool "${OBS_TOOL:-}" \
     --arg obsUrl "${OBS_URL:-}" \
-    --arg posthog "${POSTHOG_PROJECT_ID:-}" \
     --argjson modules "$modules_json" \
     '{repoUrl:$repoUrl, name:$name, localPath:$localPath, branch:$branch, language:$language,
       mergeStrategy:$mergeStrategy, modules:$modules, darkflowVersion:$version}
      + (if $obsTool != "" then {obsTool:$obsTool} else {} end)
-     + (if $obsUrl  != "" then {obsUrl:$obsUrl}  else {} end)
-     + (if $posthog != "" then {posthogProjectId:$posthog} else {} end)')
+     + (if $obsUrl  != "" then {obsUrl:$obsUrl}  else {} end)')
   if curl -fsS -m 10 -X POST "${wu}/api/ingest" -H 'Content-Type: application/json' -d "$payload" >/dev/null 2>&1; then
     success "Registered project in the Web UI (${wu})"
   else
@@ -600,7 +595,6 @@ if [[ "$MODE" == "update" ]]; then
   MODULES=$(read_config modules "")
   [[ -z "$OBS_TOOL"           ]] && OBS_TOOL=$(read_config obs_tool "")
   [[ -z "$OBS_URL"            ]] && OBS_URL=$(read_config obs_url "")
-  [[ -z "$POSTHOG_PROJECT_ID" ]] && POSTHOG_PROJECT_ID=$(read_config posthog_project_id "")
   [[ -z "$PROJECT_NAME" ]] && PROJECT_NAME=$(read_config name "")
   WEBAPP_URL=$(read_config webapp_url "$WEBAPP_URL")
   # Populate MOD_* from .darkflow (command-line flags take precedence)
@@ -757,7 +751,7 @@ if [[ "$NON_INTERACTIVE" == false && -t 0 ]] && \
   echo ""
 fi
 
-ask_module MOD_ANALYTICS     "Analytics"           "(PostHog, Mixpanel, Amplitude…) — daily review routine + insights/analytics/"
+ask_module MOD_ANALYTICS     "Analytics"           "(OpenPanel) — daily review routine + insights/analytics/"
 ask_module MOD_OBSERVABILITY  "Observability"       "(SigNoz, Datadog, Grafana…) — daily error/latency monitoring routine"
 ask_module MOD_GSC            "Search Console"      "(Google Search Console) — weekly GSC check + technical/on-page SEO audit routine + insights/search-console/ + insights/seo-audit/"
 ask_module MOD_ADS            "Paid Ads"            "(Google Ads, Meta…) — insights/ads/ folder"              false
@@ -799,18 +793,18 @@ if [[ "$MOD_OBSERVABILITY" == true && -z "$OBS_URL" && \
   esac
 fi
 
-# ── PostHog integration ───────────────────────────────────────────────────────
+# ── OpenPanel integration ─────────────────────────────────────────────────────
 
-if [[ "$MOD_ANALYTICS" == true && -z "$POSTHOG_PROJECT_ID" && \
-      "$NON_INTERACTIVE" == false && -t 0 ]]; then
+if [[ "$MOD_ANALYTICS" == true && "$NON_INTERACTIVE" == false && -t 0 ]]; then
   echo ""
-  echo -e "${BOLD}PostHog integration${RESET}"
+  echo -e "${BOLD}OpenPanel integration${RESET}"
   echo ""
-  echo "  Storing the PostHog project ID prevents analytics routines from"
-  echo "  accidentally querying the wrong project when multiple projects"
-  echo "  share the same PostHog MCP instance."
+  echo "  The analytics-review routine reads data via the OpenPanel MCP."
+  echo "  Create a read client in OpenPanel (Settings → API Clients), then"
+  echo "  register the MCP in this project:"
   echo ""
-  read -rp "  PostHog project ID (find it in PostHog → Project Settings → ID): " POSTHOG_PROJECT_ID
+  echo "    TOKEN=\$(echo -n \"CLIENT_ID:CLIENT_SECRET\" | base64)"
+  echo "    claude mcp add --transport http openpanel \"https://api.openpanel.dev/mcp?token=\$TOKEN\""
   echo ""
 fi
 
@@ -1061,7 +1055,7 @@ HEREDOC
   else
     echo "- **Fix issues** (Hourly) — picks up an approved task → PR → merge to ${MAIN_BRANCH}"
   fi
-  [[ "$MOD_ANALYTICS"     == true ]] && echo "- **Analytics review** (Daily 8:00) — PostHog + recent commits → tasks"
+  [[ "$MOD_ANALYTICS"     == true ]] && echo "- **Analytics review** (Daily 8:00) — OpenPanel + recent commits → tasks"
   if [[ "$MOD_OBSERVABILITY" == true ]]; then
     local _obs_label="${OBS_TOOL:-Observability tool}"
     echo "- **Observability check** (Daily 8:30) — ${_obs_label}: errors / slow queries / latency → tasks"
@@ -1092,7 +1086,7 @@ HEREDOC
   echo ""
   echo "Routine commands (run any routine interactively or use as the routine prompt):"
   echo "- \`/darkflow:fix-issues\` — pick up one approved task and close it"
-  [[ "$MOD_ANALYTICS"     == true ]] && echo "- \`/darkflow:analytics-review\` — PostHog + commits → tasks"
+  [[ "$MOD_ANALYTICS"     == true ]] && echo "- \`/darkflow:analytics-review\` — OpenPanel + commits → tasks"
   [[ "$MOD_OBSERVABILITY" == true ]] && echo "- \`/darkflow:observability-check\` — errors / slow queries / latency → tasks"
   [[ "$MOD_GSC"           == true ]] && echo "- \`/darkflow:gsc-check\` — Google Search Console + technical/on-page SEO audit → tasks"
   [[ "$MOD_ADS"           == true ]] && echo "- \`/darkflow:ads-review\` — paid ads performance → tasks"
@@ -1104,7 +1098,7 @@ HEREDOC
   [[ "$MOD_MAILBOX"       == true ]] && echo "- \`/darkflow:mailbox-check\` — read new mail and send approved replies via SMTP"
   echo "- \`/darkflow:security-audit\` — full security review (static + runtime) → tasks"
   echo "- \`/darkflow:build-optimization\` — build + deploy optimization analysis → tasks"
-  echo "- \`/darkflow:csp-setup\` — wire CSP violation reporting → PostHog or internal endpoint (one-time setup)"
+  echo "- \`/darkflow:csp-setup\` — wire CSP violation reporting → internal endpoint (one-time setup)"
   echo "- \`/darkflow:uptime-check\` — DNS + HTTP + page-load check; site down → auto-approved critical task"
   [[ "$MOD_FALLOW"        == true ]] && echo "- \`/darkflow:code-health\` — fallow audit (dead code, dupes, cycles, complexity) → tasks"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-audit\` — five-dimension design quality check → tasks"
@@ -1613,7 +1607,7 @@ echo "  security-audit       0 3 * * 0      Full security review → tasks"
 echo "  build-optimization   0 4 * * 0      Build + deploy pipeline analysis → tasks"
 echo "  uptime-check         0 */4 * * *    DNS + HTTP + page-load check → critical task if site down"
 echo "  vulnerability-check  0 6 * * *      GitHub Dependabot + code scanning → tasks"
-[[ "$MOD_ANALYTICS"     == true ]] && echo "  analytics-review     0 8 * * *      PostHog + commits → tasks"
+[[ "$MOD_ANALYTICS"     == true ]] && echo "  analytics-review     0 8 * * *      OpenPanel + commits → tasks"
 [[ "$MOD_OBSERVABILITY" == true ]] && echo "  observability-check  30 8 * * *     Errors / latency → tasks"
 [[ "$MOD_GSC"           == true ]] && echo "  gsc-check            0 8 * * 1      Google Search Console + SEO audit → tasks"
 [[ "$MOD_ADS"           == true ]] && echo "  ads-review           0 8 * * 1      Paid ads performance → tasks"

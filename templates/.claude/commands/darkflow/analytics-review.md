@@ -6,34 +6,20 @@ Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from th
 
 Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
 - `language` → output/task language (default: English)
-- `posthogProjectId` → PostHog project to query (if set)
 
 If `.darkflow.d/state/config.json` is missing, continue with the defaults.
 
-**If `posthog_project_id` is set:** switch the PostHog MCP to that project now — before any queries — using the `switch-project` tool.
-
-<!-- Note: the detection block below (name-match → write ID) is mirrored in self-update.md Step 3. Keep both in sync when modifying. -->
-
-**If `posthog_project_id` is NOT set:** use the PostHog MCP to list all available projects. Find the one whose name best matches the `name` value from `.darkflow.d/state/config.json` (case-insensitive, partial match is fine). Switch to that project. Then persist the discovered ID back into `.darkflow.d/state/config.json`:
-
-```bash
-# on macOS
-sed -i '' "s/^posthog_project_id=.*/posthog_project_id=<ID>/" .darkflow || echo "posthog_project_id=<ID>" >> .darkflow
-# on Linux
-grep -q "^posthog_project_id=" .darkflow && sed -i "s/^posthog_project_id=.*/posthog_project_id=<ID>/" .darkflow || echo "posthog_project_id=<ID>" >> .darkflow
-```
-
-This ensures that future runs always use the correct project without re-detection.
+Analytics come from the **OpenPanel MCP** registered for this project. It uses a `read` client that is already scoped to a single project, so there is no project to select or switch — just query. If no OpenPanel MCP is available, skip the analytics part and review commits only.
 
 ## Step 2 — Do the work
 
-Check the latest commits for the last 24 hours. Check the latest analytics data (PostHog or the analytics tool configured for this project) for the last 24 hours. Check what changes (commits) happened over the last week.
+Check the latest commits for the last 24 hours. Query the last 24 hours of analytics from the OpenPanel MCP (`get_analytics_overview`, `query_events`, `get_funnel`). Check what changes (commits) happened over the last week.
 
 Based on this, suggest improvements.
 
 Before making recommendations, get data on: new user funnel, errors, any anomalies.
 
-Add all recommendations as tasks. Use `--source posthog` and a priority.
+Add all recommendations as tasks. Use `--source openpanel` and a priority.
 
 **Task format (required):**
 
@@ -53,7 +39,7 @@ Add all recommendations as tasks. Use `--source posthog` and a priority.
 
 Create with:
 ```bash
-~/.darkflow/df task create --title "<title>" --source posthog \
+~/.darkflow/df task create --title "<title>" --source openpanel \
   --priority <critical|high|medium|low> --status proposed --body "$(cat <<'EOF'
 <body as above>
 EOF
@@ -62,7 +48,7 @@ EOF
 
 Do NOT create recommendations about paid ads — that is handled by `/darkflow:ads-review`.
 
-Do NOT create PostHog alerts, insights, dashboards, or any other PostHog artifacts. PostHog access is read-only here: only query data. All recommendations go out as tasks — never as PostHog alerts on changes/anomalies.
+Do NOT create OpenPanel dashboards, saved reports, or any other OpenPanel artifacts. OpenPanel access is read-only here: only query data. All recommendations go out as tasks — never as analytics alerts on changes/anomalies.
 
 Write an analytics snapshot to `docs/insights/analytics/YYYY-MM-DD.md` before posting recommendations.
 

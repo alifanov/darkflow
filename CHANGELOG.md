@@ -12,6 +12,18 @@ Categories:
 
 ---
 
+## [4.10.0] — 2026-07-13
+
+Миграция аналитики с **PostHog** на **OpenPanel** (open-source product analytics).
+
+- **Установщик** — убран флаг `--posthog-project-id`, поле `posthogProjectId` в payload регистрации проекта, чтение/маппинг `posthog_project_id`, интерактивный блок «PostHog integration». Вместо него — подсказка по регистрации OpenPanel MCP (`read`-клиент, `claude mcp add --transport http openpanel "https://api.openpanel.dev/mcp?token=<base64(clientId:clientSecret)>"`). Модуль Analytics и генерируемые доки теперь ссылаются на OpenPanel.
+- **Webapp** — удалено поле `posthogProjectId` из модели `Project` (Prisma-миграция `20260713110000_drop_posthog_project_id` с `DROP COLUMN`), из `/api/ingest`, `/api/projects/[id]`, `/api/projects/by-repo`, страницы проекта и формы настроек (убран инпут «PostHog project ID»). Модель аналитики (снапшоты через `POST /api/ingest`) не изменилась.
+- **Updated routine** — `analytics-review` переписан на OpenPanel MCP (`get_analytics_overview`, `query_events`, `get_funnel`); убран блок detection/`switch-project` (read-клиент уже scoped на проект); источник задач `--source posthog` → `--source openpanel`. Из `self-update` удалён шаг детекта PostHog project ID.
+- **Updated routine** — `csp-setup` больше не умеет слать CSP-отчёты в PostHog (у OpenPanel нет endpoint приёма CSP-violations): единственный путь — внутренний `/api/csp-report` → логгер/observability проекта.
+- **Docs/Workflow** — источник задач `posthog` → `openpanel` в issue-template, self-checkup, `tasks.md`, `agent-workflow.md`, `docs/README.md`, `routines/*`; описания команд в README обновлены.
+
+> Требует снятия глобального PostHog-плагина (`posthog@claude-plugins-official`) и регистрации OpenPanel MCP пользователем. После self-update воркер перезапускает **пользователь** (`make reload`).
+
 ## [4.9.2] — 2026-07-09
 
 - **Webapp (fix) — «Fix in cmux» перестал молча врать `{ ok: true }`.** Раньше route (`webapp/src/app/api/issues/[id]/launch/route.ts`) ждал только событие ОС `spawn` и рапортовал успех, даже когда сам `cmux new-workspace` падал и воркспейс не создавался. Классический случай: dashboard запущен под **launchd** (`com.darkflow.web`), а control-сокет cmux отвергает detached-сессию (`Failed to write to socket (Broken pipe, errno 32)`) — команда открывалась, но пустая, а кнопка показывала «всё ок». Теперь route дожидается реального `exit`, проверяет в выводе `OK workspace:` и на провал возвращает **502 с настоящим текстом ошибки** (+ подсказку про launchd при broken-pipe). Причина, по которой сокет не пускает launchd-процесс — та же, что в предупреждении про воркер в `CLAUDE.md`: launchd-процесс теряет интерактивную login/GUI-сессию. Чтобы кнопка снова создавала воркспейсы, webapp должен работать в интерактивной сессии пользователя.

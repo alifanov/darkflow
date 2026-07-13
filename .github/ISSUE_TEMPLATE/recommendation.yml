@@ -9,7 +9,7 @@ body:
       label: Источник
       description: Откуда пришла рекомендация
       options:
-        - source:posthog
+        - source:openpanel
         - source:gsc
         - source:ads
         - source:signoz
