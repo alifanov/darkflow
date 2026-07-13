@@ -12,6 +12,10 @@ Categories:
 
 ---
 
+## [4.13.0] — 2026-07-13
+
+- **Updated routine** — `web-vitals` now runs **Lighthouse locally** (headless Chrome via `pnpm dlx lighthouse`) instead of the PageSpeed Insights API. No API key and no external quota — the keyless PSI path returns `429 Daily Limit for Unauthenticated Use Exceeded`, so the routine was unusable without a key. Trade-off: lab data only (no CrUX field data / real INP; TBT is the INP proxy), but it can now also measure `localhost`/staging URLs. Updated command, `routines/web-vitals.md`, and the catalog label.
+
 ## [4.12.1] — 2026-07-13
 
 - **Installer** — add `web-vitals` to `ALL_DF_COMMANDS` in `install.sh` so the installer actually fetches the new command into `~/.claude/commands/darkflow/` (v4.12.0 shipped the routine but not the installer entry, so `/darkflow:web-vitals` never appeared). Documented the missing step in `routines/README.md` → "Adding a new routine".
