@@ -12,6 +12,10 @@ Categories:
 
 ---
 
+## [4.12.0] — 2026-07-13
+
+- **New routine** — `web-vitals` (weekly Mon 6:00): measures Core Web Vitals (LCP, INP, CLS, TTFB, FCP) on the live production URL via the Google PageSpeed Insights API, prefers real-user CrUX field data over Lighthouse lab data, and files a human-triaged task (priority `high`/`medium`) when any metric lands in Google's "poor" band. Skips silently on non-public URLs; writes a dated snapshot + metrics JSON on every run. Added command (`templates/.claude/commands/darkflow/web-vitals.md`), catalog entry (`routines.ts`), and docs.
+
 ## [4.11.0] — 2026-07-13
 
 Webapp снят с launchd — теперь запускается **интерактивно** в сессии пользователя, чтобы работали кнопки «Open in cmux».

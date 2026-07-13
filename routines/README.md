@@ -40,6 +40,7 @@ All routines and their default cron expressions:
 | `security-audit` | `0 3 * * 0` | Weekly Sun 3:00 — full security review → tasks |
 | `build-optimization` | `0 4 * * 0` | Weekly Sun 4:00 — build + deploy pipeline analysis → tasks |
 | `uptime-check` | `0 */4 * * *` | Every 4 hours — DNS + HTTP + page-load check → **auto-approved** `critical` task if site down |
+| `web-vitals` | `0 6 * * 1` | Weekly Mon 6:00 — Core Web Vitals via PageSpeed Insights → task if a metric is poor |
 | `docs-audit` | `0 5 * * 0` | Weekly Sun 5:00 — docs ↔ code drift check → tasks |
 | `code-health` | `0 7 * * 0` | Weekly Sun 7:00 — fallow audit (dead code, dupes, cycles, complexity) → tasks *(optional, TS/JS only)* |
 | `product-overview` | `0 7 * * 1` | Weekly Mon 7:00 — product overview digest (writes snapshot, no tasks) |
