@@ -10,6 +10,10 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.14.0] — 2026-07-15
+
+- **Updated routine** — `analytics-review` вычищен от нескольких дефектов инструкции: (1) единое окно **7 дней** для аналитики и коммитов вместо смеси 24h/7d, совпадает со снапшот-метриками (`visitors7d`/`revenue7d`); (2) guard от дублей — перед созданием задачи проверяет открытые задачи `--source openpanel` и не плодит повторы по той же метрике/шагу воронки/странице; добавлен порог сигнала (мало трафика → снапшот без задач, без галлюцинаций из шума); (4) убран сбор application/server `errors` (это `observability-check`) — только product-level трение, если инструментировано; (5) `adsSpend7d` в снапшоте всегда `null` (ad spend принадлежит `ads-review`); (7) добавлена рубрика приоритетов critical/high/medium/low.
+
 ---
 
 ## [4.13.0] — 2026-07-13

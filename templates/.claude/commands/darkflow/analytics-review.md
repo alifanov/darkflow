@@ -13,13 +13,27 @@ Analytics come from the **OpenPanel MCP** registered for this project. It uses a
 
 ## Step 2 — Do the work
 
-Check the latest commits for the last 24 hours. Query the last 24 hours of analytics from the OpenPanel MCP (`get_analytics_overview`, `query_events`, `get_funnel`). Check what changes (commits) happened over the last week.
+Work over a **single 7-day window** for everything. Query the last 7 days of analytics from the OpenPanel MCP (`get_analytics_overview`, `query_events`, `get_funnel`). Check what commits happened over the same last 7 days.
 
 Based on this, suggest improvements.
 
-Before making recommendations, get data on: new user funnel, errors, any anomalies.
+Before making recommendations, get data on: new user funnel, product-level friction (rage-clicks, dead-clicks, drop-offs — only if instrumented in OpenPanel), any anomalies. Do **not** chase application/server errors here — those are `/darkflow:observability-check`.
 
-Add all recommendations as tasks. Use `--source openpanel` and a priority.
+**Skip if there is no signal.** If traffic/conversions are below a meaningful threshold for the window (e.g. only a handful of visitors, funnels with near-zero entries), the data is noise: write the snapshot (Steps 3) and exit **without creating any tasks** — do not manufacture recommendations from noise.
+
+**Avoid duplicates.** Before creating a task, list existing open tasks from this source and skip anything already filed for the same finding:
+```bash
+~/.darkflow/df task list --source openpanel --state open
+```
+If an equivalent task already exists (same metric / funnel step / page), do not create a new one — update the existing one only if the situation materially changed.
+
+Add the remaining recommendations as tasks. Use `--source openpanel` and a priority.
+
+**Priority rubric:**
+- `critical` — active revenue/signup loss right now (funnel fully broken, conversion dropped to ~0, checkout failing)
+- `high` — clear, sizeable drop-off or regression on a key flow (onboarding, activation, purchase) with material impact
+- `medium` — meaningful but non-urgent optimisation (a soft drop-off, an under-performing step)
+- `low` — minor polish, instrumentation gaps, nice-to-have experiments
 
 **Task format (required):**
 
@@ -66,13 +80,14 @@ directories if they don't exist):
   "usersTotal":  <integer or null>,
   "visitors7d":  <integer or null>,
   "revenue7d":   <float or null>,
-  "adsSpend7d":  <float or null>,
+  "adsSpend7d":  null,
   "currency":    "USD"
 }
 ```
 
-Fill in the values from the analytics data already queried in Step 2. Use `null` for any
-metric that is not available for this project.
+Fill in the values from the analytics data already queried in Step 2 (7-day window). Use `null`
+for any metric that is not available for this project. Always leave `adsSpend7d` as `null` here —
+ad spend is owned by `/darkflow:ads-review`; do not query or estimate it in this routine.
 
 The worker will pick up this file on its next sync and forward it to the webapp API together
 with the current issue list. You do not need to update any HTML files or call any API endpoints.
