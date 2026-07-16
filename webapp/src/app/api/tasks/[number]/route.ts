@@ -28,6 +28,7 @@ interface PatchTaskBody {
   priority?: string;
   needsHuman?: boolean;
   action?: string | null;
+  scheduledFor?: string | null;
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ number: string }> }) {
@@ -60,6 +61,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ nu
   if (body.priority !== undefined) data.priority = body.priority;
   if (body.needsHuman !== undefined) data.needsHuman = body.needsHuman;
   if (body.action !== undefined) data.action = body.action;
+  if (body.scheduledFor !== undefined) data.scheduledFor = body.scheduledFor ? new Date(body.scheduledFor) : null;
 
   try {
     const task = await prisma.issue.update({

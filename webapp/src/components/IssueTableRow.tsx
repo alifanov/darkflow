@@ -5,6 +5,7 @@ import Link from "next/link";
 
 const TASK_MANAGER_URL = "https://flow.chatindex.app/tasks";
 import { ApproveIssueButton } from "@/components/ApproveIssueButton";
+import { SnoozeIssueButton } from "@/components/SnoozeIssueButton";
 import { CloseIssueButton } from "@/components/CloseIssueButton";
 import { LaunchInCmuxButton } from "@/components/LaunchInCmuxButton";
 import { Markdown } from "@/components/Markdown";
@@ -39,6 +40,7 @@ interface IssueTableRowProps {
     priority: string | null;
     url: string | null;
     needsHuman: boolean;
+    scheduledFor?: Date | string | null;
     comments?: IssueComment[] | null;
   };
   showApprove?: boolean;
@@ -56,6 +58,8 @@ export function IssueTableRow({ issue, showApprove, showClose, showTaskLink, sho
   const bg = STATUS_COLORS[issue.status] ?? "#1a1a1a";
   const color = STATUS_TEXT[issue.status] ?? "var(--muted)";
   const hasBody = !!issue.body;
+  const snoozedUntil = issue.scheduledFor ? new Date(issue.scheduledFor) : null;
+  const snoozed = !!snoozedUntil && snoozedUntil > new Date();
   const comments = issue.comments ?? [];
   const hasContent = hasBody || comments.length > 0;
 
@@ -126,6 +130,15 @@ export function IssueTableRow({ issue, showApprove, showClose, showTaskLink, sho
             <span className="rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ background: bg, color }}>
               {issue.status}
             </span>
+            {snoozed && (
+              <span
+                className="rounded-full px-2.5 py-0.5 text-xs font-medium"
+                style={{ background: "#2a2a0a", color: "var(--yellow, #d29922)" }}
+                title="fix-issues will not pick this task up before this date"
+              >
+                ⏰ {snoozedUntil!.toLocaleDateString()}
+              </span>
+            )}
             {issue.needsHuman && (
               <span
                 className="rounded-full px-2.5 py-0.5 text-xs font-medium"
@@ -140,6 +153,9 @@ export function IssueTableRow({ issue, showApprove, showClose, showTaskLink, sho
         <td className="py-3 px-4">
           <div className="flex items-center gap-2">
             {showApprove && <ApproveIssueButton issueId={issue.id} />}
+            {(showApprove || showClose) && issue.status !== "closed" && (
+              <SnoozeIssueButton issueId={issue.id} scheduledFor={snoozedUntil?.toISOString()} />
+            )}
             {showLaunch && <LaunchInCmuxButton issueId={issue.id} />}
             {showClose && <CloseIssueButton issueId={issue.id} />}
             {showTaskLink && (

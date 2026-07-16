@@ -10,6 +10,12 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.19.0] — 2026-07-16
+
+- **Workflow** — snooze для задач: новое поле `scheduledFor` («не брать в работу раньше даты»). Раньше отложить approved-задачу можно было только костылём (держать в proposed). Теперь: `df task create --after <ISO>`, `df task snooze <n> <ISO|clear>`, кнопка Snooze + бейдж ⏰ в Web UI (список и карточка задачи), эндпоинт `POST /api/issues/[id]/snooze`. `fix-issues` пропускает заснуженные задачи в jq-ранжировании, воркер не считает их в гейте `approved_count` (не жжёт LLM-прогон впустую). Миграция аддитивная (`ALTER TABLE "Issue" ADD COLUMN "scheduledFor"`); попутно применена отставшая `drop_posthog_project_id`. Поле задокументировано в `docs/tasks.md`.
+
+---
+
 ## [4.18.0] — 2026-07-16
 
 - **Updated routine** — `fix-issues` и `fix-ci-issue` теперь фиксируют двустороннюю связь задача ↔ код: commit message обязан содержать `Task #N` (обе merge-стратегии — задача ищется из `git log`), а финальный комментарий к задаче обязан включать строку `Landed:` с URL PR (`pr`) или SHA коммитов (`direct`) — единственное место, где записывается переход из задачи в код. Раньше связь была только PR → задача, из закрытой задачи в код перейти было нельзя.

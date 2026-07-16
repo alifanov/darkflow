@@ -65,6 +65,11 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
             <LocalTime date={issue.createdAt} />
           </Meta>
         )}
+        {issue.scheduledFor && issue.scheduledFor > new Date() && (
+          <Meta label="Snoozed until">
+            <LocalTime date={issue.scheduledFor} />
+          </Meta>
+        )}
         {issue.url && (
           <a href={issue.url} target="_blank" rel="noopener noreferrer" className="cursor-pointer text-sm hover:underline" style={{ color: "var(--muted)" }}>
             External link ↗

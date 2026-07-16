@@ -858,7 +858,7 @@ run_routine() {
     # (mailbox-check sends the reply), not a code task for us.
     local approved_count
     approved_count=$("$DF_BIN" task list --status approved --state open 2>/dev/null \
-                       | jq '[.[] | select(.action != "reply")] | length' 2>/dev/null || echo "")
+                       | jq '[.[] | select(.action != "reply" and (.scheduledFor == null or .scheduledFor <= (now | todate)))] | length' 2>/dev/null || echo "")
     if [[ "$approved_count" == "0" || -z "$approved_count" ]]; then
       log "SKIP   ${name} — no actionable approved tasks"
       local skip_now skip_ts

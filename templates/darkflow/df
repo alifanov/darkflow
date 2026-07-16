@@ -64,10 +64,11 @@ usage() {
 usage:
   df task list [--status S] [--source S] [--action S] [--state open|closed|all] [--needs-human]
   df task view <n>
-  df task create --title T [--body B] [--priority critical|high|medium|low] [--source S] [--status S] [--action reply|fix] [--needs-human]
+  df task create --title T [--body B] [--priority critical|high|medium|low] [--source S] [--status S] [--action reply|fix] [--needs-human] [--after ISO-DATE]
   df task set-status <n> <status>
   df task set-action <n> reply|fix
   df task needs-human <n>
+  df task snooze <n> <ISO-DATE|clear>
   df task comment <n> --body B
   df task close <n>
 EOF
@@ -100,7 +101,7 @@ case "$sub" in
     ;;
 
   create)
-    title="" body="" priority="medium" source="manual" status="" action="" needs_human=false
+    title="" body="" priority="medium" source="manual" status="" action="" needs_human=false after=""
     while [[ $# -gt 0 ]]; do
       case "$1" in
         --title) title="$2"; shift 2 ;;
@@ -110,6 +111,7 @@ case "$sub" in
         --status) status="$2"; shift 2 ;;
         --action) action="$2"; shift 2 ;;
         --needs-human) needs_human=true; shift ;;
+        --after) after="$2"; shift 2 ;;
         *) usage ;;
       esac
     done
@@ -117,11 +119,13 @@ case "$sub" in
     payload=$(jq -n \
       --arg repoUrl "$REPO_URL" --arg title "$title" --arg body "$body" \
       --arg priority "$priority" --arg source "$source" --arg status "$status" --arg action "$action" \
+      --arg after "$after" \
       --argjson needsHuman "$needs_human" '
       {repoUrl:$repoUrl, title:$title, priority:$priority, source:$source, needsHuman:$needsHuman}
       + (if $body != "" then {body:$body} else {} end)
       + (if $status != "" then {status:$status} else {} end)
-      + (if $action != "" then {action:$action} else {} end)')
+      + (if $action != "" then {action:$action} else {} end)
+      + (if $after != "" then {scheduledFor:$after} else {} end)')
     resp=$(_api POST "/api/tasks" "$payload")
     if echo "$resp" | jq -e '.skipped' >/dev/null 2>&1; then
       echo "$resp" | jq -r '.reason'
@@ -145,6 +149,15 @@ case "$sub" in
     # Pulls the task off the approved queue and flags it for a human — mirrors
     # what "approve" undoes (approve always clears needsHuman).
     _api PATCH "/api/tasks/${n}?repoUrl=${REPO_Q}" '{"needsHuman":true,"status":"proposed"}' >/dev/null
+    ;;
+
+  snooze)
+    n="${1:?number required}"; when="${2:?date or 'clear' required}"
+    if [[ "$when" == "clear" ]]; then
+      _api PATCH "/api/tasks/${n}?repoUrl=${REPO_Q}" '{"scheduledFor":null}' >/dev/null
+    else
+      _api PATCH "/api/tasks/${n}?repoUrl=${REPO_Q}" "$(jq -n --arg w "$when" '{scheduledFor:$w}')" >/dev/null
+    fi
     ;;
 
   comment)

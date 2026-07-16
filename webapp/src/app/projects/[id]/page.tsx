@@ -348,6 +348,7 @@ function IssuesTab({
     priority: string | null;
     url: string | null;
     needsHuman: boolean;
+    scheduledFor?: Date | string | null;
     comments?: IssueComment[] | null;
   }[];
   selectedKeys: string[];

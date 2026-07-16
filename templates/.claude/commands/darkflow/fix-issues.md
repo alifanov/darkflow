@@ -26,6 +26,7 @@ Within a level, take the **oldest** task (smallest number).
 Skip tasks that are not actually actionable here, even if they still carry `status:approved`:
 - `action:reply` — handled exclusively by `mailbox-check`.
 - `needs-human` — already parked for a human (failed checks or an external blocker); re-running only posts duplicate comments.
+- `scheduledFor` in the future — the task is snoozed ("don't pick up before this date"); it becomes eligible automatically once the date passes.
 
 Rank every selectable task and take the single best one — pipe `df task list`'s JSON through `jq`:
 
@@ -37,7 +38,8 @@ n=$(~/.darkflow/df task list --status approved | jq -r '
           elif $p == "medium"   then 2
           elif $p == "low"      then 3
           else 4 end;
-        [ .[] | select(.action != "reply" and .needsHuman != true)
+        [ .[] | select(.action != "reply" and .needsHuman != true
+                       and (.scheduledFor == null or .scheduledFor <= (now | todate)))
               | {number, rank: prio(.priority)} ]
         | sort_by([.rank, .number]) | .[0].number // empty')
 ```

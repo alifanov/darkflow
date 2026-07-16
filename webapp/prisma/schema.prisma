@@ -74,6 +74,8 @@ model Issue {
   action          String?
   needsHuman      Boolean   @default(false)
   comments        Json?
+  // Snooze: fix-issues does not pick the task up before this moment. Null = no delay.
+  scheduledFor    DateTime?
   // Lifecycle timestamps. createdAt is set once on POST /api/tasks; closedAt
   // is set when status transitions to "closed". Nullable for old rows imported
   // before this field existed.

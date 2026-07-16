@@ -16,6 +16,7 @@ interface CreateTaskBody {
   status?: string;
   needsHuman?: boolean;
   action?: string;
+  scheduledFor?: string;
   // Only set by the one-time GitHub Issues import script, to preserve history.
   comments?: { author?: string; body?: string; createdAt?: string }[];
   createdAt?: string;
@@ -82,6 +83,7 @@ export async function POST(req: NextRequest) {
     source,
     action: body.action ?? null,
     needsHuman: body.needsHuman ?? false,
+    scheduledFor: body.scheduledFor ? new Date(body.scheduledFor) : null,
     comments: body.comments?.length ? (body.comments as unknown as Prisma.InputJsonValue) : undefined,
     createdAt: body.createdAt ? new Date(body.createdAt) : new Date(),
   });
@@ -127,6 +129,7 @@ export async function GET(req: NextRequest) {
       source: true,
       action: true,
       needsHuman: true,
+      scheduledFor: true,
       comments: true,
       createdAt: true,
       closedAt: true,
