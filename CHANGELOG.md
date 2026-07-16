@@ -10,6 +10,12 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.15.0] — 2026-07-16
+
+- **Installer** — до-миграционные проекты (до v4.0.0, эпоха GitHub Issues) навсегда застревали на устаревших воркфлоу-доках: `smart_update_template` при локальных отличиях без `--force` только предупреждал `Locally modified` и НЕ перезаписывал, а осиротевший `docs/github-issues.md` (шаблон его больше не поставляет) инсталлятор вообще не трогал. Итог: в 18 установленных проектах `CLAUDE.md → @docs/agent-workflow.md` продолжал скармливать каждой сессии инструкции вида `gh issue create --label status:approved` — задачи «из GitHub Issues» вместо собственного Postgres-хранилища. **Два фикса:** (1) `docs/README.md`, `docs/agent-workflow.md`, `docs/tasks.md`, `docs/auto-approve.md` помечены инфраструктурными (`always_update=true`) — теперь само-лечатся на каждом апдейте; (2) `cleanup_legacy_project_files` удаляет осиротевший `docs/github-issues.md`. Прогнан свип по всем установленным проектам. `.darkflow.d/claude.md` регенерился и до этого — устаревшие копии значили лишь, что проект не переустанавливали после миграции.
+
+---
+
 ## [4.14.0] — 2026-07-15
 
 - **Updated routine** — `analytics-review` вычищен от нескольких дефектов инструкции: (1) единое окно **7 дней** для аналитики и коммитов вместо смеси 24h/7d, совпадает со снапшот-метриками (`visitors7d`/`revenue7d`); (2) guard от дублей — перед созданием задачи проверяет открытые задачи `--source openpanel` и не плодит повторы по той же метрике/шагу воронки/странице; добавлен порог сигнала (мало трафика → снапшот без задач, без галлюцинаций из шума); (4) убран сбор application/server `errors` (это `observability-check`) — только product-level трение, если инструментировано; (5) `adsSpend7d` в снапшоте всегда `null` (ad spend принадлежит `ads-review`); (7) добавлена рубрика приоритетов critical/high/medium/low.

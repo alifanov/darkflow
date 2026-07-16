@@ -476,6 +476,14 @@ cleanup_legacy_project_files() {
   done
   [[ -d ".darkflow.d/mailbox" ]] && { rm -rf ".darkflow.d/mailbox"; _removed=true; }
   [[ "$_removed" == true ]] && success "Removed legacy per-project config/helpers (.darkflow, routines.yml, get-config.sh, per-project darkflow-run.sh, mailbox) — now centralized"
+
+  # Orphaned doc from the pre-v4.0.0 GitHub-Issues era. The template no longer
+  # ships it, so smart_update never touches it — drop it so no session reads a
+  # stale label-based task loop.
+  if [[ -f "docs/github-issues.md" ]]; then
+    rm -f "docs/github-issues.md"
+    success "Removed obsolete docs/github-issues.md — tasks live in Dark Flow's own store now"
+  fi
   return 0
 }
 
@@ -1381,10 +1389,14 @@ make_dir ".darkflow.d/state"
 
 header "2/4  Template files"
 
-smart_update_template "docs/README.md"             "docs/README.md"
-smart_update_template "docs/agent-workflow.md"     "docs/agent-workflow.md"
-smart_update_template "docs/tasks.md"              "docs/tasks.md"
-smart_update_template "docs/auto-approve.md"       "docs/auto-approve.md"
+# These four are Dark Flow-managed workflow docs (mechanism, not project content),
+# @-included into CLAUDE.md. They must always track upstream — otherwise a
+# pre-migration copy keeps feeding stale "create a GitHub issue" instructions to
+# every session. Marked infrastructure (always_update=true) so they self-heal.
+smart_update_template "docs/README.md"             "docs/README.md"         "" "true"
+smart_update_template "docs/agent-workflow.md"     "docs/agent-workflow.md" "" "true"
+smart_update_template "docs/tasks.md"              "docs/tasks.md"          "" "true"
+smart_update_template "docs/auto-approve.md"       "docs/auto-approve.md"   "" "true"
 smart_update_template "docs/decisions/TEMPLATE.md" "docs/decisions/TEMPLATE.md"
 smart_update_template "docs/decisions/README.md"   "docs/decisions/README.md"
 [[ "$MOD_CI_GATE" == true ]] && smart_update_template "docs/ci-runner.md" "docs/ci-runner.md"
