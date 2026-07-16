@@ -30,6 +30,7 @@ The snapshot entry remains the source of truth; the task = the work artifact.
 - **Changing a user flow** → `spec/flows/` (checkout, auth, onboarding, etc.)
 - **Product / marketing decisions** → `product/positioning.md` + `product/product.md` + `product/pricing.md`
 - **Working with analytics events / metrics** → `product/metrics.md` (not guessing event names)
+- **Creating tasks from analytics / ads / GSC findings** → `product/hypotheses.md` (don't re-file refuted bets)
 - **Before a major architectural change** → `spec/architecture.md` for the current map, then `decisions/` (check it doesn't contradict existing ADRs)
 - **Context on "what's working / broken right now"** → last 2–3 files from `insights/analytics/`
 
@@ -96,17 +97,22 @@ Not every anomaly immediately becomes a task. Before creating one, verify the si
 - The same anomaly appears in **3 or more consecutive snapshots** for one source, OR
 - **Two or more independent sources** point to the same problem area in the same time window
 
-**How to record a pre-threshold hypothesis** — add a `## Hypotheses` section at the end of the snapshot file:
+**Where hypotheses live** — the central ledger `product/hypotheses.md` (create it from the format described inside on first use). One entry per bet with a stable ID (`H-NNN`), status (`tracking` → `testing` → `confirmed`/`refuted`/`abandoned`) and links to supporting snapshots. Snapshots stay the raw evidence; the ledger is the current state. **Read the ledger before creating tasks from findings** — a refuted hypothesis must not come back as a task without new data.
+
+**How to record a pre-threshold hypothesis:**
+
+1. Add or refresh its entry in `product/hypotheses.md` — append the new snapshot link to Evidence, update the status counter.
+2. In the snapshot file, keep the `## Hypotheses` section to one pointer line per bet:
 
 ```markdown
 ## Hypotheses
 
-- **H1**: [what we think is causing the drop] — [expected impact if confirmed] — [what data would confirm it]
-  - Evidence: 2026-05-27 (−12% conversion), 2026-05-28 (−8%)
-  - Status: 2/3 snapshots — not yet ready for a task
+- **H-004**: conversion drop on /checkout — evidence 2/3, see `product/hypotheses.md`
 ```
 
-**When the threshold is reached:** create the task and include in its body a `Based on:` line with links to the supporting snapshots. This ensures every task has a documented evidence trail.
+**When the threshold is reached:** create the task, set the ledger entry to `testing` with a link to task #N, and include a `Based on:` line in the task body with links to the supporting snapshots. This ensures every task has a documented evidence trail.
+
+**When a verdict lands** (task closed, experiment finished, or data refutes the bet): move the ledger entry to Closed with `confirmed`/`refuted`/`abandoned`.
 
 ### What to update in other layers
 

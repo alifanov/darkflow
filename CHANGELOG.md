@@ -10,6 +10,12 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.16.0] — 2026-07-16
+
+- **Workflow** — центральный реестр гипотез `docs/product/hypotheses.md` (новый шаблон, создаётся on demand). Раньше гипотезы жили разрозненными `## Hypotheses`-секциями в снапшотах `insights/*/` и терялись при консолидации; теперь одна запись на ставку: `H-NNN`, статус `tracking → testing → confirmed/refuted/abandoned`, ссылки на снапшоты-доказательства и задачу. `agent-workflow.md`: секция «From observations to hypotheses» переписана на реестр (снапшоты — сырые доказательства, реестр — текущее состояние), добавлено правило чтения — перед созданием задач из analytics/ads/GSC-находок проверять реестр и не пересоздавать опровергнутые ставки. `product-overview` читает реестр как первичный источник активных гипотез. Задачи и changelog в docs не добавлены сознательно: задачи уже живут в task store (`df` CLI), историю изменений покрывают git + CHANGELOG.
+
+---
+
 ## [4.15.0] — 2026-07-16
 
 - **Installer** — до-миграционные проекты (до v4.0.0, эпоха GitHub Issues) навсегда застревали на устаревших воркфлоу-доках: `smart_update_template` при локальных отличиях без `--force` только предупреждал `Locally modified` и НЕ перезаписывал, а осиротевший `docs/github-issues.md` (шаблон его больше не поставляет) инсталлятор вообще не трогал. Итог: в 18 установленных проектах `CLAUDE.md → @docs/agent-workflow.md` продолжал скармливать каждой сессии инструкции вида `gh issue create --label status:approved` — задачи «из GitHub Issues» вместо собственного Postgres-хранилища. **Два фикса:** (1) `docs/README.md`, `docs/agent-workflow.md`, `docs/tasks.md`, `docs/auto-approve.md` помечены инфраструктурными (`always_update=true`) — теперь само-лечатся на каждом апдейте; (2) `cleanup_legacy_project_files` удаляет осиротевший `docs/github-issues.md`. Прогнан свип по всем установленным проектам. `.darkflow.d/claude.md` регенерился и до этого — устаревшие копии значили лишь, что проект не переустанавливали после миграции.

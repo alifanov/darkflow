@@ -35,6 +35,7 @@ gaps as drift (the `docs-audit` routine follows the same rule).
 | `product/positioning.md` | product · quarterly | Positioning, value prop, competitive landscape |
 | `product/pricing.md` | product · as changed | Pricing tiers, billing |
 | `product/metrics.md` | product · monthly | North-star metrics + analytics event **definitions** |
+| `product/hypotheses.md` | product · as tracked | Central hypothesis ledger: bet → evidence → verdict |
 | `product/glossary.md` | product · as changed | Domain terms and entities |
 | `spec/architecture.md` | spec · on system change | System map: stack, modules, entry points, integrations |
 | `spec/flows/*.md` | spec · weekly | User-flow descriptions (`TEMPLATE.md` inside) |

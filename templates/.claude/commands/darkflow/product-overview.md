@@ -31,7 +31,7 @@ Read what's in flight and what was recently resolved (skip gracefully if `~/.dar
 ~/.darkflow/df task list --state closed
 ```
 
-Read the latest hypotheses and signals — scan the most recent 1–2 files in each `docs/insights/*/` folder and collect any `## Hypotheses` sections and standout findings. This is where recent product bets live.
+Read the latest hypotheses and signals — read the central ledger `docs/product/hypotheses.md` (if present) for the current bets and their verdicts, then scan the most recent 1–2 files in each `docs/insights/*/` folder for standout findings and any `## Hypotheses` pointers. This is where recent product bets live.
 
 ## Step 3 — Synthesize the overview
 
@@ -61,7 +61,7 @@ Write the overview to `docs/insights/product-overview/YYYY-MM-DD.md` (use today'
 
 ## Active hypotheses
 
-<product bets currently being tracked — pulled from insights/*/ Hypotheses sections, each with its evidence status, e.g. "2/3 snapshots">
+<product bets currently being tracked — pulled from docs/product/hypotheses.md (fall back to insights/*/ Hypotheses sections), each with its evidence status, e.g. "tracking, 2/3 snapshots" — plus recently closed verdicts worth noting>
 
 ## Open threads
 
