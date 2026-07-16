@@ -120,7 +120,7 @@ Not every anomaly immediately becomes a task. Before creating one, verify the si
 - **Changed the system shape** (new service, integration, stack swap) → `spec/architecture.md`.
 - **New targeting segments / audience shift** → `product/product.md` (audience section) or `product/positioning.md`.
 - **New SEO targets (keywords, pages), sitemap strategy change** → a new entry in `decisions/`; record results as snapshots under `insights/search-console/`.
-- **Decision made based on data** (launch an experiment, turn off a campaign, reprioritize roadmap) → ADR in `decisions/`: what we saw → what we decided → how we'll verify.
+- **Decision that constrains future work** (architecture, stack, strategy — anything that forbids or prescribes future changes) → ADR in `decisions/`: what we saw → what we decided → how we'll verify. Ordinary data verdicts (experiment confirmed/refuted, campaign turned off) stay in the Closed table of `product/hypotheses.md` — no ADR.
 
 `insights/` = observations over time (snapshots). `product/` = current definitions. `decisions/` = what we did about it. Don't mix layers.
 

@@ -31,7 +31,9 @@ Lifecycle: `tracking` (collecting evidence) → `testing` (task / experiment in 
 
 ## Closed
 
-One line per verdict — move entries here from Active:
+One line per verdict — move entries here from Active. This table **is** the record of data
+verdicts; write an ADR in `decisions/` only when the verdict constrains future work
+(architecture, stack, strategy):
 
 | ID | Hypothesis | Verdict | Evidence | Task |
 |---|---|---|---|---|
