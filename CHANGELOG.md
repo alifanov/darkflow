@@ -10,6 +10,12 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.19.1] — 2026-07-16
+
+- **Docs** — ревизия команд и markdown после 4.16–4.19: placeholder `## Hypotheses` в снапшот-шаблонах `ads-review`/`observability-check`/`security-audit`/`docs-audit` теперь ссылается на реестр `product/hypotheses.md` (одна строка-указатель на ставку вместо развёрнутого текста в снапшоте); `add-issue` умеет `--after` для «не раньше даты»; статус-команда `/darkflow` отдельно помечает snoozed-задачи; в README перечислено поле `scheduledFor`; формулировки `routines/product-overview.md` приведены к реестру.
+
+---
+
 ## [4.19.0] — 2026-07-16
 
 - **Workflow** — snooze для задач: новое поле `scheduledFor` («не брать в работу раньше даты»). Раньше отложить approved-задачу можно было только костылём (держать в proposed). Теперь: `df task create --after <ISO>`, `df task snooze <n> <ISO|clear>`, кнопка Snooze + бейдж ⏰ в Web UI (список и карточка задачи), эндпоинт `POST /api/issues/[id]/snooze`. `fix-issues` пропускает заснуженные задачи в jq-ранжировании, воркер не считает их в гейте `approved_count` (не жжёт LLM-прогон впустую). Миграция аддитивная (`ALTER TABLE "Issue" ADD COLUMN "scheduledFor"`); попутно применена отставшая `drop_posthog_project_id`. Поле задокументировано в `docs/tasks.md`.

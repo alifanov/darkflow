@@ -19,6 +19,8 @@ Walk through **only the missing fields** conversationally — skip any field alr
 
 4. **Description** — "Briefly describe the problem and what done looks like." Use the answer to write a context paragraph and 1–3 acceptance criteria checkboxes.
 
+5. **Timing** (only if the user mentioned a date/"not before" constraint) — add `--after <ISO date>` to the create command so fix-issues won't pick the task up before that moment. Don't ask about this proactively.
+
 Then construct and run:
 
 ```bash

@@ -11,7 +11,7 @@ When Claude Code (or any AI agent) works on your project, it generates insights 
 Dark Flow installs:
 - A **5-layer docs structure** (`product / spec / design / insights / decisions`) with clear read/write rules for the agent
 - A **task triage loop** — agent creates `proposed` tasks from insights via the `~/.darkflow/df` CLI, human approves or rejects, agent picks up `approved` tasks automatically
-- A **set of task fields** (`status`, `source`, `priority`, `needsHuman`) so you can filter with `~/.darkflow/df task list --status approved`
+- A **set of task fields** (`status`, `source`, `priority`, `needsHuman`, `scheduledFor`) so you can filter with `~/.darkflow/df task list --status approved` or snooze a task until a date
 - **Agent-workflow rules** baked into `docs/agent-workflow.md` (referenced from CLAUDE.md)
 
 ---

@@ -8,7 +8,7 @@ Check the Dark Flow workflow status for this project and help the user manage it
    ```bash
    ~/.darkflow/df task list --status approved --state open
    ```
-   Summarize them by priority. Do not offer to start working — the fix-issues routine handles that.
+   Summarize them by priority. Flag snoozed tasks separately (`scheduledFor` in the future) — fix-issues skips those until the date passes. Do not offer to start working — the fix-issues routine handles that.
 
 3. **Check for proposed tasks** — run:
    ```bash

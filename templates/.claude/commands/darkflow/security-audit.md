@@ -67,7 +67,7 @@ Write `docs/insights/security/YYYY-MM-DD.md` (use today's date; append a new sec
 
 ## Hypotheses
 
-<pre-threshold signals that aren't yet ready for a task — see agent-workflow.md>
+<one pointer line per bet: H-NNN + evidence status — the entry itself lives in docs/product/hypotheses.md (see agent-workflow.md)>
 
 ## Recommendations
 

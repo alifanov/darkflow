@@ -1,6 +1,6 @@
 # Product Overview
 
-Weekly product digest — consolidates the current state of the product with what was recently improved (product + technical), recent bugs and fixes, and the hypotheses currently being tracked. A narrative summary for a human, written as a dated snapshot.
+Weekly product digest — consolidates the current state of the product with what was recently improved (product + technical), recent bugs and fixes, and the hypotheses currently being tracked in `docs/product/hypotheses.md`. A narrative summary for a human, written as a dated snapshot.
 
 This is a **reporting** routine, not a check. It creates no tasks and audits no drift (see `/darkflow:docs-audit` for the docs-vs-code check). It reads docs, git history, tasks, and `insights/*` snapshots, then synthesizes.
 
@@ -42,6 +42,6 @@ Runs **Monday 7:00**, before the daily `analytics-review` (8:00) — so the week
 
 ## Notes
 
-- Use **Opus** — a good overview weaves together product docs, commit history, task state, and scattered hypotheses; Sonnet tends to produce a flat changelog instead of a synthesis.
+- Use **Opus** — a good overview weaves together product docs, commit history, task state, and the hypothesis ledger; Sonnet tends to produce a flat changelog instead of a synthesis.
 - Keep it executive-summary length. The value is the synthesis and the top-3 next moves, not an exhaustive list.
 - It deliberately does not create tasks — if a recommendation is worth acting on, a human approves it and the review/fix routines pick it up.
