@@ -107,14 +107,15 @@ Always work in the project root on the configured base branch — never run `git
 The base branch is the `branch` value from `.darkflow.d/state/config.json` (it may be `main`, `master`, `dev`, `develop`, or anything else — always read it from config, never assume `main`). If it is a non-main/non-master branch, land the fix **only** on that branch. Do NOT cherry-pick, merge, or push to `main` or `master` independently — that is a human decision. Leave the fix in the configured branch and close the task.
 
 **If `merge_strategy=direct` (the default):**
-Commit and push directly to the `branch` value from `.darkflow.d/state/config.json`.
+Commit and push directly to the `branch` value from `.darkflow.d/state/config.json`. Every commit message must reference the task — include `Task #N` in the subject or body — so the task is findable from `git log`.
 
 **If `merge_strategy=pr`:**
-From the project root, create a feature branch in place with `git checkout -b` based off the `branch` value from `.darkflow.d/state/config.json`, implement and commit there, then open a pull request targeting `branch` referencing "Task #N" in the description (there is no GitHub issue to auto-close — the task lives in Dark Flow's own queue) and merge it into that branch. No worktree — the branch lives in the same working directory.
+From the project root, create a feature branch in place with `git checkout -b` based off the `branch` value from `.darkflow.d/state/config.json`, implement and commit there, then open a pull request targeting `branch` referencing "Task #N" in the description (there is no GitHub issue to auto-close — the task lives in Dark Flow's own queue) and merge it into that branch. Commit messages reference `Task #N` too. No worktree — the branch lives in the same working directory.
 
-After landing, leave a comment on the task with a brief summary of what was done:
+After landing, leave a comment on the task with a brief summary of what was done. It **must** link the code: the PR URL (with `merge_strategy=pr`) or the commit SHA(s) (with `direct`) — this is the only place the task → code link is recorded:
 ```bash
-~/.darkflow/df task comment $n --body "<summary: what was broken/missing, files changed, docs updated>"
+~/.darkflow/df task comment $n --body "<summary: what was broken/missing, files changed, docs updated>
+Landed: <PR URL | commit SHA(s)>"
 ```
 
 Then close it:

@@ -55,7 +55,7 @@ Read the task with `~/.darkflow/df task view "$n"` — the body lists the failin
 
 Apply per `mergeStrategy`:
 
-- **`direct`**: commit and push straight to the `branch` value from config.
+- **`direct`**: commit and push straight to the `branch` value from config. Commit message must include `Task #N` so the task is findable from `git log`.
 - **`pr`**: create a feature branch in place off `branch`, commit, open a PR targeting `branch`, and merge it. **Reference the task with "Task #N" in the description, NOT "Closes #N"** — the task must stay open so the CI gate can close it only when CI is actually green (there is no GitHub issue to auto-close; the task lives in Dark Flow's own queue).
 
 Then, on the task, post the attempt marker comment (in `language`):
