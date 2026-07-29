@@ -13,6 +13,8 @@ This routine runs **entirely inside the worker as bash**. There is no agent, no 
 - concluded `failure`, or
 - is **still queued / in progress after 45 minutes** (`CI_STUCK_MIN`).
 
+A red run is only counted when it is **younger than 7 days** (`CI_STALE_DAYS`). A workflow that failed once and has not run since is history, not a signal: nothing will re-run it, so it can never go green and the task it files could never be closed. The case that forced this rule: naturalwrite's only workflow on `dev` was a CodeQL run that failed on 2026-06-02 and never ran again — `ci-watch` reported the repo red forever. The staleness filter does not apply to stuck runs: a job sitting in `queued` for two months is exactly what should be reported.
+
 The stuck case matters as much as the red one. When a self-hosted runner goes offline the job is never red *and* never green — it just sits in `queued` forever. Nothing else in Dark Flow would ever notice, and a repo with a dead runner looks healthy by silence.
 
 **B. Local lint in the project root.** Only when `HEAD` moved since the last green run, so an idle repo costs nothing. This covers the projects that have **no GitHub workflows at all** — there, GitHub-side polling has nothing to watch.

@@ -120,6 +120,14 @@ try: print(int(datetime.datetime.strptime(sys.argv[1].strip(), "%Y-%m-%dT%H:%M:%
 except Exception: print(0)' "$1" 2>/dev/null || echo 0
 }
 
+# The inverse: epoch → UTC ISO-8601, directly comparable to GitHub's timestamps.
+# NB: not epoch_fmt() — that formats in LOCAL time, so stamping its output with a
+# "Z" suffix would silently shift the value by the machine's UTC offset.
+epoch_to_iso() {
+  python3 -c 'import datetime,sys
+print(datetime.datetime.fromtimestamp(int(sys.argv[1]), datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))' "$1" 2>/dev/null || echo "1970-01-01T00:00:00Z"
+}
+
 # ── Logging ───────────────────────────────────────────────────────────────────
 
 log() {
@@ -601,6 +609,12 @@ run_in_pgid() {
 # self-hosted runner to run the checks and — running inside GitHub Actions —
 # could not reach the local task store, so it filed GitHub Issues nobody read.
 CI_STUCK_MIN=45
+# Ignore red runs older than this. A workflow that failed once and has not run
+# since is history, not a signal: nothing will re-run it, so it can never go
+# green and the task it files can never be closed. Real case that forced this:
+# naturalwrite's only workflow on `dev` was a CodeQL run that failed on
+# 2026-06-02 and never ran again — ci-watch reported the repo red forever.
+CI_STALE_DAYS=7
 _CI_SUMMARY=""
 
 # Echo the number of the open source:ci task with this exact title, or nothing.
@@ -639,12 +653,19 @@ ci_watch() {
       # Dependency updates are `vulnerability-check`'s job, not CI's.
       latest=$(jq -c '[.[] | select(.event != "dynamic")] | [group_by(.name)[] | sort_by(.createdAt) | last]' <<<"$runs" 2>/dev/null || echo "[]")
 
-      local id wf url
-      while IFS=$'\t' read -r id wf url; do
+      # Only FRESH failures count (see CI_STALE_DAYS). GitHub's timestamps are
+      # UTC ISO-8601, so a plain string compare is a correct date compare here.
+      local stale_before
+      stale_before=$(epoch_to_iso "$(( $(now_epoch) - CI_STALE_DAYS * 86400 ))")
+
+      local id wf url created
+      while IFS=$'\t' read -r id wf url created; do
         [[ -n "$id" ]] || continue
         failed="${failed:+$failed, }${wf}"
-        report="${report}"$'\n\n'"### workflow \`${wf}\` — failed"$'\n'"${url}"$'\n'"\`\`\`"$'\n'"$(gh run view "$id" -R "$repo" --log-failed 2>/dev/null | tail -n 40)"$'\n'"\`\`\`"
-      done < <(jq -r '.[] | select(.conclusion == "failure") | [.databaseId, .name, .url] | @tsv' <<<"$latest" 2>/dev/null)
+        report="${report}"$'\n\n'"### workflow \`${wf}\` — failed ${created}"$'\n'"${url}"$'\n'"\`\`\`"$'\n'"$(gh run view "$id" -R "$repo" --log-failed 2>/dev/null | tail -n 40)"$'\n'"\`\`\`"
+      done < <(jq -r --arg cut "$stale_before" \
+                 '.[] | select(.conclusion == "failure" and .createdAt > $cut)
+                      | [.databaseId, .name, .url, .createdAt] | @tsv' <<<"$latest" 2>/dev/null)
 
       # Stuck runs: no conclusion yet and started more than CI_STUCK_MIN ago.
       local age_cut created
@@ -1873,6 +1894,35 @@ mode_self_test() {
     echo "  PASS  triage: Dependabot 'dynamic' runs filtered out"
   else
     echo "  FAIL  triage: Dependabot run leaked into the red set"
+    (( failures++ )) || true
+  fi
+
+  # epoch_to_iso must round-trip through iso_to_epoch, and must NOT drift by the
+  # machine's UTC offset the way epoch_fmt would.
+  local _iso _back
+  _iso=$(epoch_to_iso 1785237060)
+  _back=$(iso_to_epoch "$_iso")
+  if [[ "$_iso" == "2026-07-28T11:11:00Z" && "$_back" == "1785237060" ]]; then
+    echo "  PASS  epoch_to_iso is UTC and round-trips"
+  else
+    echo "  FAIL  epoch_to_iso: got ${_iso} → ${_back} (want 2026-07-28T11:11:00Z → 1785237060)"
+    (( failures++ )) || true
+  fi
+
+  # Stale-failure filter: a red run older than CI_STALE_DAYS must be ignored,
+  # because nothing will re-run it and the task it files could never be closed.
+  local _stale_fixture _cut _fresh_red
+  _stale_fixture='[
+    {"name":"CodeQL","conclusion":"failure","createdAt":"2026-06-02T07:28:00Z","databaseId":1,"url":"u1"},
+    {"name":"Tests","conclusion":"failure","createdAt":"2026-07-28T12:00:00Z","databaseId":2,"url":"u2"}
+  ]'
+  _cut=$(epoch_to_iso "$(( $(iso_to_epoch "2026-07-29T12:00:00Z") - CI_STALE_DAYS * 86400 ))")
+  _fresh_red=$(jq -r --arg cut "$_cut" \
+    '[.[] | select(.conclusion == "failure" and .createdAt > $cut) | .name] | join(",")' <<<"$_stale_fixture")
+  if [[ "$_fresh_red" == "Tests" ]]; then
+    echo "  PASS  triage: two-month-old red run ignored as stale"
+  else
+    echo "  FAIL  triage stale: expected 'Tests', got '${_fresh_red}'"
     (( failures++ )) || true
   fi
 
