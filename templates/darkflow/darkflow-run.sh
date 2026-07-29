@@ -110,6 +110,16 @@ epoch_fmt() {
 
 now_epoch() { date +%s; }
 
+# Parse a UTC ISO-8601 timestamp (as GitHub's API returns) into an epoch. Echoes
+# 0 when it can't parse — callers treat that as "unknown, don't act on it".
+# ponytail: python3 is already a hard dependency, and BSD/GNU `date` disagree on
+# every flag needed to do this in shell.
+iso_to_epoch() {
+  python3 -c 'import datetime,sys
+try: print(int(datetime.datetime.strptime(sys.argv[1].strip(), "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc).timestamp()))
+except Exception: print(0)' "$1" 2>/dev/null || echo 0
+}
+
 # ── Logging ───────────────────────────────────────────────────────────────────
 
 log() {
@@ -409,6 +419,9 @@ preflight() {
   while IFS= read -r _rname; do
     _enabled=$(routine_val "$_rname" enabled "true")
     [[ "$_enabled" == "false" ]] && continue
+    # ci-watch runs entirely inside this script (see ci_watch) — it has no
+    # command file by design, so don't warn about the one it doesn't need.
+    [[ "$_rname" == "ci-watch" ]] && continue
     if [[ ! -f "${_cmd_dir}/${_rname}.md" ]]; then
       echo "darkflow-run: routine '${_rname}' has no command file (~/.claude/commands/darkflow/${_rname}.md) — skipping it." >&2
     fi
@@ -567,6 +580,155 @@ run_in_pgid() {
 }
 
 # ── Routine execution ─────────────────────────────────────────────────────────
+
+# ── CI watch (mechanical — never launches an agent) ───────────────────────────
+# The producer of `source:ci` tasks that `fix-ci-issue` consumes. Two probes:
+#
+#   A. GitHub Actions — the newest run per workflow on the base branch either
+#      concluded `failure`, or is STILL queued/in_progress past CI_STUCK_MIN
+#      minutes (that's a dead self-hosted runner: the job is never red and never
+#      green, so nothing else would ever notice).
+#   B. Local checks — lint + test in the project root, but only when HEAD moved
+#      since the last green run, so an idle repo costs nothing. This covers the
+#      repos that have no GitHub workflows at all.
+#
+# Both file ONE deduped task per branch and close it again when everything goes
+# green. Deciding "CI is red" and writing a task is pure bookkeeping, so this is
+# plain bash: no LLM, no concurrency slot, no tokens. `fix-ci-issue` does the
+# actual fixing.
+#
+# ponytail: this replaces the darkflow-ci-gate GitHub workflow, which needed a
+# self-hosted runner to run the checks and — running inside GitHub Actions —
+# could not reach the local task store, so it filed GitHub Issues nobody read.
+CI_STUCK_MIN=45
+_CI_SUMMARY=""
+
+# Echo the number of the open source:ci task with this exact title, or nothing.
+ci_open_task() {
+  local title="$1"
+  "$DF_BIN" task list --source ci --state open 2>/dev/null \
+    | jq -r --arg t "$title" '[.[] | select(.title == $t)] | .[0].number // empty' 2>/dev/null
+}
+
+ci_watch() {
+  _CI_SUMMARY=""
+  [[ -x "$DF_BIN" ]] || { _CI_SUMMARY="df CLI missing - cannot file ci tasks"; return 0; }
+  command -v jq &>/dev/null || { _CI_SUMMARY="jq missing - cannot file ci tasks"; return 0; }
+
+  local branch title failed="" report=""
+  branch=$(darkflow_val "branch" "main")
+  title="CI failure on ${branch}"
+
+  # ── A. GitHub Actions on the base branch ────────────────────────────────────
+  local repo
+  repo=$(_get_repo_url_cached)
+  repo="${repo#https://github.com/}"
+  if [[ -n "$repo" ]] && command -v gh &>/dev/null; then
+    local runs latest
+    runs=$(gh run list -R "$repo" -b "$branch" -L 40 \
+             --json name,conclusion,status,createdAt,url,databaseId,event 2>/dev/null || echo "")
+    if [[ -n "$runs" && "$runs" != "[]" ]]; then
+      # Newest run per workflow name — an old red run whose workflow has since
+      # gone green must not keep the task open.
+      #
+      # `event == "dynamic"` runs are Dependabot's own update jobs. They land on
+      # the base branch, they routinely fail (private registry, peer conflict),
+      # and each one carries a UNIQUE name ("npm_and_yarn in /. for next -
+      # Update #149…") so they defeat the group_by dedup and would flood the
+      # task with a dozen phantom "failing workflows" that can never go green.
+      # Dependency updates are `vulnerability-check`'s job, not CI's.
+      latest=$(jq -c '[.[] | select(.event != "dynamic")] | [group_by(.name)[] | sort_by(.createdAt) | last]' <<<"$runs" 2>/dev/null || echo "[]")
+
+      local id wf url
+      while IFS=$'\t' read -r id wf url; do
+        [[ -n "$id" ]] || continue
+        failed="${failed:+$failed, }${wf}"
+        report="${report}"$'\n\n'"### workflow \`${wf}\` — failed"$'\n'"${url}"$'\n'"\`\`\`"$'\n'"$(gh run view "$id" -R "$repo" --log-failed 2>/dev/null | tail -n 40)"$'\n'"\`\`\`"
+      done < <(jq -r '.[] | select(.conclusion == "failure") | [.databaseId, .name, .url] | @tsv' <<<"$latest" 2>/dev/null)
+
+      # Stuck runs: no conclusion yet and started more than CI_STUCK_MIN ago.
+      local age_cut created
+      age_cut=$(( $(now_epoch) - CI_STUCK_MIN * 60 ))
+      while IFS=$'\t' read -r created wf url; do
+        [[ -n "$created" ]] || continue
+        local started
+        started=$(iso_to_epoch "$created")
+        (( started > 0 && started < age_cut )) || continue
+        failed="${failed:+$failed, }${wf} (stuck)"
+        report="${report}"$'\n\n'"### workflow \`${wf}\` — stuck since ${created}"$'\n'"${url}"$'\n'"Queued/running for over ${CI_STUCK_MIN} minutes. Usually the self-hosted runner is offline, so the job is neither red nor green. Check the runner, or move the workflow to \`runs-on: ubuntu-latest\`."
+      done < <(jq -r '.[] | select(.conclusion == null or .conclusion == "") | [.createdAt, .name, .url] | @tsv' <<<"$latest" 2>/dev/null)
+    fi
+  fi
+
+  # ── B. Local lint + test on a new HEAD ──────────────────────────────────────
+  # The HEAD marker is written only when the local checks pass, so a red repo
+  # keeps being re-checked (and the task keeps being justified) until it's fixed.
+  local sha_file="${STATE_DIR}/ci-watch.sha" head_sha prev_sha local_ran=false local_red=false
+  head_sha=$(git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null || echo "")
+  prev_sha=$(cat "$sha_file" 2>/dev/null || echo "")
+  if [[ -n "$head_sha" && "$head_sha" != "$prev_sha" ]]; then
+    local chk out
+    # node_modules must already be there — installing deps is not this routine's
+    # job, and a missing one would otherwise look like a code failure.
+    if [[ -f "${PROJECT_ROOT}/package.json" && -d "${PROJECT_ROOT}/node_modules" ]] && command -v pnpm &>/dev/null; then
+      for chk in lint test; do
+        jq -e --arg c "$chk" '.scripts[$c] // empty' "${PROJECT_ROOT}/package.json" >/dev/null 2>&1 || continue
+        local_ran=true
+        if ! out=$( cd "$PROJECT_ROOT" && CI=1 pnpm "$chk" 2>&1 ); then
+          local_red=true
+          failed="${failed:+$failed, }local ${chk}"
+          report="${report}"$'\n\n'"### local \`pnpm ${chk}\` on \`${head_sha:0:8}\`"$'\n'"\`\`\`"$'\n'"$(tail -n 40 <<<"$out")"$'\n'"\`\`\`"
+        fi
+      done
+    fi
+    if [[ -f "${PROJECT_ROOT}/pyproject.toml" || -f "${PROJECT_ROOT}/requirements.txt" ]] && command -v ruff &>/dev/null; then
+      local_ran=true
+      if ! out=$( cd "$PROJECT_ROOT" && ruff check . 2>&1 ); then
+        local_red=true
+        failed="${failed:+$failed, }local ruff"
+        report="${report}"$'\n\n'"### local \`ruff check .\` on \`${head_sha:0:8}\`"$'\n'"\`\`\`"$'\n'"$(tail -n 40 <<<"$out")"$'\n'"\`\`\`"
+      fi
+    fi
+    [[ "$local_red" == true ]] || echo "$head_sha" > "$sha_file"
+  fi
+
+  # ── File / update / close the task ──────────────────────────────────────────
+  if [[ -n "$failed" ]]; then
+    local n body
+    body="Automated CI watch found failing checks: **${failed}**
+
+- Branch: \`${branch}\`
+- Commit: \`${head_sha:0:8}\`
+${report}
+
+---
+_Filed by the \`ci-watch\` routine (local worker, no agent). \`fix-ci-issue\` picks this up — up to 3 retries, then a human._"
+    n=$(ci_open_task "$title")
+    if [[ -n "$n" ]]; then
+      "$DF_BIN" task comment "$n" --body "Still failing: ${failed}" >/dev/null 2>&1 || true
+      _CI_SUMMARY="ci red (${failed}) - task #${n} already open, commented"
+    else
+      "$DF_BIN" task create --title "$title" --body "$body" \
+        --priority high --source ci --status approved >/dev/null 2>&1 || true
+      _CI_SUMMARY="ci red (${failed}) - filed a new ci task"
+    fi
+    return 0
+  fi
+
+  # Green — close the branch's open CI task if there is one. Safe even when the
+  # local half was skipped: `failed` is empty only when nothing we looked at was
+  # red, and a still-red local check never writes the HEAD marker.
+  local n
+  n=$(ci_open_task "$title")
+  if [[ -n "$n" ]]; then
+    "$DF_BIN" task close "$n" >/dev/null 2>&1 || true
+    _CI_SUMMARY="ci green again - closed task #${n}"
+  elif [[ "$local_ran" == true ]]; then
+    _CI_SUMMARY="ci ok - workflows green, local checks pass"
+  else
+    _CI_SUMMARY="ci ok - no failing or stuck workflow runs"
+  fi
+}
 
 # ── Uptime cheap pre-flight ───────────────────────────────────────────────────
 # A plain curl probe is enough to confirm a healthy site, so the (Sonnet) agent
@@ -868,6 +1030,19 @@ run_routine() {
       PENDING_LOGS+=("{\"routine\":\"${name}\",\"summary\":\"skipped fix-issues — no approved tasks\",\"timestamp\":\"${skip_ts}\"}")
       return 0
     fi
+  fi
+
+  # CI watch is fully mechanical — it polls GitHub Actions, runs the local checks
+  # and files the `source:ci` task itself. There is no agent and no command file,
+  # so it never takes a concurrency slot and never costs a token.
+  if [[ "$name" == "ci-watch" ]]; then
+    ci_watch
+    local cw_now; cw_now=$(now_epoch)
+    write_state "$name" "$(( cw_now - cw_now % 60 ))"
+    local cw_ts; cw_ts=$(date -u +%FT%TZ)
+    PENDING_LOGS+=("{\"routine\":\"${name}\",\"summary\":\"${_CI_SUMMARY} (no agent run)\",\"timestamp\":\"${cw_ts}\"}")
+    log "DONE   ${name} — ${_CI_SUMMARY} (no agent run)"
+    return 0
   fi
 
   # Uptime cheap pre-flight: a curl probe confirms a healthy site without paying
@@ -1443,7 +1618,8 @@ mode_dispatch() {
 
     # Skip routines Dark Flow no longer ships (no command file). preflight already
     # warned; running them would only fail. They clear on the next config refresh.
-    if [[ ! -f "${USER_CMD_DIR}/${name}.md" ]]; then
+    # ci-watch is exempt: it runs in-process (see ci_watch) and ships no command.
+    if [[ "$name" != "ci-watch" && ! -f "${USER_CMD_DIR}/${name}.md" ]]; then
       continue
     fi
 
@@ -1496,7 +1672,8 @@ mode_manual() {
     exit 1
   fi
 
-  if [[ ! -f "${USER_CMD_DIR}/${name}.md" ]]; then
+  # ci-watch is exempt: it runs in-process (see ci_watch) and ships no command.
+  if [[ "$name" != "ci-watch" && ! -f "${USER_CMD_DIR}/${name}.md" ]]; then
     echo "darkflow-run: routine '${name}' has no command file: ~/.claude/commands/darkflow/${name}.md" >&2
     echo "  Dark Flow may have removed it, or it's disabled for this project in the Web UI." >&2
     exit 1
@@ -1628,6 +1805,61 @@ mode_self_test() {
     echo "  PASS  unreachable floor → 0"
   else
     echo "  FAIL  expected 0, got $result"
+    (( failures++ )) || true
+  fi
+
+  # ── ci-watch triage ─────────────────────────────────────────────────────────
+  # Offline checks on the two pieces of ci_watch that are easy to get wrong: the
+  # timestamp parser, and the jq that reduces `gh run list` to "what is broken".
+  echo "Running ci-watch self-tests..."
+
+  if [[ "$(iso_to_epoch "2026-07-28T11:11:00Z")" == "1785237060" ]]; then
+    echo "  PASS  iso_to_epoch"
+  else
+    echo "  FAIL  iso_to_epoch: got $(iso_to_epoch "2026-07-28T11:11:00Z")"
+    (( failures++ )) || true
+  fi
+
+  if [[ "$(iso_to_epoch "not-a-date")" == "0" ]]; then
+    echo "  PASS  iso_to_epoch rejects garbage"
+  else
+    echo "  FAIL  iso_to_epoch should return 0 for unparseable input"
+    (( failures++ )) || true
+  fi
+
+  # Fixture: one workflow that went red then green (must NOT be reported), one
+  # that is still red, one stuck in queued, and a uniquely-named Dependabot
+  # `dynamic` run that must be filtered out entirely.
+  local fixture='[
+    {"name":"Build","conclusion":"failure","status":"completed","createdAt":"2026-07-28T10:00:00Z","url":"u1","databaseId":1,"event":"push"},
+    {"name":"Build","conclusion":"success","status":"completed","createdAt":"2026-07-28T12:00:00Z","url":"u2","databaseId":2,"event":"push"},
+    {"name":"Tests","conclusion":"failure","status":"completed","createdAt":"2026-07-28T12:00:00Z","url":"u3","databaseId":3,"event":"push"},
+    {"name":"Gate","conclusion":null,"status":"queued","createdAt":"2026-07-28T12:00:00Z","url":"u4","databaseId":4,"event":"push"},
+    {"name":"npm_and_yarn in /. for next - Update #1","conclusion":"failure","status":"completed","createdAt":"2026-07-28T13:00:00Z","url":"u5","databaseId":5,"event":"dynamic"}
+  ]'
+  local _latest _red _pending
+  _latest=$(jq -c '[.[] | select(.event != "dynamic")] | [group_by(.name)[] | sort_by(.createdAt) | last]' <<<"$fixture")
+  _red=$(jq -r '[.[] | select(.conclusion == "failure") | .name] | join(",")' <<<"$_latest")
+  _pending=$(jq -r '[.[] | select(.conclusion == null or .conclusion == "") | .name] | join(",")' <<<"$_latest")
+
+  if [[ "$_red" == "Tests" ]]; then
+    echo "  PASS  triage: only the still-red workflow is reported"
+  else
+    echo "  FAIL  triage red: expected 'Tests', got '${_red}'"
+    (( failures++ )) || true
+  fi
+
+  if [[ "$_pending" == "Gate" ]]; then
+    echo "  PASS  triage: queued workflow flagged as stuck candidate"
+  else
+    echo "  FAIL  triage stuck: expected 'Gate', got '${_pending}'"
+    (( failures++ )) || true
+  fi
+
+  if [[ "$_red" != *"npm_and_yarn"* ]]; then
+    echo "  PASS  triage: Dependabot 'dynamic' runs filtered out"
+  else
+    echo "  FAIL  triage: Dependabot run leaked into the red set"
     (( failures++ )) || true
   fi
 

@@ -1,53 +1,48 @@
-# CI runner requirements (`darkflow-ci-gate`)
+# CI checks (`ci-watch`) — no runner required
 
-The `darkflow-ci-gate` workflow runs on a **self-hosted runner** and executes your
-project's real checks (`pnpm install` / `pnpm lint` / `pnpm test`, or `ruff` /
-`pytest`). It deliberately does **not** download a toolchain at job time — so the
-runner must already have on `PATH`:
+CI checks used to run in a GitHub Actions workflow (`darkflow-ci-gate`) on a
+**self-hosted runner**. They no longer do. The `ci-watch` routine does the same
+job inside the local Dark Flow worker, so there is nothing to provision,
+authenticate or keep online besides the machine the worker already runs on.
 
-- **JS/TS repos:** `node` + `pnpm` (or `npm`)
-- **Python repos:** `python3` + `pip`
+Why the move:
 
-## Containerised runners (myoung34/github-runner)
+| | self-hosted runner | `ci-watch` in the worker |
+|---|---|---|
+| Toolchain | must be baked into the runner image | already on the machine |
+| Files tasks | ✗ can't reach the local task store — filed GitHub Issues nobody read | ✓ calls `df` directly |
+| Runner offline | job sits in `queued` forever — never red, never green, no signal at all | ✓ *reported as a failure* |
+| Cost | GitHub minutes, or a server to maintain | free |
 
-The stock `myoung34/github-runner` image ships **neither node nor pnpm**. With it
-you get `pnpm: command not found` and the job fails at the first check. Bootstrapping
-the toolchain at runtime (`actions/setup-node`, `pnpm/action-setup`) does **not**
-work inside that minimal container either — there's no hosted tool cache to extract
-into, so the setup step itself fails before any check runs.
+## What `ci-watch` does
 
-**Fix: bake the toolchain into the runner image.** Example `Dockerfile`:
+- Polls GitHub Actions for the base branch: newest run per workflow that
+  **concluded `failure`**, or that is **still queued/in progress after 45 min**
+  (that's the dead-runner case).
+- Runs **`pnpm lint` / `pnpm test`** (or `ruff check .`) locally when `HEAD` moved
+  since the last green run — this is what covers repos with no workflows at all.
+- Files one deduped `source:ci` task per branch, and closes it again on green.
 
-```dockerfile
-FROM myoung34/github-runner:latest
-ARG NODE_MAJOR=22
-ARG PNPM_VERSION=10
-RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
- && curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash - \
- && apt-get install -y --no-install-recommends nodejs \
- && corepack enable && corepack prepare "pnpm@${PNPM_VERSION}" --activate \
- && apt-get clean && rm -rf /var/lib/apt/lists/* \
- && node --version && pnpm --version
-```
+Pure bash, no agent, no tokens. `fix-ci-issue` does the fixing. See
+`routines/ci-watch.md` for the full description.
 
-Point each runner service at this image (build once, reuse via a compose anchor):
+## Migrating an existing project
 
-```yaml
-x-runner: &runner
-  build: { context: . }
-  image: darkflow-runner:node22
-  restart: always
-services:
-  runner-myrepo:
-    <<: *runner
-    environment:
-      RUNNER_NAME: myrepo-coolify
-      ACCESS_TOKEN: '${GH_PAT}'
-      REPO_URL: 'https://github.com/me/myrepo'
-      RUNNER_SCOPE: repo
-      LABELS: 'self-hosted,linux,x64'
-```
+1. Delete `.github/workflows/darkflow-ci-gate.yml` — its checks are duplicated by
+   `ci-watch`, and with an offline runner it is the source of the "stuck in
+   queued" runs.
+2. Remove the now-unused self-hosted runner in
+   *Settings → Actions → Runners* in the repo.
+3. Make sure **both** `ci-watch` and `fix-ci-issue` are enabled in
+   *Settings → Routine schedule* — `ci-watch` produces the tasks, `fix-ci-issue`
+   consumes them. One without the other does nothing.
 
-Rebuild + restart: `docker compose up -d --build`. node + pnpm now sit on the
-default `PATH` inside the container, so the gate works with plain `pnpm` calls.
+Keep your own build/deploy workflows: `ci-watch` watches every workflow on the
+base branch, so a red build or a failed deploy still becomes a task.
+
+## Requirements
+
+- **`gh`** authenticated on the worker machine (`gh auth login`) — for the
+  GitHub-side half. Without it, only the local checks run.
+- **`node` + `pnpm`** (JS) or **`ruff`** (Python) on the worker's `PATH`, and
+  `node_modules` present — `ci-watch` does not install dependencies.

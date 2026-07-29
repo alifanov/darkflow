@@ -26,6 +26,10 @@ export const ALL_ROUTINES: RoutineDef[] = [
   { name: "build-optimization",  defaultCron: "0 4 * * 0",   defaultModel: "opus",   module: null,               label: "Build + deploy pipeline audit (weekly)" },
   { name: "uptime-check",        defaultCron: "0 */4 * * *", defaultModel: "sonnet", module: null,               label: "DNS + HTTP + page-load check → critical issue if down (every 4h)" },
   { name: "web-vitals",          defaultCron: "0 6 * * 1",   defaultModel: "sonnet", module: null,               label: "Core Web Vitals via local Lighthouse → issue if a metric is poor (weekly Mon)" },
+  // Core, and deliberately NOT behind the ci-gate module: ci-watch is pure bash
+  // with no agent and no external setup beyond `gh`, so there is nothing to opt
+  // into. The module used to gate the self-hosted CI runner, which is gone.
+  { name: "ci-watch",            defaultCron: "*/30 * * * *", defaultModel: "sonnet", module: null,              label: "Red / stuck CI + local lint & test → source:ci task (every 30 min, no agent)" },
   // Optional modules
   { name: "fix-ci-issue",             defaultCron: "*/15 * * * *", defaultModel: "sonnet", module: "ci-gate",         label: "Pick up source:ci failures → fix → retry up to 3× (every 15 min)" },
   { name: "analytics-review",         defaultCron: "0 8 * * *",   defaultModel: "sonnet", module: "analytics",        label: "OpenPanel + commits → issues (daily)" },
