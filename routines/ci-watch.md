@@ -15,12 +15,18 @@ This routine runs **entirely inside the worker as bash**. There is no agent, no 
 
 The stuck case matters as much as the red one. When a self-hosted runner goes offline the job is never red *and* never green — it just sits in `queued` forever. Nothing else in Dark Flow would ever notice, and a repo with a dead runner looks healthy by silence.
 
-**B. Local `lint` + `test` in the project root.** Only when `HEAD` moved since the last green run, so an idle repo costs nothing. This covers the projects that have **no GitHub workflows at all** — there, GitHub-side polling has nothing to watch.
+**B. Local lint in the project root.** Only when `HEAD` moved since the last green run, so an idle repo costs nothing. This covers the projects that have **no GitHub workflows at all** — there, GitHub-side polling has nothing to watch.
 
-- JS: `pnpm lint` / `pnpm test`, for whichever scripts `package.json` actually defines. Skipped when `node_modules` is absent — installing deps is not this routine's job, and a missing one would look like a code failure.
+- JS: `pnpm lint`, when `package.json` defines the script. Skipped when `node_modules` is absent — installing deps is not this routine's job, and a missing one would look like a code failure.
 - Python: `ruff check .` when `ruff` is on PATH.
 
 The HEAD marker (`.darkflow.d/state/ci-watch.sha`) is written **only when the local checks pass**, so a red repo keeps being re-checked until it's actually fixed.
+
+### Why lint and not the test suite
+
+Lint is **hermetic**: static analysis over the working tree, same verdict wherever it runs. A test suite is not — and v4.20.0 proved it the hard way. On the first real tick `pnpm test` came back red on **7 of 8 projects**, and all seven were false positives: the suites passed interactively in the same checkout (scopegate 382/382, sqlformatter 18/18) but failed under the launchd-spawned worker, where vitest could not resolve its optional native binding (`@rolldown/binding-darwin-arm64`). Suites also want a database, env vars and generated clients that a background daemon has no business providing.
+
+Every one of those failures is an **environment report, not a code report** — and each filed a phantom `priority=high` task. So tests stay where the environment is declared: the project's own CI workflow (probe A watches it) and `fix-issues`, which runs them in the foreground before pushing. If a repo genuinely needs its tests watched, give it a CI workflow.
 
 ---
 

@@ -660,26 +660,39 @@ ci_watch() {
     fi
   fi
 
-  # ── B. Local lint + test on a new HEAD ──────────────────────────────────────
+  # ── B. Local lint on a new HEAD ─────────────────────────────────────────────
   # The HEAD marker is written only when the local checks pass, so a red repo
   # keeps being re-checked (and the task keeps being justified) until it's fixed.
+  #
+  # LINT ONLY — deliberately NOT the test suite. Lint is hermetic: static
+  # analysis over the working tree, same verdict wherever it runs. A test suite
+  # is not, and running one from a launchd-spawned daemon proved it: `pnpm test`
+  # failed on 7 of 8 projects on the first real tick while passing interactively
+  # in the same checkout, because vitest could not resolve its optional native
+  # binding (`@rolldown/binding-darwin-arm64`) in the worker's environment.
+  # Suites also want a database, env vars and generated clients that a
+  # background daemon has no business providing. Every one of those failures is
+  # an environment report, not a code report, and each filed a phantom
+  # high-priority task. Tests belong where the environment is declared: the
+  # project's own CI workflow (probe A watches it) and `fix-issues`, which runs
+  # them in the foreground before it pushes.
+  # ponytail: if a repo genuinely needs local tests here, give it a CI workflow.
   local sha_file="${STATE_DIR}/ci-watch.sha" head_sha prev_sha local_ran=false local_red=false
   head_sha=$(git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null || echo "")
   prev_sha=$(cat "$sha_file" 2>/dev/null || echo "")
   if [[ -n "$head_sha" && "$head_sha" != "$prev_sha" ]]; then
-    local chk out
+    local out
     # node_modules must already be there — installing deps is not this routine's
     # job, and a missing one would otherwise look like a code failure.
-    if [[ -f "${PROJECT_ROOT}/package.json" && -d "${PROJECT_ROOT}/node_modules" ]] && command -v pnpm &>/dev/null; then
-      for chk in lint test; do
-        jq -e --arg c "$chk" '.scripts[$c] // empty' "${PROJECT_ROOT}/package.json" >/dev/null 2>&1 || continue
-        local_ran=true
-        if ! out=$( cd "$PROJECT_ROOT" && CI=1 pnpm "$chk" 2>&1 ); then
-          local_red=true
-          failed="${failed:+$failed, }local ${chk}"
-          report="${report}"$'\n\n'"### local \`pnpm ${chk}\` on \`${head_sha:0:8}\`"$'\n'"\`\`\`"$'\n'"$(tail -n 40 <<<"$out")"$'\n'"\`\`\`"
-        fi
-      done
+    if [[ -f "${PROJECT_ROOT}/package.json" && -d "${PROJECT_ROOT}/node_modules" ]] \
+       && command -v pnpm &>/dev/null \
+       && jq -e '.scripts.lint // empty' "${PROJECT_ROOT}/package.json" >/dev/null 2>&1; then
+      local_ran=true
+      if ! out=$( cd "$PROJECT_ROOT" && CI=1 pnpm lint 2>&1 ); then
+        local_red=true
+        failed="${failed:+$failed, }local lint"
+        report="${report}"$'\n\n'"### local \`pnpm lint\` on \`${head_sha:0:8}\`"$'\n'"\`\`\`"$'\n'"$(tail -n 40 <<<"$out")"$'\n'"\`\`\`"
+      fi
     fi
     if [[ -f "${PROJECT_ROOT}/pyproject.toml" || -f "${PROJECT_ROOT}/requirements.txt" ]] && command -v ruff &>/dev/null; then
       local_ran=true

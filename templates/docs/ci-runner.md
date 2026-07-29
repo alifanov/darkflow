@@ -19,8 +19,10 @@ Why the move:
 - Polls GitHub Actions for the base branch: newest run per workflow that
   **concluded `failure`**, or that is **still queued/in progress after 45 min**
   (that's the dead-runner case).
-- Runs **`pnpm lint` / `pnpm test`** (or `ruff check .`) locally when `HEAD` moved
-  since the last green run — this is what covers repos with no workflows at all.
+- Runs **`pnpm lint`** (or `ruff check .`) locally when `HEAD` moved since the last
+  green run — this is what covers repos with no workflows at all. Lint only, not
+  the test suite: lint is hermetic, a suite needs a declared environment (see
+  `routines/ci-watch.md`).
 - Files one deduped `source:ci` task per branch, and closes it again on green.
 
 Pure bash, no agent, no tokens. `fix-ci-issue` does the fixing. See
