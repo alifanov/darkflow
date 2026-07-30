@@ -6,12 +6,15 @@
 # Exit codes:
 #   0  green (or nothing to check — no gh, no repo, no workflow on this push)
 #   1  red — at least one run for HEAD failed
-#   2  no run appeared within the timeout (treat as "no CI here", not as failure)
+#   2  no run appeared in time (treat as "no CI on this push", not as failure)
 #
-# Env: CI_WAIT_TIMEOUT (seconds to wait for a run to register, default 600)
+# Env: CI_WAIT_TIMEOUT — seconds to wait for a run to *appear* (default 60).
+#      A run registers within seconds of a push, so a long value here only means
+#      a repo without push-triggered CI blocks the session for nothing. How long
+#      the run then takes to finish is not capped by this — `gh run watch` waits.
 set -uo pipefail
 
-timeout=${CI_WAIT_TIMEOUT:-600}
+timeout=${CI_WAIT_TIMEOUT:-60}
 
 command -v gh >/dev/null 2>&1 || { echo "ci-wait: gh CLI not found — skipping CI check"; exit 2; }
 sha=$(git rev-parse HEAD 2>/dev/null) || { echo "ci-wait: not a git repo — skipping CI check"; exit 2; }
