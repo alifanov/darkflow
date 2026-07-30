@@ -26,6 +26,14 @@ Check approved task queue:
 If there are approved tasks matching the current context — pick them first.
 Before starting: set status to `in-progress`, leave a comment with the branch name.
 
+### After each push
+
+Confirm CI is green in the same session — don't push and walk away:
+```bash
+~/.darkflow/ci-wait.sh; echo "ci-wait exit: $?"
+```
+`0` = green (or no CI) · `2` = no run for this commit · `1` = **red — fix it or hand it to a human before finishing**.
+
 ### When to read docs
 
 - **Any UI/UX task** → `docs/design/components.md` (registry + UI-state patterns)

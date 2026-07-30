@@ -316,9 +316,12 @@ install_global_helpers() {
   gb_fetch "darkflow/df" "${GLOBAL_DIR}/df" \
     && chmod +x "${GLOBAL_DIR}/df" \
     || warn "Could not fetch df (task CLI)"
+  gb_fetch "darkflow/ci-wait.sh" "${GLOBAL_DIR}/ci-wait.sh" \
+    && chmod +x "${GLOBAL_DIR}/ci-wait.sh" \
+    || warn "Could not fetch ci-wait.sh"
   gb_fetch "darkflow/mailbox/fetch.py" "${GLOBAL_DIR}/mailbox/fetch.py" || warn "Could not fetch mailbox/fetch.py"
   gb_fetch "darkflow/mailbox/send.py"  "${GLOBAL_DIR}/mailbox/send.py"  || warn "Could not fetch mailbox/send.py"
-  success "Installed global helpers (get-config.sh, mailbox) into ${GLOBAL_DIR}/"
+  success "Installed global helpers (get-config.sh, ci-wait.sh, mailbox) into ${GLOBAL_DIR}/"
 }
 
 # Write ~/.darkflow/config (webapp_url + version). Preserves a custom webapp_url

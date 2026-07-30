@@ -114,6 +114,24 @@ Commit and push directly to the `branch` value from `.darkflow.d/state/config.js
 **If `merge_strategy=pr`:**
 From the project root, create a feature branch in place with `git checkout -b` based off the `branch` value from `.darkflow.d/state/config.json`, implement and commit there, then open a pull request targeting `branch` referencing "Task #N" in the description (there is no GitHub issue to auto-close — the task lives in Dark Flow's own queue) and merge it into that branch. Commit messages reference `Task #N` too. No worktree — the branch lives in the same working directory.
 
+**After pushing — confirm CI is green before closing the task:**
+
+Do not close a task on a hope. Wait for the GitHub Actions run of the commit you just pushed and read the verdict in this session:
+
+```bash
+~/.darkflow/ci-wait.sh; echo "ci-wait exit: $?"
+```
+
+Act on the exit code:
+
+| Exit | Meaning | What to do |
+|---|---|---|
+| `0` | CI green (or the project has no CI) | Continue — comment and close the task |
+| `2` | No workflow run appeared for this commit | Continue — treat as "no CI on this push", but say so in the task comment |
+| `1` | **CI red** | Do NOT close the task. Comment with the failing job's URL and the error output `ci-wait.sh` printed, then `~/.darkflow/df task needs-human $n` and stop |
+
+`ci-wait.sh` blocks until the run finishes (10 min cap by default; override with `CI_WAIT_TIMEOUT`). It is the synchronous counterpart to the `ci-watch` routine — same signal, but reported while the session that caused it is still open.
+
 After landing, leave a comment on the task with a brief summary of what was done. It **must** link the code: the PR URL (with `merge_strategy=pr`) or the commit SHA(s) (with `direct`) — this is the only place the task → code link is recorded:
 ```bash
 ~/.darkflow/df task comment $n --body "<summary: what was broken/missing, files changed, docs updated>
