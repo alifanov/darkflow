@@ -10,6 +10,10 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.21.4] — 2026-08-03
+
+- **Security** — закрыты все 10 алертов Dependabot в `webapp/`: `next` 15.5.18 → 15.5.22 (5 high + 5 moderate), `postcss` 8.5.15 → 8.5.25, `sharp` 0.34.5 → 0.35.3. Транзитивные `postcss`/`sharp` подтянуты через `pnpm.overrides` (`>=8.5.18` / `>=0.35.0`). `pnpm build` зелёный.
+
 ## [4.21.3] — 2026-08-03
 
 - **Docs** — добавлена лицензия MIT (`LICENSE`) и топики GitHub-репозитория (`claude-code`, `ai-agents`, `agentic-workflow`, `developer-tools`, `workflow-automation`, `devops-automation`, `cli`, `issue-triage`, `automation`, `nextjs`). Без лицензии публичный репозиторий формально «все права защищены» — использовать установщик в чужих проектах юридически нельзя.
