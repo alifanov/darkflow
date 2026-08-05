@@ -12,8 +12,18 @@ jobs:
       run:
         working-directory: webapp
     env:
-      # ponytail: build-time only, no DB is reached during `next build`
       DATABASE_URL: postgresql://darkflow:darkflow@localhost:5432/darkflow
+    # `next build` prerenders pages that query Prisma, so a real DB is required
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: darkflow
+          POSTGRES_PASSWORD: darkflow
+          POSTGRES_DB: darkflow
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -25,4 +35,5 @@ jobs:
           cache: pnpm
           cache-dependency-path: webapp/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - run: pnpm exec prisma migrate deploy
       - run: pnpm build
