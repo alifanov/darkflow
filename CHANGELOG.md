@@ -10,6 +10,10 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.22.0] — 2026-08-05
+
+- **CI** — добавлен `.github/workflows/ci.yml`: `pnpm install --frozen-lockfile` + `pnpm build` для `webapp/` на каждый PR и push в `main`. До этого в репозитории не было ни одного workflow, поэтому PR'ы Dependabot висели без единой проверки (PR #5 провисел неделю и был закрыт как устаревший). Теперь такие PR получают вердикт автоматически.
+
 ## [4.21.4] — 2026-08-03
 
 - **Security** — закрыты все 10 алертов Dependabot в `webapp/`: `next` 15.5.18 → 15.5.22 (5 high + 5 moderate), `postcss` 8.5.15 → 8.5.25, `sharp` 0.34.5 → 0.35.3. Транзитивные `postcss`/`sharp` подтянуты через `pnpm.overrides` (`>=8.5.18` / `>=0.35.0`). `pnpm build` зелёный.
