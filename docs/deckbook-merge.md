@@ -37,6 +37,7 @@ Where they genuinely differ:
 | A8 | **One archive: `docs/_archive/`.** Superseded layouts, retired documents and the existing `docs/insights/` snapshots move there. Nothing is archived under `state/` | gap found while reviewing |
 | A9 | **Dropping a command drops its routine with it** — the catalog entry in `webapp/src/lib/routines.ts` *and* the `RoutineConfig` rows in every project. A schedule that outlives its command has the worker firing `claude -p "/darkflow:<gone>"` on cron forever. Same for the merges: C1/C2/C4 retire the old names, so those rows go too, and the surviving routine keeps one name | gap found while reviewing |
 | A10 | **One session per project.** The machine-wide semaphore caps total sessions (3 by default) but lets two routines of the *same* project run at once — in the same checkout, since worktrees are forbidden. With A7 that becomes a race for `index.lock` and a way to sweep someone else's edits into a commit. Add a per-project lock taken **before** the global slot, claimed atomically the same way (`set -o noclobber`) and reclaimed when the owning PID is dead. A busy project simply skips the tick. No exemptions for cheap routines — uptime and deploy checks run every 4–24h and rarely collide | gap found while reviewing |
+| A11 | **Metrics survive the merges, one per surviving routine.** Fifteen commands write `.darkflow.d/state/metrics/*.json`, which the worker forwards to the webapp — that is what feeds `SecurityStatus`, `ArchitectureStatus`, the alerts and the project-row widgets. It is a separate channel from `docs/insights/`, untouched by A3/A4: **`.darkflow.d/state/` is not `docs/state/`**, and the two must not be confused while reading this plan. The merges collapse the files along with the commands — `security.json` absorbs `vulnerabilities.json`, `architecture.json` absorbs `code-health.json`, and the three design files become `design.json` + `ux.json`. A file nobody writes any more leaves a widget frozen on its last value, so I1 deletes orphaned `metrics/*.json` while it reconciles a project | gap found while reviewing |
 
 ## Not doing
 
@@ -54,18 +55,23 @@ Where they genuinely differ:
 
 ## Moving off Deckbook
 
-Eight projects run on it today — eight MCP servers and **142 scheduled tasks**:
+Eight projects run on it today — eight MCP servers and **138 scheduled tasks** calling `/deckbook:*`:
 
-| Project | Scheduled tasks |
+| Project | Tasks calling `/deckbook:*` |
 |---|---|
-| secscanner | 23 |
 | mailmonitor | 20 |
+| secscanner | 19 |
 | pageradar | 19 |
 | qabot | 18 |
 | mystize | 17 |
 | sqlformatter | 17 |
 | deckbook | 14 |
 | scopegate | 14 |
+
+Those eight prefixes cover 142 scheduled tasks in total, so **selecting by `<slug>-*` is wrong** — it
+would also delete four of secscanner's own tasks that have nothing to do with Deckbook
+(`improve-codebase-architecture`, `posthog-analytics`, `security-review`, `update-claude-md`). Select by
+what the prompt actually calls: `rg -l '/deckbook:' ~/.claude/scheduled-tasks/*/SKILL.md`.
 
 (A ninth server, `deckbook-private`, had no scheduled tasks and has already been removed.)
 
@@ -83,7 +89,8 @@ approved, and disconnect last, while the MCP server is still there to read from:
    `todo` and `in_progress` → `approved`, `needs_human` → `proposed`. Existing comments are folded into
    the body — Dark Flow has no comment history to import into (R7). Closed and cancelled tasks are not
    moved; they stay in the Deckbook database as history.
-4. **Disconnect** — delete that project's `<slug>-*` scheduled tasks and its `deckbook-<slug>` MCP server.
+4. **Disconnect** — delete that project's scheduled tasks *that call `/deckbook:*`* (see the selection
+   note above) and its `deckbook-<slug>` MCP server.
 
 Once no project is left: delete the `/deckbook:*` slash commands (`~/.claude/commands/deckbook/`,
 21 files). Per A9 commands and the schedules that call them go together — a leftover cron entry whose
@@ -168,10 +175,16 @@ modules are all ahead of what `/deckbook:init` does.
 ```
 stuck tasks   status=in-progress AND updatedAt < now()-4h  → comment + back to approved
 stuck HEAD    working copy left on a feature branch, nothing running → back to the base branch
-              uncommitted changes → leave it alone and say so
 worktrees     git worktree prune; delete merged branches
-              skip anything with uncommitted changes — the one judgement call, made by a rule
+
+"uncommitted changes" ignores docs/logs/ and docs/state/ — under the pr strategy those are
+expected to sit there waiting for the next PR (A7). Anything else uncommitted → leave it alone
+and say so.
 ```
+
+Without that exemption the whole pass would be dead on arrival: a project with no open tasks opens no
+PR for weeks, so the log stays uncommitted, so the checkout always looks dirty, so nothing is ever
+cleaned up or recovered — precisely when recovery is needed.
 
 Dark Flow has no stuck-task recovery at all today: a task abandoned by a killed session stays
 `in-progress` forever and no later run picks it up. The checkout has the same problem — `fix-issues`
@@ -202,7 +215,7 @@ Deckbook until Dark Flow itself is in its final shape.
 11. Retire    once none are left — delete the /deckbook:* commands
 ```
 
-Step 10 is the long one: 142 scheduled tasks across eight projects, each needing its content moved, its
+Step 10 is the long one: 138 scheduled tasks across eight projects, each needing its content moved, its
 modules chosen and its schedule checked. One project at a time, verified before the next.
 
 This plan stays a file rather than becoming tasks in Dark Flow itself: it is finite and gets deleted when
@@ -218,5 +231,7 @@ the work is done, and eleven planning tasks in the queue would only compete with
 - **Docs:** `docs/insights/<area>/` snapshots give way to one daily log plus `state/`; one archive at
   `docs/_archive/`; the installer reconciles existing projects; Deckbook's documents land as files.
 - **DB:** one new field — the staging URL on `Project`. No new tables, no schema churn.
+- **Metrics:** `.darkflow.d/state/metrics/` keeps working; the merged routines collapse their files
+  (15 → 12) and the installer deletes the orphans.
 - **Worker:** a per-project lock on top of the existing semaphore.
 - **What is lost with Deckbook:** its MCP interface to tasks (R1) and its 28 vitest files (R6).

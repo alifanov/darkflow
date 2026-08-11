@@ -10,6 +10,12 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.22.8] — 2026-08-11
+
+- **Docs** — пятый и последний круг критики `docs/deckbook-merge.md`; план закрыт. Добавлено A11: метрики. Пятнадцать команд пишут `.darkflow.d/state/metrics/*.json`, воркер шлёт их в webapp — это питает `SecurityStatus`, `ArchitectureStatus`, алерты и виджеты в списке проектов, и до сих пор план об этом канале молчал. Слияния схлопывают файлы вместе с командами (`security.json` вбирает `vulnerabilities.json`, `architecture.json` — `code-health.json`, три дизайн-файла → `design.json` + `ux.json`), осиротевшие удаляет I1: файл, который больше никто не пишет, оставляет виджет замороженным на старом значении. Отдельно оговорено, что `.darkflow.d/state/` — не `docs/state/`.
+- **Docs** — housekeeping не считает грязью `docs/logs/` и `docs/state/`. Без этого проход был бы мёртворождённым: проект без открытых задач неделями не открывает PR, лог по A7 висит незакоммиченным, чекаут всегда выглядит грязным — и ни уборка веток, ни возврат HEAD не срабатывают ровно тогда, когда нужны.
+- **Docs** — снятие задач Deckbook по префиксу `<slug>-*` заменено отбором по содержимому промпта: `/deckbook:*` зовут 138 задач из 142, а четыре оставшиеся принадлежат secscanner и к Deckbook отношения не имеют (`improve-codebase-architecture`, `posthog-analytics`, `security-review`, `update-claude-md`).
+
 ## [4.22.7] — 2026-08-11
 
 - **Docs** — четвёртый круг критики `docs/deckbook-merge.md`, закрыт конфликт A7 со стратегией слияния. У проектов по умолчанию `mergeStrategy=pr`, поэтому прямой пуш дневного лога в базовую ветку упирался бы в защиту ветки: теперь при `direct` рутина коммитит и пушит сама, при `pr` — только пишет файл, а забирает его ближайший PR (`fix-issues` дополнительно стейджит `docs/logs/` и `docs/state/`). Оба режима требуют, чтобы HEAD был на базовой ветке.
