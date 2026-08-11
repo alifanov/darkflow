@@ -21,7 +21,7 @@ What exactly we decided to do. One or two short sentences. No caveats, no altern
 
 - **Positive:** what will improve / become simpler
 - **Negative / risks:** what will become more complex, what might break, what will need maintenance
-- **What needs to change in other layers:** updates to `product/`, `spec/`, `design/`, migrations, etc.
+- **What needs to change in other layers:** updates to `state/product/`, `state/spec/`, `state/design/`, migrations, etc.
 
 ## How we'll verify the decision worked
 

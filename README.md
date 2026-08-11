@@ -98,16 +98,26 @@ docs/
 ├── README.md               ← manifest of all files + reading order
 ├── agent-workflow.md        ← rules: when agent reads / writes each layer
 ├── tasks.md                 ← task field taxonomy + triage loop spec
-├── product/                 ← business layer (what, why, for whom) — quarterly
-├── spec/                    ← product/UX layer (flows, screens, data model) — weekly
-├── design/                  ← visual identity, tokens, patterns — situational
-├── logs/                    ← one document per day, a section per source — daily
+│
+├── state/                   ← HOW THINGS ARE RIGHT NOW — overwritten in place
+│   ├── arch.md              ← system map: stack, modules, entry points
+│   ├── hypotheses.md        ← bet → evidence → verdict ledger
+│   ├── product/             ← what, why, for whom — quarterly
+│   ├── spec/                ← flows, screens, data model — weekly
+│   └── design/              ← tokens, components, assets — situational
+│
+├── logs/                    ← WHAT HAPPENED — appended, never rewritten
 │   └── YYYY-MM-DD.md            ## Security, ## Analytics, ## Changes, …
+│
 ├── insights/
 │   └── qualitative/         ← interviews, feedback, recordings — source material
 └── decisions/               ← ADRs (context → decision → verification) — as needed
     └── TEMPLATE.md
 ```
+
+`state/` and `logs/` are the whole idea: a routine that *observes* something appends to
+`logs/`; a routine that learns the system *changed* rewrites `state/`. Neither touches the
+other's ground, so neither can quietly overwrite the other's work.
 
 ---
 

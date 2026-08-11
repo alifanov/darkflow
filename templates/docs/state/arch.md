@@ -12,7 +12,7 @@
 |---|---|---|
 | Language / runtime | *e.g. TypeScript / Node 24* | |
 | Framework | *e.g. Next.js App Router* | |
-| Data store | *e.g. Postgres via Prisma* | see `spec/data-model.md` |
+| Data store | *e.g. Postgres via Prisma* | see `state/spec/data-model.md` |
 | Hosting / deploy | *e.g. host process + Docker for DB* | |
 
 ---

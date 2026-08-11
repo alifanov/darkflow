@@ -1139,22 +1139,22 @@ Confirm CI is green in the same session — don't push and walk away:
 
 HEREDOC
 
-  echo "- **Any UI/UX task** → \`docs/design/components.md\` (registry + UI-state patterns)"
-  echo "- **Changing a user flow** → \`docs/spec/flows/\`"
-  echo "- **Product / marketing decisions** → \`docs/product/positioning.md\` + \`docs/product/product.md\` + \`docs/product/pricing.md\`"
-  [[ "$MOD_ANALYTICS" == true ]] && echo "- **Working with analytics events** → \`docs/product/metrics.md\` (not guessing event names)"
+  echo "- **Any UI/UX task** → \`docs/state/design/components.md\` (registry + UI-state patterns)"
+  echo "- **Changing a user flow** → \`docs/state/spec/flows/\`"
+  echo "- **Product / marketing decisions** → \`docs/state/product/positioning.md\` + \`docs/state/product/product.md\` + \`docs/state/product/pricing.md\`"
+  [[ "$MOD_ANALYTICS" == true ]] && echo "- **Working with analytics events** → \`docs/state/product/metrics.md\` (not guessing event names)"
   echo "- **Context on what's working / broken right now** → the last 2–3 files in \`docs/logs/\`"
-  echo "- **Before architectural changes** → \`docs/spec/architecture.md\` (current map) + \`docs/decisions/\` (check for existing ADRs)"
+  echo "- **Before architectural changes** → \`docs/state/arch.md\` (current map) + \`docs/decisions/\` (check for existing ADRs)"
 
   echo ""
   echo "### When to write docs"
   echo ""
-  echo "- **Changed a user flow** → update \`docs/spec/flows/*.md\`"
-  echo "- **Added / removed a screen** → update \`docs/spec/screens.md\`"
-  echo "- **Changed data model** → update \`docs/spec/data-model.md\`"
-  echo "- **Changed system shape** (new service, integration, stack swap) → update \`docs/spec/architecture.md\`"
-  echo "- **Changed pricing / billing** → update \`docs/product/pricing.md\`"
-  echo "- **Added UI component or state pattern** → update \`docs/design/components.md\`"
+  echo "- **Changed a user flow** → update \`docs/state/spec/flows/*.md\`"
+  echo "- **Added / removed a screen** → update \`docs/state/spec/screens.md\`"
+  echo "- **Changed data model** → update \`docs/state/spec/data-model.md\`"
+  echo "- **Changed system shape** (new service, integration, stack swap) → update \`docs/state/arch.md\`"
+  echo "- **Changed pricing / billing** → update \`docs/state/product/pricing.md\`"
+  echo "- **Added UI component or state pattern** → update \`docs/state/design/components.md\`"
   echo "- **Made an architectural decision** → add ADR to \`docs/decisions/\` (context → decision → how to verify)"
   echo "- **Anything a data run observed** → your section of today's \`docs/logs/YYYY-MM-DD.md\` — one file a day, one section per source; a clean run writes nothing"
 
@@ -1493,11 +1493,13 @@ web_sync() {
 
 header "1/4  Docs structure"
 
-make_dir "docs/product"
-make_dir "docs/spec/flows"
-make_dir "docs/design/assets"
+# A4: docs/state/ is "how things are right now", overwritten in place.
+#     docs/logs/ is "what happened", appended and never rewritten.
+make_dir "docs/state/product"
+make_dir "docs/state/spec/flows"
+make_dir "docs/state/design/assets"
+make_dir "docs/logs"
 make_dir "docs/insights/qualitative"   # interviews and recordings — source material, not daily runs
-make_dir "docs/logs"                   # A3: one document per day, a section per source
 make_dir "docs/decisions"
 make_dir ".darkflow.d"
 make_dir ".darkflow.d/state"
@@ -1681,9 +1683,9 @@ elif [[ "$MODE" == "fresh" ]]; then
   echo -e "${GREEN}${BOLD}Dark Flow installed (v${LATEST_VERSION}) in ${TARGET_DIR}${RESET}"
   echo ""
   echo "Next steps:"
-  echo "  1. Fill in docs/product/ — what are you building and for whom"
-  echo "  2. Fill in docs/spec/    — user flows, screens, data model"
-  echo "  3. Fill in docs/design/  — tokens, components, voice and tone"
+  echo "  1. Fill in docs/state/product/ — what are you building and for whom"
+  echo "  2. Fill in docs/state/spec/    — user flows, screens, data model"
+  echo "  3. Fill in docs/state/design/  — tokens, components, voice and tone"
   echo "  4. Commit: git add docs/ CLAUDE.md .darkflow.d/claude.md && git commit -m 'chore: install dark-flow'"
   echo "  5. Open ${WEBAPP_URL} in a browser — projects sync automatically"
 else

@@ -29,19 +29,19 @@ Confirm CI is green in the same session — don't push and walk away:
 
 ### When to read docs
 
-- **Any UI/UX task** → `docs/design/components.md` (registry + UI-state patterns)
-- **Changing a user flow** → `docs/spec/flows/`
-- **Product / marketing decisions** → `docs/product/positioning.md` + `docs/product/product.md` + `docs/product/pricing.md`
-- **Before architectural changes** → `docs/spec/architecture.md` (current map) + `docs/decisions/` (check for existing ADRs)
+- **Any UI/UX task** → `docs/state/design/components.md` (registry + UI-state patterns)
+- **Changing a user flow** → `docs/state/spec/flows/`
+- **Product / marketing decisions** → `docs/state/product/positioning.md` + `docs/state/product/product.md` + `docs/state/product/pricing.md`
+- **Before architectural changes** → `docs/state/arch.md` (current map) + `docs/decisions/` (check for existing ADRs)
 
 ### When to write docs
 
-- **Changed a user flow** → update `docs/spec/flows/*.md`
-- **Added / removed a screen** → update `docs/spec/screens.md`
-- **Changed data model** → update `docs/spec/data-model.md`
-- **Changed system shape** (new service, integration, stack swap) → update `docs/spec/architecture.md`
-- **Changed pricing / billing** → update `docs/product/pricing.md`
-- **Added UI component or state pattern** → update `docs/design/components.md`
+- **Changed a user flow** → update `docs/state/spec/flows/*.md`
+- **Added / removed a screen** → update `docs/state/spec/screens.md`
+- **Changed data model** → update `docs/state/spec/data-model.md`
+- **Changed system shape** (new service, integration, stack swap) → update `docs/state/arch.md`
+- **Changed pricing / billing** → update `docs/state/product/pricing.md`
+- **Added UI component or state pattern** → update `docs/state/design/components.md`
 - **Made an architectural decision** → add ADR to `docs/decisions/` (context → decision → how to verify)
 
 ### Active Routines

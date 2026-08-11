@@ -26,21 +26,21 @@ The daily-log section remains the source of truth; the task = the work artifact.
 
 ## When to read (before a task)
 
-- **Any UI / copywriting task** → `design/components.md` (registry + UI-state patterns)
-- **Changing a user flow** → `spec/flows/` (checkout, auth, onboarding, etc.)
-- **Product / marketing decisions** → `product/positioning.md` + `product/product.md` + `product/pricing.md`
-- **Working with analytics events / metrics** → `product/metrics.md` (not guessing event names)
-- **Creating tasks from analytics / ads / GSC findings** → `product/hypotheses.md` (don't re-file refuted bets)
-- **Before a major architectural change** → `spec/architecture.md` for the current map, then `decisions/` (check it doesn't contradict existing ADRs)
+- **Any UI / copywriting task** → `state/design/components.md` (registry + UI-state patterns)
+- **Changing a user flow** → `state/spec/flows/` (checkout, auth, onboarding, etc.)
+- **Product / marketing decisions** → `state/product/positioning.md` + `state/product/product.md` + `state/product/pricing.md`
+- **Working with analytics events / metrics** → `state/product/metrics.md` (not guessing event names)
+- **Creating tasks from analytics / ads / GSC findings** → `state/hypotheses.md` (don't re-file refuted bets)
+- **Before a major architectural change** → `state/arch.md` for the current map, then `decisions/` (check it doesn't contradict existing ADRs)
 - **Context on "what's working / broken right now"** → the last 2–3 files in `logs/`
 
 ## When to write (after a task)
 
-- **Changed a user flow** (auth, checkout, onboarding) → update corresponding `spec/flows/*.md`
-- **Added / removed a screen** → update `spec/screens.md`
-- **Changed the data model** → update summary in `spec/data-model.md`
-- **Changed pricing / billing** → update `product/pricing.md`
-- **Added a new UI component or state pattern** → update `design/components.md`
+- **Changed a user flow** (auth, checkout, onboarding) → update corresponding `state/spec/flows/*.md`
+- **Added / removed a screen** → update `state/spec/screens.md`
+- **Changed the data model** → update summary in `state/spec/data-model.md`
+- **Changed pricing / billing** → update `state/product/pricing.md`
+- **Added a new UI component or state pattern** → update `state/design/components.md`
 - **Made a non-trivial architectural / product decision** → add entry to `decisions/` in ADR format: context → decision → consequences
 - **Any observation from a data run** → your section of today's `logs/YYYY-MM-DD.md` (one file a day, one section per source)
 
@@ -107,28 +107,28 @@ rg -l '^## <Section>' logs/               # which of those days carried the obse
 
 A run that left no section **breaks the streak**.
 
-**Where hypotheses live** — the central ledger `product/hypotheses.md` (create it from the format described inside on first use). One entry per bet with a stable ID (`H-NNN`), status (`tracking` → `testing` → `confirmed`/`refuted`/`abandoned`) and links to the daily logs that support it. The logs stay the raw evidence; the ledger is the current state. **Read the ledger before creating tasks from findings** — a refuted hypothesis must not come back as a task without new data.
+**Where hypotheses live** — the central ledger `state/hypotheses.md` (create it from the format described inside on first use). One entry per bet with a stable ID (`H-NNN`), status (`tracking` → `testing` → `confirmed`/`refuted`/`abandoned`) and links to the daily logs that support it. The logs stay the raw evidence; the ledger is the current state. **Read the ledger before creating tasks from findings** — a refuted hypothesis must not come back as a task without new data.
 
 **How to record a pre-threshold hypothesis:**
 
-1. Add or refresh its entry in `product/hypotheses.md` — append today's log link to Evidence, update the counter.
+1. Add or refresh its entry in `state/hypotheses.md` — append today's log link to Evidence, update the counter.
 2. In your section of the daily log, keep hypotheses to one pointer line per bet:
 
 ```markdown
-- **H-004**: conversion drop on /checkout — evidence 2/3, see `product/hypotheses.md`
+- **H-004**: conversion drop on /checkout — evidence 2/3, see `state/hypotheses.md`
 ```
 
 **When the threshold is reached:** create the task, set the ledger entry to `testing` with a link to task #N, and include a `Based on:` line in the task body linking the supporting logs. Every task keeps a documented evidence trail.
 
 ### What to update in other layers
 
-- **New event / metric in code** (new analytics event, new KPI) → `product/metrics.md`. This is about **definitions**, not values.
-- **Changed the system shape** (new service, integration, stack swap) → `spec/architecture.md`.
-- **New targeting segments / audience shift** → `product/product.md` (audience section) or `product/positioning.md`.
+- **New event / metric in code** (new analytics event, new KPI) → `state/product/metrics.md`. This is about **definitions**, not values.
+- **Changed the system shape** (new service, integration, stack swap) → `state/arch.md`.
+- **New targeting segments / audience shift** → `state/product/product.md` (audience section) or `state/product/positioning.md`.
 - **New SEO targets (keywords, pages), sitemap strategy change** → a new entry in `decisions/`; record results in the `## SEO` section of the daily log.
-- **Decision that constrains future work** (architecture, stack, strategy — anything that forbids or prescribes future changes) → ADR in `decisions/`: what we saw → what we decided → how we'll verify. Ordinary data verdicts (experiment confirmed/refuted, campaign turned off) stay in the Closed table of `product/hypotheses.md` — no ADR.
+- **Decision that constrains future work** (architecture, stack, strategy — anything that forbids or prescribes future changes) → ADR in `decisions/`: what we saw → what we decided → how we'll verify. Ordinary data verdicts (experiment confirmed/refuted, campaign turned off) stay in the Closed table of `state/hypotheses.md` — no ADR.
 
-`logs/` = observations over time. `state/` + `product/` = how things are right now. `decisions/` = what we did about it. Don't mix layers.
+`logs/` = observations over time. `state/` + `state/product/` = how things are right now. `decisions/` = what we did about it. Don't mix layers.
 
 ## What NOT to do
 

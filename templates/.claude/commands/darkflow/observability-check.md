@@ -88,7 +88,7 @@ result, and the observation threshold counts on it (see `.darkflow.d/claude.md`)
 
 ### Hypotheses
 
-<one pointer line per bet: H-NNN + evidence status — the entry itself lives in docs/product/hypotheses.md (see agent-workflow.md)>
+<one pointer line per bet: H-NNN + evidence status — the entry itself lives in docs/state/hypotheses.md (see agent-workflow.md)>
 
 ### Recommendations
 

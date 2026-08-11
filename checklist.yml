@@ -26,9 +26,11 @@ schema: 1
 
 items:
   # ── Core directories ──────────────────────────────────────────────────────────
-  - { id: dir-docs-product,        group: docs,       type: dir, path: docs/product,             fix: mkdir, desc: "Product docs (product, positioning, pricing)" }
-  - { id: dir-docs-spec-flows,     group: docs,       type: dir, path: docs/spec/flows,          fix: mkdir, desc: "User flow specs" }
-  - { id: dir-docs-design-assets,  group: docs,       type: dir, path: docs/design/assets,       fix: mkdir, desc: "Design assets" }
+  # A4: "how things are right now" lives under docs/state/, overwritten in place.
+  # "What happened" lives in docs/logs/, appended and never rewritten.
+  - { id: dir-docs-product,        group: docs,       type: dir, path: docs/state/product,       fix: mkdir, desc: "Product docs (product, positioning, pricing)" }
+  - { id: dir-docs-spec-flows,     group: docs,       type: dir, path: docs/state/spec/flows,    fix: mkdir, desc: "User flow specs" }
+  - { id: dir-docs-design-assets,  group: docs,       type: dir, path: docs/state/design/assets, fix: mkdir, desc: "Design assets" }
   - { id: dir-docs-insights-qual,  group: docs,       type: dir, path: docs/insights/qualitative, fix: mkdir, desc: "Qualitative insights" }
   - { id: dir-docs-logs,           group: docs,       type: dir, path: docs/logs,                fix: mkdir, desc: "Daily log — one file a day, a section per source" }
   - { id: dir-docs-decisions,      group: docs,       type: dir, path: docs/decisions,           fix: mkdir, desc: "Architecture decision records" }

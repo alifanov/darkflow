@@ -42,7 +42,7 @@
 ## Key use cases
 
 *The main scenarios the product exists to serve. Keep to the ones that matter — full
-step-by-step flows live in `spec/flows/`.*
+step-by-step flows live in `state/spec/flows/`.*
 
 | # | Actor | Goal | Result (success state) |
 |---|---|---|---|

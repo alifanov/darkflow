@@ -44,7 +44,7 @@
 
 ## Related screens
 
-- `spec/screens.md` rows: *list the screen names*
+- `state/spec/screens.md` rows: *list the screen names*
 
 ## Related decisions
 

@@ -38,4 +38,4 @@
 
 ## Notes
 
-- Analytics events for billing: see `product/metrics.md` → Revenue section
+- Analytics events for billing: see `state/product/metrics.md` → Revenue section

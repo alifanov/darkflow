@@ -10,6 +10,14 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.27.0] — 2026-08-11
+
+Шаг 7 слияния с Deckbook (A4): новый layout `docs/state/`.
+
+- **Docs** — «как есть сейчас» съехало под `docs/state/` и переписывается на месте: `state/arch.md` (был `spec/architecture.md`), `state/hypotheses.md` (был `product/hypotheses.md`), `state/spec/`, `state/product/`, `state/design/`. Вместе с шагом 6 это даёт разделение, ради которого всё и затевалось: рутина, которая **наблюдает**, дописывает в `docs/logs/`; рутина, которая узнала, что система **изменилась**, переписывает `docs/state/`. Ни одна не лезет на территорию другой, поэтому ни одна не может молча затереть работу другой.
+- **Installer** — установщик создаёт `docs/state/{product,spec/flows,design/assets}` и `docs/logs/`; чеклист проверяет их. Ссылки переписаны во всех шаблонах, командах, `agent-workflow.md`, `docs/README.md`, `install.sh` и генерируемом `.darkflow.d/claude.md`.
+- **Docs** — `docs/README.md` начинается теперь не с перечня пяти слоёв, а с этого разделения: `state/` — одна текущая версия ответа, `logs/` — история, `decisions/` — почему выбрали так.
+
 ## [4.26.0] — 2026-08-11
 
 Шаг 6 слияния с Deckbook: дневной лог, правила коммитов рутин, порог наблюдений.
