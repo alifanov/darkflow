@@ -446,6 +446,25 @@ preflight() {
 
 # ── Lock ──────────────────────────────────────────────────────────────────────
 
+# ── Per-project lock: ONE session per project (A10) ───────────────────────────
+# The global semaphore below caps how many agent sessions run on the machine.
+# This lock is the other half: it caps them at one *per project*, and it is taken
+# BEFORE the global slot, by every entry point — the watch loop's dispatch
+# subshell, `--dry-run`, and a manual `darkflow-run.sh <routine>` alike.
+#
+# It has to be per project because worktrees are forbidden: every routine of a
+# project works in the same checkout. Two at once would race for `index.lock` and,
+# once routines started committing what they write, sweep each other's edits into
+# a commit. A busy project simply skips the tick.
+#
+# No exemptions for the cheap routines. ci-watch and the uptime probe cost nothing
+# to run, but they still write into that one checkout, and they run every 4–24h —
+# they rarely collide with anything anyway, so the exemption would buy nothing and
+# cost the guarantee.
+#
+# mkdir is the atomic primitive here (not `set -o noclobber`): it is one syscall
+# and it behaves on network filesystems, where O_EXCL does not.
+#
 # Try to take the dispatch lock. Returns 0 on success, 1 on contention.
 # Reclaims the lock if the recorded owner PID is no longer alive (stale lock
 # from a SIGKILLed / OOM-killed / power-loss dispatch that never ran its trap).
@@ -530,6 +549,12 @@ _do_exit_cleanup() {
 
 acquire_lock() {
   if ! try_acquire_lock; then
+    # A busy project skips the tick — that is the point. But a person who typed
+    # `darkflow-run.sh <routine>` and got a silent exit 0 has no way to tell
+    # "already running" from "did nothing", so say which PID owns it.
+    local owner_pid=""
+    [[ -f "$LOCK_DIR/pid" ]] && owner_pid=$(cat "$LOCK_DIR/pid" 2>/dev/null || echo "")
+    echo "darkflow-run: another run is already active for this project (PID ${owner_pid:-unknown}) — one session per project" >&2
     exit 0
   fi
   trap '_do_exit_cleanup' EXIT
