@@ -4,8 +4,38 @@ Working document for folding [Deckbook](https://github.com/alifanov/deckbook) in
 Dark Flow is the base. Deckbook contributes its ideas, and its live content — documents and open tasks —
 moves across; its code does not.
 
-**Status:** every decision is settled. Nothing is implemented yet — this file records what we agreed to
-do; the order of the work is at the bottom.
+**Status — 2026-08-11:** steps 1–9 are **done and pushed** (v4.23.0 → v4.29.0). Dark Flow itself is in
+its final shape. Steps 10–11 — moving the eight projects off Deckbook — have **not started**; they are
+blocked on things outside this repo (see *Blocked* below).
+
+| # | Step | |
+|---|---|---|
+| 1 | Modules — M1 | ✅ v4.23.0 |
+| 2 | Prune — C5 · D1–D4 · A9 | ✅ v4.23.0 |
+| 3 | Extract — P2 · P9 · P1 | ✅ v4.24.0 |
+| 4 | Merge — C1 · C2 · C4 · P5 · P7 | ✅ v4.25.0 |
+| 5 | Lock — A10 | ✅ v4.25.1 — premise was wrong, the lock already existed |
+| 6 | Log — A3 · A7 · P3 · P4 | ✅ v4.26.0 |
+| 7 | State — A4 | ✅ v4.27.0 |
+| 8 | Reconcile — I1 · A8 · A11 | ✅ v4.28.0 |
+| 9 | Worker — H | ✅ v4.29.0 |
+| 10 | Move the eight projects over | ⛔ blocked |
+| 11 | Retire the `/deckbook:*` commands | ⛔ blocked on 10 |
+
+**Blocked.** Step 10 needs two things this session cannot supply:
+
+1. **The webapp must be running** (`make web`, in the user's own interactive session — cmux's control
+   socket rejects a launchd-detached process). Without it `install.sh` cannot register a project, so
+   step 10.1 stops at "Could not reach the Web UI".
+2. **The `deckbook-<slug>` MCP servers must be connected** to the session doing the move. Step 10.2
+   reads the document tree over MCP; with no server there is nothing to read from, and the documents
+   cannot be reconstructed from the repo — they live in Deckbook's database.
+
+Step 10 also deletes 138 scheduled tasks and 8 MCP servers across eight other repositories. That is
+outward-facing and hard to reverse, so it wants an explicit go-ahead per project, not a blanket one.
+
+Two entries below were **disproved while implementing** — A10's premise and half of A11's. Both are
+marked inline; the corrections are the useful part of this file now.
 
 ## Why
 
