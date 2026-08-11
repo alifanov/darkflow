@@ -111,6 +111,7 @@ docs/
 │
 ├── insights/
 │   └── qualitative/         ← interviews, feedback, recordings — source material
+├── _archive/                ← superseded documents — one archive, never under state/
 └── decisions/               ← ADRs (context → decision → verification) — as needed
     └── TEMPLATE.md
 ```
@@ -118,6 +119,11 @@ docs/
 `state/` and `logs/` are the whole idea: a routine that *observes* something appends to
 `logs/`; a routine that learns the system *changed* rewrites `state/`. Neither touches the
 other's ground, so neither can quietly overwrite the other's work.
+
+Re-running `install.sh` on a project laid out by an older version brings it forward: the old
+top-level `spec/` · `product/` · `design/` move under `state/`, the old per-routine snapshot
+folders move to `_archive/`, and metrics files no routine writes any more are deleted. Documents
+are only ever **moved** — `git status` shows every one of them before you commit.
 
 ---
 

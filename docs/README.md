@@ -63,6 +63,12 @@ gaps as drift (the `docs-audit` routine follows the same rule).
 
 Logs are never rotated: the observation threshold counts back over them.
 
+**The archive** (`_archive/`) — one place, not one per layer. A document that is superseded or
+retired moves here instead of being deleted, and the installer puts the old per-routine snapshot
+folders here when it brings a project forward. Two rules: **nothing under `state/` is ever
+archived** (state is overwritten in place — the old value is in git, not in a folder), and
+**daily logs never go here** either.
+
 ## Reading order for newcomer / AI agent
 
 Once the docs are filled in, read them in this order (skip any not yet written):

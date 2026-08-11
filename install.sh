@@ -1485,6 +1485,117 @@ web_sync() {
   fi
 }
 
+# ── Reconcile docs/ against the reference layout (I1 · A8 · A11) ──────────────
+# An existing project was laid out by an older Dark Flow. Bring it forward:
+# migrate what has a new home, archive what has none, delete only derived files
+# nothing reads. **Never delete anything a human wrote** — every doc move below is
+# a move inside the repo, so git can undo all of it.
+
+# Move src -> dest, creating the parent. Prints what it did. Never overwrites:
+# a name that already exists at the destination keeps a `.old` suffix so both survive.
+_reconcile_mv() {
+  local src="$1" dest="$2"
+  [[ -e "$src" ]] || return 0
+  if [[ "$DRY_RUN" == true ]]; then
+    info "Would move: ${src} → ${dest}"
+    return 0
+  fi
+  mkdir -p "$(dirname "$dest")"
+  if [[ -e "$dest" ]]; then
+    dest="${dest%.md}.old.md"
+    [[ -d "$src" ]] && dest="${dest%.old.md}.old"
+  fi
+  mv "$src" "$dest" && changed "moved ${src} → ${dest}"
+}
+
+reconcile_docs() {
+  [[ -d docs ]] || return 0
+
+  # ── A4: the old top-level layout has a new home under docs/state/ ───────────
+  # These are live current-state documents. Archiving them would hide real
+  # content and leave the next audit to rewrite it from nothing, so they are
+  # MIGRATED, not archived — the plan's "archive a superseded layout" applies to
+  # layouts with no successor, which is the insights/ case below.
+  local _migrated=false
+  if [[ -d docs/spec || -d docs/product || -d docs/design ]]; then
+    _migrated=true
+    header "Migrating docs/ to the state/ + logs/ layout"
+    _reconcile_mv "docs/spec/architecture.md"  "docs/state/arch.md"
+    _reconcile_mv "docs/product/hypotheses.md" "docs/state/hypotheses.md"
+    local _d
+    for _d in spec product design; do
+      [[ -d "docs/${_d}" ]] || continue
+      # move the directory's contents, not the directory, so a partially
+      # migrated project (state/spec already there) merges instead of nesting
+      local _f
+      shopt -s dotglob nullglob
+      for _f in "docs/${_d}"/*; do
+        [[ "$(basename "$_f")" == ".gitkeep" ]] && { rm -f "$_f"; continue; }
+        _reconcile_mv "$_f" "docs/state/${_d}/$(basename "$_f")"
+      done
+      shopt -u dotglob nullglob
+      rmdir "docs/${_d}" 2>/dev/null && dim "removed empty docs/${_d}/"
+    done
+  fi
+
+  # ── A3/A8: per-routine snapshots have no successor — they go to the archive ──
+  # docs/insights/qualitative/ stays: interviews and recordings are source
+  # material, not a routine's daily output.
+  local -a _stale=()
+  local _dir
+  for _dir in docs/insights/*/; do
+    [[ -d "$_dir" ]] || continue
+    [[ "$_dir" == "docs/insights/qualitative/" ]] && continue
+    _stale+=("$_dir")
+  done
+
+  if [[ ${#_stale[@]} -gt 0 ]]; then
+    header "Old snapshot folders found (${#_stale[@]})"
+    for _dir in "${_stale[@]}"; do dim "$_dir"; done
+    echo ""
+    dim "Routines write one section a day to docs/logs/ now (A3), so nothing"
+    dim "refreshes these. They move to docs/_archive/ — nothing is deleted."
+    local _yn="y"
+    if [[ "$NON_INTERACTIVE" == false && -t 0 && "$DRY_RUN" == false ]]; then
+      read -rp "  Move them to docs/_archive/? [Y/n]: " _yn
+      _yn="${_yn:-y}"
+    fi
+    case "$_yn" in
+      [Yy]*) for _dir in "${_stale[@]}"; do
+               _reconcile_mv "${_dir%/}" "docs/_archive/insights/$(basename "${_dir%/}")"
+             done
+             rmdir docs/insights 2>/dev/null && dim "removed empty docs/insights/" ;;
+      *)     info "Left in place — re-run install.sh to archive them later" ;;
+    esac
+  fi
+
+  # ── A11: metrics files no routine writes any more ───────────────────────────
+  # Derived data, gitignored, and the ONLY deletion this function performs. The
+  # worker forwards exactly three of these; a file left behind by a merged or
+  # dropped routine would keep a widget frozen on its last value.
+  local _metrics=".darkflow.d/state/metrics"
+  if [[ -d "$_metrics" ]]; then
+    local _keep=" analytics.json security.json architecture.json "
+    local -a _orphans=()
+    local _m
+    for _m in "$_metrics"/*.json; do
+      [[ -f "$_m" ]] || continue
+      [[ "$_keep" == *" $(basename "$_m") "* ]] || _orphans+=("$_m")
+    done
+    if [[ ${#_orphans[@]} -gt 0 ]]; then
+      if [[ "$DRY_RUN" == true ]]; then
+        info "Would delete ${#_orphans[@]} orphaned metrics file(s): ${_orphans[*]##*/}"
+      else
+        rm -f "${_orphans[@]}"
+        changed "Deleted ${#_orphans[@]} orphaned metrics file(s) nothing forwards: ${_orphans[*]##*/}"
+      fi
+    fi
+  fi
+
+  [[ "$_migrated" == true ]] && dim "Review the moves with 'git status' before committing."
+  return 0
+}
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Stages
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1492,6 +1603,8 @@ web_sync() {
 # ── 1. Directory structure ────────────────────────────────────────────────────
 
 header "1/4  Docs structure"
+
+reconcile_docs
 
 # A4: docs/state/ is "how things are right now", overwritten in place.
 #     docs/logs/ is "what happened", appended and never rewritten.
