@@ -427,9 +427,9 @@ preflight() {
   while IFS= read -r _rname; do
     _enabled=$(routine_val "$_rname" enabled "true")
     [[ "$_enabled" == "false" ]] && continue
-    # ci-watch runs entirely inside this script (see ci_watch) — it has no
-    # command file by design, so don't warn about the one it doesn't need.
-    [[ "$_rname" == "ci-watch" ]] && continue
+    # ci-watch and housekeeping run entirely inside this script — they have no
+    # command file by design, so don't warn about the one they don't need.
+    [[ "$_rname" == "ci-watch" || "$_rname" == "housekeeping" ]] && continue
     if [[ ! -f "${_cmd_dir}/${_rname}.md" ]]; then
       echo "darkflow-run: routine '${_rname}' has no command file (~/.claude/commands/darkflow/${_rname}.md) — skipping it." >&2
     fi
@@ -1104,6 +1104,18 @@ run_routine() {
     return 0
   fi
 
+  # Housekeeping is the same shape: pure bookkeeping, no reasoning, so it runs in
+  # the worker at zero token cost instead of as an agent routine (H).
+  if [[ "$name" == "housekeeping" ]]; then
+    housekeeping
+    local hk_now; hk_now=$(now_epoch)
+    write_state "$name" "$(( hk_now - hk_now % 60 ))"
+    local hk_ts; hk_ts=$(date -u +%FT%TZ)
+    PENDING_LOGS+=("{\"routine\":\"${name}\",\"summary\":\"${_HK_SUMMARY} (no agent run)\",\"timestamp\":\"${hk_ts}\"}")
+    log "DONE   ${name} — ${_HK_SUMMARY} (no agent run)"
+    return 0
+  fi
+
   # Uptime cheap pre-flight: a curl probe confirms a healthy site without paying
   # for an agent run. Only escalate to the (Sonnet) agent when the site is down/
   # broken or the probe can't decide — that's when its diagnosis + auto-approved
@@ -1318,6 +1330,119 @@ recover_crashed_fix_issues() {
       log "RECOVER #${num} fix-issues crashed before landing → back to approved"
     fi
   done <<< "$in_prog"
+}
+
+# ── Housekeeping (H) ──────────────────────────────────────────────────────────
+# One daily bookkeeping pass, in bash, no agent and no tokens — the same shape as
+# ci-watch. Nothing here needs reasoning: it is three mechanical repairs that
+# would otherwise need two agent routines.
+#
+#   stuck tasks   in-progress and untouched for >4h  → comment + back to approved
+#   stuck HEAD    checkout left on a feature branch  → back to the base branch
+#   worktrees     prune stale ones, delete merged branches
+#
+# The "is the checkout dirty?" test deliberately IGNORES docs/logs/ and
+# docs/state/. Under the `pr` strategy audits commit nothing (A7) — their files
+# sit there waiting for the next PR. Without the exemption the whole pass would be
+# dead on arrival: a project with no open tasks opens no PR for weeks, so the log
+# stays uncommitted, so the checkout always looks dirty, so nothing is ever
+# recovered — exactly when recovery is needed.
+
+HOUSEKEEPING_STUCK_THRESHOLD=14400   # 4h
+
+# Anything uncommitted that is NOT an audit's pending output. Prints the paths.
+#
+# --untracked-files=all is load-bearing: the default collapses an untracked
+# directory to "docs/", which never matches the docs/logs/ exemption below, so a
+# brand-new daily log would read as unexpected work and block every repair.
+_hk_unexpected_changes() {
+  git status --porcelain --untracked-files=all 2>/dev/null \
+    | sed 's/^...//; s/^.* -> //; s/^"//; s/"$//' \
+    | grep -v -E '^docs/(logs|state)/' || true
+}
+
+housekeeping() {
+  _HK_SUMMARY=""
+  local -a done_items=()
+
+  # ── 1. Stuck tasks ──────────────────────────────────────────────────────────
+  if [[ -x "$DF_BIN" ]] && command -v jq &>/dev/null; then
+    local stuck_json cutoff stuck num n=0
+    stuck_json=$("$DF_BIN" task list --status in-progress --state open 2>/dev/null || echo "[]")
+    if [[ -n "$stuck_json" && "$stuck_json" != "[]" ]]; then
+      cutoff=$(epoch_fmt $(( $(now_epoch) - HOUSEKEEPING_STUCK_THRESHOLD )) "%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "")
+      if [[ -n "$cutoff" ]]; then
+        stuck=$(echo "$stuck_json" | jq -r --arg c "$cutoff" '.[] | select(.updatedAt < $c) | .number' 2>/dev/null || echo "")
+        while IFS= read -r num; do
+          [[ -z "$num" ]] && continue
+          "$DF_BIN" task comment "$num" --body \
+            "Housekeeping: in-progress for over 4h with no activity — the session that took it is gone. Back to approved." >/dev/null 2>&1
+          if "$DF_BIN" task set-status "$num" approved >/dev/null 2>&1; then
+            log "HOUSE  #${num} stuck >4h → approved"
+            n=$(( n + 1 ))
+          fi
+        done <<< "$stuck"
+      fi
+    fi
+    [[ $n -gt 0 ]] && done_items+=("${n} stuck task(s) revived")
+  fi
+
+  git rev-parse --git-dir &>/dev/null || {
+    _HK_SUMMARY="${done_items[*]:-nothing to do} (not a git repo — skipped checkout jobs)"
+    return 0
+  }
+
+  # ── 2. Stuck HEAD ───────────────────────────────────────────────────────────
+  # fix-issues is supposed to switch back when it finishes, so HEAD sitting on a
+  # feature branch means a session was killed. Every A7 write after that lands on
+  # the wrong branch, so this is the repair that makes the rest of them safe.
+  local base cur
+  base=$(darkflow_val "branch" "main")
+  cur=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+  if [[ -n "$cur" && "$cur" != "$base" && "$cur" != "HEAD" ]]; then
+    local dirty; dirty=$(_hk_unexpected_changes)
+    if [[ -n "$dirty" ]]; then
+      log "HOUSE  HEAD on '${cur}' with uncommitted work — left alone:"
+      log "HOUSE    $(echo "$dirty" | tr '\n' ' ')"
+      done_items+=("HEAD on '${cur}' left alone (uncommitted work)")
+    elif git checkout "$base" >/dev/null 2>&1; then
+      log "HOUSE  HEAD was on '${cur}' → back to ${base}"
+      done_items+=("HEAD recovered from '${cur}'")
+    else
+      log "HOUSE  could not switch from '${cur}' to ${base}"
+    fi
+  fi
+
+  # ── 3. Worktrees and merged branches ────────────────────────────────────────
+  git worktree prune 2>/dev/null || true
+  local br merged=0
+  while IFS= read -r br; do
+    br="${br#"${br%%[![:space:]]*}"}"
+    [[ -z "$br" || "$br" == "$base" || "$br" == "$cur" ]] && continue
+    if git branch -d "$br" >/dev/null 2>&1; then
+      log "HOUSE  deleted merged branch ${br}"
+      merged=$(( merged + 1 ))
+    fi
+  done < <(git branch --merged "$base" --format '%(refname:short)' 2>/dev/null || true)
+  [[ $merged -gt 0 ]] && done_items+=("${merged} merged branch(es) deleted")
+
+  # ── 4. Report anything else left uncommitted, and leave it alone ────────────
+  local leftover; leftover=$(_hk_unexpected_changes)
+  if [[ -n "$leftover" ]]; then
+    log "HOUSE  uncommitted changes outside docs/logs and docs/state — leaving them:"
+    log "HOUSE    $(echo "$leftover" | tr '\n' ' ')"
+    done_items+=("uncommitted work reported, untouched")
+  fi
+
+  if [[ ${#done_items[@]} -eq 0 ]]; then
+    _HK_SUMMARY="nothing to clean up"
+  else
+    # "${arr[*]}" joins on IFS's FIRST character only, so a two-character
+    # separator has to be built by hand.
+    printf -v _HK_SUMMARY '%s; ' "${done_items[@]}"
+    _HK_SUMMARY="${_HK_SUMMARY%; }"
+  fi
+  return 0
 }
 
 # ── Webapp sync ───────────────────────────────────────────────────────────────
@@ -1677,8 +1802,8 @@ mode_dispatch() {
 
     # Skip routines Dark Flow no longer ships (no command file). preflight already
     # warned; running them would only fail. They clear on the next config refresh.
-    # ci-watch is exempt: it runs in-process (see ci_watch) and ships no command.
-    if [[ "$name" != "ci-watch" && ! -f "${USER_CMD_DIR}/${name}.md" ]]; then
+    # ci-watch and housekeeping are exempt: pure bash in-process, no command file.
+    if [[ "$name" != "ci-watch" && "$name" != "housekeeping" && ! -f "${USER_CMD_DIR}/${name}.md" ]]; then
       continue
     fi
 
@@ -1731,8 +1856,8 @@ mode_manual() {
     exit 1
   fi
 
-  # ci-watch is exempt: it runs in-process (see ci_watch) and ships no command.
-  if [[ "$name" != "ci-watch" && ! -f "${USER_CMD_DIR}/${name}.md" ]]; then
+  # ci-watch and housekeeping are exempt: pure bash in-process, no command file.
+  if [[ "$name" != "ci-watch" && "$name" != "housekeeping" && ! -f "${USER_CMD_DIR}/${name}.md" ]]; then
     echo "darkflow-run: routine '${name}' has no command file: ~/.claude/commands/darkflow/${name}.md" >&2
     echo "  Dark Flow may have removed it, or it's disabled for this project in the Web UI." >&2
     exit 1

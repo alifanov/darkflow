@@ -158,8 +158,11 @@ its command file in [`templates/.claude/commands/darkflow/`](./templates/.claude
 There is deliberately no table here — a hand-written one goes stale the moment a schedule
 changes in the UI, which is exactly what happened to the one this replaced.
 
-The one routine with no command file is [**ci-watch**](./docs/ci-watch.md): pure bash
-inside the worker, no agent and no token cost.
+Two routines have no command file — they are pure bash inside the worker, no agent and no
+token cost, because neither needs any reasoning:
+
+- [**ci-watch**](./docs/ci-watch.md) — red or stuck CI → a `source:ci` task
+- [**housekeeping**](./docs/housekeeping.md) — stuck tasks, stuck `HEAD`, worktree and branch cleanup
 
 Cron times are in the machine's local timezone.
 

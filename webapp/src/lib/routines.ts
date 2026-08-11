@@ -31,6 +31,9 @@ export const ALL_ROUTINES: RoutineDef[] = [
   // with no agent and no external setup beyond `gh`, so there is nothing to opt
   // into. The module used to gate the self-hosted CI runner, which is gone.
   { name: "ci-watch",            defaultCron: "*/30 * * * *", defaultModel: "sonnet", module: null,              label: "Red / stuck CI + local lint & test → source:ci task (every 30 min, no agent)" },
+  // Same shape as ci-watch: pure bookkeeping, so it runs in the worker in bash
+  // rather than as two agent routines (H). Stuck tasks, stuck HEAD, worktrees.
+  { name: "housekeeping",        defaultCron: "0 5 * * *",    defaultModel: "sonnet", module: null,              label: "Stuck tasks + stuck HEAD + worktree/branch cleanup (daily, no agent)" },
   // Optional modules
   { name: "fix-ci-issue",             defaultCron: "*/15 * * * *", defaultModel: "sonnet", module: "ci-gate",         label: "Pick up source:ci failures → fix → retry up to 3× (every 15 min)" },
   { name: "analytics-review",         defaultCron: "0 8 * * *",   defaultModel: "sonnet", module: "analytics",        label: "OpenPanel + commits → issues (daily)" },
