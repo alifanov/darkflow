@@ -28,11 +28,18 @@ Where they genuinely differ:
 | # | Decision | Source |
 |---|---|---|
 | A1 | **Docs stay plain text in the repository.** Deckbook's document tree lives in the DB and is edited over MCP; we keep files under `docs/` and take only the *shape* from Deckbook. | owner |
-| A2 | **Comments become their own table** (`human` / `system`) instead of the `Issue.comments` JSON column. | Deckbook `Comment` |
 | A3 | **Daily log** — one document per day, sections per source (`## Security`, `## Analytics`, `## Changes`, …), append-only. As files: `docs/logs/YYYY-MM-DD.md`. Replaces the per-routine snapshot files under `docs/insights/<area>/`. | Deckbook `logs/` |
 | A4 | **`state/` layout for docs** — "how things are right now", overwritten in place: `arch` · `hypotheses` · `spec/` · `product/` · `design/` · `_archive/`, plus a `README` that carries the rules. | Deckbook `state/` |
 | A5 | **Behaviour rules move into the commands**: the observation → task threshold, the incident-vs-proposal rule, and the terseness rule. | Deckbook command preamble |
 | A6 | **Scheduling stays on Dark Flow's own worker** (launchd, cron in the DB). Cloud scheduled-tasks are not adopted. | owner |
+
+A3 and A4 are the bulk of the work and land in three separate steps, not one commit:
+
+```
+1. logs/     the daily log exists; commands write sections instead of snapshot files
+2. state/    the new docs layout + templates/
+3. migrate   I1 in the installer — only once 1 and 2 have settled
+```
 
 ## Not doing
 
@@ -44,6 +51,8 @@ Where they genuinely differ:
 | R4 | Agent tokens + assignee | one worker, one machine, no ambiguity about who took the task |
 | R5 | Owner authentication in the webapp | runs on localhost only |
 | R6 | Port Deckbook's vitest suite | worth doing, but not part of the merge |
+| R7 | Move comments out of the `Issue.comments` JSON column into their own table | no use case behind it. One worker means one author; `unstick` reads `updatedAt`, not the feed. A migration for tidiness only |
+| R8 | Delta against the previous run (was P6) | `RoutineLog` records no success/failure, so "since last run" would happily start from a crashed run and skip a window. Adding a status column to make one optimisation work is not worth it |
 
 ## Commands
 
@@ -57,15 +66,18 @@ Findings from comparing 27 Dark Flow commands + `install.sh` against 21 Deckbook
 | C2 | `architecture-review` + `code-health` → one command. The fallow step stays optional — it only covers TS/JS, the rest of the review does not | do |
 | C3 | `observability-check` + `web-vitals` → one command | **no** — different sources and different cadence (logs daily, Lighthouse weekly). They do share one `## Performance` section in the daily log |
 | C4 | three design commands (`design-audit` / `design-critique` / `design-harden`) → `check-design` (visual) + `check-ux` (flows) | do — also delivers P8 |
-| C5 | **delete `routines/` entirely** | do |
+| C5 | **delete `routines/` entirely**, and delete the schedule tables it duplicates | do |
 
 On C5: the schedule is currently written by hand in five places — `routines/<name>.md`,
 `routines/README.md`, `README.md`, the summary `install.sh` echoes at the end, and the catalog. Only the
 catalog (`webapp/src/lib/routines.ts`) and the DB (`RoutineConfig`) are real; the cards go stale the
-moment a schedule changes in the Web UI, which is exactly why they drifted from the commands. After C5
-the repository keeps one file per routine — the prompt — and the tables in `README.md` and `install.sh`
-are generated from the catalog. `routines/ci-watch.md` is the one card worth keeping: that routine is
-pure bash inside the worker and has no command file, so its text moves to `docs/`.
+moment a schedule changes in the Web UI, which is exactly why they drifted from the commands.
+
+The repository ends up with one file per routine — the prompt. The hand-written tables in `README.md`
+and the `install.sh` summary are **deleted, not regenerated**: generating them would mean a script plus a
+CI check to keep them honest, all for a table that the Web UI already shows. `README.md` links there
+instead. `routines/ci-watch.md` is the one card worth keeping — that routine is pure bash inside the
+worker and has no command file, so its text moves to `docs/`.
 
 ### Drop
 
@@ -73,20 +85,19 @@ pure bash inside the worker and has no command file, so its text moves to `docs/
 |---|---|---|
 | D1 | Drop `grill` — generic skill, duplicates `mattpocock-skills:grilling`, unrelated to Dark Flow | do |
 | D2 | Drop `claude-md-update`, together with the `MOD_CLAUDE_UPDATE` installer module | do |
-| D3 | Drop `csp-setup` — one-time setup, done by hand once per project | do |
+| D3 | Drop `csp-setup` outright — one-time setup, done by hand once per project. Its instructions are not kept anywhere; git history has them if they are ever needed | do |
 | D4 | Drop `product-overview` — `state/` plus the daily log carry that role once A3/A4 land | do |
 
 ### Adopt from Deckbook
 
 | # | Decision | |
 |---|---|---|
-| P1 | Frontmatter on every command: `description` (one line) + `allowed-tools`. Audits get read-only tool sets; only the fix routines get `Edit`/`Write` | do |
+| P1 | Frontmatter on every command: `description` (one line) + `allowed-tools`. **Not read-only audits** — A3 has every audit append to the daily log, and `allowed-tools` cannot restrict `Write` to one directory. The list only keeps out what a routine has no business doing at all (`git commit` / `git push` outside the fix routines) | do |
 | P2 | Terseness rule — bullets, numbers and tables over prose; 1–3 sentence task comments; no "looks fine overall". Written **once** in `.darkflow.d/claude.md`, not copied into every command | do |
 | P3 | Incident-vs-proposal rule: broken right now → fixed without a gate; improvement beyond the finding → `needs-human`, silence is not consent. **In addition to** `docs/auto-approve.md`, not replacing it — the source decides whether auto-approval is allowed at all, the nature of the finding decides the individual task | do |
 | P4 | Observation → task threshold: 3 consecutive logs or 2 independent sources. Applies to observations only (logs, analytics, performance); incidents file a task on first sight. Depends on A3 — without a log history there is nothing to compare against | do |
-| P5 | No separate product passport document. Extend `Project` + `config.json` instead with what is missing today: staging URL and the key pages to walk (`check-ux`, `web-vitals` currently guess). The production domain is already there | do |
-| P6 | Delta against the previous run, with the date taken from `RoutineLog` in the DB rather than parsed out of Markdown. Applies to code review; dependency vulnerabilities and live headers are still checked in full every time | do |
-| P7 | Deduplicate against a compact inventory of **all** project tasks (id + title + status, open plus closed in the last 3 months) instead of `--source X` only — otherwise the same problem lands twice from two different audits | do |
+| P5 | No product passport document and no "key pages" column that nobody would fill in. `Project` + `config.json` gain **one** field — the staging URL. Commands that need pages to walk read `sitemap.xml` | do |
+| P7 | Deduplicate against all project tasks, not just `--source X` — otherwise the same problem lands twice from two different audits. This is a `--format compact` flag on the existing `df task list --state all`, not a new command | do |
 | P8 | `check-ux` — walk the key flows in a real browser at mobile and desktop viewports | do (via C4) |
 | P9 | Drop the copy-pasted "Step 1 — Read project config" block (~15 lines × ~20 commands). The config contract is described once in `.darkflow.d/claude.md`; commands keep a one-line instruction | do |
 
@@ -94,27 +105,38 @@ pure bash inside the worker and has no command file, so its text moves to `docs/
 
 | # | Decision | |
 |---|---|---|
-| I1 | `install.sh` reconciles `docs/` against the reference layout: create what is missing, offer to move an old layout into `_archive/`, never delete silently. Required by A4 — every already-installed project carries the current layout and has to be migrated | do |
+| I1 | `install.sh` reconciles `docs/` against the reference layout: create what is missing, offer to move an old layout into `_archive/`, never delete silently. Required by A4 — every already-installed project carries the current layout and has to be migrated. Step 3 of the A3/A4 rollout above | do |
 
 Everything else about `install.sh` stays — project registration in the webapp, launchd plists, legacy
 cleanup, `--dry-run` / `--force`, the `@`-include into `CLAUDE.md`, the checklist, and the optional
 modules are all ahead of what `/deckbook:init` does.
 
-### Housekeeping routines
+### Housekeeping
 
 | # | Decision | |
 |---|---|---|
-| H1 | `unstick-tasks` — a task left `in-progress` for 4h with no activity gets a comment saying why it came back and returns to `approved`. Dark Flow has no such mechanism today: a task abandoned by a killed session stays `in-progress` forever and no later run picks it up | do, as an agent routine |
-| H2 | `clean-worktrees` — drop spent worktree checkouts and merged branches; leave anything doubtful and say why. Dark Flow's own rule forbids worktrees, but cmux and cloud sessions create them anyway (~40 MB each) | do, as an agent routine |
-| H3 | `rotate-logs` — daily logs older than 4 weeks move to `docs/_archive/logs/`. Logs referenced from `state/hypotheses` or the decision table stay put. Required by A3, otherwise `docs/logs/` grows by a file a day | do |
+| H | **One `housekeeping` pass in the worker, in bash, once a day — not three agent routines.** None of the three jobs needs reasoning, and `ci-watch` already proves the pattern: pure bookkeeping runs in the worker at zero token cost | do |
+
+What it does:
+
+```
+stuck tasks   status=in-progress AND updatedAt < now()-4h  → comment + back to approved
+worktrees     git worktree prune; delete merged branches
+              skip anything with uncommitted changes — the one judgement call, made by a rule
+logs          docs/logs/*.md older than 28 days → docs/_archive/logs/
+              skip logs referenced from state/hypotheses or the decision table
+```
+
+Dark Flow has no stuck-task recovery at all today: a task abandoned by a killed session stays
+`in-progress` forever and no later run picks it up.
 
 ## What this adds up to
 
 - **Commands:** 27 → ~20. Four dropped (`grill`, `claude-md-update`, `csp-setup`, `product-overview`),
-  four merged into two (C1, C2), three design commands into two (C4), three housekeeping routines added.
-- **Files:** `routines/` (24 files) deleted; the "read the config" block and the terseness rule stop
-  being duplicated across commands.
-- **Docs:** `docs/insights/<area>/` snapshots give way to one daily log plus `state/`; the installer
-  migrates existing projects.
-- **DB:** comments become a table (A2); `Project` gains staging URL and key pages (P5); `RoutineLog`
-  starts being read, not just written (P6).
+  four merged into two (C1, C2), three design commands into two (C4). Housekeeping adds no commands —
+  it runs in the worker.
+- **Files:** `routines/` (24 files) deleted, along with the schedule tables in `README.md` and
+  `install.sh`; the "read the config" block and the terseness rule stop being duplicated across commands.
+- **Docs:** `docs/insights/<area>/` snapshots give way to one daily log plus `state/`, in three steps;
+  the installer migrates existing projects last.
+- **DB:** one new field — the staging URL on `Project`. No new tables, no schema churn.
