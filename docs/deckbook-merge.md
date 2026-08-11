@@ -34,6 +34,7 @@ Where they genuinely differ:
 | A6 | **Scheduling stays on Dark Flow's own worker** (launchd, cron in the DB). Cloud scheduled-tasks are not adopted. | owner |
 | A7 | **Routines commit what they write.** Every routine that produces a file — the daily log, a `state/` update — stages exactly those paths and commits them itself. Today's audits write snapshots and never commit, so they pile up uncommitted in the working copy and leak into whatever branch `fix-issues` opens next | gap found while reviewing |
 | A8 | **One archive: `docs/_archive/`.** Superseded layouts, retired documents and the existing `docs/insights/` snapshots move there. Nothing is archived under `state/` | gap found while reviewing |
+| A9 | **Dropping a command drops its routine with it** — the catalog entry in `webapp/src/lib/routines.ts` *and* the `RoutineConfig` rows in every project. A schedule that outlives its command has the worker firing `claude -p "/darkflow:<gone>"` on cron forever. Same for the merges: C1/C2/C4 retire the old names, so those rows go too, and the surviving routine keeps one name | gap found while reviewing |
 
 ## Not doing
 
@@ -53,11 +54,33 @@ Where they genuinely differ:
 
 Deckbook stops being an operating tool once this lands.
 
-- Delete the `/deckbook:*` slash commands (`~/.claude/commands/deckbook/`, 21 files).
-- Delete the `deckbook-*` scheduled tasks with them — each one's prompt is a single `/deckbook:<name>`
-  line, so leaving them behind means fifteen cron entries firing at a command that no longer exists.
-- The Deckbook database and repository are left alone. What happens to the tasks and documents already
-  in it is a separate decision, not part of this merge.
+Eight projects run on it today, plus a private one — nine MCP servers and **142 scheduled tasks**:
+
+| Project | Scheduled tasks |
+|---|---|
+| secscanner | 23 |
+| mailmonitor | 20 |
+| pageradar | 19 |
+| qabot | 18 |
+| mystize | 17 |
+| sqlformatter | 17 |
+| deckbook | 14 |
+| scopegate | 14 |
+| *(`deckbook-private` — MCP server only)* | — |
+
+Retirement, per project:
+
+1. Install Dark Flow (`install.sh`), register the project in the Web UI, pick its modules.
+2. Carry over what the Deckbook routines covered — the equivalent Dark Flow routines and their schedule.
+3. Delete that project's `<slug>-*` scheduled tasks and its `deckbook-<slug>` MCP server entry.
+
+Then, once no project is left on it: delete the `/deckbook:*` slash commands
+(`~/.claude/commands/deckbook/`, 21 files). Per A9 the commands and the schedules that call them go
+together — a leftover cron entry whose prompt is a single `/deckbook:<name>` line fires at a command that
+no longer exists.
+
+The Deckbook database and repository are left alone. What happens to the tasks and documents already in
+it is a separate decision, not part of this merge.
 
 ## Commands
 
@@ -138,20 +161,26 @@ Dark Flow has no stuck-task recovery at all today: a task abandoned by a killed 
 
 ## Order of work
 
-Sequence matters in two places: shared text has to be extracted **before** commands are merged (otherwise
-the same boilerplate is merged twice), and the docs migration has to come **after** the new layout is
-settled.
+Sequence matters in three places: shared text has to be extracted **before** commands are merged
+(otherwise the same boilerplate is merged twice), the docs migration has to come **after** the new layout
+is settled, and no project moves off Deckbook until Dark Flow itself is in its final shape.
 
 ```
 1. Prune      C5 (delete routines/ + schedule tables) · D1–D4 (drop four commands and their modules)
+              A9 applies throughout: every dropped or renamed routine leaves the catalog and the DB
 2. Extract    P2 · P9 · P1 — shared rules into .darkflow.d/claude.md, frontmatter on every command
 3. Merge      C1 · C2 · C4 (+ P5, P7 while touching the commands)
 4. Log        A3 · A7 · P3 · P4 — the daily log exists, routines write and commit sections
 5. State      A4 — the new docs layout and its templates
 6. Migrate    I1 · A8 — installer reconciles docs/, old snapshots into docs/_archive/
 7. Worker     H — the daily housekeeping pass
-8. Retire     delete /deckbook:* commands and the deckbook-* scheduled tasks
+8. Move over   the eight projects still on Deckbook, one at a time: install Dark Flow, carry the
+               routines across, then delete that project's scheduled tasks and MCP server
+9. Retire      once none are left — delete the /deckbook:* commands
 ```
+
+Step 8 is the long one: 142 scheduled tasks across eight projects, and each project needs its modules
+chosen and its schedule checked after the move. One project at a time, verified before the next.
 
 ## What this adds up to
 
