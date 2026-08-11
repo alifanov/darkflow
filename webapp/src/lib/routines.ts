@@ -21,8 +21,9 @@ export interface RoutineDef {
 export const ALL_ROUTINES: RoutineDef[] = [
   // Core — always-on, no optional module
   { name: "fix-issues",          defaultCron: "0 * * * *",   defaultModel: "sonnet", module: null,               label: "Pick up approved issues → fix → merge" },
-  { name: "security-audit",      defaultCron: "0 3 * * 0",   defaultModel: "opus",   module: null,               label: "Full security review (weekly)", claudeOnly: true },
-  { name: "vulnerability-check", defaultCron: "0 6 * * *",   defaultModel: "sonnet", module: null,               label: "Dependabot + code scanning (daily)" },
+  // Absorbed vulnerability-check (C1): the Dependabot / code-scanning pull is now
+  // the first step of the weekly review. Cost: an advisory can sit up to 7 days.
+  { name: "security-audit",      defaultCron: "0 3 * * 0",   defaultModel: "opus",   module: null,               label: "Full security review + Dependabot / code scanning (weekly)", claudeOnly: true },
   { name: "build-optimization",  defaultCron: "0 4 * * 0",   defaultModel: "opus",   module: null,               label: "Build + deploy pipeline audit (weekly)" },
   { name: "uptime-check",        defaultCron: "0 */4 * * *", defaultModel: "sonnet", module: null,               label: "DNS + HTTP + page-load check → critical issue if down (every 4h)" },
   { name: "web-vitals",          defaultCron: "0 6 * * 1",   defaultModel: "sonnet", module: null,               label: "Core Web Vitals via local Lighthouse → issue if a metric is poor (weekly Mon)" },
@@ -37,17 +38,17 @@ export const ALL_ROUTINES: RoutineDef[] = [
   { name: "gsc-check",                defaultCron: "0 8 * * 1",   defaultModel: "sonnet", module: "gsc",              label: "Search Console + SEO audit (weekly Mon)" },
   { name: "ads-review",               defaultCron: "0 9 * * 1",   defaultModel: "sonnet", module: "ads",              label: "Paid ads performance (weekly Mon)" },
   { name: "coolify-check-deployment", defaultCron: "0 9 * * *",   defaultModel: "sonnet", module: "coolify",          label: "Deployment status (daily)" },
-  { name: "claude-md-update",         defaultCron: "0 9 * * 1-5", defaultModel: "sonnet", module: "claude-update",    label: "Regenerate CLAUDE.md (weekdays)" },
-  { name: "architecture-review",      defaultCron: "0 2 * * 0",   defaultModel: "opus",   module: "arch-review",      label: "Architectural analysis (weekly)", claudeOnly: true },
-  { name: "code-health",              defaultCron: "0 7 * * 0",   defaultModel: "sonnet", module: "fallow",           label: "Fallow code-health audit (weekly)" },
+  // Absorbed code-health (C2): the fallow step is optional inside the review — it
+  // only covers TS/JS, the rest of the analysis does not.
+  { name: "architecture-review",      defaultCron: "0 2 * * 0",   defaultModel: "opus",   module: "arch-review",      label: "Architecture + code-health audit (weekly)", claudeOnly: true },
   { name: "mailbox-check",            defaultCron: "0 10 * * *",  defaultModel: "sonnet", module: "mailbox",          label: "IMAP inbox → issues (daily)" },
   { name: "docs-audit",               defaultCron: "0 5 * * 0",   defaultModel: "opus",   module: "docs-audit",       label: "Docs ↔ code drift (weekly)" },
-  { name: "product-overview",         defaultCron: "0 7 * * 1",   defaultModel: "opus",   module: "product-overview", label: "Product state digest (weekly Mon)" },
-  { name: "design-audit",             defaultCron: "0 10 * * 6",  defaultModel: "opus",   module: "impeccable",       label: "Design quality audit (weekly Sat)", claudeOnly: true },
-  { name: "design-critique",          defaultCron: "0 11 * * 6",  defaultModel: "opus",   module: "impeccable",       label: "Scored design review (weekly Sat)", claudeOnly: true },
-  { name: "design-harden",            defaultCron: "0 10 1 * *",  defaultModel: "opus",   module: "impeccable",       label: "Production-readiness check (monthly)", claudeOnly: true },
+  // Three design commands merged into two (C4): visual quality vs. real flows.
+  { name: "check-design",             defaultCron: "0 10 * * 6",  defaultModel: "opus",   module: "impeccable",       label: "Visual design quality audit (weekly Sat)", claudeOnly: true },
+  { name: "check-ux",                 defaultCron: "0 11 * * 6",  defaultModel: "opus",   module: "impeccable",       label: "Walk key flows in a real browser, mobile + desktop (weekly Sat)", claudeOnly: true },
 ];
 
-// Set of every routine name Dark Flow still ships. Used to drop orphaned
-// RoutineConfig rows for routines that have since been removed.
+// Set of every routine name Dark Flow still ships. RoutineConfig rows whose name
+// is absent from it are orphans — a schedule that outlived its command (A9) — and
+// get deleted on the next /api/ingest sync.
 export const KNOWN_ROUTINE_NAMES = new Set(ALL_ROUTINES.map((r) => r.name));

@@ -23,12 +23,11 @@ setup-labels.sh         ← standalone GitHub labels setup
 docker-compose.yml      ← runs the web UI + Postgres database
 checklist.yml           ← issue acceptance checklist used by darkflow-run.sh
 docs/                   ← project documentation
-routines/               ← scheduled routines run by the worker
 webapp/                 ← Next.js web app (projects list, issue triage, approve/reject)
   prisma/               ← database schema and migrations (Postgres via Prisma)
   src/app/              ← App Router pages and API routes
   src/components/       ← shared React components (ProjectRow, LogRow, etc.)
-  src/lib/              ← prisma client, darkflow-version helper
+  src/lib/              ← prisma client, darkflow-version helper, routines.ts (routine catalog — single source of truth)
 templates/
   darkflow/             ← global worker + helpers (darkflow-run.sh, get-config.sh, mailbox/ → ~/.darkflow/)
   docs/                 ← generic docs structure templates

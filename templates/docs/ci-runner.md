@@ -21,12 +21,10 @@ Why the move:
   (that's the dead-runner case).
 - Runs **`pnpm lint`** (or `ruff check .`) locally when `HEAD` moved since the last
   green run — this is what covers repos with no workflows at all. Lint only, not
-  the test suite: lint is hermetic, a suite needs a declared environment (see
-  `routines/ci-watch.md`).
+  the test suite: lint is hermetic, a suite needs a declared environment.
 - Files one deduped `source:ci` task per branch, and closes it again on green.
 
-Pure bash, no agent, no tokens. `fix-ci-issue` does the fixing. See
-`routines/ci-watch.md` for the full description.
+Pure bash, no agent, no tokens. `fix-ci-issue` does the fixing.
 
 ## Migrating an existing project
 

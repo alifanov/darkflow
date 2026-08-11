@@ -129,7 +129,7 @@ Agent starts next session
 
 Some categories skip the human review step — security fixes, Dependabot dependency updates, and additive database index additions are created directly as `status=approved` and flow straight to `fix-issues`. See [`docs/auto-approve.md`](./docs/auto-approve.md) for the full allowlist.
 
-The loop runs automatically via **Claude Code Routines** — see [routines/README.md](./routines/README.md).
+The loop runs automatically — see [Routines](#routines-automated-agents) below.
 
 ---
 
@@ -137,24 +137,17 @@ The loop runs automatically via **Claude Code Routines** — see [routines/READM
 
 The real power comes from scheduling Claude agents that run the loop automatically. Dark Flow ships a **self-hosted dispatcher** — no Claude Code Routines UI required.
 
-| Routine | Cron | What it does |
-|---|---|---|
-| [**Fix issues**](routines/fix-issues.md) | `0 * * * *` | Hourly — picks up an approved task → implements → commits directly to the base branch (PR mode optional) |
-| [Analytics review](routines/analytics-review.md) | `0 8 * * *` | Daily 8:00 — OpenPanel + commits → proposed tasks |
-| [Observability check](routines/observability-check.md) | `30 8 * * *` | Daily 8:30 — SigNoz/errors/slow URLs → tasks |
-| [GSC check](routines/gsc-check.md) | `0 8 * * 1` | Weekly Mon 8:00 — Google Search Console + technical/on-page SEO audit → tasks |
-| [Ads review](routines/ads-review.md) | `0 8 * * 1` | Weekly Mon 8:00 — paid ads performance → tasks *(optional)* |
-| [Coolify check deployment](routines/coolify-check-deployment.md) | `0 9 * * *` | Daily 9:00 — deployment status → `critical` task on failed deploy |
-| [CLAUDE.md update](routines/claude-md-update.md) | `0 9 * * 1-5` | Weekdays 9:00 — re-generates CLAUDE.md from codebase |
-| [Architecture review](routines/architecture-review.md) | `0 2 * * 0` | Weekly Sun 2:00 — `/improve-codebase-architecture` → tasks |
-| [Security audit](routines/security-audit.md) | `0 3 * * 0` | Weekly Sun 3:00 — full security review → **auto-approved** tasks |
-| [Build optimization](routines/build-optimization.md) | `0 4 * * 0` | Weekly Sun 4:00 — build + deploy pipeline analysis → tasks |
-| [Uptime check](routines/uptime-check.md) | `0 */4 * * *` | Every 4h — DNS + HTTP + page-load check → **auto-approved** `critical` task if site down |
-| [Vulnerability check](routines/vulnerability-check.md) | `0 6 * * *` | Daily 6:00 — Dependabot → **auto-approved** tasks; code/secret scanning → proposed |
-| [Code health](routines/code-health.md) | `0 7 * * 0` | Weekly Sun 7:00 — fallow audit (dead code, dupes, cycles, complexity) → tasks *(optional, TS/JS only)* |
-| [Mailbox check](routines/mailbox-check.md) | `0 * * * *` | Hourly — IMAP inbox → tasks; approved `action=reply` tasks → SMTP reply *(optional)* |
+**Which routines exist, whether they're on, and on what schedule — all of that lives in
+the Web UI** (Settings → Routine schedule), per project. Defaults come from the catalog
+in [`webapp/src/lib/routines.ts`](./webapp/src/lib/routines.ts); each routine's prompt is
+its command file in [`templates/.claude/commands/darkflow/`](./templates/.claude/commands/darkflow).
+There is deliberately no table here — a hand-written one goes stale the moment a schedule
+changes in the UI, which is exactly what happened to the one this replaced.
 
-Cron times are in the machine's local timezone. The schedule lives in the Web UI (Settings → Routine schedule) — change frequency/model or enable/disable a routine there, per project. Defaults come from the catalog in `webapp/src/lib/routines.ts`.
+The one routine with no command file is [**ci-watch**](./docs/ci-watch.md): pure bash
+inside the worker, no agent and no token cost.
+
+Cron times are in the machine's local timezone.
 
 ### Running routines
 
@@ -177,7 +170,7 @@ Run routines manually at any time (from inside the project directory):
 ~/.darkflow/darkflow-run.sh --dry-run        # preview what's due (cwd's project)
 ```
 
-See [routines/README.md](./routines/README.md) for full worker docs.
+See [`docs/agent-workflow.md`](./docs/agent-workflow.md) for how a routine run is put together.
 
 ### Makefile shortcuts
 

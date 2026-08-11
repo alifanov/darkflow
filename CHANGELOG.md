@@ -4,11 +4,21 @@ All notable changes to Dark Flow are listed here.
 Format: `## [version] — YYYY-MM-DD` followed by categorised changes.
 
 Categories:
-- **New routine** — new routine file added to `routines/`
+- **New routine** — new routine added to the catalog (`webapp/src/lib/routines.ts`)
 - **Updated routine** — existing routine instruction changed
 - **Workflow** — changes to `agent-workflow.md` or `tasks.md`
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
+
+## [4.23.0] — 2026-08-11
+
+Первые два шага слияния с Deckbook (`docs/deckbook-merge.md`): M1 — список модулей, и prune — C5 + D1–D4 + A9.
+
+- **Installer** — M1: модулей стало 10 вместо 12. `claude-update` и `product-overview` удалены вместе со своими командами (D2, D4), `fallow` свёрнут в `arch-review` (C2) — теперь один модуль ставит обе скиллы, `improve-codebase-architecture` и `fallow`. Старые флаги (`--with-fallow`, `--with-claude-update`, `--with-product-overview` и их `--no-` пары) принимаются и игнорируются, а `fallow` в старом `config.json` читается как `arch-review`: командные строки и конфиги существующих проектов не ломаются.
+- **Installer** — C5: таблица расписаний, которую `install.sh` печатал в конце, удалена, а не перегенерирована. Она врала с первой же правки расписания в веб-интерфейсе — теперь установщик просто даёт ссылку туда.
+- **Installer** — A9: снятая команда уносит с собой и своё расписание. `install.sh` удаляет файлы снятых команд из `~/.claude/commands/darkflow/`, а `/api/ingest` — осиротевшие строки `RoutineConfig`, которых нет в каталоге. Иначе воркер вечно дёргает по крону `claude -p "/darkflow:<её больше нет>"`.
+- **Routines** — сняты `claude-md-update`, `product-overview`, `csp-setup`, `grill` (D1–D4). Каталог: `vulnerability-check` влит в `security-audit` (C1, еженедельно на Opus), `code-health` — в `architecture-review` (C2), три дизайн-команды — в `check-design` + `check-ux` (C4). Сами тексты команд сливаются на шаге 4 плана.
+- **Docs** — папка `routines/` (24 файла) удалена целиком: расписание дублировалось в пяти местах и расходилось. Единственная карточка, у которой нет файла команды, — `ci-watch` (чистый bash внутри воркера) — переехала в `docs/ci-watch.md`. Таблица рутин в `README.md` заменена ссылкой на веб-интерфейс и каталог.
 
 ## [4.22.8] — 2026-08-11
 

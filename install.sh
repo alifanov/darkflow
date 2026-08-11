@@ -30,13 +30,10 @@ MOD_OBSERVABILITY=""
 MOD_GSC=""
 MOD_ADS=""
 MOD_COOLIFY=""
-MOD_CLAUDE_UPDATE=""
 MOD_ARCH_REVIEW=""
 MOD_MAILBOX=""
 MOD_DOCS_AUDIT=""
-MOD_PRODUCT_OVERVIEW=""
 MOD_IMPECCABLE=""
-MOD_FALLOW=""
 MOD_CI_GATE=""
 
 OBS_TOOL=""
@@ -80,35 +77,33 @@ while [[ $# -gt 0 ]]; do
     --target)             TARGET_DIR="$2"; shift 2 ;;
     --all)                NON_INTERACTIVE=true
                           MOD_ANALYTICS=true; MOD_OBSERVABILITY=true; MOD_GSC=true
-                          MOD_ADS=true; MOD_COOLIFY=true; MOD_CLAUDE_UPDATE=true
+                          MOD_ADS=true; MOD_COOLIFY=true
                           MOD_ARCH_REVIEW=true; MOD_MAILBOX=true
-                          MOD_DOCS_AUDIT=true; MOD_PRODUCT_OVERVIEW=true
-                          MOD_IMPECCABLE=true; MOD_FALLOW=true
+                          MOD_DOCS_AUDIT=true; MOD_IMPECCABLE=true
                           shift ;;
     --with-analytics)     MOD_ANALYTICS=true; shift ;;
     --with-observability) MOD_OBSERVABILITY=true; shift ;;
     --with-gsc)           MOD_GSC=true; shift ;;
     --with-ads)           MOD_ADS=true; shift ;;
     --with-coolify)       MOD_COOLIFY=true; shift ;;
-    --with-claude-update) MOD_CLAUDE_UPDATE=true; shift ;;
     --no-analytics)       MOD_ANALYTICS=false; shift ;;
     --no-observability)   MOD_OBSERVABILITY=false; shift ;;
     --no-gsc)             MOD_GSC=false; shift ;;
     --no-ads)             MOD_ADS=false; shift ;;
     --no-coolify)         MOD_COOLIFY=false; shift ;;
-    --no-claude-update)   MOD_CLAUDE_UPDATE=false; shift ;;
     --with-arch-review)   MOD_ARCH_REVIEW=true; shift ;;
     --no-arch-review)     MOD_ARCH_REVIEW=false; shift ;;
     --with-mailbox)       MOD_MAILBOX=true; shift ;;
     --no-mailbox)         MOD_MAILBOX=false; shift ;;
     --with-docs-audit)       MOD_DOCS_AUDIT=true; shift ;;
     --no-docs-audit)         MOD_DOCS_AUDIT=false; shift ;;
-    --with-product-overview) MOD_PRODUCT_OVERVIEW=true; shift ;;
-    --no-product-overview)   MOD_PRODUCT_OVERVIEW=false; shift ;;
     --with-impeccable)       MOD_IMPECCABLE=true; shift ;;
     --no-impeccable)         MOD_IMPECCABLE=false; shift ;;
-    --with-fallow)           MOD_FALLOW=true; shift ;;
-    --no-fallow)             MOD_FALLOW=false; shift ;;
+    # retired modules — accepted and ignored so old command lines keep working;
+    # fallow folded into arch-review (C2), claude-update / product-overview dropped
+    --with-fallow)           MOD_ARCH_REVIEW=true; shift ;;
+    --no-fallow|--with-claude-update|--no-claude-update|--with-product-overview|--no-product-overview)
+                             shift ;;
     --obs-tool)           OBS_TOOL="$2"; shift 2 ;;
     --obs-url)            OBS_URL="$2"; shift 2 ;;
     --obs-api-key)        OBS_API_KEY="$2"; shift 2 ;;
@@ -136,12 +131,9 @@ while [[ $# -gt 0 ]]; do
       echo "  --with-gsc            Include Google Search Console module"
       echo "  --with-ads            Include paid ads module (Google Ads/Meta)"
       echo "  --with-coolify        Include Coolify deployment monitoring"
-      echo "  --with-claude-update  Include auto CLAUDE.md regeneration routine"
-      echo "  --with-arch-review    Install improve-codebase-architecture skill + weekly routine"
+      echo "  --with-arch-review    Weekly architecture review (improve-codebase-architecture + fallow skills)"
       echo "  --with-docs-audit     Weekly docs <-> code drift check routine"
-      echo "  --with-product-overview  Weekly product overview digest routine"
-      echo "  --with-impeccable     Weekly design quality routines (audit + critique + monthly harden)"
-      echo "  --with-fallow         Weekly code-health audit via fallow (TS/JS only) + skill"
+      echo "  --with-impeccable     Weekly design + UX routines (impeccable skill)"
       echo "  --branch NAME         Main branch name (default: main)"
       echo "  --merge-direct        Fix tasks by committing directly to main branch (default)"
       echo "  --merge-pr            Fix tasks via pull requests"
@@ -266,10 +258,17 @@ BASH_BIN="$(command -v bash 2>/dev/null || echo /bin/bash)"
 # run, and an unused slash command is harmless.
 ALL_DF_COMMANDS=(
   add-issue install self-update fix-issues analytics-review observability-check
-  gsc-check ads-review coolify-check-deployment claude-md-update security-audit
-  vulnerability-check architecture-review update-config docs-audit product-overview
-  build-optimization csp-setup uptime-check grill design-audit design-critique
+  gsc-check ads-review coolify-check-deployment security-audit
+  vulnerability-check architecture-review update-config docs-audit
+  build-optimization uptime-check design-audit design-critique
   design-harden mailbox-check code-health fix-ci-issue web-vitals
+)
+
+# Commands Dark Flow used to ship. Deleted from user scope on every run — a
+# leftover file keeps showing up in the /darkflow: menu, and (A9) a schedule that
+# outlives its command has the worker firing `claude -p "/darkflow:<gone>"` forever.
+RETIRED_DF_COMMANDS=(
+  claude-md-update product-overview csp-setup grill
 )
 
 # Fetch a template (local clone or remote) to dest, always overwriting.
@@ -302,6 +301,13 @@ install_user_commands() {
       || warn "Could not fetch command: ${c}"
   done
   success "Installed ${#ALL_DF_COMMANDS[@]} slash commands into ${USER_CMD_DIR}/"
+
+  local _gone=()
+  for c in "${RETIRED_DF_COMMANDS[@]}"; do
+    [[ -f "${USER_CMD_DIR}/${c}.md" ]] && { rm -f "${USER_CMD_DIR}/${c}.md"; _gone+=("$c"); }
+  done
+  [[ ${#_gone[@]} -gt 0 ]] && success "Removed retired commands: ${_gone[*]}"
+  return 0
 }
 
 # Machine-global helper assets: the config fetcher used by every slash command's
@@ -585,14 +591,14 @@ if [[ "$MODE" == "update" ]]; then
   [[ "$MODULES" == *"gsc"*           && -z "$MOD_GSC"           ]] && MOD_GSC=true
   [[ "$MODULES" == *"ads"*           && -z "$MOD_ADS"           ]] && MOD_ADS=true
   [[ "$MODULES" == *"coolify"*       && -z "$MOD_COOLIFY"       ]] && MOD_COOLIFY=true
-  [[ "$MODULES" == *"claude-update"* && -z "$MOD_CLAUDE_UPDATE" ]] && MOD_CLAUDE_UPDATE=true
   [[ "$MODULES" == *"arch-review"*   && -z "$MOD_ARCH_REVIEW"   ]] && MOD_ARCH_REVIEW=true
   [[ "$MODULES" == *"mailbox"*       && -z "$MOD_MAILBOX"       ]] && MOD_MAILBOX=true
   [[ "$MODULES" == *"docs-audit"*       && -z "$MOD_DOCS_AUDIT"      ]] && MOD_DOCS_AUDIT=true
-  [[ "$MODULES" == *"product-overview"* && -z "$MOD_PRODUCT_OVERVIEW" ]] && MOD_PRODUCT_OVERVIEW=true
   [[ "$MODULES" == *"impeccable"*       && -z "$MOD_IMPECCABLE"       ]] && MOD_IMPECCABLE=true
-  [[ "$MODULES" == *"fallow"*           && -z "$MOD_FALLOW"           ]] && MOD_FALLOW=true
   [[ "$MODULES" == *"ci-gate"*          && -z "$MOD_CI_GATE"          ]] && MOD_CI_GATE=true
+  # retired module names still sitting in an old config.json: fallow folded into
+  # arch-review (C2); claude-update / product-overview simply disappear
+  [[ "$MODULES" == *"fallow"*           && -z "$MOD_ARCH_REVIEW"      ]] && MOD_ARCH_REVIEW=true
 fi
 
 # ── Mode header ───────────────────────────────────────────────────────────────
@@ -727,7 +733,7 @@ ask_module() {
 }
 
 if [[ "$NON_INTERACTIVE" == false && -t 0 ]] && \
-   [[ -z "$MOD_ANALYTICS$MOD_OBSERVABILITY$MOD_GSC$MOD_ADS$MOD_COOLIFY$MOD_CLAUDE_UPDATE$MOD_ARCH_REVIEW" ]]; then
+   [[ -z "$MOD_ANALYTICS$MOD_OBSERVABILITY$MOD_GSC$MOD_ADS$MOD_COOLIFY$MOD_ARCH_REVIEW" ]]; then
   echo ""
   echo -e "${BOLD}Optional modules${RESET}${DIM} — select what applies to your project:${RESET}"
   echo ""
@@ -738,12 +744,9 @@ ask_module MOD_OBSERVABILITY  "Observability"       "(SigNoz, Datadog, Grafana�
 ask_module MOD_GSC            "Search Console"      "(Google Search Console) — weekly GSC check + technical/on-page SEO audit routine + insights/search-console/ + insights/seo-audit/"
 ask_module MOD_ADS            "Paid Ads"            "(Google Ads, Meta…) — insights/ads/ folder"              false
 ask_module MOD_COOLIFY        "Coolify"             "deployment status check — one daily routine"
-ask_module MOD_CLAUDE_UPDATE  "CLAUDE.md update"    "weekday routine that re-generates CLAUDE.md from codebase" false
-ask_module MOD_ARCH_REVIEW    "Architecture review" "installs improve-codebase-architecture skill + weekly routine" false
+ask_module MOD_ARCH_REVIEW    "Architecture review" "weekly architecture + code-health audit (improve-codebase-architecture + fallow skills)" false
 ask_module MOD_DOCS_AUDIT     "Docs audit"          "weekly docs <-> code drift check -> tasks" false
-ask_module MOD_PRODUCT_OVERVIEW "Product overview"  "weekly product digest: state + changes + bugs + hypotheses" false
-ask_module MOD_IMPECCABLE     "Design quality"      "weekly design audit + critique (impeccable skill) + monthly harden" false
-ask_module MOD_FALLOW         "Code health"         "weekly fallow audit (dead code, dupes, cycles, complexity) — TS/JS only" false
+ask_module MOD_IMPECCABLE     "Design quality"      "weekly visual design audit + UX flow walk (impeccable skill)" false
 ask_module MOD_MAILBOX        "Mailbox"             "(IMAP+SMTP) — hourly inbox check → tasks + automated replies" false
 
 # ── Observability integration ─────────────────────────────────────────────────
@@ -1053,13 +1056,12 @@ HEREDOC
   [[ "$MOD_GSC"           == true ]] && echo "- **GSC check** (Weekly Mon 8:00) — Google Search Console + technical/on-page SEO audit → tasks"
   [[ "$MOD_ADS"           == true ]] && echo "- **Ads review** (Weekly Mon 8:00) — paid ads performance → tasks"
   [[ "$MOD_COOLIFY"       == true ]] && echo "- **Coolify check deployment** (Daily 9:00) — deploy status → critical task on failure"
-  [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- **CLAUDE.md update** (Weekdays 9:00) — re-generates this file from codebase"
   [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Architecture review** (Weekly Sun 2:00) — \`/improve-codebase-architecture\` → tasks"
   [[ "$MOD_MAILBOX"       == true ]] && echo "- **Mailbox check** (Hourly) — IMAP inbox → tasks with reply/fix action choice; approved replies sent via SMTP"
   echo "- **Build optimization** (Weekly Sun 4:00) — build + deploy pipeline analysis → tasks"
   echo "- **Uptime check** (Every 4h) — DNS + HTTP + page-load check; site down → auto-approved critical task"
   [[ "$MOD_DOCS_AUDIT"    == true ]] && echo "- **Docs audit** (Weekly Sun 5:00) — docs ↔ code drift → tasks"
-  [[ "$MOD_FALLOW"        == true ]] && echo "- **Code health** (Weekly Sun 7:00) — \`/darkflow:code-health\` fallow audit (dead code, dupes, cycles, complexity) → tasks"
+  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Code health** (Weekly Sun 7:00) — \`/darkflow:code-health\` fallow audit (dead code, dupes, cycles, complexity) → tasks"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design audit** (Weekly Sat 10:00) — \`/impeccable:audit\` five-dimension quality check → tasks"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design critique** (Weekly Sat 11:00) — \`/impeccable:critique\` scored review + persona tests → tasks"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design harden** (Monthly 1st 10:00) — \`/impeccable:harden\` edge cases, i18n, error states → tasks"
@@ -1081,22 +1083,16 @@ HEREDOC
   [[ "$MOD_GSC"           == true ]] && echo "- \`/darkflow:gsc-check\` — Google Search Console + technical/on-page SEO audit → tasks"
   [[ "$MOD_ADS"           == true ]] && echo "- \`/darkflow:ads-review\` — paid ads performance → tasks"
   [[ "$MOD_COOLIFY"       == true ]] && echo "- \`/darkflow:coolify-check-deployment\` — deployment status check"
-  [[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "- \`/darkflow:claude-md-update\` — regenerate CLAUDE.md from codebase"
   [[ "$MOD_DOCS_AUDIT"        == true ]] && echo "- \`/darkflow:docs-audit\` — docs <-> code drift check → tasks"
-  [[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && echo "- \`/darkflow:product-overview\` — product overview digest"
   [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- \`/darkflow:architecture-review\` — architectural analysis → tasks"
   [[ "$MOD_MAILBOX"       == true ]] && echo "- \`/darkflow:mailbox-check\` — read new mail and send approved replies via SMTP"
   echo "- \`/darkflow:security-audit\` — full security review (static + runtime) → tasks"
   echo "- \`/darkflow:build-optimization\` — build + deploy optimization analysis → tasks"
-  echo "- \`/darkflow:csp-setup\` — wire CSP violation reporting → internal endpoint (one-time setup)"
   echo "- \`/darkflow:uptime-check\` — DNS + HTTP + page-load check; site down → auto-approved critical task"
-  [[ "$MOD_FALLOW"        == true ]] && echo "- \`/darkflow:code-health\` — fallow audit (dead code, dupes, cycles, complexity) → tasks"
+  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- \`/darkflow:code-health\` — fallow audit (dead code, dupes, cycles, complexity) → tasks"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-audit\` — five-dimension design quality check → tasks"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-critique\` — scored design review with persona tests → tasks"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-harden\` — production-readiness review (edge cases, i18n, error states) → tasks"
-  echo ""
-  echo "Interactive commands (planning/design, human-in-the-loop — no tasks or snapshots):"
-  echo "- \`/darkflow:grill\` — pressure-test a plan against the domain model; updates glossary + ADRs inline"
 }
 
 # Writes .darkflow.d/claude.md with full Dark Flow instructions, then ensures
@@ -1173,13 +1169,11 @@ run_checklist() {
       gsc)           [[ "$MOD_GSC"           == true ]] ;;
       ads)           [[ "$MOD_ADS"           == true ]] ;;
       coolify)       [[ "$MOD_COOLIFY"       == true ]] ;;
-      claude-update) [[ "$MOD_CLAUDE_UPDATE" == true ]] ;;
       arch-review)   [[ "$MOD_ARCH_REVIEW"   == true ]] ;;
       mailbox)          [[ "$MOD_MAILBOX"          == true ]] ;;
       docs-audit)       [[ "$MOD_DOCS_AUDIT"       == true ]] ;;
-      product-overview) [[ "$MOD_PRODUCT_OVERVIEW" == true ]] ;;
       impeccable)    [[ "$MOD_IMPECCABLE"    == true ]] ;;
-      fallow)        [[ "$MOD_FALLOW"        == true ]] ;;
+      fallow)        [[ "$MOD_ARCH_REVIEW"   == true ]] ;;  # retired: folded into arch-review
       ci-gate)       [[ "$MOD_CI_GATE"       == true ]] ;;
       *) return 1 ;;
     esac
@@ -1435,13 +1429,10 @@ if [[ "$DRY_RUN" == false ]]; then
   [[ "$MOD_GSC"           == true ]] && _local_mods="${_local_mods}gsc,"
   [[ "$MOD_ADS"           == true ]] && _local_mods="${_local_mods}ads,"
   [[ "$MOD_COOLIFY"       == true ]] && _local_mods="${_local_mods}coolify,"
-  [[ "$MOD_CLAUDE_UPDATE" == true ]] && _local_mods="${_local_mods}claude-update,"
   [[ "$MOD_ARCH_REVIEW"   == true ]] && _local_mods="${_local_mods}arch-review,"
   [[ "$MOD_MAILBOX"       == true ]] && _local_mods="${_local_mods}mailbox,"
   [[ "$MOD_DOCS_AUDIT"        == true ]] && _local_mods="${_local_mods}docs-audit,"
-  [[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && _local_mods="${_local_mods}product-overview,"
   [[ "$MOD_IMPECCABLE"        == true ]] && _local_mods="${_local_mods}impeccable,"
-  [[ "$MOD_FALLOW"            == true ]] && _local_mods="${_local_mods}fallow,"
   [[ "$MOD_CI_GATE"           == true ]] && _local_mods="${_local_mods}ci-gate,"
   register_project "${_local_mods%,}"
 
@@ -1538,7 +1529,7 @@ fi
 
 # ── Code health (fallow) skill ────────────────────────────────────────────────
 
-if [[ "$MOD_FALLOW" == true && "$DRY_RUN" == false ]]; then
+if [[ "$MOD_ARCH_REVIEW" == true && "$DRY_RUN" == false ]]; then
   if ! command -v git &>/dev/null; then
     warn "git not found — cannot install the fallow skill"
   elif [[ -d "$HOME/.claude/skills/fallow" ]]; then
@@ -1549,10 +1540,10 @@ if [[ "$MOD_FALLOW" == true && "$DRY_RUN" == false ]]; then
     if git clone --depth 1 https://github.com/fallow-rs/fallow-skills.git "$_fallow_tmp/fallow-skills" >/dev/null 2>&1; then
       mkdir -p "$HOME/.claude/skills"
       cp -R "$_fallow_tmp/fallow-skills/fallow/skills/fallow" "$HOME/.claude/skills/fallow" \
-        && success "fallow skill installed — code-health routine will use it" \
-        || warn "fallow skill copy failed. Install manually: see routines/code-health.md"
+        && success "fallow skill installed — the architecture review uses it for the code-health step" \
+        || warn "fallow skill copy failed. Install manually: https://github.com/fallow-rs/fallow-skills"
     else
-      warn "fallow skill clone failed. Install manually: see routines/code-health.md"
+      warn "fallow skill clone failed. Install manually: https://github.com/fallow-rs/fallow-skills"
     fi
     rm -rf "$_fallow_tmp"
   fi
@@ -1592,31 +1583,8 @@ fi
 echo ""
 echo -e "${BOLD}Routines${RESET}"
 echo ""
-if [[ "$MERGE_STRATEGY" == "direct" ]]; then
-  echo "  fix-issues           0 * * * *      Picks up an approved task → commit → push to ${MAIN_BRANCH}"
-else
-  echo "  fix-issues           0 * * * *      Picks up an approved task → PR → merge into ${MAIN_BRANCH}"
-fi
-echo "  security-audit       0 3 * * 0      Full security review → tasks"
-echo "  build-optimization   0 4 * * 0      Build + deploy pipeline analysis → tasks"
-echo "  uptime-check         0 */4 * * *    DNS + HTTP + page-load check → critical task if site down"
-echo "  vulnerability-check  0 6 * * *      GitHub Dependabot + code scanning → tasks"
-[[ "$MOD_ANALYTICS"     == true ]] && echo "  analytics-review     0 8 * * *      OpenPanel + commits → tasks"
-[[ "$MOD_OBSERVABILITY" == true ]] && echo "  observability-check  30 8 * * *     Errors / latency → tasks"
-[[ "$MOD_GSC"           == true ]] && echo "  gsc-check            0 8 * * 1      Google Search Console + SEO audit → tasks"
-[[ "$MOD_ADS"           == true ]] && echo "  ads-review           0 8 * * 1      Paid ads performance → tasks"
-[[ "$MOD_COOLIFY"       == true ]] && echo "  coolify-check-deploy 0 9 * * *      Deployment status → critical task on failure"
-[[ "$MOD_CLAUDE_UPDATE" == true ]] && echo "  claude-md-update     0 9 * * 1-5    Re-generates CLAUDE.md from codebase"
-[[ "$MOD_DOCS_AUDIT"        == true ]] && echo "  docs-audit           0 5 * * 0      Docs <-> code drift → tasks"
-[[ "$MOD_PRODUCT_OVERVIEW"  == true ]] && echo "  product-overview     0 7 * * 1      Product overview digest"
-[[ "$MOD_ARCH_REVIEW"   == true ]] && echo "  architecture-review  0 2 * * 0      Architectural analysis → tasks"
-[[ "$MOD_FALLOW"        == true ]] && echo "  code-health          0 7 * * 0      fallow audit (dead code, dupes, cycles) → tasks"
-[[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-audit         0 10 * * 6     Design quality check (impeccable:audit) → tasks"
-[[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-critique      0 11 * * 6     Scored design review (impeccable:critique) → tasks"
-[[ "$MOD_IMPECCABLE"    == true ]] && echo "  design-harden        0 10 1 * *     Production-readiness review (impeccable:harden) → tasks"
-echo ""
-echo -e "  ${DIM}These are the default schedules. Enable/disable routines and override their"
-echo -e "  cron per project in the Web UI (Settings → Routine schedule).${RESET}"
+echo -e "  ${DIM}Which routines are enabled, and on what schedule, lives in exactly one place:"
+echo -e "  ${WEBAPP_URL} → this project → Settings → Routine schedule.${RESET}"
 echo ""
 echo -e "  ${DIM}One global worker (~/.darkflow/darkflow-run.sh) services every project."
 echo -e "  Start it yourself (no auto-start), then it runs until you stop it:${RESET}"

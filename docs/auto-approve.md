@@ -41,4 +41,4 @@ To add a new category:
 
 1. Add a row to the allowlist table above.
 2. In the producing command file (`templates/.claude/commands/darkflow/<command>.md`), change the status for matching tasks from `--status proposed` to `--status approved` and add a one-line reference: *"Auto-approved — see `docs/auto-approve.md`."*
-3. Update the corresponding `routines/<command>.md` "What gets created" note.
+3. Update the "What gets created" note in the command file itself (`~/.claude/commands/darkflow/<command>.md`).

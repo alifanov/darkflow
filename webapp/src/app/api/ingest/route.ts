@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { KNOWN_ROUTINE_NAMES } from "@/lib/routines";
 
 interface IngestAnalytics {
   usersTotal?: number;
@@ -185,6 +186,14 @@ export async function POST(req: NextRequest) {
       })),
     });
   }
+
+  // A9: a dropped or renamed routine leaves its RoutineConfig row behind, and a
+  // schedule that outlives its command has the worker firing `/darkflow:<gone>`
+  // on cron forever. by-repo already filters them out on read; delete them here so
+  // the Settings tab and the DB agree with the catalog too.
+  await prisma.routineConfig.deleteMany({
+    where: { projectId: project.id, name: { notIn: [...KNOWN_ROUTINE_NAMES] } },
+  });
 
   if (body.routines !== undefined) {
     // Seed-only: only write routineConfigs if the project has none yet.
