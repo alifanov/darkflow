@@ -57,15 +57,13 @@ Rule is universal — only the folder changes by data source:
 | SEO audit — technical + on-page (titles, meta, schema, crawlability) | `insights/seo-audit/YYYY-MM-DD.md` | On-page/technical SEO review, meta/heading/schema audit |
 | Paid ads — campaigns, keywords, spend, CPA, ROAS | `insights/ads/YYYY-MM-DD.md` | Any ads account check, campaign optimization |
 | Observability — errors, latency, DB performance | `insights/observability/YYYY-MM-DD.md` | SigNoz/Datadog checks, latency alerts |
-| Security audit — vulnerabilities, code scanning | `insights/security/YYYY-MM-DD.md` | `/darkflow:security-audit`, Dependabot alerts |
+| Security — GitHub alerts + code review findings | `insights/security/YYYY-MM-DD.md` | `/darkflow:security-audit` |
 | Docs audit — docs ↔ code drift | `insights/docs-audit/YYYY-MM-DD.md` | `/darkflow:docs-audit` |
-| Product overview — state + recent improvements + hypotheses digest | `insights/product-overview/YYYY-MM-DD.md` | `/darkflow:product-overview` |
 | Build optimization — build + deploy pipeline efficiency | `insights/build-optimization/YYYY-MM-DD.md` | `/darkflow:build-optimization` |
 | Uptime check — DNS / HTTP status / page-load health | `insights/uptime/YYYY-MM-DD.md` | `/darkflow:uptime-check` |
-| Code health — dead code, duplication, cycles, complexity (fallow) | `insights/code-health/YYYY-MM-DD.md` | `/darkflow:code-health` |
-| Design audit — five-dimension technical quality (impeccable:audit) | `insights/design-audit/YYYY-MM-DD.md` | `/darkflow:design-audit` |
-| Design critique — scored review, persona tests (impeccable:critique) | `insights/design-critique/YYYY-MM-DD.md` | `/darkflow:design-critique` |
-| Design harden — edge cases, i18n, error states (impeccable:harden) | `insights/design-harden/YYYY-MM-DD.md` | `/darkflow:design-harden` |
+| Architecture — module boundaries + fallow code health | `insights/architecture/YYYY-MM-DD.md` | `/darkflow:architecture-review` |
+| Design — visual quality, UI performance, production readiness | `insights/design/YYYY-MM-DD.md` | `/darkflow:check-design` |
+| UX — key flows walked in a real browser, mobile + desktop | `insights/ux/YYYY-MM-DD.md` | `/darkflow:check-ux` |
 | Interviews, feedback, session recordings | `insights/qualitative/YYYY-MM-DD-{topic}.md` | Session recording review, email/chat feedback analysis |
 
 ### Snapshot format (any source)

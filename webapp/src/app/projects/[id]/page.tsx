@@ -295,6 +295,7 @@ export default async function ProjectPage({
             active: project.active,
             slug: project.slug ?? null,
             domain: project.domain ?? null,
+            stagingUrl: project.stagingUrl ?? null,
             localPath: project.localPath ?? null,
             branch: project.branch,
             language: project.language,

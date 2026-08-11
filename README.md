@@ -26,7 +26,7 @@ Install Dark Flow workflow from https://github.com/alifanov/darkflow
 Run the installer:
 curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh -o /tmp/darkflow-install.sh && bash /tmp/darkflow-install.sh
 
-Ask me which optional modules I want (analytics, observability, GSC, ads, Coolify, CLAUDE.md update),
+Ask me which optional modules I want (analytics, observability, GSC, ads, Coolify, architecture review, design),
 then run the installer with the appropriate flags.
 After install, show me the routines I need to set up in Claude Code → Routines.
 ```
@@ -35,7 +35,7 @@ The agent will fetch the installer, ask about your stack, run it with the right 
 
 ### What the installer does
 
-1. Asks which optional modules apply to your project (analytics, observability, GSC, ads, Coolify, CLAUDE.md update, architecture review)
+1. Asks which optional modules apply to your project (analytics, observability, GSC, ads, Coolify, architecture review, docs audit, design, mailbox)
 2. Creates `docs/` folder structure with template files
 3. Writes `.darkflow.d/claude.md` with the Dark Flow agent workflow and adds a single `@.darkflow.d/claude.md` reference to `CLAUDE.md`
 4. Installs `/darkflow` and `/darkflow:*` slash commands for Claude Code
@@ -188,20 +188,19 @@ If your project already has a `Makefile`, the installer appends the `df-*` block
 
 ```
 Daily
-  6:00  vulnerability-check  → status=approved (Dependabot deps); status=proposed (code/secret scanning)
   8:00  analytics-review     → proposed tasks + analytics snapshot → syncs to web UI
   8:30  observability-check  → proposed tasks
   9:00  coolify-check-deployment → deploy status, critical task on failure
-  9:00  claude-md-update     → keeps agent context in sync
   */4h  uptime-check         → DNS + HTTP + page-load; site down → status=approved critical task
 
 Weekly
   Mon 8:00  gsc-check (GSC + SEO) → proposed tasks
   Mon 8:00  ads-review            → proposed tasks + ads snapshot (optional)
   Sun 2:00  architecture-review   → proposed tasks (Opus) + arch snapshot → syncs to web UI
-  Sun 3:00  security-audit        → auto-approved tasks (Opus) + security snapshot → syncs to web UI
-  Sun 4:00  build-optimization   → proposed tasks (Opus) + build snapshot
-  Sun 7:00  code-health          → proposed tasks (Sonnet) + code-health snapshot (optional, TS/JS)
+  Sun 3:00  security-audit        → GitHub alerts + code review → auto-approved tasks (Opus) → syncs to web UI
+  Sun 4:00  build-optimization    → proposed tasks (Opus) + build snapshot
+  Sat 10:00 check-design          → visual quality, UI perf, production readiness (optional)
+  Sat 11:00 check-ux              → key flows walked in a real browser, mobile + desktop (optional)
 
 Continuous
   :00   fix-issues (hourly)       → picks up an approved task → implements → commits directly (PR mode optional)
@@ -211,10 +210,12 @@ Human
        or: ~/.darkflow/df task set-status N approved
 ```
 
+These are the defaults. The real schedule is per project, in the Web UI.
+
 ### Setup checklist
 
 - [ ] Run `install.sh`
-- [ ] Verify `gh auth status` works in the project folder (only needed for `vulnerability-check`'s GitHub alert reads, and for `gh pr create` if a project opts into PR mode)
+- [ ] Verify `gh auth status` works in the project folder (only needed for `security-audit`'s GitHub alert reads, and for `gh pr create` if a project opts into PR mode)
 - [ ] Configure required MCP servers (see each routine's page for details)
 - [ ] Run `~/.darkflow/darkflow-run.sh --dry-run` from the project to confirm the worker works
 
@@ -242,22 +243,12 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | `/darkflow:observability-check` | Errors / slow queries / latency → tasks |
 | `/darkflow:gsc-check` | Google Search Console + technical/on-page SEO audit → tasks |
 | `/darkflow:coolify-check-deployment` | Deployment status check → `critical` task on failed deploy |
-| `/darkflow:claude-md-update` | Regenerate CLAUDE.md from codebase |
-| `/darkflow:architecture-review` | Architectural analysis → tasks + architecture snapshot |
-| `/darkflow:security-audit` | Full security review (static + runtime) → tasks + security snapshot |
-| `/darkflow:vulnerability-check` | GitHub Dependabot + code/secret scanning alerts → tasks |
+| `/darkflow:architecture-review` | Module boundaries + fallow code health → tasks + architecture snapshot |
+| `/darkflow:security-audit` | GitHub alerts (Dependabot, code + secret scanning) + code review → tasks + security snapshot |
 | `/darkflow:build-optimization` | Build + deploy pipeline analysis → optimization tasks |
 | `/darkflow:uptime-check` | DNS + HTTP + page-load check → **auto-approved** `critical` task if the site is down |
-| `/darkflow:code-health` | fallow audit (dead code, dupes, cycles, complexity) → tasks *(optional, TS/JS only)* |
-
-### Interactive commands
-
-Human-in-the-loop, for planning/design — these ask questions and wait for answers; they do **not** create tasks, snapshots, or run autonomously.
-
-| Command | What it does |
-|---|---|
-| `/darkflow:grill` | Pressure-test a plan against the domain model — sharpens terminology, updates `docs/product/glossary.md` and `docs/decisions/` (ADRs) inline |
-| `/darkflow:csp-setup` | One-time setup — wire CSP violation reporting to an internal `/api/csp-report` endpoint → your observability backend |
+| `/darkflow:check-design` | Visual quality, UI performance, production readiness → tasks *(optional)* |
+| `/darkflow:check-ux` | Key flows walked in a real browser, mobile + desktop → tasks *(optional)* |
 
 Routine commands automatically call `bash ~/.darkflow/get-config.sh` before running — this fetches the latest project settings (branch, language, merge strategy, modules, routine schedule) from the **Web UI Settings tab** into `.darkflow.d/state/config.json`. If the server is unreachable, commands fall back to the last fetched copy silently.
 
@@ -309,7 +300,7 @@ After install, edit:
 ## Requirements
 
 - `git` — any version
-- `gh` (GitHub CLI) — for `vulnerability-check`'s Dependabot/code-scanning/secret-scanning alert reads, and for `gh pr create` if a project opts into PR mode; [install](https://cli.github.com/)
+- `gh` (GitHub CLI) — for `security-audit`'s Dependabot/code-scanning/secret-scanning alert reads, and for `gh pr create` if a project opts into PR mode; [install](https://cli.github.com/)
 - `yq` — YAML parser used by the routine dispatcher; `brew install yq` / [install](https://github.com/mikefarah/yq#install)
 - `python3` — used by the routine dispatcher to isolate process groups and clean up dev servers after each run
 - Claude Code — the workflow is designed around it, but works with any AI agent that follows markdown instructions

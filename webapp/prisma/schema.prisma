@@ -16,6 +16,9 @@ model Project {
   name          String
   slug          String?
   domain        String?
+  // Pre-production URL, when the project has one. The single field P5 allows:
+  // commands that need a list of pages to walk read sitemap.xml, not a passport doc.
+  stagingUrl    String?
   localPath     String?
   repoUrl       String    @unique
   branch        String    @default("main")

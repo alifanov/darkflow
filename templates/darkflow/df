@@ -62,7 +62,7 @@ REPO_Q=$(_urlencode "$REPO_URL")
 usage() {
   cat >&2 <<'EOF'
 usage:
-  df task list [--status S] [--source S] [--action S] [--state open|closed|all] [--needs-human]
+  df task list [--status S] [--source S] [--action S] [--state open|closed|all] [--needs-human] [--format compact]
   df task view <n>
   df task create --title T [--body B] [--priority critical|high|medium|low] [--source S] [--status S] [--action reply|fix] [--needs-human] [--after ISO-DATE]
   df task set-status <n> <status>
@@ -81,7 +81,7 @@ shift 2
 
 case "$sub" in
   list)
-    qs="repoUrl=${REPO_Q}"
+    qs="repoUrl=${REPO_Q}" fmt=""
     while [[ $# -gt 0 ]]; do
       case "$1" in
         --status) qs+="&status=$(_urlencode "$2")"; shift 2 ;;
@@ -89,10 +89,18 @@ case "$sub" in
         --action) qs+="&action=$(_urlencode "$2")"; shift 2 ;;
         --state) qs+="&state=$(_urlencode "$2")"; shift 2 ;;
         --needs-human) qs+="&needsHuman=true"; shift ;;
+        --format) fmt="$2"; shift 2 ;;
         *) usage ;;
       esac
     done
-    _api GET "/api/tasks?${qs}"
+    # compact: one line per task, small enough that an audit can afford to read
+    # EVERY task before filing (P7) instead of only its own --source bucket.
+    if [[ "$fmt" == "compact" ]]; then
+      _api GET "/api/tasks?${qs}" \
+        | jq -r '.[] | "#\(.number) [\(.status)\(if .needsHuman then "/needs-human" else "" end)] \(.source // "manual"): \(.title)"'
+    else
+      _api GET "/api/tasks?${qs}"
+    fi
     ;;
 
   view)

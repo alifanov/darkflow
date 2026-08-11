@@ -30,6 +30,7 @@ interface ProjectSettingsFormProps {
     active: boolean;
     slug: string | null;
     domain: string | null;
+    stagingUrl: string | null;
     localPath: string | null;
     branch: string;
     language: string;
@@ -88,6 +89,7 @@ export function ProjectSettingsForm({ projectId, initialValues }: ProjectSetting
   const [active, setActive] = useState(initialValues.active);
   const [slug, setSlug] = useState(initialValues.slug ?? "");
   const [domain, setDomain] = useState(initialValues.domain ?? "");
+  const [stagingUrl, setStagingUrl] = useState(initialValues.stagingUrl ?? "");
   const [localPath, setLocalPath] = useState(initialValues.localPath ?? "");
   const [branch, setBranch] = useState(initialValues.branch);
   const [language, setLanguage] = useState(initialValues.language);
@@ -124,6 +126,7 @@ export function ProjectSettingsForm({ projectId, initialValues }: ProjectSetting
             active,
             slug: slug || null,
             domain: domain || null,
+            stagingUrl: stagingUrl || null,
             localPath: localPath || null,
             branch,
             language,
@@ -154,6 +157,7 @@ export function ProjectSettingsForm({ projectId, initialValues }: ProjectSetting
     active,
     slug,
     domain,
+    stagingUrl,
     localPath,
     branch,
     language,
@@ -191,6 +195,7 @@ export function ProjectSettingsForm({ projectId, initialValues }: ProjectSetting
 
         <InputField label="Slug" value={slug} onChange={setSlug} placeholder="my-app" hint="Lowercase, dash-separated identifier" />
         <InputField label="Domain" value={domain} onChange={setDomain} placeholder="app.example.com" hint="Production domain where the project is deployed" />
+        <InputField label="Staging URL" value={stagingUrl} onChange={setStagingUrl} placeholder="https://staging.example.com" hint="Optional pre-production URL. Audits that walk pages find them via sitemap.xml — there is no page list to fill in" />
         <InputField label="Local path" value={localPath} onChange={setLocalPath} placeholder="/Users/you/code/my-app" hint="Absolute path to this project's checkout on the host — used by the “Fix in cmux” button" />
         <InputField label="Main branch" value={branch} onChange={setBranch} placeholder="main" />
 

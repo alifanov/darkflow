@@ -35,6 +35,7 @@ interface SettingsPatchBody {
   name?: string;
   slug?: string;
   domain?: string | null;
+  stagingUrl?: string | null;
   localPath?: string | null;
   branch?: string;
   active?: boolean;
@@ -74,6 +75,7 @@ export async function PATCH(
         ...(body.name !== undefined && { name: body.name }),
         ...(body.slug !== undefined && { slug: body.slug }),
         ...(body.domain !== undefined && { domain: body.domain }),
+        ...(body.stagingUrl !== undefined && { stagingUrl: body.stagingUrl }),
         ...(body.localPath !== undefined && { localPath: body.localPath }),
         ...(body.branch !== undefined && { branch: body.branch }),
         ...(body.active !== undefined && { active: body.active }),

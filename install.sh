@@ -259,9 +259,9 @@ BASH_BIN="$(command -v bash 2>/dev/null || echo /bin/bash)"
 ALL_DF_COMMANDS=(
   add-issue install self-update fix-issues analytics-review observability-check
   gsc-check ads-review coolify-check-deployment security-audit
-  vulnerability-check architecture-review update-config docs-audit
-  build-optimization uptime-check design-audit design-critique
-  design-harden mailbox-check code-health fix-ci-issue web-vitals
+  architecture-review update-config docs-audit
+  build-optimization uptime-check check-design check-ux
+  mailbox-check fix-ci-issue web-vitals
 )
 
 # Commands Dark Flow used to ship. Deleted from user scope on every run — a
@@ -269,6 +269,7 @@ ALL_DF_COMMANDS=(
 # outlives its command has the worker firing `claude -p "/darkflow:<gone>"` forever.
 RETIRED_DF_COMMANDS=(
   claude-md-update product-overview csp-setup grill
+  vulnerability-check code-health design-audit design-critique design-harden
 )
 
 # Fetch a template (local clone or remote) to dest, always overwriting.
@@ -1091,15 +1092,13 @@ HEREDOC
   [[ "$MOD_GSC"           == true ]] && echo "- **GSC check** (Weekly Mon 8:00) — Google Search Console + technical/on-page SEO audit → tasks"
   [[ "$MOD_ADS"           == true ]] && echo "- **Ads review** (Weekly Mon 8:00) — paid ads performance → tasks"
   [[ "$MOD_COOLIFY"       == true ]] && echo "- **Coolify check deployment** (Daily 9:00) — deploy status → critical task on failure"
-  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Architecture review** (Weekly Sun 2:00) — \`/improve-codebase-architecture\` → tasks"
+  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Architecture review** (Weekly Sun 2:00) — module boundaries + fallow code health → tasks"
   [[ "$MOD_MAILBOX"       == true ]] && echo "- **Mailbox check** (Hourly) — IMAP inbox → tasks with reply/fix action choice; approved replies sent via SMTP"
   echo "- **Build optimization** (Weekly Sun 4:00) — build + deploy pipeline analysis → tasks"
   echo "- **Uptime check** (Every 4h) — DNS + HTTP + page-load check; site down → auto-approved critical task"
   [[ "$MOD_DOCS_AUDIT"    == true ]] && echo "- **Docs audit** (Weekly Sun 5:00) — docs ↔ code drift → tasks"
-  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Code health** (Weekly Sun 7:00) — \`/darkflow:code-health\` fallow audit (dead code, dupes, cycles, complexity) → tasks"
-  [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design audit** (Weekly Sat 10:00) — \`/impeccable:audit\` five-dimension quality check → tasks"
-  [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design critique** (Weekly Sat 11:00) — \`/impeccable:critique\` scored review + persona tests → tasks"
-  [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Design harden** (Monthly 1st 10:00) — \`/impeccable:harden\` edge cases, i18n, error states → tasks"
+  [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Check design** (Weekly Sat 10:00) — visual quality, UI performance, production readiness → tasks"
+  [[ "$MOD_IMPECCABLE" == true ]] && echo "- **Check UX** (Weekly Sat 11:00) — key flows walked in a real browser, mobile + desktop → tasks"
   echo ""
   echo "Schedule: managed in the Web UI (Settings → Routine schedule)  |  Worker: one global \`~/.darkflow/darkflow-run.sh\` services every project"
   echo "Run any routine manually (from this project dir): \`~/.darkflow/darkflow-run.sh <name>\`"
@@ -1119,15 +1118,13 @@ HEREDOC
   [[ "$MOD_ADS"           == true ]] && echo "- \`/darkflow:ads-review\` — paid ads performance → tasks"
   [[ "$MOD_COOLIFY"       == true ]] && echo "- \`/darkflow:coolify-check-deployment\` — deployment status check"
   [[ "$MOD_DOCS_AUDIT"        == true ]] && echo "- \`/darkflow:docs-audit\` — docs <-> code drift check → tasks"
-  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- \`/darkflow:architecture-review\` — architectural analysis → tasks"
+  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- \`/darkflow:architecture-review\` — module boundaries + fallow code health → tasks"
   [[ "$MOD_MAILBOX"       == true ]] && echo "- \`/darkflow:mailbox-check\` — read new mail and send approved replies via SMTP"
-  echo "- \`/darkflow:security-audit\` — full security review (static + runtime) → tasks"
+  echo "- \`/darkflow:security-audit\` — GitHub alerts + code review + live check → tasks"
   echo "- \`/darkflow:build-optimization\` — build + deploy optimization analysis → tasks"
   echo "- \`/darkflow:uptime-check\` — DNS + HTTP + page-load check; site down → auto-approved critical task"
-  [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- \`/darkflow:code-health\` — fallow audit (dead code, dupes, cycles, complexity) → tasks"
-  [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-audit\` — five-dimension design quality check → tasks"
-  [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-critique\` — scored design review with persona tests → tasks"
-  [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:design-harden\` — production-readiness review (edge cases, i18n, error states) → tasks"
+  [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:check-design\` — visual quality, UI performance, production readiness → tasks"
+  [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:check-ux\` — key flows walked in a real browser, mobile + desktop → tasks"
 }
 
 # Writes .darkflow.d/claude.md with full Dark Flow instructions, then ensures
