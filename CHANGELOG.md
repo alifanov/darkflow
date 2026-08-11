@@ -10,6 +10,15 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.30.1] — 2026-08-11
+
+Шаги 10.4 и 11 — отключение Deckbook. **Слияние закрыто полностью.**
+
+- **Migration** — удалены 138 scheduled tasks, вызывавших `/deckbook:*`, 8 MCP-серверов `deckbook-<slug>` (через `claude mcp remove`, по одному в скоупе своего проекта) и 21 команда `~/.claude/commands/deckbook/`.
+- **Migration** — отбор задач шёл **по содержимому** (`SKILL.md` упоминает `/deckbook:`), а не по префиксу слага, как и предупреждал план. Четыре задачи secscanner (`improve-codebase-architecture`, `posthog-analytics`, `security-review`, `update-claude-md`) носят префикс, но Deckbook никогда не звали — все четыре на месте. Из 156 задач осталось 18.
+- **Migration** — резервная копия всего удалённого лежит в `~/.darkflow/deckbook-retire-backup-2026-08-11/`: архив каталогов задач, конфиг MCP-серверов, команды и снимок `~/.claude.json`.
+- **Docs** — `docs/deckbook-merge.md` закрыт. Он остаётся в репозитории не как план, а как запись о том, что было решено и где решения оказались неверны: предпосылка A10 (локер уже существовал), половина A11 (воркер пересылает 3 файла метрик из 15) и утверждение H (восстановление зависших задач уже было).
+
 ## [4.30.0] — 2026-08-11
 
 Шаг 10 слияния с Deckbook: восемь проектов переведены. Содержимое перенесено, отключение Deckbook — отдельным решением.

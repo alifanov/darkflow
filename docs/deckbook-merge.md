@@ -4,9 +4,9 @@ Working document for folding [Deckbook](https://github.com/alifanov/deckbook) in
 Dark Flow is the base. Deckbook contributes its ideas, and its live content — documents and open tasks —
 moves across; its code does not.
 
-**Status — 2026-08-11:** steps 1–9 are **done and pushed** (v4.23.0 → v4.29.0). Dark Flow itself is in
-its final shape. Steps 10–11 — moving the eight projects off Deckbook — have **not started**; they are
-blocked on things outside this repo (see *Blocked* below).
+**Status — 2026-08-11: COMPLETE.** All eleven steps are done (v4.23.0 → v4.30.1). Deckbook is
+disconnected: no scheduled task calls it, no MCP server points at it, no `/deckbook:*` command exists.
+This file is kept as the record of what was decided and where the decisions turned out to be wrong.
 
 | # | Step | |
 |---|---|---|
@@ -19,8 +19,8 @@ blocked on things outside this repo (see *Blocked* below).
 | 7 | State — A4 | ✅ v4.27.0 |
 | 8 | Reconcile — I1 · A8 · A11 | ✅ v4.28.0 |
 | 9 | Worker — H | ✅ v4.29.0 |
-| 10 | Move the eight projects over | ✅ content moved · ⏸ disconnect held back |
-| 11 | Retire the `/deckbook:*` commands | ⏸ waiting on the disconnect |
+| 10 | Move the eight projects over | ✅ v4.30.0 — content · v4.30.1 — disconnect |
+| 11 | Retire the `/deckbook:*` commands | ✅ v4.30.1 |
 
 **What step 10 actually took.** Two assumptions in the "Moving off Deckbook" section below were
 wrong, and both made the job easier than written:
@@ -35,9 +35,11 @@ wrong, and both made the job easier than written:
 count in Deckbook equals the count in Dark Flow). The `deckbook` repo itself got documents only — it
 stays read-only history, so no Dark Flow install and no routines.
 
-**Held back on purpose:** the *disconnect* — deleting the 138 scheduled tasks and the 8 MCP servers,
-and with them step 11. That is irreversible and outward-facing, and nothing breaks by waiting: both
-systems currently read the same content, and Deckbook is now a copy rather than the original.
+**The disconnect (10.4 + 11).** 138 scheduled tasks, 8 MCP servers and 21 slash commands deleted.
+Selection was by **content**, never by slug prefix — exactly as this file warned: four secscanner
+tasks (`improve-codebase-architecture`, `posthog-analytics`, `security-review`, `update-claude-md`)
+carry the prefix but never called Deckbook, and all four survived. A backup of everything deleted is
+in `~/.darkflow/deckbook-retire-backup-2026-08-11/` (tarball, MCP config, commands, `.claude.json`).
 
 Three entries below were **disproved while implementing** — A10's premise, half of A11's, and H's
 claim that no stuck-task recovery existed. All are marked inline; the corrections are the useful part
