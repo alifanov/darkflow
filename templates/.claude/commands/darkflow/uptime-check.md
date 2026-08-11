@@ -112,19 +112,23 @@ Language for all tasks and output: the `language` value from `.darkflow.d/state/
 
 ## Step 5 — Write snapshot and metrics
 
-Write `docs/insights/uptime/YYYY-MM-DD.md` (use today's date; append a new section if today's file already exists — each run is a timestamped row):
+Append a `## Uptime` section to today's daily log, `docs/logs/$(date +%F).md` — create the
+file if it is not there yet, and never touch a section another routine wrote.
+
+**Found nothing? Append nothing.** No section, no "all clear" line. Silence is the clean
+result, and the observation threshold counts on it (see `.darkflow.d/claude.md`).
 
 ```markdown
-# Uptime Check — YYYY-MM-DD
+## Uptime
 
 **Target:** <URL or "unknown">
 
-## Checks
+### Checks
 | Time | DNS | HTTP code | Body | Latency | Result | Issue |
 |---|---|---|---|---|---|---|
 | HH:MM | ok/fail | 200 | ok/empty/error | 1.2s | ok / down / degraded | #N |
 
-## Notes
+### Notes
 <reason on failure; page <title> on success; recurring outages if seen in prior snapshots>
 ```
 

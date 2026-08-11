@@ -60,7 +60,7 @@ A metric is **poor** if it exceeds the last column. If **no** metric is poor →
 
 > Note lab metrics vary run-to-run (±10–20% is normal). Only file for a clearly-poor result; a value hovering right at a boundary is not worth a task.
 
-## Step 4b — File a task if any metric is poor
+### Step 4b — File a task if any metric is poor
 
 First check for an already-open web-vitals task to avoid duplicates:
 ```bash
@@ -107,19 +107,23 @@ Language for all tasks and output: the `language` value from `.darkflow.d/state/
 
 ## Step 5 — Write snapshot and metrics
 
-Write `docs/insights/web-vitals/YYYY-MM-DD.md` (append a timestamped section if today's file exists):
+Append a `## Performance` section to today's daily log, `docs/logs/$(date +%F).md` — create the
+file if it is not there yet, and never touch a section another routine wrote.
+
+**Found nothing? Append nothing.** No section, no "all clear" line. Silence is the clean
+result, and the observation threshold counts on it (see `.darkflow.d/claude.md`).
 
 ```markdown
-# Web Vitals — YYYY-MM-DD
+## Performance
 
 **Target:** <URL or "unknown">  ·  **Strategy:** mobile  ·  **Source:** lab (local Lighthouse)
 
-## Metrics
+### Metrics
 | Time | LCP | TBT | CLS | TTFB | FCP | Score | Result | Task |
 |---|---|---|---|---|---|---|---|---|
 | HH:MM | 2.1s | 180ms | 0.04 | 0.6s | 1.4s | 92 | ok / poor | #N |
 
-## Notes
+### Notes
 <which metric(s) were poor; trend vs prior snapshots; note lab runs vary run-to-run>
 ```
 

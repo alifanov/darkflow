@@ -71,9 +71,26 @@ usage:
   df task snooze <n> <ISO-DATE|clear>
   df task comment <n> --body B
   df task close <n>
+  df runs <routine> [--limit N]        recent runs of a routine, newest first
 EOF
   exit 1
 }
+
+# `df runs <routine>` — how many times this routine actually ran, and when. The
+# observation threshold needs it: a clean run writes nothing to the daily log, so
+# the log alone cannot tell "ran 3 times, saw it every time" from "ran 10 times,
+# saw it 3 times".
+if [[ "${1:-}" == "runs" ]]; then
+  [[ $# -ge 2 ]] || usage
+  routine="$2"; shift 2
+  limit="10"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in --limit) limit="$2"; shift 2 ;; *) usage ;; esac
+  done
+  _api GET "/api/projects/routine-logs?repoUrl=${REPO_Q}&routine=$(_urlencode "$routine")&limit=$(_urlencode "$limit")" \
+    | jq -r '.[] | "\(.timestamp)  \(.summary)"'
+  exit 0
+fi
 
 [[ $# -ge 2 && "$1" == "task" ]] || usage
 sub="$2"

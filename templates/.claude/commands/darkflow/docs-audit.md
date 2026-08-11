@@ -72,32 +72,36 @@ Language for all tasks and output: the `language` value from `.darkflow.d/state/
 
 ## Step 4 — Write docs snapshot
 
-Write `docs/insights/docs-audit/YYYY-MM-DD.md` (use today's date; append a new section if today's file already exists):
+Append a `## Docs` section to today's daily log, `docs/logs/$(date +%F).md` — create the
+file if it is not there yet, and never touch a section another routine wrote.
+
+**Found nothing? Append nothing.** No section, no "all clear" line. Silence is the clean
+result, and the observation threshold counts on it (see `.darkflow.d/claude.md`).
 
 ```markdown
-# Docs Audit — YYYY-MM-DD
+## Docs
 
 **Scope:** <which docs layers were checked>
 
-## Drift found
+### Drift found
 
 | Doc file | Claims | Code reality | Severity | Issue |
 |---|---|---|---|---|
 | | | | high / medium | #N |
 
-## Not yet written
+### Not yet written
 
 <docs files that are still stubs / missing — informational, not drift>
 
-## Recurring Issues
+### Recurring Issues
 
 <drift appearing in 2+ consecutive audits — note how many audits in a row>
 
-## Hypotheses
+### Hypotheses
 
 <one pointer line per bet: H-NNN + evidence status — the entry itself lives in docs/product/hypotheses.md (see agent-workflow.md)>
 
-## Recommendations
+### Recommendations
 
 <each with: doc file → what to change → acceptance criterion>
 ```

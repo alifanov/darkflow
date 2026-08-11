@@ -52,6 +52,73 @@ is read at a glance, not studied.
   ran.** A clean run says nothing at all — silence *is* the clean result.
 - Findings get a number, a file and a line. "Some components could be improved" is not a finding.
 
+### The daily log
+
+One document per day: `docs/logs/YYYY-MM-DD.md`. Every routine appends its own section to
+today's file — `## Security`, `## Analytics`, `## Performance`, `## Changes`, `## UX`, one per
+source. Create the file if it is not there yet; **never rewrite a section someone else wrote**,
+and never rewrite yesterday's file.
+
+This replaces the old per-routine snapshots under `docs/insights/<area>/`. One file a day beats
+one file per routine per day: the whole day is read at once, and a routine that found nothing
+leaves no trace at all instead of a file saying "nothing found".
+
+**A clean run appends nothing.** No section, no heading, no "no issues this run". That silence
+is what makes the threshold below work.
+
+Logs are never rotated. A file a day is small, and moving old ones away would break the streak
+count — the history the threshold reads is exactly the history that would have been archived.
+
+### Observation → task
+
+Two different things arrive at this decision, and they are not treated the same.
+
+**An incident** — something is broken *right now*: the site is down, a deploy failed, an error is
+firing in production, a dependency has a known exploit. File it on **first sight**, `--status
+approved`, so `fix-issues` takes it on the next tick. No threshold, no waiting.
+
+**An observation** — something that might be worth improving: a metric drifting, a page getting
+slower, a pattern that looks wrong. File it only once it has shown up in **3 consecutive runs**,
+or in **2 independent sources** on the same run. Anything less is noise; a one-off number is a
+one-off number.
+
+Counting is over *runs*, not over log files. A clean run writes no section, so:
+
+```bash
+~/.darkflow/df runs <routine> --limit 5   # how many times this routine actually ran, and when
+rg -l '^## <Section>' docs/logs/          # which days carried the observation
+```
+
+A run that left no section **breaks the streak** — it is evidence the thing was not there, not a
+gap in the record.
+
+**Improvements are `proposed`, never `needsHuman`.** In Dark Flow `needsHuman` means "the agent is
+stuck: no access, no config, the checks failed", and it is mutually exclusive with `approved`.
+The triage queue in the Web UI is already where a proposal waits for the owner.
+
+### What a routine commits
+
+An audit writes into the repo — its daily-log section, sometimes a `docs/state/` file. Left
+uncommitted those pile up and leak into whatever branch the next `fix-issues` run opens.
+
+Two preconditions hold in **every** mode, and they are not negotiable:
+
+1. **`HEAD` is on the base branch.** If it is not, the previous run left the checkout dirty:
+   write nothing, commit nothing, say so, and stop. Committing onto someone else's feature
+   branch is worse than doing nothing.
+2. **A routine stages only its own paths.** Explicitly listed, one by one. `git add -A` is never
+   correct here — it sweeps up whatever else happens to be in the working copy.
+
+This project is on the **pr** strategy, so a routine **commits nothing and pushes nothing**. It
+leaves the file in the working copy; the next pull request carries it along. Pushing straight to
+`main` would bypass the review the strategy exists for.
+
+`fix-issues` is what closes that loop: alongside the files of the task it is fixing, it also
+stages `docs/logs/` and `docs/state/` when they changed. Still an explicit list — just a longer one.
+
+An audit's own daily-log section therefore sits uncommitted until the next PR. That is expected,
+and `housekeeping` knows it: its "uncommitted changes" check ignores those two paths.
+
 ### Before each session
 
 Check approved task queue:
@@ -74,6 +141,7 @@ Confirm CI is green in the same session — don't push and walk away:
 - **Any UI/UX task** → `docs/design/components.md` (registry + UI-state patterns)
 - **Changing a user flow** → `docs/spec/flows/`
 - **Product / marketing decisions** → `docs/product/positioning.md` + `docs/product/product.md` + `docs/product/pricing.md`
+- **Context on what's working / broken right now** → the last 2–3 files in `docs/logs/`
 - **Before architectural changes** → `docs/spec/architecture.md` (current map) + `docs/decisions/` (check for existing ADRs)
 
 ### When to write docs
@@ -85,6 +153,7 @@ Confirm CI is green in the same session — don't push and walk away:
 - **Changed pricing / billing** → update `docs/product/pricing.md`
 - **Added UI component or state pattern** → update `docs/design/components.md`
 - **Made an architectural decision** → add ADR to `docs/decisions/` (context → decision → how to verify)
+- **Anything a data run observed** → your section of today's `docs/logs/YYYY-MM-DD.md` — one file a day, one section per source; a clean run writes nothing
 
 ### Active Routines
 
@@ -106,6 +175,6 @@ Workflow commands: `/darkflow:add-issue`, `/darkflow:update`, `/darkflow:install
 
 Routine commands (run any routine interactively or use as the routine prompt):
 - `/darkflow:fix-issues` — pick up one approved task and close it
-- `/darkflow:security-audit` — full security review (static + runtime) → tasks
+- `/darkflow:security-audit` — GitHub alerts + code review + live check → tasks
 - `/darkflow:build-optimization` — build + deploy optimization analysis → tasks
 - `/darkflow:uptime-check` — DNS + HTTP + page-load check; site down → auto-approved critical task

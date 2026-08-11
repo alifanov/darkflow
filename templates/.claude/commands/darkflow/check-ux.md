@@ -98,34 +98,38 @@ Language for all tasks and output: the `language` value from the project config.
 
 ## Step 6 — Docs snapshot
 
-Write `docs/insights/ux/YYYY-MM-DD.md` (today's date; append a section if it exists):
+Append a `## UX` section to today's daily log, `docs/logs/$(date +%F).md` — create the
+file if it is not there yet, and never touch a section another routine wrote.
+
+**Found nothing? Append nothing.** No section, no "all clear" line. Silence is the clean
+result, and the observation threshold counts on it (see `.darkflow.d/claude.md`).
 
 ```markdown
-# UX — YYYY-MM-DD
+## UX
 
 **Walked:** <URL> · mobile 390×844, desktop 1440×900
 
-## Flows
+### Flows
 
 | Flow | Mobile | Desktop | Where it broke |
 |---|---|---|---|
 | | pass / friction / fail | pass / friction / fail | |
 
-## States checked
+### States checked
 
 | Screen | Loading | Empty | Error |
 |---|---|---|---|
 | | ok / missing | ok / missing | ok / missing |
 
-## Not walked
+### Not walked
 
 <steps skipped because they would write real data, and why>
 
-## Recurring
+### Recurring
 
 <findings appearing in 2+ consecutive walks — note how many in a row>
 
-## Recommendations
+### Recommendations
 
 <flow → what to improve → acceptance criterion>
 ```

@@ -1,6 +1,6 @@
 # {{PROJECT_NAME}} Docs
 
-Documentation split into **5 content layers** (product · spec · design · insights · decisions),
+Documentation split into **5 content layers** (product · spec · design · logs · decisions),
 each with a different update frequency, plus a few cross-cutting **process** files.
 
 Agent rules "when to read / when to write" — in [`agent-workflow.md`](./agent-workflow.md).
@@ -45,17 +45,15 @@ gaps as drift (the `docs-audit` routine follows the same rule).
 | `design/assets/` | design · situational | Logos, illustrations, OG images |
 | `decisions/NNNN-*.md` | decisions · as made | One accepted decision per file |
 
-**Insights** (`insights/` — time-stamped snapshots; each subfolder is created only when its
-module is enabled at install):
+**The daily log** (`logs/` — one document per day, a section per source; see
+[`agent-workflow.md`](./agent-workflow.md) for the section list):
 
-| Folder | Enabled by | Contents |
-|---|---|---|
-| `insights/qualitative/` | always | Interviews, feedback, session recordings |
-| `insights/analytics/` | analytics module | Analytics / OpenPanel snapshots |
-| `insights/search-console/` | gsc module | Google Search Console snapshots |
-| `insights/seo-audit/` | gsc module | SEO audit snapshots |
-| `insights/ads/` | ads module | Paid-ads snapshots |
-| `insights/docs-audit/` | docs-audit routine | Docs↔code drift snapshots |
+| Path | Contents |
+|---|---|
+| `logs/YYYY-MM-DD.md` | Every routine's findings for that day, appended as `## Security`, `## Analytics`, `## Changes`, … A clean run appends nothing at all |
+| `insights/qualitative/` | Interviews, feedback, session recordings — source material, not a daily run |
+
+Logs are never rotated: the observation threshold counts back over them.
 
 ## Reading order for newcomer / AI agent
 
@@ -66,5 +64,5 @@ Once the docs are filled in, read them in this order (skip any not yet written):
 3. `spec/architecture.md` — how the system is put together
 4. `spec/data-model.md` + `spec/screens.md` — how it's built
 5. `design/components.md` — how we build UI (registry + state patterns)
-6. `product/metrics.md` + last 2–3 files from `insights/analytics/` — what's working now
+6. `product/metrics.md` + the last 2–3 files in `logs/` — what's working now
 7. `decisions/README.md` + `decisions/` — what decisions have already been made

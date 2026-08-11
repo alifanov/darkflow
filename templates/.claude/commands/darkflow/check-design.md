@@ -81,19 +81,23 @@ Language for all tasks and output: the `language` value from the project config.
 
 ## Step 6 — Docs snapshot
 
-Write `docs/insights/design/YYYY-MM-DD.md` (today's date; append a section if it exists):
+Append a `## Design` section to today's daily log, `docs/logs/$(date +%F).md` — create the
+file if it is not there yet, and never touch a section another routine wrote.
+
+**Found nothing? Append nothing.** No section, no "all clear" line. Silence is the clean
+result, and the observation threshold counts on it (see `.darkflow.d/claude.md`).
 
 ```markdown
-# Design — YYYY-MM-DD
+## Design
 
 **Scope:** <URL checked, pages walked>
 
-## Quality
+### Quality
 
 | Dimension | Finding | Severity | Page / Component |
 |---|---|---|---|
 
-## Performance
+### Performance
 
 | Metric | Current | Target | Page | Task |
 |---|---|---|---|---|
@@ -101,7 +105,7 @@ Write `docs/insights/design/YYYY-MM-DD.md` (today's date; append a section if it
 | CLS | | < 0.1 | | |
 | Bundle | | | | |
 
-## Production readiness
+### Production readiness
 
 | Category | Component / Page | Gap | Risk |
 |---|---|---|---|
@@ -109,11 +113,11 @@ Write `docs/insights/design/YYYY-MM-DD.md` (today's date; append a section if it
 | contrast | | | |
 | i18n | | | |
 
-## Recurring
+### Recurring
 
 <findings appearing in 2+ consecutive audits — note how many in a row>
 
-## Recommendations
+### Recommendations
 
 <page/component → what to fix → acceptance criterion>
 ```

@@ -30,6 +30,7 @@ items:
   - { id: dir-docs-spec-flows,     group: docs,       type: dir, path: docs/spec/flows,          fix: mkdir, desc: "User flow specs" }
   - { id: dir-docs-design-assets,  group: docs,       type: dir, path: docs/design/assets,       fix: mkdir, desc: "Design assets" }
   - { id: dir-docs-insights-qual,  group: docs,       type: dir, path: docs/insights/qualitative, fix: mkdir, desc: "Qualitative insights" }
+  - { id: dir-docs-logs,           group: docs,       type: dir, path: docs/logs,                fix: mkdir, desc: "Daily log — one file a day, a section per source" }
   - { id: dir-docs-decisions,      group: docs,       type: dir, path: docs/decisions,           fix: mkdir, desc: "Architecture decision records" }
   - { id: dir-darkflow-d,          group: dispatcher, type: dir, path: .darkflow.d,              fix: mkdir, desc: "Dispatcher dir" }
   - { id: dir-darkflow-state,      group: dispatcher, type: dir, path: .darkflow.d/state,        fix: mkdir, desc: "Dispatcher state dir" }
@@ -55,10 +56,8 @@ items:
   - { id: ref-claude-md,           group: docs,       type: marker, path: CLAUDE.md, marker_start: "@.darkflow.d/claude.md", fix: add-darkflow-ref, desc: "@-include reference in CLAUDE.md" }
   - { id: marker-makefile,         group: dispatcher, type: marker, path: Makefile,  marker_start: "# darkflow:start", fix: regenerate-marker, desc: "Dark Flow block in Makefile" }
 
-  # ── Per-module dirs ──────────────────────────────────────────────────────────
-  - { id: mod-analytics-dir, group: module-analytics, type: dir, path: docs/insights/analytics,      when: module.analytics, fix: mkdir, desc: "Analytics snapshots dir" }
-  - { id: mod-gsc-dir,       group: module-gsc,       type: dir, path: docs/insights/search-console, when: module.gsc,       fix: mkdir, desc: "Search Console snapshots dir" }
-  - { id: mod-ads-dir,       group: module-ads,       type: dir, path: docs/insights/ads,            when: module.ads,       fix: mkdir, desc: "Ads snapshots dir" }
+  # No per-module snapshot dirs. Every routine appends a section to the day's file
+  # in docs/logs/ (A3), so there is nothing left to create per module.
 
   # Routines and project settings are no longer checklisted — they live in the
   # Web UI (DB). Enable/disable routines and override their schedule per project in

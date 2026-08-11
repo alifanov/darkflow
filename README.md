@@ -9,7 +9,7 @@
 When Claude Code (or any AI agent) works on your project, it generates insights and recommendations — but they evaporate between sessions. There's no handoff from "observation" to "approved task" to "merged change."
 
 Dark Flow installs:
-- A **5-layer docs structure** (`product / spec / design / insights / decisions`) with clear read/write rules for the agent
+- A **5-layer docs structure** (`product / spec / design / logs / decisions`) with clear read/write rules for the agent
 - A **task triage loop** — agent creates `proposed` tasks from insights via the `~/.darkflow/df` CLI, human approves or rejects, agent picks up `approved` tasks automatically
 - A **set of task fields** (`status`, `source`, `priority`, `needsHuman`, `scheduledFor`) so you can filter with `~/.darkflow/df task list --status approved` or snooze a task until a date
 - **Agent-workflow rules** baked into `docs/agent-workflow.md` (referenced from CLAUDE.md)
@@ -101,12 +101,10 @@ docs/
 ├── product/                 ← business layer (what, why, for whom) — quarterly
 ├── spec/                    ← product/UX layer (flows, screens, data model) — weekly
 ├── design/                  ← visual identity, tokens, patterns — situational
-├── insights/                ← time-stamped snapshots (analytics, GSC, ads) — daily
-│   ├── analytics/
-│   ├── search-console/
-│   ├── seo-audit/
-│   ├── ads/
-│   └── qualitative/
+├── logs/                    ← one document per day, a section per source — daily
+│   └── YYYY-MM-DD.md            ## Security, ## Analytics, ## Changes, …
+├── insights/
+│   └── qualitative/         ← interviews, feedback, recordings — source material
 └── decisions/               ← ADRs (context → decision → verification) — as needed
     └── TEMPLATE.md
 ```
@@ -116,7 +114,7 @@ docs/
 ## The triage loop
 
 ```
-Agent analyzes insights/*
+Agent runs an audit → appends to docs/logs/YYYY-MM-DD.md
   → creates task with status=proposed
 Human reviews
   → sets status=approved or status=rejected

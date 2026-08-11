@@ -54,7 +54,7 @@ Check, in priority order:
 
 For each real issue found, file a task (format below) with `--source seo`. Prefer a small number of high-impact, specific tasks over an exhaustive nitpick list — group trivial same-type findings (e.g. "Add meta descriptions to 6 blog pages") into one task.
 
-## Task format (required, both sources)
+### Task format (required, both sources)
 
 Add all recommendations as tasks with `--source gsc` **or** `--source seo` and a priority.
 
@@ -82,8 +82,11 @@ EOF
 ```
 
 Before posting recommendations, write the snapshots:
-- GSC snapshot → `docs/insights/search-console/YYYY-MM-DD.md`
-- SEO audit snapshot → `docs/insights/seo-audit/YYYY-MM-DD.md`
+Append a `## SEO` section to today's daily log, `docs/logs/$(date +%F).md` — create the
+file if it is not there yet, and never touch a section another routine wrote.
+
+**Found nothing? Append nothing.** No section, no "all clear" line. Silence is the clean
+result, and the observation threshold counts on it (see `.darkflow.d/claude.md`).
 
 Language for all tasks and output: the `language` value from `.darkflow.d/state/config.json`.
 

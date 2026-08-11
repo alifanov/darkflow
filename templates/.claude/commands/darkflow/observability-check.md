@@ -57,15 +57,19 @@ Language for all tasks and output: the `language` value from `.darkflow.d/state/
 
 ## Step 3 — Write docs snapshot
 
-Write `docs/insights/observability/YYYY-MM-DD.md` (use today's date; append a new section if today's file already exists):
+Append a `## Performance` section to today's daily log, `docs/logs/$(date +%F).md` — create the
+file if it is not there yet, and never touch a section another routine wrote.
+
+**Found nothing? Append nothing.** No section, no "all clear" line. Silence is the clean
+result, and the observation threshold counts on it (see `.darkflow.d/claude.md`).
 
 ```markdown
-# Observability Review — YYYY-MM-DD
+## Performance
 
 **Tool:** <SigNoz / Datadog / Grafana / other>
 **Period:** last 24h
 
-## Key Metrics
+### Key Metrics
 
 | Metric | Value | vs yesterday |
 |---|---|---|
@@ -74,19 +78,19 @@ Write `docs/insights/observability/YYYY-MM-DD.md` (use today's date; append a ne
 | Slow queries (> 100ms) | | |
 | Request volume | | |
 
-## Findings
+### Findings
 
 <list significant findings — group by: errors / latency / DB / integrations>
 
-## Recurring Issues
+### Recurring Issues
 
 <issues appearing in 2+ consecutive snapshots — note how many snapshots in a row>
 
-## Hypotheses
+### Hypotheses
 
 <one pointer line per bet: H-NNN + evidence status — the entry itself lives in docs/product/hypotheses.md (see agent-workflow.md)>
 
-## Recommendations
+### Recommendations
 
 <each with: metric-basis → specific fix → expected outcome>
 ```

@@ -96,6 +96,15 @@ Before merging, check whether the fix changes any user-visible behavior, configu
 
 Skip this step if the fix is purely internal (refactor, test, build config) with no user-visible effect.
 
+Then append a `## Changes` entry to today's daily log, `docs/logs/$(date +%F).md` — one line per
+task, not a report:
+
+```markdown
+## Changes
+
+- Task #N — <what changed, in one line> (<PR URL or commit SHA>)
+```
+
 ## Step 6 — Land the fix
 
 **Workspace rule — never create a git worktree:**
@@ -109,6 +118,17 @@ Commit and push directly to the `branch` value from `.darkflow.d/state/config.js
 
 **If `merge_strategy=pr`:**
 From the project root, create a feature branch in place with `git checkout -b` based off the `branch` value from `.darkflow.d/state/config.json`, implement and commit there, then open a pull request targeting `branch` referencing "Task #N" in the description (there is no GitHub issue to auto-close — the task lives in Dark Flow's own queue) and merge it into that branch. Commit messages reference `Task #N` too. No worktree — the branch lives in the same working directory.
+
+**Carry the audits' files with you (A7).** Under the `pr` strategy the audit routines commit
+nothing — their daily-log sections and `docs/state/` edits sit in the working copy waiting for
+the next pull request, and this is it. Alongside the files of your own fix, stage:
+
+```bash
+git add docs/logs/ docs/state/       # only if they actually changed
+```
+
+Still an explicit list, just a longer one. **Never `git add -A`** — it would sweep in whatever
+else happens to be lying in the working copy.
 
 **After pushing — confirm CI is green before closing the task:**
 

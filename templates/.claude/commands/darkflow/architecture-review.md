@@ -112,14 +112,18 @@ Language for all tasks and output: the `language` value from the project config.
 
 ## Step 6 — Docs snapshot
 
-Write `docs/insights/architecture/YYYY-MM-DD.md` (today's date; append a section if it exists):
+Append a `## Architecture` section to today's daily log, `docs/logs/$(date +%F).md` — create the
+file if it is not there yet, and never touch a section another routine wrote.
+
+**Found nothing? Append nothing.** No section, no "all clear" line. Silence is the clean
+result, and the observation threshold counts on it (see `.darkflow.d/claude.md`).
 
 ```markdown
-# Architecture & Code Health — YYYY-MM-DD
+## Architecture
 
 **Scope:** <what was analyzed; fallow version if the TS/JS step ran>
 
-## Summary
+### Summary
 
 | Category | Found | Filed | Notes |
 |---|---|---|---|
@@ -130,16 +134,16 @@ Write `docs/insights/architecture/YYYY-MM-DD.md` (today's date; append a section
 | Complexity hotspots | | | |
 | Dependency hygiene | | | |
 
-## Filed tasks
+### Filed tasks
 
 | Finding | File(s) | Priority | Confidence | Task |
 |---|---|---|---|---|
 
-## Skipped (false positives / low confidence)
+### Skipped (false positives / low confidence)
 
 <deliberately not filed, with the reason — keeps the next audit from re-litigating them>
 
-## Recurring
+### Recurring
 
 <findings appearing in 2+ consecutive audits — note how many in a row>
 ```

@@ -55,15 +55,19 @@ Language for all tasks and output: the `language` value from `.darkflow.d/state/
 
 ## Step 3 — Write docs snapshot
 
-Write `docs/insights/ads/YYYY-MM-DD.md` (use today's date; append a new section if today's file already exists):
+Append a `## Ads` section to today's daily log, `docs/logs/$(date +%F).md` — create the
+file if it is not there yet, and never touch a section another routine wrote.
+
+**Found nothing? Append nothing.** No section, no "all clear" line. Silence is the clean
+result, and the observation threshold counts on it (see `.darkflow.d/claude.md`).
 
 ```markdown
-# Ads Review — YYYY-MM-DD
+## Ads
 
 **Account:** <Google Ads / Meta Ads / other>
 **Period:** last 7 days
 
-## Key Metrics
+### Key Metrics
 
 | Metric | Value | vs previous 7d |
 |---|---|---|
@@ -73,23 +77,23 @@ Write `docs/insights/ads/YYYY-MM-DD.md` (use today's date; append a new section 
 | ROAS | | |
 | CTR | | |
 
-## Campaign Breakdown
+### Campaign Breakdown
 
 <table or bullet list of campaign-level performance>
 
-## Findings
+### Findings
 
 <list of significant observations — wasted spend, outperforming segments, budget issues>
 
-## Recurring Issues
+### Recurring Issues
 
 <patterns appearing in 2+ consecutive reviews — note how many reviews in a row>
 
-## Hypotheses
+### Hypotheses
 
 <one pointer line per bet: H-NNN + evidence status — the entry itself lives in docs/product/hypotheses.md (see agent-workflow.md)>
 
-## Recommendations
+### Recommendations
 
 <each with: metric-basis → specific action → expected impact>
 ```

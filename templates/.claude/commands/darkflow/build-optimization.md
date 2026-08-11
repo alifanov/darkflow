@@ -115,28 +115,32 @@ Language for all tasks and output: the `language` value from `.darkflow.d/state/
 
 ## Step 5 — Write snapshot and metrics
 
-Write `docs/insights/build-optimization/YYYY-MM-DD.md` (use today's date; append a new section if today's file already exists):
+Append a `## Build` section to today's daily log, `docs/logs/$(date +%F).md` — create the
+file if it is not there yet, and never touch a section another routine wrote.
+
+**Found nothing? Append nothing.** No section, no "all clear" line. Silence is the clean
+result, and the observation threshold counts on it (see `.darkflow.d/claude.md`).
 
 ```markdown
-# Build Optimization — YYYY-MM-DD
+## Build
 
 **Scope:** <which tools and config files were checked>
 
-## Pipeline overview
+### Pipeline overview
 
 <1–3 sentence description of the current build → deploy path and estimated total time>
 
-## Opportunities found
+### Opportunities found
 
 | Area | Current | Proposed | Est. savings | Severity | Issue |
 |---|---|---|---|---|---|
 | | | | | high / medium | #N |
 
-## Recurring
+### Recurring
 
 <opportunities appearing in 2+ consecutive audits — note how many audits in a row>
 
-## Recommendations
+### Recommendations
 
 <each with: file to change → what to change → acceptance criterion>
 ```

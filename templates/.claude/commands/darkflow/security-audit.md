@@ -101,24 +101,28 @@ Language for all tasks and output: the `language` value from the project config.
 
 ## Step 5 — Docs snapshot
 
-Write `docs/insights/security/YYYY-MM-DD.md` (today's date; append a section if the file exists):
+Append a `## Security` section to today's daily log, `docs/logs/$(date +%F).md` — create the
+file if it is not there yet, and never touch a section another routine wrote.
+
+**Found nothing? Append nothing.** No section, no "all clear" line. Silence is the clean
+result, and the observation threshold counts on it (see `.darkflow.d/claude.md`).
 
 ```markdown
-# Security Audit — YYYY-MM-DD
+## Security
 
 **Period:** <date range reviewed>
 
-## Findings
+### Findings
 
 | Category | Finding | Severity | File / Config | Source |
 |---|---|---|---|---|
 | | | critical / high / medium / low | | github / code-review |
 
-## Recurring Issues
+### Recurring Issues
 
 <findings appearing in 2+ consecutive audits — note how many in a row>
 
-## Recommendations
+### Recommendations
 
 <each with: what was found → specific fix → acceptance criterion>
 ```

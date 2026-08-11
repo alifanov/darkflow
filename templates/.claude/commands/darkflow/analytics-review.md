@@ -62,7 +62,11 @@ Do NOT create recommendations about paid ads — that is handled by `/darkflow:a
 
 Do NOT create OpenPanel dashboards, saved reports, or any other OpenPanel artifacts. OpenPanel access is read-only here: only query data. All recommendations go out as tasks — never as analytics alerts on changes/anomalies.
 
-Write an analytics snapshot to `docs/insights/analytics/YYYY-MM-DD.md` before posting recommendations.
+Append a `## Analytics` section to today's daily log, `docs/logs/$(date +%F).md` — create the
+file if it is not there yet, and never touch a section another routine wrote.
+
+**Found nothing? Append nothing.** No section, no "all clear" line. Silence is the clean
+result, and the observation threshold counts on it (see `.darkflow.d/claude.md`).
 
 Language for all tasks and output: the `language` value from `.darkflow.d/state/config.json`.
 
