@@ -10,6 +10,16 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.30.0] — 2026-08-11
+
+Шаг 10 слияния с Deckbook: восемь проектов переведены. Содержимое перенесено, отключение Deckbook — отдельным решением.
+
+- **Web UI** — `source:deckbook` освобождён от порога `minPriority` наравне с `manual`. Порог существует, чтобы малоценные *находки рутин* не засоряли очередь; перенос — не находка, а решение, которое владелец уже принял. Найдено на mailmonitor: две задачи `needs_human` молча не создались, потому что их приоритет ниже порога проекта.
+- **Migration** — переведены `scopegate`, `deckbook`, `mailmonitor`, `mystize`, `sqlformatter`, `qabot`, `pageradar`, `secscanner`. Перенесено ~420 документов и все 34 открытые задачи (сверено по каждому проекту: в Deckbook столько же, сколько в Dark Flow). Дерево документов Deckbook уже было в целевом формате (`logs/`, `state/`, `_archive/`), так что перенос вышел один в один.
+- **Migration** — репозиторий `deckbook` остаётся read-only историей: Dark Flow туда не ставился и рутины не заводились, выгружены только 25 документов, чтобы они пережили выключение хостинга.
+- **Migration** — документы Deckbook, чьи имена заняты файлами Dark Flow (`README`, `tasks`, `agent-workflow`, `auto-approve`, `decisions/README`), паркуются в `docs/_archive/deckbook/`. Найдено на pageradar: Deckbook-овский `tasks` затёр `docs/tasks.md`, и на его месте оказался текст «задачи ведутся в Deckbook, Dark Flow не используется» — после перехода прямо ложный.
+- **Migration** — подтверждено вживую: A9 вычистил осиротевшие строки `RoutineConfig` во всех проектах (было 7 у sqlformatter, стало 0), A11 удалил файлы метрик, которые больше никто не пишет.
+
 ## [4.29.1] — 2026-08-11
 
 Два бага `--dry-run`, найденные на первом же реальном проекте (scopegate) перед шагом 10.

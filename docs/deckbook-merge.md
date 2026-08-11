@@ -19,23 +19,29 @@ blocked on things outside this repo (see *Blocked* below).
 | 7 | State — A4 | ✅ v4.27.0 |
 | 8 | Reconcile — I1 · A8 · A11 | ✅ v4.28.0 |
 | 9 | Worker — H | ✅ v4.29.0 |
-| 10 | Move the eight projects over | ⛔ blocked |
-| 11 | Retire the `/deckbook:*` commands | ⛔ blocked on 10 |
+| 10 | Move the eight projects over | ✅ content moved · ⏸ disconnect held back |
+| 11 | Retire the `/deckbook:*` commands | ⏸ waiting on the disconnect |
 
-**Blocked.** Step 10 needs two things this session cannot supply:
+**What step 10 actually took.** Two assumptions in the "Moving off Deckbook" section below were
+wrong, and both made the job easier than written:
 
-1. **The webapp must be running** (`make web`, in the user's own interactive session — cmux's control
-   socket rejects a launchd-detached process). Without it `install.sh` cannot register a project, so
-   step 10.1 stops at "Could not reach the Web UI".
-2. **The `deckbook-<slug>` MCP servers must be connected** to the session doing the move. Step 10.2
-   reads the document tree over MCP; with no server there is nothing to read from, and the documents
-   cannot be reconstructed from the repo — they live in Deckbook's database.
+1. **No MCP client is needed.** The hosted Deckbook (`deckbook.chatindex.app`) answers JSON-RPC over
+   plain HTTP; the per-project bearer token is already in `~/.claude.json`. The local `deckbook-db-1`
+   container is a *decoy* — a dev database with two test projects. Read the hosted one.
+2. **Seven of the eight projects were already installed and registered.** Step 10.1 was therefore not
+   an install but a *layout migration* — exactly what `install.sh` does now (I1).
 
-Step 10 also deletes 138 scheduled tasks and 8 MCP servers across eight other repositories. That is
-outward-facing and hard to reverse, so it wants an explicit go-ahead per project, not a blanket one.
+**Done:** all eight projects, ~420 documents and all **34** open tasks (verified per project: the
+count in Deckbook equals the count in Dark Flow). The `deckbook` repo itself got documents only — it
+stays read-only history, so no Dark Flow install and no routines.
 
-Two entries below were **disproved while implementing** — A10's premise and half of A11's. Both are
-marked inline; the corrections are the useful part of this file now.
+**Held back on purpose:** the *disconnect* — deleting the 138 scheduled tasks and the 8 MCP servers,
+and with them step 11. That is irreversible and outward-facing, and nothing breaks by waiting: both
+systems currently read the same content, and Deckbook is now a copy rather than the original.
+
+Three entries below were **disproved while implementing** — A10's premise, half of A11's, and H's
+claim that no stuck-task recovery existed. All are marked inline; the corrections are the useful part
+of this file now.
 
 ## Why
 

@@ -66,8 +66,13 @@ export async function POST(req: NextRequest) {
 
   // Routine-filed tasks below the project's configured floor never enter the
   // queue — mirrors the old close_routine_below_priority worker behavior, just
-  // skipping the insert instead of creating-then-closing. Manual tasks are exempt.
-  if (source && source !== "manual") {
+  // skipping the insert instead of creating-then-closing.
+  //
+  // Exempt: "manual" (a human typed it) and "deckbook" (a task migrated from the
+  // predecessor tracker). Neither is a routine proposing new work, and dropping
+  // one silently would lose a decision the owner already made. The floor exists
+  // to keep low-value *findings* out, not to filter an import.
+  if (source && source !== "manual" && source !== "deckbook") {
     const thresholdRank = PRIORITY_RANK[project.minPriority] ?? PRIORITY_RANK.medium;
     const rank = PRIORITY_RANK[priority] ?? PRIORITY_RANK.medium;
     if (rank > thresholdRank) {
