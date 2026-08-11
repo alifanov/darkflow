@@ -33,7 +33,7 @@ Where they genuinely differ:
 | A4 | **`state/` layout for docs** — "how things are right now", overwritten in place: `arch` · `hypotheses` · `spec/` · `product/` · `design/`. | Deckbook `state/` |
 | A5 | **Behaviour rules move into the commands**: the observation → task threshold, the incident-vs-proposal rule, and the terseness rule. | Deckbook command preamble |
 | A6 | **Scheduling stays on Dark Flow's own worker** (launchd, cron in the DB). Cloud scheduled-tasks are not adopted. | owner |
-| A7 | **Routines commit what they write.** Every routine that produces a file — the daily log, a `state/` update — stages exactly those paths and commits them itself. Today's audits write snapshots and never commit, so they pile up uncommitted in the working copy and leak into whatever branch `fix-issues` opens next | gap found while reviewing |
+| A7 | **Routines commit what they write** — but never push to a protected base branch. Today's audits write snapshots and never commit, so they pile up uncommitted and leak into whatever branch `fix-issues` opens next. New rule, split by the project's merge strategy: **direct** — the routine stages exactly its own paths, commits and pushes; **pr** (the default) — the routine commits nothing and pushes nothing; it leaves the file, and the next PR takes it along. `fix-issues` is extended for this: alongside its own files it also stages `docs/logs/` and `docs/state/` if they changed. "Never `git add -A`" still holds — the list is explicit, just longer. Two hard preconditions in both modes: HEAD is on the base branch, and the routine only ever touches its own paths | gap found while reviewing |
 | A8 | **One archive: `docs/_archive/`.** Superseded layouts, retired documents and the existing `docs/insights/` snapshots move there. Nothing is archived under `state/` | gap found while reviewing |
 | A9 | **Dropping a command drops its routine with it** — the catalog entry in `webapp/src/lib/routines.ts` *and* the `RoutineConfig` rows in every project. A schedule that outlives its command has the worker firing `claude -p "/darkflow:<gone>"` on cron forever. Same for the merges: C1/C2/C4 retire the old names, so those rows go too, and the surviving routine keeps one name | gap found while reviewing |
 | A10 | **One session per project.** The machine-wide semaphore caps total sessions (3 by default) but lets two routines of the *same* project run at once — in the same checkout, since worktrees are forbidden. With A7 that becomes a race for `index.lock` and a way to sweep someone else's edits into a commit. Add a per-project lock taken **before** the global slot, claimed atomically the same way (`set -o noclobber`) and reclaimed when the owning PID is dead. A busy project simply skips the tick. No exemptions for cheap routines — uptime and deploy checks run every 4–24h and rarely collide | gap found while reviewing |
@@ -69,18 +69,20 @@ Eight projects run on it today — eight MCP servers and **142 scheduled tasks**
 
 (A ninth server, `deckbook-private`, had no scheduled tasks and has already been removed.)
 
-Per project, in this order — the content move comes first, while the MCP server is still connected:
+Per project, in this order — install first so the content lands in a layout the installer has already
+approved, and disconnect last, while the MCP server is still there to read from:
 
-1. **Documents → files.** Read the whole tree (`read_document_tree` / `read_document`) and write it into
-   the repository under the A4 layout: `state/*` documents to `docs/state/`, daily logs to `docs/logs/`,
+1. **Install Dark Flow** (`install.sh`), register the project in the Web UI, pick its modules, set the
+   schedule for the equivalent routines. This is what creates the `docs/` layout; doing it *after* the
+   content move would have I1 offer to archive the documents that were just imported.
+2. **Documents → files.** Read the whole tree (`read_document_tree` / `read_document`) and write it into
+   the layout that now exists: `state/*` documents to `docs/state/`, daily logs to `docs/logs/`,
    anything superseded to `docs/_archive/`. Commit.
-2. **Open tasks → Dark Flow.** Every task in `todo` / `in_progress` / `needs_human` becomes a Dark Flow
+3. **Open tasks → Dark Flow.** Every task in `todo` / `in_progress` / `needs_human` becomes a Dark Flow
    task with its title, body and priority. Assumed status mapping, unless a project says otherwise:
    `todo` and `in_progress` → `approved`, `needs_human` → `proposed`. Existing comments are folded into
    the body — Dark Flow has no comment history to import into (R7). Closed and cancelled tasks are not
    moved; they stay in the Deckbook database as history.
-3. **Install Dark Flow** (`install.sh`), register the project in the Web UI, pick its modules, set the
-   schedule for the equivalent routines.
 4. **Disconnect** — delete that project's `<slug>-*` scheduled tasks and its `deckbook-<slug>` MCP server.
 
 Once no project is left: delete the `/deckbook:*` slash commands (`~/.claude/commands/deckbook/`,
@@ -137,10 +139,10 @@ worker and has no command file, so its text moves to `docs/`.
 
 | # | Decision | |
 |---|---|---|
-| P1 | Frontmatter on every command: `description` (one line) + `allowed-tools`. **Not read-only audits** — A3 has every audit append to the daily log and A7 has it commit, and `allowed-tools` cannot restrict `Write` to one directory. The list only keeps out what a routine has no business doing at all | do |
+| P1 | Frontmatter on every command: `description` (one line) + `allowed-tools`. The dividing line is **push, not write**: every audit writes and commits (A3, A7), so `Write` and `git commit` are on everyone's list — restricting them would be theatre, and `allowed-tools` cannot scope `Write` to a directory anyway. `git push` belongs only to the fix routines. That also matches A7: under the `pr` strategy an audit has nothing to push | do |
 | P2 | Terseness rule — bullets, numbers and tables over prose; 1–3 sentence task comments; no "looks fine overall". Written **once** in `.darkflow.d/claude.md`, not copied into every command | do |
 | P3 | Incident-vs-proposal rule: broken right now → filed straight to `approved`; improvement beyond the finding → `proposed`, where the triage queue in the Web UI already waits for the owner. **Not `needsHuman`** — in Dark Flow that flag means "the agent is stuck: no access, no config, checks failed", and it is mutually exclusive with `approved`. Deckbook's `needs_human` carries both meanings; ours does not | do |
-| P4 | Observation → task threshold: 3 consecutive logs or 2 independent sources. Applies to observations only (logs, analytics, performance); incidents file a task on first sight. Depends on A3 — without a log history there is nothing to compare against | do |
+| P4 | Observation → task threshold: the same observation in **3 consecutive runs**, or 2 independent sources. Applies to observations only (logs, analytics, performance); incidents file a task on first sight. A clean run writes no section at all — silence means "nothing found", so the count is over *runs*, not over log files: `RoutineLog` says how many times the routine ran, the logs say which of those runs carried the observation. A run that left no section breaks the streak | do |
 | P5 | No product passport document and no "key pages" column that nobody would fill in. `Project` + `config.json` gain **one** field — the staging URL. Commands that need pages to walk read `sitemap.xml` | do |
 | P7 | Deduplicate against all project tasks, not just `--source X` — otherwise the same problem lands twice from two different audits. This is a `--format compact` flag on the existing `df task list --state all`, not a new command | do |
 | P8 | `check-ux` — walk the key flows in a real browser at mobile and desktop viewports | do (via C4) |
@@ -165,12 +167,17 @@ modules are all ahead of what `/deckbook:init` does.
 
 ```
 stuck tasks   status=in-progress AND updatedAt < now()-4h  → comment + back to approved
+stuck HEAD    working copy left on a feature branch, nothing running → back to the base branch
+              uncommitted changes → leave it alone and say so
 worktrees     git worktree prune; delete merged branches
               skip anything with uncommitted changes — the one judgement call, made by a rule
 ```
 
 Dark Flow has no stuck-task recovery at all today: a task abandoned by a killed session stays
-`in-progress` forever and no later run picks it up.
+`in-progress` forever and no later run picks it up. The checkout has the same problem — `fix-issues`
+is supposed to switch back to the base branch when it finishes, so a killed session leaves HEAD on a
+feature branch, and every A7 write after that lands on the wrong branch. Recovering the task without
+recovering the checkout fixes half the damage.
 
 ## Order of work
 
@@ -189,14 +196,17 @@ Deckbook until Dark Flow itself is in its final shape.
 6. Log        A3 · A7 · P3 · P4 — the daily log exists, routines write and commit sections
 7. State      A4 — the new docs layout and its templates
 8. Reconcile  I1 · A8 — installer fixes up docs/, old snapshots into docs/_archive/
-9. Worker     H — the daily housekeeping pass
-10. Move over the eight projects, one at a time: documents → files, open tasks → Dark Flow, install,
+9. Worker     H — the daily housekeeping pass, including HEAD recovery
+10. Move over the eight projects, one at a time: install, documents → files, open tasks → Dark Flow,
               then delete that project's scheduled tasks and MCP server
 11. Retire    once none are left — delete the /deckbook:* commands
 ```
 
 Step 10 is the long one: 142 scheduled tasks across eight projects, each needing its content moved, its
 modules chosen and its schedule checked. One project at a time, verified before the next.
+
+This plan stays a file rather than becoming tasks in Dark Flow itself: it is finite and gets deleted when
+the work is done, and eleven planning tasks in the queue would only compete with real ones.
 
 ## What this adds up to
 
