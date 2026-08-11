@@ -1,4 +1,7 @@
-Update Dark Flow project settings: language and/or main branch.
+---
+description: Update Dark Flow project settings: language and/or main branch.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep
+---
 
 ## Usage
 

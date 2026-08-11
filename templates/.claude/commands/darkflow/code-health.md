@@ -1,16 +1,15 @@
+---
+description: Audit the codebase with fallow (unused code, duplication, cycles, complexity) and turn the findings into tasks.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep
+---
+
 Audit the codebase with [fallow](https://github.com/fallow-rs/fallow) — deterministic codebase intelligence for TypeScript/JavaScript — and turn its findings into tasks. fallow does the heavy analysis (unused code, duplication, circular deps, complexity hotspots, dependency hygiene); your job is to triage, judge what is safe to act on, and file concrete tasks.
 
 This is a **proposal-only audit**: it identifies problems and proposes changes. It does not apply changes itself (that is a human/`fix-issues` decision).
 
 ## Step 1 — Read project config
 
-Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
-
-Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
-- `language` → output/task language (default: English)
-- `mergeStrategy` → context for how fixes land (pr or direct)
-
-If `.darkflow.d/state/config.json` is missing, continue with defaults.
+Load the project config (contract in `.darkflow.d/claude.md` → *Project config*). Uses: `language`, `mergeStrategy`.
 
 ## Step 2 — Confirm this is a TypeScript/JavaScript project
 

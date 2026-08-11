@@ -1,7 +1,9 @@
-Help the user create a task for a manually identified item (bug, feature, or improvement).
+---
+description: Help the user create a task for a manually identified item (bug, feature, or improvement).
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep
+---
 
-Run `bash ~/.darkflow/get-config.sh` to refresh the project config at `.darkflow.d/state/config.json` from the Web UI (silently falls back to cache if offline), then read `.darkflow.d/state/config.json` (JSON) and extract:
-- `language` → language for all conversation and task text (default: English)
+Load the project config (contract in `.darkflow.d/claude.md` → *Project config*). Uses: `language`.
 
 If `$ARGUMENTS` contains text (e.g. `/darkflow:add-issue fix login button on mobile`), use that text as the **title** — do not ask for a title again.
 

@@ -1,15 +1,15 @@
+---
+description: Audit docs/ against the code and recent history; file a task for each significant drift.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep
+---
+
 Audit the `docs/` knowledge base against the actual code and recent history — find drift between what the docs claim and what the code does — then create tasks for each significant mismatch.
 
 This is a **verification check**: it answers "are the docs still true?" It does not rewrite docs (that is a human/`fix-issues` decision) and it does not produce a product narrative (that is `/darkflow:product-overview`).
 
 ## Step 1 — Read project config
 
-Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
-
-Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
-- `language` → output/task language (default: English)
-
-If `.darkflow.d/state/config.json` is missing, continue with the default.
+Load the project config (contract in `.darkflow.d/claude.md` → *Project config*). Uses: `language`.
 
 ## Step 2 — Audit docs against code
 

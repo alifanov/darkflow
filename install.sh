@@ -993,6 +993,41 @@ HEREDOC
   echo ""
 
   cat << 'HEREDOC'
+### Project config
+
+Every routine command starts by loading this — the contract is here, once, instead of
+being copy-pasted into each command:
+
+```bash
+bash ~/.darkflow/get-config.sh          # pulls the latest settings from the Web UI
+cat .darkflow.d/state/config.json       # and caches them here
+```
+
+`get-config.sh` falls back to the cached file silently when the server is unreachable.
+If the file is missing entirely, carry on with the defaults below — never stop for it.
+
+| Key | Meaning | Default |
+|---|---|---|
+| `language` | language for tasks, comments and console output | English |
+| `branch` | base branch | `main` |
+| `mergeStrategy` | `pr` or `direct` — how a fix lands | `direct` |
+| `domain` | public production URL | none — auto-discover or skip live checks |
+| `stagingUrl` | pre-production URL, when the project has one | none |
+| `coolify_app` | Coolify app UUID | none — resolve it at run time |
+
+A command names only the keys it actually uses; everything else about this step is here.
+
+### How to write
+
+Terse. Bullets, numbers and tables carry more than paragraphs do, and a routine's output
+is read at a glance, not studied.
+
+- No preamble, no restating the task, no summary of what you are about to do.
+- Task comments: 1–3 sentences. What changed, and where.
+- **Never write "looks fine overall", "no major issues", or an empty section to prove you
+  ran.** A clean run says nothing at all — silence *is* the clean result.
+- Findings get a number, a file and a line. "Some components could be improved" is not a finding.
+
 ### Before each session
 
 Check approved task queue:

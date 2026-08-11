@@ -1,4 +1,7 @@
-Update Dark Flow to the latest version.
+---
+description: Update Dark Flow to the latest version.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep
+---
 
 ## Step 1 — Run the installer
 

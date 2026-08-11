@@ -1,17 +1,15 @@
+---
+description: Pick up one CI-failure task (source:ci), fix the failing lint/test, and push — retried at most 3 times.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, Bash(git push:*)
+---
+
 Pick up one CI-failure task (`source:ci`), fix the failing lint/test, and push — with **bounded retries**. The same task is retried up to **3 times**; only after the third failed attempt is it handed to a human. This prevents an endless red-CI → task → fix → red-CI loop.
 
 The task itself is **not closed here** — the `darkflow-ci-gate` workflow closes it automatically once CI goes green again (`close-on-green`, via the Dark Flow task store). That is what makes the retry counter reliable: one open task per failing branch, attempts accumulate on it as comments.
 
 ## Step 1 — Read project config
 
-Run `bash ~/.darkflow/get-config.sh` to refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
-
-Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
-- `branch` → main branch name (default: main)
-- `mergeStrategy` → `pr` or `direct` (default: direct)
-- `language` → output/comment language (default: English)
-
-If `.darkflow.d/state/config.json` is missing, continue with the defaults.
+Load the project config (contract in `.darkflow.d/claude.md` → *Project config*). Uses: `branch`, `mergeStrategy`, `language`.
 
 ## Step 2 — Pick the next CI task
 

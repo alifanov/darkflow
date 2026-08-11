@@ -1,3 +1,8 @@
+---
+description: Check the site is really up (DNS, HTTP status, page body); file an auto-approved critical task when it is not.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
+---
+
 Check whether this project's website is actually up: resolve DNS, hit the URL, verify the HTTP status is healthy, and confirm the page really loads (not a blank/error/maintenance page). If the site is **down or broken**, create an auto-approved critical-priority task so `fix-issues` picks it up immediately and restores it.
 
 This is an **active health check**: when the site is healthy it does nothing but write a snapshot. When the site is broken it files a critical, auto-approved task describing exactly what failed (DNS, HTTP status, or empty/error body) so the fix can start without waiting for human triage.
@@ -6,13 +11,7 @@ This is an **active health check**: when the site is healthy it does nothing but
 
 ## Step 1 — Read project config
 
-Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
-
-Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
-- `domain` → the public production URL to monitor (e.g. `https://example.com`)
-- `language` → output/task language (default: English)
-
-If `.darkflow.d/state/config.json` is missing, continue with defaults.
+Load the project config (contract in `.darkflow.d/claude.md` → *Project config*). Uses: `domain`, `language`.
 
 ## Step 2 — Resolve the URL to check
 

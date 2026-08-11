@@ -1,3 +1,8 @@
+---
+description: Check Coolify deployment status; file a high-priority task on a failed deploy. Passive — fixes nothing.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
+---
+
 Check the Coolify **deployment status** for this project: detect failed/red deploys and create a high-priority task. This is a passive health check — it does not auto-fix or trigger anything.
 
 This command only looks at the deployment pipeline status. Runtime container errors, crashes, and OOM signals are covered by your observability tool (SigNoz/Datadog/Grafana) via `/darkflow:observability-check`, since container logs already ship there.
@@ -6,13 +11,7 @@ All Coolify data is fetched via the official `coolify` CLI (not an MCP server). 
 
 ## Step 1 — Read project config
 
-Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
-
-Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
-- `coolify_app` → Coolify app UUID for this project (optional; if missing, resolve it in Step 2)
-- `language` → output/task language (default: English)
-
-If `.darkflow.d/state/config.json` is missing, continue normally.
+Load the project config (contract in `.darkflow.d/claude.md` → *Project config*). Uses: `coolify_app`, `language`.
 
 ## Step 2 — Resolve the app UUID
 

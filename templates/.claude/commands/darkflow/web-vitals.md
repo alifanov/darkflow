@@ -1,4 +1,9 @@
-Measure this project's **Core Web Vitals** by running **Lighthouse locally** against its URL (mobile emulation), compare the lab metrics against Google's thresholds, and file a task when any metric lands in the **"poor"** band. This tracks user-facing performance (LCP, CLS, TBT, FCP, TTFB) over time and turns regressions into actionable work for `fix-issues`. No API key and no external service — Lighthouse drives a local headless Chrome.
+---
+description: Measure Core Web Vitals with a local Lighthouse run; file a task when a metric lands in the 'poor' band.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
+---
+
+Measure this project's **Core Web Vitals** by running **Lighthouse locally** against its URL (mobile emulation), compare the lab metrics against Google's thresholds, and file a task when any metric lands in the **'poor'** band. This tracks user-facing performance (LCP, CLS, TBT, FCP, TTFB) over time and turns regressions into actionable work for `fix-issues`. No API key and no external service — Lighthouse drives a local headless Chrome.
 
 This is an **analysis** routine: healthy runs only write a snapshot; runs with a "poor" metric file a normal (human-triaged) task — a slow page is not an emergency, so unlike `uptime-check` these tasks are **not** auto-approved.
 
@@ -6,11 +11,7 @@ This is an **analysis** routine: healthy runs only write a snapshot; runs with a
 
 ## Step 1 — Read project config
 
-Run `bash ~/.darkflow/get-config.sh` to refresh `.darkflow.d/state/config.json` from the Web UI (silently falls back to cache if the server is unreachable). Read it and extract:
-- `domain` → the URL to measure (e.g. `https://example.com`)
-- `language` → output/task language (default: English)
-
-If `.darkflow.d/state/config.json` is missing, continue with defaults.
+Load the project config (contract in `.darkflow.d/claude.md` → *Project config*). Uses: `domain`, `language`.
 
 ## Step 2 — Resolve the URL to measure
 

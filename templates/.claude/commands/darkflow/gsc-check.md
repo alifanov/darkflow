@@ -1,4 +1,7 @@
-Review Google Search Console data **and** run a technical + on-page SEO audit, then create tasks with concrete fixes.
+---
+description: Review Google Search Console data **and** run a technical + on-page SEO audit, then create tasks with concrete fixes.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
+---
 
 This routine has two halves:
 1. **GSC data** — what's actually happening in search (positions, CTR, impressions, indexing).
@@ -6,13 +9,7 @@ This routine has two halves:
 
 ## Step 1 — Read project config
 
-Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
-
-Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
-- `language` → output/task language (default: English)
-- `domain` → the public production URL (used for live-page SEO checks)
-
-If `.darkflow.d/state/config.json` is missing, continue with the defaults. If `domain` is absent, try to auto-discover the production URL (Coolify FQDN, `vercel.json`/`.vercel/project.json`, `netlify.toml`, `CNAME`); if none is found, skip the live-page checks and audit the codebase only.
+Load the project config (contract in `.darkflow.d/claude.md` → *Project config*). Uses: `language`, `domain`. If `domain` is absent, try to auto-discover the production URL (Coolify FQDN, `vercel.json`/`.vercel/project.json`, `netlify.toml`, `CNAME`); if none is found, skip the live-page checks and audit the codebase only.
 
 ## Step 2 — GSC data analysis
 

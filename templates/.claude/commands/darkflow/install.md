@@ -1,3 +1,8 @@
+---
+description: Run the Dark Flow installer — works for fresh projects and existing ones alike.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep
+---
+
 Run the Dark Flow installer — works for fresh projects and existing ones alike:
 
 ```bash

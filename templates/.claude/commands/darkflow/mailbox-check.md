@@ -1,15 +1,13 @@
-Check the project's IMAP inbox for new messages, create tasks from them, and send approved email replies via SMTP.
+---
+description: Check the project's IMAP inbox for new messages, create tasks from them, and send approved email replies via SMTP.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
+---
 
 > **Note — cheap pre-flight.** The dispatcher (`darkflow-run.sh`) runs a read-only IMAP unseen-count (`fetch.py --count`) and a `df task list` for approved reply tasks *before* launching this agent. If there's no new mail and no reply pending, it **skips this agent entirely** — so on a quiet inbox you are not invoked. When you *are* invoked there is real work (new mail and/or replies to send); proceed with the full steps below.
 
 ## Step 1 — Read config
 
-Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
-
-Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
-- `language` → output/task language (default: English)
-- `branch` → main branch name
-- `mergeStrategy` → `pr` or `direct`
+Load the project config (contract in `.darkflow.d/claude.md` → *Project config*). Uses: `language`, `branch`, `mergeStrategy`.
 
 Load mailbox credentials from `.env` (the project's main env; `.env.darkflow` is a legacy fallback):
 ```bash

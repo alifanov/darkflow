@@ -1,16 +1,15 @@
+---
+description: Map the build and deploy pipeline, find bottlenecks, and file tasks with measurable acceptance criteria.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep
+---
+
 Analyze how this project builds and deploys — map the full pipeline, find bottlenecks and inefficiencies, and create tasks with concrete optimization proposals. Each task should describe the problem, what to change, and a measurable acceptance criterion.
 
 This is a **proposal-only audit**: it identifies opportunities and proposes changes. It does not apply changes itself (that is a human/`fix-issues` decision).
 
 ## Step 1 — Read project config
 
-Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
-
-Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
-- `language` → output/task language (default: English)
-- `mergeStrategy` → context for how fixes land (pr or direct)
-
-If `.darkflow.d/state/config.json` is missing, continue with defaults.
+Load the project config (contract in `.darkflow.d/claude.md` → *Project config*). Uses: `language`, `mergeStrategy`.
 
 ## Step 2 — Map the build & deploy pipeline
 

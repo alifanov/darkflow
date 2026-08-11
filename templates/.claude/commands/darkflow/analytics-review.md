@@ -1,13 +1,11 @@
-Review analytics and recent commits, then create tasks.
+---
+description: Review analytics and recent commits, then create tasks.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
+---
 
 ## Step 1 — Read project config
 
-Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
-
-Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
-- `language` → output/task language (default: English)
-
-If `.darkflow.d/state/config.json` is missing, continue with the defaults.
+Load the project config (contract in `.darkflow.d/claude.md` → *Project config*). Uses: `language`.
 
 Analytics come from the **OpenPanel MCP** registered for this project. It uses a `read` client that is already scoped to a single project, so there is no project to select or switch — just query. If no OpenPanel MCP is available, skip the analytics part and review commits only.
 

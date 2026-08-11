@@ -1,15 +1,11 @@
-Pick up one approved task, implement the fix, and close it.
+---
+description: Pick up one approved task, implement the fix, and close it.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, Bash(git push:*)
+---
 
 ## Step 1 — Read project config
 
-Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
-
-Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
-- `branch` → main branch name (default: main)
-- `mergeStrategy` → `pr` or `direct` (default: direct)
-- `language` → output/task language (default: English)
-
-If `.darkflow.d/state/config.json` is missing, continue with the defaults.
+Load the project config (contract in `.darkflow.d/claude.md` → *Project config*). Uses: `branch`, `mergeStrategy`, `language`.
 
 ## Step 2 — Pick the next task
 

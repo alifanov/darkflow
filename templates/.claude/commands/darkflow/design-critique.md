@@ -1,13 +1,11 @@
-Run a scored design review with persona tests and automated detection, then create tasks for each finding.
+---
+description: Run a scored design review with persona tests and automated detection, then create tasks for each finding.
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
+---
 
 ## Step 1 — Read project config
 
-Run `bash ~/.darkflow/get-config.sh` to pull the latest project settings from the Web UI and refresh the project config at `.darkflow.d/state/config.json` (silently falls back to cache if the server is unreachable).
-
-Read `.darkflow.d/state/config.json` (JSON, written by get-config.sh). Extract:
-- `language` → output/task language (default: English)
-
-If `.darkflow.d/state/config.json` is missing, continue with defaults.
+Load the project config (contract in `.darkflow.d/claude.md` → *Project config*). Uses: `language`.
 
 ## Step 2 — Do the work
 
