@@ -1370,6 +1370,14 @@ run_checklist() {
     return 1
   fi
 
+  # --dry-run means dry: report what is missing, change nothing. Without this the
+  # fixers below create directories and copy templates during a preview, which is
+  # exactly what someone runs --dry-run to avoid.
+  if [[ "$DRY_RUN" == true ]]; then
+    info "Would repair ${#_missing_ids[@]} missing item(s) — re-run without --dry-run to apply"
+    return 0
+  fi
+
   local _fixed=0 _skipped=0
 
   _chk_copy_template() {
@@ -1530,11 +1538,17 @@ reconcile_docs() {
       local _f
       shopt -s dotglob nullglob
       for _f in "docs/${_d}"/*; do
-        [[ "$(basename "$_f")" == ".gitkeep" ]] && { rm -f "$_f"; continue; }
+        if [[ "$(basename "$_f")" == ".gitkeep" ]]; then
+          [[ "$DRY_RUN" == false ]] && rm -f "$_f"
+          continue
+        fi
         _reconcile_mv "$_f" "docs/state/${_d}/$(basename "$_f")"
       done
       shopt -u dotglob nullglob
-      rmdir "docs/${_d}" 2>/dev/null && dim "removed empty docs/${_d}/"
+      # A dry run must not touch the filesystem — and here it would, because
+      # nothing was actually moved out, so an already-empty dir would be removed.
+      [[ "$DRY_RUN" == false ]] && rmdir "docs/${_d}" 2>/dev/null \
+        && dim "removed empty docs/${_d}/"
     done
   fi
 
@@ -1564,7 +1578,8 @@ reconcile_docs() {
       [Yy]*) for _dir in "${_stale[@]}"; do
                _reconcile_mv "${_dir%/}" "docs/_archive/insights/$(basename "${_dir%/}")"
              done
-             rmdir docs/insights 2>/dev/null && dim "removed empty docs/insights/" ;;
+             [[ "$DRY_RUN" == false ]] && rmdir docs/insights 2>/dev/null \
+               && dim "removed empty docs/insights/" ;;
       *)     info "Left in place — re-run install.sh to archive them later" ;;
     esac
   fi
