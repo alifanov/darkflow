@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isTaskStatus, TASK_STATUSES } from "@/lib/task-status";
+import { parseTaskNumber } from "@/lib/task-number";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ numb
   if (!repoUrl) {
     return NextResponse.json({ error: "repoUrl is required" }, { status: 400 });
   }
-  const task = await findTask(repoUrl, Number(number));
+  const n = parseTaskNumber(number);
+  if (n === null) {
+    return NextResponse.json({ error: `invalid task number: ${number}` }, { status: 400 });
+  }
+  const task = await findTask(repoUrl, n);
   if (!task) {
     return NextResponse.json({ error: "task not found" }, { status: 404 });
   }
@@ -36,6 +41,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ nu
   const repoUrl = req.nextUrl.searchParams.get("repoUrl");
   if (!repoUrl) {
     return NextResponse.json({ error: "repoUrl is required" }, { status: 400 });
+  }
+  const n = parseTaskNumber(number);
+  if (n === null) {
+    return NextResponse.json({ error: `invalid task number: ${number}` }, { status: 400 });
   }
   let body: PatchTaskBody;
   try {
@@ -65,7 +74,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ nu
 
   try {
     const task = await prisma.issue.update({
-      where: { projectId_number: { projectId: project.id, number: Number(number) } },
+      where: { projectId_number: { projectId: project.id, number: n } },
       data,
     });
     return NextResponse.json(task);

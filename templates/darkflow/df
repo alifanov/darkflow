@@ -52,6 +52,21 @@ _api() {
   fi
 }
 
+# A task number must be digits. Without this check an unset shell variable in a
+# caller — `df task comment $number --body "..."` with `number` empty — silently
+# shifts the arguments, `--body` lands in the number position, and the server gets
+# `/api/tasks/--body`. That surfaced as a Prisma "Argument `number` is missing"
+# 500 with no hint of which call produced it.
+_task_number() {
+  local n="${1:-}"
+  if [[ ! "$n" =~ ^[0-9]+$ ]]; then
+    echo "df: expected a task number, got '${n}'" >&2
+    echo "  (an unset variable in the caller shifts the arguments — check the command that ran this)" >&2
+    exit 1
+  fi
+  printf '%s' "$n"
+}
+
 command -v jq &>/dev/null || { echo "df: jq is required" >&2; exit 1; }
 command -v curl &>/dev/null || { echo "df: curl is required" >&2; exit 1; }
 
@@ -121,7 +136,7 @@ case "$sub" in
     ;;
 
   view)
-    n="${1:?number required}"
+    n=$(_task_number "${1:-}")
     _api GET "/api/tasks/${n}?repoUrl=${REPO_Q}"
     ;;
 
@@ -160,24 +175,24 @@ case "$sub" in
     ;;
 
   set-status)
-    n="${1:?number required}"; status="${2:?status required}"
+    n=$(_task_number "${1:-}"); status="${2:?status required}"
     _api PATCH "/api/tasks/${n}?repoUrl=${REPO_Q}" "$(jq -n --arg s "$status" '{status:$s}')" >/dev/null
     ;;
 
   set-action)
-    n="${1:?number required}"; action="${2:?action required}"
+    n=$(_task_number "${1:-}"); action="${2:?action required}"
     _api PATCH "/api/tasks/${n}?repoUrl=${REPO_Q}" "$(jq -n --arg a "$action" '{action:$a}')" >/dev/null
     ;;
 
   needs-human)
-    n="${1:?number required}"
+    n=$(_task_number "${1:-}")
     # Pulls the task off the approved queue and flags it for a human — mirrors
     # what "approve" undoes (approve always clears needsHuman).
     _api PATCH "/api/tasks/${n}?repoUrl=${REPO_Q}" '{"needsHuman":true,"status":"proposed"}' >/dev/null
     ;;
 
   snooze)
-    n="${1:?number required}"; when="${2:?date or 'clear' required}"
+    n=$(_task_number "${1:-}"); when="${2:?date or 'clear' required}"
     if [[ "$when" == "clear" ]]; then
       _api PATCH "/api/tasks/${n}?repoUrl=${REPO_Q}" '{"scheduledFor":null}' >/dev/null
     else
@@ -186,7 +201,7 @@ case "$sub" in
     ;;
 
   comment)
-    n="${1:?number required}"; shift
+    n=$(_task_number "${1:-}"); shift
     body=""
     while [[ $# -gt 0 ]]; do
       case "$1" in --body) body="$2"; shift 2 ;; *) usage ;; esac
@@ -196,7 +211,7 @@ case "$sub" in
     ;;
 
   close)
-    n="${1:?number required}"
+    n=$(_task_number "${1:-}")
     _api PATCH "/api/tasks/${n}?repoUrl=${REPO_Q}" '{"status":"closed"}' >/dev/null
     ;;
 

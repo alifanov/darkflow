@@ -10,6 +10,11 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.30.2] — 2026-08-12
+
+- **Fix** — `/api/tasks/[number]` падал 500-й с невнятным `PrismaClientValidationError: Argument \`number\` is missing`, если сегмент пути не число: `Number("--body")` даёт `NaN`, а Prisma в составном ключе отвечает на `NaN` именно так. Номер теперь разбирается и проверяется (`src/lib/task-number.ts`) во всех трёх роутах — GET, PATCH и `comment`; на мусор отдаётся `400 invalid task number: <что пришло>`.
+- **Fix** — та же проверка добавлена в `df`, где ошибка и рождалась. Незаданная переменная у вызывающего — `df task comment $number --body "..."` при пустом `number` — молча сдвигает аргументы, и в позицию номера попадает `--body`. Раньше это уезжало на сервер и всплывало 500-й без единого намёка, какой вызов виноват; теперь `df` останавливается сразу и прямо говорит про сдвиг аргументов.
+
 ## [4.30.1] — 2026-08-11
 
 Шаги 10.4 и 11 — отключение Deckbook. **Слияние закрыто полностью.**

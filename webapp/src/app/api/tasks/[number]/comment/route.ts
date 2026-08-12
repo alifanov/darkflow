@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { IssueComment } from "@/components/IssueTableRow";
+import { parseTaskNumber } from "@/lib/task-number";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ num
   const repoUrl = req.nextUrl.searchParams.get("repoUrl");
   if (!repoUrl) {
     return NextResponse.json({ error: "repoUrl is required" }, { status: 400 });
+  }
+  const n = parseTaskNumber(number);
+  if (n === null) {
+    return NextResponse.json({ error: `invalid task number: ${number}` }, { status: 400 });
   }
   let body: { body: string; author?: string };
   try {
@@ -27,7 +32,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ num
   }
 
   const task = await prisma.issue.findUnique({
-    where: { projectId_number: { projectId: project.id, number: Number(number) } },
+    where: { projectId_number: { projectId: project.id, number: n } },
     select: { id: true, comments: true },
   });
   if (!task) {
