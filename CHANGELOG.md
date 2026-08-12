@@ -10,6 +10,10 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.30.3] — 2026-08-12
+
+- **Fix** — `fix-ci-issue` поднимал агента на каждый тик, даже когда чинить нечего. Дешёвая проверка очереди в `darkflow-run.sh` была захардкожена на `fix-issues`, так что второй потребитель очереди платил ~$0.34 за то, чтобы ответить «CI зелёный». При расписании `*/15` на двух проектах это $539 за 30 дней — четверть всего расхода, при том что последняя реальная `source:ci` задача закрыта 29 июля. Теперь обе рутины скипаются по одному `df task list`; `fix-ci-issue` сужает выборку до `--source ci` на сервере.
+
 ## [4.30.2] — 2026-08-12
 
 - **Fix** — `/api/tasks/[number]` падал 500-й с невнятным `PrismaClientValidationError: Argument \`number\` is missing`, если сегмент пути не число: `Number("--body")` даёт `NaN`, а Prisma в составном ключе отвечает на `NaN` именно так. Номер теперь разбирается и проверяется (`src/lib/task-number.ts`) во всех трёх роутах — GET, PATCH и `comment`; на мусор отдаётся `400 invalid task number: <что пришло>`.

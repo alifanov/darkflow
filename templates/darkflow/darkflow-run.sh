@@ -1067,18 +1067,24 @@ run_routine() {
       ;;
   esac
 
-  if [[ "$name" == "fix-issues" ]] && [[ -x "$DF_BIN" ]]; then
+  # Both queue consumers can answer "nothing to do" from one `df task list`
+  # call. Without this, an agent boots on every tick just to report an empty
+  # queue — measured at ~$0.34 a run, and `fix-ci-issue` ticks every 15 min.
+  if [[ "$name" == "fix-issues" || "$name" == "fix-ci-issue" ]] && [[ -x "$DF_BIN" ]]; then
     # Revive anything stuck in-progress before checking the queue, so a task
     # stranded by a crashed previous run is immediately eligible again.
     revive_stuck_issues
-    # Count approved tasks fix-issues should act on. status:approved is the
+    # Count approved tasks this routine should act on. status:approved is the
     # single source of truth: needs-human is kept mutually exclusive with it at
     # write time (every path that sets needs-human moves status off approved,
     # and approving always clears needs-human), so no re-filter needed here.
     # The one exclusion left is action:reply — those are mailbox-owned
     # (mailbox-check sends the reply), not a code task for us.
+    # fix-ci-issue only ever picks up source:ci, so it narrows server-side.
+    local -a queue_args=(task list --status approved --state open)
+    [[ "$name" == "fix-ci-issue" ]] && queue_args+=(--source ci)
     local approved_count
-    approved_count=$("$DF_BIN" task list --status approved --state open 2>/dev/null \
+    approved_count=$("$DF_BIN" "${queue_args[@]}" 2>/dev/null \
                        | jq '[.[] | select(.action != "reply" and (.scheduledFor == null or .scheduledFor <= (now | todate)))] | length' 2>/dev/null || echo "")
     if [[ "$approved_count" == "0" || -z "$approved_count" ]]; then
       log "SKIP   ${name} — no actionable approved tasks"
@@ -1086,7 +1092,7 @@ run_routine() {
       skip_now=$(now_epoch)
       write_state "$name" "$(( skip_now - skip_now % 60 ))"
       skip_ts=$(date -u +%FT%TZ)
-      PENDING_LOGS+=("{\"routine\":\"${name}\",\"summary\":\"skipped fix-issues — no approved tasks\",\"timestamp\":\"${skip_ts}\"}")
+      PENDING_LOGS+=("{\"routine\":\"${name}\",\"summary\":\"skipped ${name} — no approved tasks\",\"timestamp\":\"${skip_ts}\"}")
       return 0
     fi
   fi
