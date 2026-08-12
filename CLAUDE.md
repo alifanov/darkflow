@@ -13,6 +13,8 @@ Dark Flow is a workflow installer for AI-assisted development projects.
 > ```
 > The **webapp must run in the user's interactive session** (`make web`), not launchd: cmux's control socket rejects launchd-detached processes ("Broken pipe"), so the "Open in cmux" buttons would silently create no workspace. Same keychain/session reason as the worker.
 > Stopping/killing the worker on request is fine (no credentials needed). Starting or restarting it is always the user's action — do not run it for them, not even in the background, not even when explicitly asked to "restart it"; instead, print the command above and ask them to run it.
+>
+> **A restart is only needed when the worker's own script changes.** Config edits — routine cron, model, enabled — take effect on the next tick without one: each tick `set_project()` re-fetches `/api/projects/by-repo` into `.darkflow.d/state/config.json`, so schedules are never cached in memory. Don't ask the user to reload after a schedule change.
 
 ## What's in this repo
 
