@@ -1886,7 +1886,12 @@ mode_manual() {
 # sessions run at once across all projects, so iterating serially here never
 # over-subscribes the machine.
 mode_watch() {
-  local interval=30
+  # One tick forks two processes per registered project, so the cost scales with
+  # the project count, not with the work actually due. At 19 projects a 30s tick
+  # meant ~38 short-lived shells every half minute for a schedule whose finest
+  # granularity is hourly. 120s keeps dispatch latency far below any routine's
+  # period while cutting that churn 4x.
+  local interval=${DARKFLOW_WATCH_INTERVAL:-120}
   local tick=0
 
   glog "Dark Flow global worker started (tick every ${interval}s, ${SELF_PATH}). Ctrl-C to stop."

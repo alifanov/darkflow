@@ -10,6 +10,10 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.31.2] — 2026-08-12
+
+- **Worker** — интервал тика глобального воркера поднят с 30 до 120 секунд (`templates/darkflow/darkflow-run.sh`). Каждый тик форкает по два процесса на зарегистрированный проект, так что стоимость росла с числом проектов, а не с объёмом реальной работы: на 19 проектах это давало ~38 короткоживущих шеллов каждые полминуты при том, что самое частое расписание рутин — почасовое. Задержка диспетчеризации остаётся много меньше периода любой рутины. Переопределяется через `DARKFLOW_WATCH_INTERVAL`.
+
 ## [4.31.1] — 2026-08-12
 
 - **Web UI** — в дропдаун моделей движка `claude` добавлен `haiku` (Haiku 4.5): `haiku` / `sonnet` / `opus` (`webapp/src/components/RoutineConfigForm.tsx`). Механическим рутинам без агентской работы (`uptime-check`, `ci-watch`, `housekeeping`, `coolify-check-deployment`) opus/sonnet не нужен. Дефолты рутин не меняются — переключать вручную.
