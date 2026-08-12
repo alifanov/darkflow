@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ALL_ROUTINES } from "@/lib/routines";
+import { describeCron } from "@/lib/cron-describe";
 
 // Which models each engine offers. Used to populate the per-routine model
 // dropdown and to reset an out-of-range model when the engine is switched.
@@ -282,6 +283,9 @@ function RoutineTable({
                         width: 130,
                       }}
                     />
+                    <span className="block text-xs mt-0.5" style={{ color: "var(--muted)" }}>
+                      {describeCron(r.cron)}
+                    </span>
                   </td>
                 </tr>
               );
