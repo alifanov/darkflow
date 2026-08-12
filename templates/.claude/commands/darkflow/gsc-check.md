@@ -24,6 +24,46 @@ Do not fall back to browser automation for GSC data.
 
 Check Google Search Console data for the last week using MCP tools. Analyse positions, CTR, impressions, and indexing issues. For each meaningful finding, suggest a concrete fix and file it as a task (see task format below) with `--source gsc`.
 
+### Never report indexation from the sitemaps API
+
+`searchConsole_list_sitemaps` / `get_sitemap` return `contents[].indexed`. Google's own API
+reference marks that field **"Deprecated; do not use."** — it returns `0` for every site, always,
+including fully indexed ones. It is not a measurement, and "0 indexed" is not a finding.
+
+Never put it in a snapshot, a task body, or an acceptance criterion. An acceptance criterion like
+"indexed count in the sitemap report is > 0" can never be met, so the task can never be closed.
+
+From that same response, these fields **are** real and worth reporting:
+
+| field | means |
+|---|---|
+| `lastDownloaded` | when Google last actually fetched the sitemap — stale = it hasn't re-read your changes |
+| `submitted` | URL count **as of that fetch** — compare with a live `curl` of the sitemap to spot drift |
+| `errors` / `warnings` | real parse problems |
+
+**To actually measure indexation**, in this order:
+
+1. `searchConsole_query_analytics` — any URL with impressions is indexed by definition; it cannot
+   rank without being in the index. This is the cheapest real check and it is available via MCP.
+2. `searchConsole_inspect_url` — authoritative per-URL verdict (`coverageState`, last crawl).
+   Rate-limited, so use it on a handful of key URLs, not the whole site.
+3. The **Page Indexing** report (Indexing → Pages) — the only source of site-wide indexed /
+   not-indexed counts with reasons. It has **no API**: it is web-UI only. If a run needs those
+   numbers, say so and hand it to a human — do not substitute the deprecated field for it.
+
+Contradiction check before filing anything about indexation: if the same run shows impressions or
+positions for URLs, the site **is** indexed, whatever any counter says.
+
+### Sitemap resubmission is not a human-only action
+
+The Search Console API does expose `PUT /sites/{siteUrl}/sitemaps/{feedpath}` (`sitemaps.submit`,
+not deprecated), which forces Google to re-fetch a sitemap. If the MCP connection exposes a
+submit-sitemap tool, resubmit directly instead of filing a `--needs-human` task. Only if the
+connection was granted read-only actions is a human needed — and then the task is "grant the
+write action to the GSC connection", not "go click in Search Console".
+
+**Request Indexing** (URL Inspection) genuinely has no public API and does require a human.
+
 ## Step 3 — Technical + on-page SEO audit
 
 Audit the project's site for SEO problems. Work primarily from the **codebase** (it's the source of truth and lets you propose exact fixes); use `domain` to spot-check rendered pages where code alone is ambiguous.
