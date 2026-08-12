@@ -8,7 +8,7 @@ import { describeCron } from "@/lib/cron-describe";
 // Which models each engine offers. Used to populate the per-routine model
 // dropdown and to reset an out-of-range model when the engine is switched.
 const MODELS_BY_ENGINE: Record<string, string[]> = {
-  claude: ["sonnet", "opus"],
+  claude: ["haiku", "sonnet", "opus"],
   codex: ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini"],
 };
 

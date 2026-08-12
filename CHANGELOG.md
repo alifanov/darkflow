@@ -10,6 +10,10 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.31.1] — 2026-08-12
+
+- **Web UI** — в дропдаун моделей движка `claude` добавлен `haiku` (Haiku 4.5): `haiku` / `sonnet` / `opus` (`webapp/src/components/RoutineConfigForm.tsx`). Механическим рутинам без агентской работы (`uptime-check`, `ci-watch`, `housekeeping`, `coolify-check-deployment`) opus/sonnet не нужен. Дефолты рутин не меняются — переключать вручную.
+
 ## [4.31.0] — 2026-08-12
 
 - **Feature** — под полем cron в таблице рутин на странице проекта теперь мелким текстом выводится человекочитаемая расшифровка расписания: `0 */4 * * *` → «every 4 hours», `0 3 * * 0` → «every Sunday at 03:00». Обновляется на лету при вводе; непонятное выражение просто не даёт подписи (`webapp/src/lib/cron-describe.ts`).
