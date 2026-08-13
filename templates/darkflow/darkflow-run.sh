@@ -28,6 +28,11 @@ GLOBAL_LOG="${GLOBAL_DIR}/worker.log"
 USER_CMD_DIR="${HOME}/.claude/commands/darkflow"   # slash commands live in user scope
 DF_BIN="${GLOBAL_DIR}/df"                          # task CLI — talks to /api/tasks/*
 
+# Every routine the worker starts runs unattended. A routine that behaves
+# differently with a human present (asking instead of deciding) reads this
+# instead of probing for AskUserQuestion and catching the failure.
+export DARKFLOW_HEADLESS=1
+
 # ── Engine credentials ────────────────────────────────────────────────────────
 # launchd does NOT source ~/.zshrc, so the interactive login token the user's
 # terminal `claude` relies on (CLAUDE_CODE_OAUTH_TOKEN and friends) is invisible

@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
 
 ## Step 1 — Read project config
 
-Load the project config (contract in `.darkflow.d/claude.md` → *Project config*). Uses: `language`.
+Load the project config (contract in `.darkflow.d/claude.md` → *Project config*). Uses: `language`, `minPriority`.
 
 ## Step 2 — Do the work
 
@@ -24,7 +24,10 @@ For each finding:
 
 Create a task for each significant finding. Use `--source ads` and a priority.
 
-Priority vocabulary: `critical` / `high` / `medium` / `low`. **Only create tasks for `critical` / `high` / `medium`** — `low`-priority findings are skipped (record them under Hypotheses in the snapshot instead).
+Priority vocabulary: `critical` / `high` / `medium` / `low`. **Never inflate a priority to clear
+the project's `minPriority` floor** — the floor decides what gets filed, not you. If `df task
+create` is rejected (`priority <x> below project minPriority <y>`), keep the honest priority,
+record the finding under Hypotheses in the snapshot, and surface the rejection in the output.
 
 **Task format (required):**
 
@@ -45,7 +48,7 @@ Priority vocabulary: `critical` / `high` / `medium` / `low`. **Only create tasks
 Create with:
 ```bash
 ~/.darkflow/df task create --title "<title>" --source ads \
-  --priority <critical|high|medium> --status proposed --body "$(cat <<'EOF'
+  --priority <critical|high|medium|low> --status proposed --body "$(cat <<'EOF'
 <body as above>
 EOF
 )"
