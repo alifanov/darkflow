@@ -171,6 +171,9 @@ Use `/darkflow` inside Claude Code to check workflow health and review the appro
 
 Workflow commands: `/darkflow:add-issue`, `/darkflow:update`, `/darkflow:install`.
 
+Manual commands (run by hand, never scheduled):
+- `/darkflow:checklist-review [group]` — score the product against the readiness checklists in `~/.darkflow/checklists/`; report only, files no tasks
+
 Routine commands (run any routine interactively or use as the routine prompt):
 - `/darkflow:fix-issues` — pick up one approved task and close it
 - `/darkflow:security-audit` — GitHub alerts + code review + live check → tasks

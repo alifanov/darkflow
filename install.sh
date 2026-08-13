@@ -1224,6 +1224,9 @@ HEREDOC
   echo "- \`/darkflow:uptime-check\` — DNS + HTTP + page-load check; site down → auto-approved critical task"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:check-design\` — visual quality, UI performance, production readiness → tasks"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:check-ux\` — key flows walked in a real browser, mobile + desktop → tasks"
+  # The last line is a conditional: with every module off it returns 1, and under
+  # `set -e` that kills the installer at step 4/4.
+  return 0
 }
 
 # Writes .darkflow.d/claude.md with full Dark Flow instructions, then ensures
@@ -1584,8 +1587,11 @@ reconcile_docs() {
     _stale+=("$_dir")
   done
   # An empty folder (or one holding just .gitkeep) is not worth archiving.
-  _dir=$(find docs/decisions -type f ! -name '.gitkeep' 2>/dev/null | head -1)
-  [[ -n "$_dir" ]] && _stale+=("docs/decisions/")
+  # `|| true`: with `set -euo pipefail`, find exits 1 when docs/decisions/ is absent
+  # — which it is for every already-migrated project — and a bare assignment from a
+  # failing command substitution kills the installer at step 1/4.
+  _dir=$(find docs/decisions -type f ! -name '.gitkeep' 2>/dev/null | head -1 || true)
+  if [[ -n "$_dir" ]]; then _stale+=("docs/decisions/"); fi
 
   if [[ ${#_stale[@]} -gt 0 ]]; then
     header "Retired doc folders found (${#_stale[@]})"
