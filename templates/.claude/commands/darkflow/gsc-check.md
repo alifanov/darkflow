@@ -62,6 +62,18 @@ submit-sitemap tool, resubmit directly instead of filing a `--needs-human` task.
 connection was granted read-only actions is a human needed — and then the task is "grant the
 write action to the GSC connection", not "go click in Search Console".
 
+**"I don't see a submit tool" is not evidence that there is none.** MCP tools can be *deferred*:
+they are absent from the visible tool list until a `ToolSearch` call loads their schemas. Never
+conclude the connection is read-only from what you can see. Run
+`ToolSearch("select:searchConsole_submit_sitemap")` (or a keyword search for `sitemap submit`)
+and attempt the call — only a real error from the call proves the action is missing. This exact
+wrong conclusion stalled two sqlformatter tasks (#24, #37) for a combined 30+ days, each closed
+as "needs a human to click Resubmit" when the tool was available all along.
+
+Pass `siteUrl` exactly as `searchConsole_list_sites` returns it. A domain property is
+`sc-domain:example.com`; calling the same tool with `https://example.com/` fails, and that
+failure is about the argument, not about permissions.
+
 **Request Indexing** (URL Inspection) genuinely has no public API and does require a human.
 
 ### AI crawlers are measured in access logs, not in files
