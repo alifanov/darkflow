@@ -246,6 +246,7 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | `/darkflow:add-issue [title]` | Create a task for a manually identified item |
 | `/darkflow:update` | Update Dark Flow to the latest version |
 | `/darkflow:install` | Re-run the Dark Flow installer |
+| `/darkflow:checklist-review [group]` | Score the product against the readiness checklists → `docs/state/readiness.md`. **Report only — files no tasks.** Run by hand; never scheduled |
 
 ### Routine commands
 
@@ -262,7 +263,6 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | `/darkflow:uptime-check` | DNS + HTTP + page-load check → **auto-approved** `critical` task if the site is down |
 | `/darkflow:check-design` | Visual quality, UI performance, production readiness → tasks *(optional)* |
 | `/darkflow:check-ux` | Key flows walked in a real browser, mobile + desktop → tasks *(optional)* |
-| `/darkflow:checklist-review [group]` | Score the product against the readiness checklists → `docs/state/readiness.md`. **Report only — files no tasks.** Ships disabled; enable per project in Settings → Routines |
 
 Routine commands automatically call `bash ~/.darkflow/get-config.sh` before running — this fetches the latest project settings (branch, language, merge strategy, modules, routine schedule) from the **Web UI Settings tab** into `.darkflow.d/state/config.json`. If the server is unreachable, commands fall back to the last fetched copy silently.
 
@@ -277,11 +277,20 @@ defect was originally paid for. They are global, not per project: one list score
 whole portfolio.
 
 Each group holds two lists. `items` is what must hold. **`never_flag`** is the other half —
-findings that audits keep raising and that were verified *not* worth fixing, so the routine
-suppresses them instead of re-filing them every week. A rule that lives only in a lesson gets
-re-discovered forever; putting it here is what stops that.
+findings that audits keep raising and that were verified *not* worth fixing, so they are
+suppressed instead of being re-raised. A rule that lives only in a lesson gets re-discovered
+forever; putting it here is what stops that.
 
-Other audit routines hunt for new findings. This one asks whether the product still gets wrong
+```bash
+/darkflow:checklist-review          # all groups
+/darkflow:checklist-review seo      # one group
+```
+
+**This is a manual command, not a routine** — there is no schedule and no catalog entry, and
+the worker never dispatches it. Run it when you want to know where a product stands: before a
+launch, when picking up a project that has been quiet, or after a batch of fixes.
+
+The audit routines hunt for new findings. This one asks whether the product still gets wrong
 the things already learned the expensive way. It files no tasks — it writes
 `docs/state/readiness.md` and prints a score.
 

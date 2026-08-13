@@ -11,6 +11,9 @@ things we already learned the expensive way, which ones does this product still 
 
 **Report-only.** No tasks are created, nothing is committed. The output is a score and a table.
 
+**Manual only.** This is not a routine — no schedule, no catalog entry, no worker dispatch. It
+runs when a human asks for it, so the report is written to be read right now, in the terminal.
+
 ## Step 1 — Read project config
 
 Load the project config (contract in `.darkflow.d/claude.md` → *Project config*). Uses:
@@ -22,7 +25,7 @@ require one are `n/a`, and the report says which and why.
 
 ## Step 2 — Resolve the group
 
-`$ARGUMENTS` selects the group. Empty → `all` (the worker always invokes with no argument).
+`$ARGUMENTS` selects the group. Empty → `all`.
 
 Valid: `code`, `architecture`, `ux`, `seo`, `ads`, `security`, `analytics`, `ops`, `all`.
 
@@ -85,7 +88,7 @@ Print, in the `language` from the project config:
 
 `n/a` is excluded from the denominator. No weighting — a score is a reading, not a verdict.
 
-**Everything passed? Say exactly that, in one line, and write the file anyway.** This routine is
+**Everything passed? Say exactly that, in one line, and write the file anyway.** This command is
 not subject to the silence rule: unlike an observation stream, a readiness score is only useful
 when it is current, and a missing file cannot be told apart from a run that never happened.
 

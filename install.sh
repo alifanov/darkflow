@@ -265,7 +265,7 @@ ALL_DF_COMMANDS=(
 )
 
 # Readiness checklist groups, fetched into ~/.darkflow/checklists/. Read by the
-# checklist-review routine; kept global (not per project) so every product is
+# checklist-review command; kept global (not per project) so every product is
 # scored against the same, versioned list.
 ALL_DF_CHECKLISTS=(code architecture ux seo ads security analytics ops)
 
@@ -1206,6 +1206,9 @@ HEREDOC
   echo ""
   echo "Workflow commands: \`/darkflow:add-issue\`, \`/darkflow:update\`, \`/darkflow:install\`."
   echo ""
+  echo "Manual commands (run by hand, never scheduled):"
+  echo "- \`/darkflow:checklist-review [group]\` — score the product against the readiness checklists in \`~/.darkflow/checklists/\`; report only, files no tasks"
+  echo ""
   echo "Routine commands (run any routine interactively or use as the routine prompt):"
   echo "- \`/darkflow:fix-issues\` — pick up one approved task and close it"
   [[ "$MOD_ANALYTICS"     == true ]] && echo "- \`/darkflow:analytics-review\` — OpenPanel + commits → tasks"
@@ -1221,9 +1224,6 @@ HEREDOC
   echo "- \`/darkflow:uptime-check\` — DNS + HTTP + page-load check; site down → auto-approved critical task"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:check-design\` — visual quality, UI performance, production readiness → tasks"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:check-ux\` — key flows walked in a real browser, mobile + desktop → tasks"
-  # Always listed: ships disabled as a scheduled routine (opt in via Settings →
-  # Routines), but the slash command is installed for every project.
-  echo "- \`/darkflow:checklist-review [group]\` — score the product against the readiness checklists; report only, files no tasks"
 }
 
 # Writes .darkflow.d/claude.md with full Dark Flow instructions, then ensures

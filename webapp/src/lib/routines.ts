@@ -49,12 +49,13 @@ export const ALL_ROUTINES: RoutineDef[] = [
   // Three design commands merged into two (C4): visual quality vs. real flows.
   { name: "check-design",             defaultCron: "0 10 * * 6",  defaultModel: "opus",   module: "impeccable",       label: "Visual design quality audit (weekly Sat)", claudeOnly: true },
   { name: "check-ux",                 defaultCron: "0 11 * * 6",  defaultModel: "opus",   module: "impeccable",       label: "Walk key flows in a real browser, mobile + desktop (weekly Sat)", claudeOnly: true },
-  // Opt-in on purpose: "checklist" is a module no project carries yet, so the
-  // routine ships disabled everywhere and is switched on per project in
-  // Settings → Routines. With `module: null` it would enable itself across every
-  // registered project on the next tick.
-  { name: "checklist-review",         defaultCron: "0 7 * * 1",   defaultModel: "sonnet", module: "checklist",        label: "Product readiness checklists by group (weekly Mon) — report only" },
 ];
+
+// Deliberately NOT here: `checklist-review`. It is a manual command, run by hand
+// from a project (`/darkflow:checklist-review [group]`), never on a schedule.
+// The catalog is only for scheduled routines — a name listed here gets a cron, a
+// model and a worker dispatch. Adding it would put a weekly agent run on every
+// project that enables the module, which is not what it is for.
 
 // Set of every routine name Dark Flow still ships. RoutineConfig rows whose name
 // is absent from it are orphans — a schedule that outlived its command (A9) — and
