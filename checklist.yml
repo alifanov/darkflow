@@ -30,10 +30,7 @@ items:
   # "What happened" lives in docs/logs/, appended and never rewritten.
   - { id: dir-docs-product,        group: docs,       type: dir, path: docs/state/product,       fix: mkdir, desc: "Product docs (product, positioning, pricing)" }
   - { id: dir-docs-spec-flows,     group: docs,       type: dir, path: docs/state/spec/flows,    fix: mkdir, desc: "User flow specs" }
-  - { id: dir-docs-design-assets,  group: docs,       type: dir, path: docs/state/design/assets, fix: mkdir, desc: "Design assets" }
-  - { id: dir-docs-insights-qual,  group: docs,       type: dir, path: docs/insights/qualitative, fix: mkdir, desc: "Qualitative insights" }
   - { id: dir-docs-logs,           group: docs,       type: dir, path: docs/logs,                fix: mkdir, desc: "Daily log — one file a day, a section per source" }
-  - { id: dir-docs-decisions,      group: docs,       type: dir, path: docs/decisions,           fix: mkdir, desc: "Architecture decision records" }
   - { id: dir-darkflow-d,          group: dispatcher, type: dir, path: .darkflow.d,              fix: mkdir, desc: "Dispatcher dir" }
   - { id: dir-darkflow-state,      group: dispatcher, type: dir, path: .darkflow.d/state,        fix: mkdir, desc: "Dispatcher state dir" }
 
@@ -42,8 +39,6 @@ items:
   - { id: file-agent-workflow,     group: docs,       type: file, path: docs/agent-workflow.md,                        template: docs/agent-workflow.md,                        fix: copy-template, desc: "Agent workflow doc" }
   - { id: file-tasks-doc,          group: docs,       type: file, path: docs/tasks.md,                                 template: docs/tasks.md,                                 fix: copy-template, desc: "Task field taxonomy guide" }
   - { id: file-auto-approve,       group: docs,       type: file, path: docs/auto-approve.md,                          template: docs/auto-approve.md,                          fix: copy-template, desc: "Auto-approve allowlist" }
-  - { id: file-adr-template,       group: docs,       type: file, path: docs/decisions/TEMPLATE.md,                    template: docs/decisions/TEMPLATE.md,                    fix: copy-template, desc: "ADR template" }
-  - { id: file-adr-index,          group: docs,       type: file, path: docs/decisions/README.md,                      template: docs/decisions/README.md,                      fix: copy-template, desc: "ADR index" }
 
   # ── Project operational files ────────────────────────────────────────────────
   # The worker, slash commands, the config fetcher (get-config.sh), the task CLI

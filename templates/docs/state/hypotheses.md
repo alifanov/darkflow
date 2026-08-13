@@ -1,7 +1,7 @@
 # Hypotheses
 
 Central ledger of product hypotheses — every bet being tracked, from first signal to
-verdict. Snapshots in `insights/*/` hold the raw evidence; this file holds the **current
+verdict. The daily logs in `logs/` hold the raw evidence; this file holds the **current
 state** of each hypothesis. One entry of truth per bet.
 
 Agents must read this file before creating tasks from analytics/ads/GSC findings —
@@ -20,8 +20,8 @@ Lifecycle: `tracking` (collecting evidence) → `testing` (task / experiment in 
 - **Hypothesis**: the 3-field address form added on 2026-05-20 increases friction on mobile
 - **Expected impact**: +8–12% checkout conversion if reverted/simplified
 - **Verification**: funnel step `address_submitted` recovers after simplification
-- **Evidence**: insights/analytics/2026-05-27.md (−12%), insights/analytics/2026-05-28.md (−8%)
-- **Status**: tracking (2/3 snapshots)
+- **Evidence**: logs/2026-05-27.md ## Analytics (−12%), logs/2026-05-28.md ## Analytics (−8%)
+- **Status**: tracking (2/3 runs)
 - **Task**: — (created when the evidence threshold is reached; then link task #N)
 -->
 
@@ -32,8 +32,8 @@ Lifecycle: `tracking` (collecting evidence) → `testing` (task / experiment in 
 ## Closed
 
 One line per verdict — move entries here from Active. This table **is** the record of data
-verdicts; write an ADR in `decisions/` only when the verdict constrains future work
-(architecture, stack, strategy):
+verdicts; add a line to `## Decisions` in `arch.md` only when the verdict constrains future
+work (architecture, stack, strategy):
 
 | ID | Hypothesis | Verdict | Evidence | Task |
 |---|---|---|---|---|

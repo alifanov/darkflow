@@ -2,7 +2,7 @@ Check the Dark Flow workflow status for this project and help the user manage it
 
 ## What to do
 
-1. **Check docs/ structure** — verify all expected folders exist (`docs/product/`, `docs/spec/`, `docs/design/`, `docs/insights/`, `docs/decisions/`). List any that are missing.
+1. **Check docs/ structure** — verify all expected folders exist (`docs/state/product/`, `docs/state/spec/flows/`, `docs/logs/`). List any that are missing.
 
 2. **Show approved task queue** — run:
    ```bash

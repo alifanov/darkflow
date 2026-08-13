@@ -793,15 +793,17 @@ _Filed by the \`ci-watch\` routine (local worker, no agent). \`fix-ci-issue\` pi
 # A plain curl probe is enough to confirm a healthy site, so the (Sonnet) agent
 # is only worth launching when the site is actually down/broken or the probe is
 # inconclusive. uptime_preflight() returns 0 when the site is verifiably healthy
-# (or merely slow/degraded) and has already written the snapshot + metrics here —
+# (or merely slow/degraded) and has already written the metrics file here —
 # the caller then SKIPS the agent. It returns 1 to escalate to the agent: site is
 # down (agent files the critical issue) or the check can't decide (no site_url,
 # no curl, DNS failure, …). Sets _UPTIME_SUMMARY / _UPTIME_ESCALATE_REASON.
 _UPTIME_SUMMARY=""
 _UPTIME_ESCALATE_REASON=""
 
-uptime_write_snapshot() {
-  local url="$1" http_code="$2" latency_ms="$3" latency_s="$4" status="$5"
+# A green probe writes the widget's metrics file and nothing else — no doc, no
+# repo change. A clean run leaves no trace; only a failure escalates to the agent.
+uptime_write_metrics() {
+  local url="$1" http_code="$2" latency_ms="$3" status="$4"
 
   mkdir -p "$METRICS_DIR"
   cat > "${METRICS_DIR}/uptime.json" <<EOF
@@ -812,23 +814,6 @@ uptime_write_snapshot() {
   "status": "${status}"
 }
 EOF
-
-  local snap_dir="${PROJECT_ROOT}/docs/insights/uptime"
-  local snap_date snap_time snap_file
-  snap_date=$(date +%F); snap_time=$(date +%H:%M)
-  snap_file="${snap_dir}/${snap_date}.md"
-  mkdir -p "$snap_dir"
-  if [[ ! -f "$snap_file" ]]; then
-    {
-      printf '# Uptime Check — %s\n\n' "$snap_date"
-      printf '**Target:** %s\n\n' "$url"
-      printf '## Checks\n'
-      printf '| Time | DNS | HTTP code | Body | Latency | Result | Issue |\n'
-      printf '|---|---|---|---|---|---|---|\n'
-    } > "$snap_file"
-  fi
-  printf '| %s | ok | %s | ok | %ss | %s | — |\n' \
-    "$snap_time" "$http_code" "$latency_s" "$status" >> "$snap_file"
 }
 
 uptime_preflight() {
@@ -873,7 +858,7 @@ uptime_preflight() {
         latency_ms=$(awk "BEGIN{printf \"%d\", ${time_total}*1000}")
         latency_s=$(awk "BEGIN{printf \"%.1f\", ${time_total}}")
         awk "BEGIN{exit !(${time_total} > 10)}" && status="degraded"
-        uptime_write_snapshot "$url" "$http_code" "$latency_ms" "$latency_s" "$status"
+        uptime_write_metrics "$url" "$http_code" "$latency_ms" "$status"
         if [[ "$status" == "degraded" ]]; then
           _UPTIME_SUMMARY="uptime degraded — HTTP ${http_code}, slow ${latency_s}s"
         else

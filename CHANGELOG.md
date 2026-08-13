@@ -10,6 +10,13 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.32.0] — 2026-08-13
+
+- **Workflow** — структура `docs/` сведена к двум живым слоям: `state/` (как сейчас) и `logs/` (что произошло). Убраны `docs/insights/`, `docs/decisions/` и `docs/state/design/`. «Почему так решили» переехало в таблицу `## Decisions` внутри `docs/state/arch.md` — одна строка на решение, старая строка никогда не переписывается, у неё появляется преемник. Отдельного ADR-процесса (нумерация, статусы Proposed/Accepted/Superseded, индекс) больше нет. Обновлены `docs/README.md`, `agent-workflow.md`, `tasks.md`, `state/hypotheses.md`, `state/product/metrics.md`, `state/spec/flows/TEMPLATE.md`.
+- **Worker** — `uptime-check` перестал сеять `docs/insights/uptime/<date>.md` на каждом зелёном пинге. Это был единственный живой писатель `docs/insights/`: из-за него папка возвращалась даже в свежемигрированных проектах, хотя сама рутина уже писала в `docs/logs/`. Теперь зелёная проверка пишет только `uptime.json` для виджета и не трогает репозиторий (`uptime_write_snapshot` → `uptime_write_metrics`). **Требуется перезапуск воркера** — изменился сам скрипт.
+- **Installer** — `reconcile_docs()` переносит `docs/insights/` (целиком, включая `qualitative/` и одиночные файлы) и `docs/decisions/` в `docs/_archive/`; пустые остатки со скаффолдингом (`.gitkeep`) удаляются. `docs/state/design/` не трогается — там могут лежать реальные ассеты. Скаффолдинг `docs/insights/qualitative`, `docs/decisions` и `docs/state/design/assets` убран, ADR-шаблоны больше не ставятся (`checklist.yml`).
+- **Updated routine** — `docs-audit` больше не сверяет реестр компонентов и ADR-папку; вместо этого проверяет таблицу `## Decisions` в `state/arch.md`. `/darkflow` проверял до-`state/` раскладку (`docs/product/`, `docs/spec/`, `docs/design/`) — исправлено на актуальную.
+
 ## [4.31.3] — 2026-08-12
 
 - **Docs** — в `CLAUDE.md` уточнено, когда воркеру нужен перезапуск: только при изменении самого скрипта. Правки конфига (cron, модель, enabled) подхватываются со следующим тиком — `set_project()` каждый раз заново тянет `/api/projects/by-repo` в `.darkflow.d/state/config.json`, расписание в памяти не кэшируется. Раньше блок про перезапуск стоял без этой оговорки, и после смены расписания агент просил сделать `make reload` без причины.

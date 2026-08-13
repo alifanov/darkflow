@@ -54,6 +54,22 @@ agent can trace behavior without reverse-engineering it from scratch.*
 
 ---
 
+## Decisions
+
+*Why the system is shaped this way. One line per decision, newest last — an old line is never
+rewritten or deleted; it gets a successor line saying what replaced it. This **is** the whole
+decision record: no numbered ADR files, no status field, no index.*
+
+*Add a line only when the decision constrains future work. What happened on a given day belongs
+in `docs/logs/`, not here.*
+
+| Date | Decision | Why | Where it shows |
+|---|---|---|---|
+| *2026-01-01* | *e.g. Postgres over SQLite* | *concurrent writers from the worker* | *`docker-compose.yml`, `prisma/`* |
+| | | | |
+
+---
+
 ## Invariants & gotchas
 
 - *Non-obvious rules that hold across the system — e.g. "all money in integer cents",

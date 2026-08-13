@@ -21,10 +21,9 @@ Check, layer by layer:
 - **`state/spec/screens.md` vs routes/pages** — compare the documented screen list against actual routes/pages/views in the code. Flag screens added or removed in code but not reflected.
 - **`state/spec/flows/*.md` vs implemented flows** — for documented flows (auth, checkout, onboarding…), check the steps still match the code.
 - **`state/product/metrics.md` vs instrumented events** — compare documented analytics event/metric **definitions** against event names actually fired in the code. Flag events in code that aren't documented, and documented events with no callsite.
-- **`state/design/components.md` vs the component registry** — compare documented components against what exists in the components directory.
 - **`state/product/pricing.md` vs billing code/config** — if pricing/plans are encoded in code or config, flag mismatches.
 - **`CLAUDE.md` / `README.md` commands** — verify documented commands (build, test, dev, lint) exist in `package.json` / `Makefile` / `pyproject.toml`.
-- **`decisions/` (ADRs) vs current code** — flag any accepted decision the code now contradicts (a superseded ADR that was never marked superseded).
+- **`state/arch.md` `## Decisions` vs current code** — flag any recorded decision the code now contradicts and that has no successor line saying it was replaced.
 - **`README.md` manifest vs the actual files** — compare the file manifest in `docs/README.md` against what really exists under `docs/`. Flag a file that exists on disk but is **not** listed in the manifest (undocumented doc), and a manifest entry that names a wrong path. Do **not** flag a manifest `on demand` entry that simply isn't written yet — that's expected, not drift.
 
 Use git history for context on *why* something drifted:

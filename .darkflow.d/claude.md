@@ -59,9 +59,8 @@ today's file — `## Security`, `## Analytics`, `## Performance`, `## Changes`, 
 source. Create the file if it is not there yet; **never rewrite a section someone else wrote**,
 and never rewrite yesterday's file.
 
-This replaces the old per-routine snapshots under `docs/insights/<area>/`. One file a day beats
-one file per routine per day: the whole day is read at once, and a routine that found nothing
-leaves no trace at all instead of a file saying "nothing found".
+One file a day beats one file per routine per day: the whole day is read at once, and a routine
+that found nothing leaves no trace at all instead of a file saying "nothing found".
 
 **A clean run appends nothing.** No section, no heading, no "no issues this run". That silence
 is what makes the threshold below work.
@@ -138,11 +137,11 @@ Confirm CI is green in the same session — don't push and walk away:
 
 ### When to read docs
 
-- **Any UI/UX task** → `docs/state/design/components.md` (registry + UI-state patterns)
+- **Any UI/UX task** → `docs/state/spec/screens.md` + `docs/state/spec/flows/`
 - **Changing a user flow** → `docs/state/spec/flows/`
 - **Product / marketing decisions** → `docs/state/product/positioning.md` + `docs/state/product/product.md` + `docs/state/product/pricing.md`
 - **Context on what's working / broken right now** → the last 2–3 files in `docs/logs/`
-- **Before architectural changes** → `docs/state/arch.md` (current map) + `docs/decisions/` (check for existing ADRs)
+- **Before architectural changes** → `docs/state/arch.md` — the current map and its `## Decisions` table
 
 ### When to write docs
 
@@ -151,8 +150,7 @@ Confirm CI is green in the same session — don't push and walk away:
 - **Changed data model** → update `docs/state/spec/data-model.md`
 - **Changed system shape** (new service, integration, stack swap) → update `docs/state/arch.md`
 - **Changed pricing / billing** → update `docs/state/product/pricing.md`
-- **Added UI component or state pattern** → update `docs/state/design/components.md`
-- **Made an architectural decision** → add ADR to `docs/decisions/` (context → decision → how to verify)
+- **Made an architectural decision** → add a line to `## Decisions` in `docs/state/arch.md` (date · decision · why · where it shows)
 - **Anything a data run observed** → your section of today's `docs/logs/YYYY-MM-DD.md` — one file a day, one section per source; a clean run writes nothing
 
 ### Active Routines

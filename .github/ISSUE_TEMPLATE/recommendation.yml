@@ -25,9 +25,9 @@ body:
   - type: input
     id: snapshot-link
     attributes:
-      label: Ссылка на снимок
-      description: Путь к файлу в docs/insights/ (например, docs/insights/analytics/2026-05-17.md)
-      placeholder: docs/insights/analytics/YYYY-MM-DD.md
+      label: Ссылка на запись в логе
+      description: Путь к дневному логу и секция (например, docs/logs/2026-05-17.md — ## Analytics)
+      placeholder: docs/logs/YYYY-MM-DD.md — ## Analytics
     validations:
       required: true
 

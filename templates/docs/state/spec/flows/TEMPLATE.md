@@ -48,4 +48,4 @@
 
 ## Related decisions
 
-- *Link to any ADR that affected this flow*
+- *Rows from `## Decisions` in `state/arch.md` that constrain this flow*

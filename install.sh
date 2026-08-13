@@ -1036,9 +1036,8 @@ today's file — `## Security`, `## Analytics`, `## Performance`, `## Changes`, 
 source. Create the file if it is not there yet; **never rewrite a section someone else wrote**,
 and never rewrite yesterday's file.
 
-This replaces the old per-routine snapshots under `docs/insights/<area>/`. One file a day beats
-one file per routine per day: the whole day is read at once, and a routine that found nothing
-leaves no trace at all instead of a file saying "nothing found".
+One file a day beats one file per routine per day: the whole day is read at once, and a routine
+that found nothing leaves no trace at all instead of a file saying "nothing found".
 
 **A clean run appends nothing.** No section, no heading, no "no issues this run". That silence
 is what makes the threshold below work.
@@ -1139,12 +1138,12 @@ Confirm CI is green in the same session — don't push and walk away:
 
 HEREDOC
 
-  echo "- **Any UI/UX task** → \`docs/state/design/components.md\` (registry + UI-state patterns)"
+  echo "- **Any UI/UX task** → \`docs/state/spec/screens.md\` + \`docs/state/spec/flows/\`"
   echo "- **Changing a user flow** → \`docs/state/spec/flows/\`"
   echo "- **Product / marketing decisions** → \`docs/state/product/positioning.md\` + \`docs/state/product/product.md\` + \`docs/state/product/pricing.md\`"
   [[ "$MOD_ANALYTICS" == true ]] && echo "- **Working with analytics events** → \`docs/state/product/metrics.md\` (not guessing event names)"
   echo "- **Context on what's working / broken right now** → the last 2–3 files in \`docs/logs/\`"
-  echo "- **Before architectural changes** → \`docs/state/arch.md\` (current map) + \`docs/decisions/\` (check for existing ADRs)"
+  echo "- **Before architectural changes** → \`docs/state/arch.md\` — the current map and its \`## Decisions\` table"
 
   echo ""
   echo "### When to write docs"
@@ -1154,8 +1153,7 @@ HEREDOC
   echo "- **Changed data model** → update \`docs/state/spec/data-model.md\`"
   echo "- **Changed system shape** (new service, integration, stack swap) → update \`docs/state/arch.md\`"
   echo "- **Changed pricing / billing** → update \`docs/state/product/pricing.md\`"
-  echo "- **Added UI component or state pattern** → update \`docs/state/design/components.md\`"
-  echo "- **Made an architectural decision** → add ADR to \`docs/decisions/\` (context → decision → how to verify)"
+  echo "- **Made an architectural decision** → add a line to \`## Decisions\` in \`docs/state/arch.md\` (date · decision · why · where it shows)"
   echo "- **Anything a data run observed** → your section of today's \`docs/logs/YYYY-MM-DD.md\` — one file a day, one section per source; a clean run writes nothing"
 
   echo ""
@@ -1552,23 +1550,33 @@ reconcile_docs() {
     done
   fi
 
-  # ── A3/A8: per-routine snapshots have no successor — they go to the archive ──
-  # docs/insights/qualitative/ stays: interviews and recordings are source
-  # material, not a routine's daily output.
+  # ── A3/A8/A12: layers nothing writes any more go to the archive ─────────────
+  # docs/insights/  — per-routine snapshots, superseded by the daily log. All of
+  #                   it, qualitative/ included: interviews are source material,
+  #                   what they changed belongs in state/, not in docs/.
+  # docs/decisions/ — ADRs, superseded by the `## Decisions` table in state/arch.md.
+  # docs/state/design/ is deliberately NOT touched: it is dropped from the
+  # scaffolding, but an existing one may hold real assets a human put there.
   local -a _stale=()
   local _dir
-  for _dir in docs/insights/*/; do
-    [[ -d "$_dir" ]] || continue
-    [[ "$_dir" == "docs/insights/qualitative/" ]] && continue
+  # Subfolders AND loose snapshot files — a stray docs/insights/x.md would
+  # otherwise keep the folder alive forever.
+  for _dir in docs/insights/*; do
+    [[ -e "$_dir" ]] || continue
+    [[ "$(basename "$_dir")" == ".gitkeep" ]] && continue
     _stale+=("$_dir")
   done
+  # An empty folder (or one holding just .gitkeep) is not worth archiving.
+  _dir=$(find docs/decisions -type f ! -name '.gitkeep' 2>/dev/null | head -1)
+  [[ -n "$_dir" ]] && _stale+=("docs/decisions/")
 
   if [[ ${#_stale[@]} -gt 0 ]]; then
-    header "Old snapshot folders found (${#_stale[@]})"
+    header "Retired doc folders found (${#_stale[@]})"
     for _dir in "${_stale[@]}"; do dim "$_dir"; done
     echo ""
-    dim "Routines write one section a day to docs/logs/ now (A3), so nothing"
-    dim "refreshes these. They move to docs/_archive/ — nothing is deleted."
+    dim "Nothing writes these any more — routines append to docs/logs/, and a"
+    dim "decision is a line in docs/state/arch.md. They move to docs/_archive/;"
+    dim "nothing is deleted."
     local _yn="y"
     if [[ "$NON_INTERACTIVE" == false && -t 0 && "$DRY_RUN" == false ]]; then
       read -rp "  Move them to docs/_archive/? [Y/n]: " _yn
@@ -1576,12 +1584,24 @@ reconcile_docs() {
     fi
     case "$_yn" in
       [Yy]*) for _dir in "${_stale[@]}"; do
-               _reconcile_mv "${_dir%/}" "docs/_archive/insights/$(basename "${_dir%/}")"
-             done
-             [[ "$DRY_RUN" == false ]] && rmdir docs/insights 2>/dev/null \
-               && dim "removed empty docs/insights/" ;;
+               if [[ "$_dir" == "docs/decisions/" ]]; then
+                 _reconcile_mv "docs/decisions" "docs/_archive/decisions"
+               else
+                 _reconcile_mv "$_dir" "docs/_archive/insights/$(basename "$_dir")"
+               fi
+             done ;;
       *)     info "Left in place — re-run install.sh to archive them later" ;;
     esac
+  fi
+
+  # Whatever is left of the two folders is scaffolding we created ourselves
+  # (.gitkeep, an empty dir) — no human content, so it goes without asking.
+  if [[ "$DRY_RUN" == false ]]; then
+    for _dir in docs/insights docs/decisions; do
+      [[ -d "$_dir" ]] || continue
+      find "$_dir" -type f ! -name '.gitkeep' | grep -q . && continue
+      rm -rf "$_dir" && dim "removed empty ${_dir}/"
+    done
   fi
 
   # ── A11: metrics files no routine writes any more ───────────────────────────
@@ -1625,14 +1645,12 @@ reconcile_docs
 #     docs/logs/ is "what happened", appended and never rewritten.
 make_dir "docs/state/product"
 make_dir "docs/state/spec/flows"
-make_dir "docs/state/design/assets"
 make_dir "docs/logs"
-make_dir "docs/insights/qualitative"   # interviews and recordings — source material, not daily runs
-make_dir "docs/decisions"
 make_dir ".darkflow.d"
 make_dir ".darkflow.d/state"
 
-# No per-module snapshot dirs any more: every routine appends to docs/logs/ (A3).
+# No per-module snapshot dirs any more: every routine appends to docs/logs/ (A3),
+# and a decision is a line in docs/state/arch.md — no decisions/ folder.
 
 # ── 2. Template files ─────────────────────────────────────────────────────────
 
@@ -1646,8 +1664,6 @@ smart_update_template "docs/README.md"             "docs/README.md"         "" "
 smart_update_template "docs/agent-workflow.md"     "docs/agent-workflow.md" "" "true"
 smart_update_template "docs/tasks.md"              "docs/tasks.md"          "" "true"
 smart_update_template "docs/auto-approve.md"       "docs/auto-approve.md"   "" "true"
-smart_update_template "docs/decisions/TEMPLATE.md" "docs/decisions/TEMPLATE.md"
-smart_update_template "docs/decisions/README.md"   "docs/decisions/README.md"
 [[ "$MOD_CI_GATE" == true ]] && smart_update_template "docs/ci-runner.md" "docs/ci-runner.md"
 
 [[ "$DRY_RUN" == false && -f "docs/README.md" ]] && inject_name "docs/README.md"
@@ -1813,7 +1829,7 @@ elif [[ "$MODE" == "fresh" ]]; then
   echo "Next steps:"
   echo "  1. Fill in docs/state/product/ — what are you building and for whom"
   echo "  2. Fill in docs/state/spec/    — user flows, screens, data model"
-  echo "  3. Fill in docs/state/design/  — tokens, components, voice and tone"
+  echo "  3. Fill in docs/state/arch.md   — system map + the ## Decisions table"
   echo "  4. Commit: git add docs/ CLAUDE.md .darkflow.d/claude.md && git commit -m 'chore: install dark-flow'"
   echo "  5. Open ${WEBAPP_URL} in a browser — projects sync automatically"
 else

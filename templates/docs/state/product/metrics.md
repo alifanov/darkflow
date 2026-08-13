@@ -1,6 +1,6 @@
 # Product Metrics
 
-Canonical definitions of all tracked metrics and analytics events for this project. **This is a definition file, not a values file** — actual measurements live in `docs/insights/analytics/`.
+Canonical definitions of all tracked metrics and analytics events for this project. **This is a definition file, not a values file** — actual measurements live in the `## Analytics` sections of `docs/logs/`.
 
 Agents must read this file before writing analytics queries or instrumentation code to avoid inventing event names.
 

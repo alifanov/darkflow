@@ -9,8 +9,8 @@
 When Claude Code (or any AI agent) works on your project, it generates insights and recommendations — but they evaporate between sessions. There's no handoff from "observation" to "approved task" to "merged change."
 
 Dark Flow installs:
-- A **5-layer docs structure** (`product / spec / design / logs / decisions`) with clear read/write rules for the agent
-- A **task triage loop** — agent creates `proposed` tasks from insights via the `~/.darkflow/df` CLI, human approves or rejects, agent picks up `approved` tasks automatically
+- A **two-layer docs structure** (`state/` = how things are now · `logs/` = what happened) with clear read/write rules for the agent
+- A **task triage loop** — agent creates `proposed` tasks from its findings via the `~/.darkflow/df` CLI, human approves or rejects, agent picks up `approved` tasks automatically
 - A **set of task fields** (`status`, `source`, `priority`, `needsHuman`, `scheduledFor`) so you can filter with `~/.darkflow/df task list --status approved` or snooze a task until a date
 - **Agent-workflow rules** baked into `docs/agent-workflow.md` (referenced from CLAUDE.md)
 
@@ -100,20 +100,15 @@ docs/
 ├── tasks.md                 ← task field taxonomy + triage loop spec
 │
 ├── state/                   ← HOW THINGS ARE RIGHT NOW — overwritten in place
-│   ├── arch.md              ← system map: stack, modules, entry points
+│   ├── arch.md              ← system map + ## Decisions (why it is shaped this way)
 │   ├── hypotheses.md        ← bet → evidence → verdict ledger
 │   ├── product/             ← what, why, for whom — quarterly
-│   ├── spec/                ← flows, screens, data model — weekly
-│   └── design/              ← tokens, components, assets — situational
+│   └── spec/                ← flows, screens, data model — weekly
 │
 ├── logs/                    ← WHAT HAPPENED — appended, never rewritten
 │   └── YYYY-MM-DD.md            ## Security, ## Analytics, ## Changes, …
 │
-├── insights/
-│   └── qualitative/         ← interviews, feedback, recordings — source material
-├── _archive/                ← superseded documents — one archive, never under state/
-└── decisions/               ← ADRs (context → decision → verification) — as needed
-    └── TEMPLATE.md
+└── _archive/                ← superseded documents — one archive, never under state/
 ```
 
 `state/` and `logs/` are the whole idea: a routine that *observes* something appends to
@@ -121,9 +116,10 @@ docs/
 other's ground, so neither can quietly overwrite the other's work.
 
 Re-running `install.sh` on a project laid out by an older version brings it forward: the old
-top-level `spec/` · `product/` · `design/` move under `state/`, the old per-routine snapshot
-folders move to `_archive/`, and metrics files no routine writes any more are deleted. Documents
-are only ever **moved** — `git status` shows every one of them before you commit.
+top-level `spec/` · `product/` · `design/` move under `state/`, the retired `insights/` and
+`decisions/` folders move to `_archive/`, and metrics files no routine writes any more are
+deleted. Documents are only ever **moved** — `git status` shows every one of them before you
+commit.
 
 ---
 
