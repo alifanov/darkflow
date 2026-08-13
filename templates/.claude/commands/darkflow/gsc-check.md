@@ -86,12 +86,27 @@ User-Agent field, so identify bots by the **published IP ranges**, not by name:
 | Google-Extended & co | `https://developers.google.com/static/search/apis/ipranges/special-crawlers.json` |
 | Bingbot (feeds ChatGPT search) | `https://www.bing.com/toolbox/bingbot.json` |
 
-For a Coolify/Traefik host the log is `/data/coolify/proxy/access.log` (JSON lines). Report three
-things per host: **how many bot requests, which paths, and which status codes they got**. A bot
-request that returns `503`/`5xx`/`404` is a real finding and outranks any on-page nitpick — a
-`www.` hostname answering `503` to Googlebot's `/robots.txt` means the site is invisible no matter
-what the pages contain. Zero bot requests at all is also a finding: nothing on the page level can
-fix a site nobody fetches.
+For a Coolify/Traefik host the log is `/data/coolify/proxy/access.log` (JSON lines).
+
+> ⛔ **Check what the log is allowed to contain before concluding anything from it.** This proxy
+> runs with `--accesslog.filters.statuscodes=500-599` (see `grep accesslog
+> /data/coolify/proxy/docker-compose.yml`) — it is an **error log**, not a traffic log. Successful
+> crawls never appear in it. Reading an absence there as "no bots came" is a false finding; it was
+> made and caught on 2026-08-13. **Prove the log can show a hit before trusting a zero:** send a
+> marked request (`curl 'https://<host>/robots.txt?probe=<id>'`) and grep the log for `probe=<id>`.
+> No probe in the log ⇒ the log cannot answer questions about traffic, only about failures.
+
+So report only what this log can support, per host: **which bot requests failed, on which paths,
+with which status codes**. A bot request answered `5xx` is a real finding and outranks any on-page
+nitpick — a `www.` hostname answering `503` to Googlebot's `/robots.txt` means that hostname is
+invisible no matter what the pages contain. Do **not** report "N bot visits" or "zero bot visits"
+from an error-filtered log.
+
+To measure actual crawler traffic you need a source that records successes: the app's own request
+logs, or Search Console's **Crawl stats** report (Settings → Crawl stats — Googlebot only, web-UI
+only). If neither exists, say the number is unavailable rather than substituting the error log —
+substituting the nearest available number for a missing one is the failure mode this whole section
+exists to prevent.
 
 ## Step 3 — Technical + on-page SEO audit
 
