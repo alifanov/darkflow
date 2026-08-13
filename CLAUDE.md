@@ -19,11 +19,11 @@ Dark Flow is a workflow installer for AI-assisted development projects.
 ## What's in this repo
 
 ```
-install.sh              ← main installer (copies templates, sets up labels)
-update.sh               ← upgrader
-setup-labels.sh         ← standalone GitHub labels setup
+install.sh              ← main installer AND upgrader (the only script in the repo)
 docker-compose.yml      ← runs the web UI + Postgres database
-checklist.yml           ← issue acceptance checklist used by darkflow-run.sh
+checklist.yml           ← INSTALLER checklist: which artifacts a project must have.
+                          Verified + auto-fixed by install.sh. Unrelated to the
+                          product-readiness checklists in templates/darkflow/checklists/
 docs/                   ← project documentation
 webapp/                 ← Next.js web app (projects list, issue triage, approve/reject)
   prisma/               ← database schema and migrations (Postgres via Prisma)
@@ -32,6 +32,7 @@ webapp/                 ← Next.js web app (projects list, issue triage, approv
   src/lib/              ← prisma client, darkflow-version helper, routines.ts (routine catalog — single source of truth)
 templates/
   darkflow/             ← global worker + helpers (darkflow-run.sh, get-config.sh, mailbox/ → ~/.darkflow/)
+  darkflow/checklists/  ← product-readiness checklists by group → ~/.darkflow/checklists/ (read by checklist-review)
   docs/                 ← generic docs structure templates
   .github/              ← GitHub issue template (darkflow/recommendation.yml)
   .claude/commands/     ← slash commands installed into user scope (~/.claude/commands/darkflow/)

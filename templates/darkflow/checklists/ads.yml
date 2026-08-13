@@ -1,0 +1,138 @@
+# Dark Flow readiness checklist — Paid ads
+#
+# Grounded in the Google Ads lesson corpus
+# (logos/memory/learnings/google-ads/lessons/). Applies to Google Ads and, where
+# the mechanic is the same, to Meta Ads.
+
+group: ads
+title: Ads
+
+items:
+  - id: ads-report-trustworthy
+    severity: critical
+    title: the report can be trusted before anything is read from it
+    applies_when: the project runs paid traffic
+    check: >
+      Step zero, before any optimisation: confirm conversions are landing, the
+      date range is complete, and no tracking outage overlaps the window. A live
+      campaign ran on untrustworthy numbers for 11 days straight. Trust in the
+      report ranks above the ability to read it.
+    source: ads/0019
+
+  - id: ads-conversion-tracking
+    severity: critical
+    title: conversion tracking is installed and verified before spend
+    applies_when: the project runs paid traffic
+    check: >
+      Confirm a conversion action exists, fires on the real completion event, and
+      has recorded at least one conversion. A click is not money; without this the
+      account is blind and every later decision is noise.
+    source: ads/0004, ads/0009
+
+  - id: ads-unit-economics
+    severity: critical
+    title: the CPC ceiling is derived from margin × conversion rate
+    applies_when: the project runs paid traffic
+    check: >
+      Confirm a written max CPA/CPC exists and derives from unit economics. Below
+      margin the account prints money, above it prints losses quickly. Fail if no
+      ceiling is recorded anywhere.
+    source: ads/0005
+
+  - id: ads-chain-matches
+    severity: high
+    title: query → ad → landing page say the same thing
+    applies_when: the project runs paid traffic
+    check: >
+      For the top-spend ad group, confirm the search term, the ad copy and the
+      landing page match. Relevance lives in this chain, not in settings. Right
+      query + clicks + zero leads means one of the two links is broken.
+    source: ads/0002, ads/0008
+
+  - id: ads-negatives-exist
+    severity: high
+    title: a negative keyword list exists and is current
+    applies_when: the project runs paid traffic on broad or phrase match
+    check: >
+      Confirm negatives exist and were reviewed against recent search terms.
+      Match type sets the width of the net; one keyword can pull thousands of
+      phrases. This is budget-protection lever number one.
+    source: ads/0003
+
+  - id: ads-negatives-audited
+    severity: medium
+    title: the negative list is audited for blocking real buyers
+    applies_when: the negative list has been growing for more than a month
+    check: >
+      A negatives list only ever grows, and eventually starts cutting customers.
+      A blocked impression appears in no report row at all, so this must be
+      audited deliberately rather than noticed.
+    source: ads/0021
+
+  - id: ads-defaults-off
+    severity: high
+    title: Google's day-one defaults were switched off
+    applies_when: a campaign was created in the last 90 days
+    check: >
+      Confirm search partners, display expansion and auto-applied recommendations
+      were reviewed rather than left on. The defaults are tuned for Google's
+      revenue; extensions enabled by default quietly take budget share at a
+      terrible cost per lead.
+    source: ads/0014
+
+  - id: ads-bidding-matches-volume
+    severity: high
+    title: the bidding strategy matches accumulated conversion volume
+    applies_when: the project runs paid traffic
+    check: >
+      Confirm the strategy fits the number of conversions already recorded.
+      Handing the wheel to automation too early is the common failure.
+    source: ads/0006
+
+  - id: ads-learning-budget-respected
+    severity: medium
+    title: smart bidding edits are rationed against the learning period
+    applies_when: the campaign uses a smart bidding strategy
+    check: >
+      Every edit restarts learning, up to three weeks. At ~15 leads/month the
+      edit budget is one change per three weeks. Fail if the change history shows
+      knob-turning inside a learning window.
+    source: ads/0016
+
+  - id: ads-lead-quality-fed-back
+    severity: high
+    title: lead quality is fed back as conversion values or events
+    applies_when: the project generates leads rather than direct sales
+    check: >
+      The algorithm cannot see the inbox — it sees the events it was given.
+      Praise it 20 times for the wrong segment and it delivers 40 more tomorrow.
+      Confirm bad leads are not counted the same as good ones.
+    source: ads/0018
+
+  - id: ads-assets-have-destinations
+    severity: medium
+    title: every ad asset points at a page that exists
+    applies_when: the project runs paid traffic
+    check: >
+      Assets are free and double the size of an ad, but each extra line can pull
+      the click to a different page. If that page does not exist or does not
+      convert, the asset steals the click from the ad itself.
+    source: ads/0020
+
+  - id: ads-structure-fits-budget
+    severity: medium
+    title: the number of ad groups is affordable at the daily budget
+    applies_when: the project runs paid traffic
+    check: >
+      "One group, one theme" says nothing about how many groups a budget can
+      feed. Confirm the group count leaves each group enough daily spend to gather
+      data — eight groups on $10/day does not.
+    source: ads/0022
+
+never_flag:
+  - id: ads-cannibalising-organic
+    rule: >
+      Do not file "we are paying for traffic we already get free" for pages that
+      also rank organically. The fear was tested directly and the answer is not
+      the expected one; overlap between the two channels is not by itself a defect.
+    source: ads/0023

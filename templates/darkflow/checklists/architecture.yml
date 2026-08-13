@@ -1,0 +1,87 @@
+# Dark Flow readiness checklist — Architecture
+#
+# Grounded in the structural work the portfolio actually did. Complements
+# architecture-review: that routine finds new boundary problems, this one checks
+# the shapes that proved to matter.
+
+group: architecture
+title: Architecture
+
+items:
+  - id: arch-decisions-recorded
+    severity: high
+    title: architectural decisions are recorded and current
+    applies_when: always
+    check: >
+      Confirm docs/state/arch.md has a Decisions table (date · decision · why ·
+      where it shows) and that the last significant structural change appears in
+      it. Projects that keep an ADR index keep it in sync with the code.
+    source: qabot, darkflow
+
+  - id: arch-map-matches-code
+    severity: high
+    title: the documented system shape matches the running system
+    applies_when: always
+    check: >
+      Compare docs/state/arch.md against the actual services, integrations and
+      stack. Fail on drift — a removed service still documented, or a new one
+      missing.
+    source: docs-audit
+
+  - id: arch-authorization-wrapper
+    severity: high
+    title: cross-cutting checks are applied by one wrapper, not copied per route
+    applies_when: the app has many route handlers sharing a guard
+    check: >
+      Confirm ownership, auth and rate limiting go through a shared wrapper
+      applied uniformly. One project rolled a single ownership wrapper across ~23
+      handlers; another built one rate-limited-user wrapper instead of inline
+      checks. A handler that forgot the inline check is the failure this prevents.
+    source: Vargi, srpskijezik
+
+  - id: arch-no-circular-deps
+    severity: medium
+    title: no circular dependencies between modules
+    applies_when: the project is TS/JS
+    check: >
+      Run the static pass and confirm the cycle count is zero, or that remaining
+      cycles are documented and deliberate.
+    source: tg-marketplace-platform
+
+  - id: arch-one-registry-per-capability
+    severity: medium
+    title: a capability exposed over several transports has one definition
+    applies_when: the app exposes the same operations over more than one transport
+    check: >
+      Confirm operations are defined once and adapted per transport rather than
+      implemented twice. One project unified MCP and REST behind a single
+      operations registry.
+    source: next-flow
+
+  - id: arch-outbound-timeouts
+    severity: high
+    title: every outbound call has an explicit timeout
+    applies_when: the app calls external services
+    check: >
+      Confirm each external call sets a timeout. Defaults are usually unbounded,
+      and one hung upstream then holds a worker slot indefinitely.
+    source: scopegate
+
+  - id: arch-service-extraction-complete
+    severity: medium
+    title: extracted services own their data and have no back-references
+    applies_when: the project has split out services or packages
+    check: >
+      Confirm an extracted service does not reach back into the monolith's
+      internals — that is a rename, not an extraction.
+    source: tg-marketplace-platform
+
+  - id: arch-spec-docs-current
+    severity: medium
+    title: flow and screen specs match the shipped product
+    applies_when: the project has docs/state/spec/
+    check: >
+      Confirm docs/state/spec/screens.md and spec/flows/ reflect screens and flows
+      that actually exist. These are what UI/UX work reads first, so drift here
+      propagates.
+    source: darkflow convention

@@ -1,0 +1,90 @@
+# Dark Flow readiness checklist — Analytics & measurement
+#
+# The "instrument trust" group. Grounded in defects shipped by adbrief,
+# secscanner, pageradar and mailmonitor, plus the lesson class that
+# logos/memory/learnings/seo/NOTES.md names explicitly:
+# «достоверность приборов, а не механика».
+
+group: analytics
+title: Analytics
+
+items:
+  - id: analytics-instrument-trust
+    severity: critical
+    title: a metric is proven able to change before anything is built on it
+    applies_when: always
+    check: >
+      For each metric that drives a decision or a task, confirm it can move at
+      all — that it is not deprecated, not constant across every project, and not
+      read from a source that cannot contain it. Prove absence with a positive
+      probe rather than inferring it from an empty result. Two separate cases
+      cost months: a deprecated API field pinned at 0, and an error-only log read
+      as if it were a traffic log.
+    source: seo/0029, seo/0030, ads/0019
+
+  - id: analytics-attribution-first-pageview
+    severity: critical
+    title: traffic source is captured on the first pageview
+    applies_when: the project acquires users from more than one channel
+    check: >
+      Confirm the source is recorded at first touch and persisted to the
+      registration record. Captured later, every channel collapses to `direct` by
+      construction and the whole attribution report is worthless.
+    source: secscanner, pageradar
+
+  - id: analytics-events-carry-context
+    severity: high
+    title: relayed events carry referrer and path
+    applies_when: events are proxied or relayed server-side
+    check: >
+      Sample recent events. Fail if `referrer` or `path` are empty on a
+      meaningful share — one week had attribution on only 710 of 1279 events
+      because the relay dropped both fields.
+    source: pageradar
+
+  - id: analytics-no-duplicate-events
+    severity: high
+    title: no event fires more than once per occurrence
+    applies_when: the project has product analytics
+    check: >
+      Compare event counts against a known-cardinality baseline (sessions,
+      pageviews). One landing page event fired 75× per view from a server
+      component tracker layered on top of the client one.
+    source: adbrief
+
+  - id: analytics-init-before-events
+    severity: high
+    title: the analytics SDK is initialised before the first event
+    applies_when: the project has product analytics
+    check: >
+      Confirm init runs before any identify/track call, especially around
+      sign-in. Events fired pre-init are dropped silently.
+    source: adbrief
+
+  - id: analytics-internal-traffic-excluded
+    severity: medium
+    title: internal and routine test traffic is excluded
+    applies_when: automated routines or staff use the production app
+    check: >
+      Confirm routine test accounts, monitoring probes and staff sessions are
+      filtered out of product metrics.
+    source: mailmonitor
+
+  - id: analytics-server-side-conversions
+    severity: medium
+    title: paid conversions are uploaded server-side with the click id
+    applies_when: the project runs paid traffic
+    check: >
+      Confirm signup/purchase conversions are uploaded server-side keyed by gclid
+      rather than relying only on a browser tag.
+    source: pageradar
+
+  - id: analytics-fix-has-verdict
+    severity: medium
+    title: each shipped fix is closed with a measured verdict
+    applies_when: a measurable fix shipped in the last 60 days
+    check: >
+      Look for a written before/after over a stated window — worked / too early /
+      noise / grew for another reason. secscanner does this as explicit verdict
+      entries; without it the loop diagnose → fix → result never closes.
+    source: seo/0014, secscanner

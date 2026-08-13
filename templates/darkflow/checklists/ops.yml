@@ -1,0 +1,90 @@
+# Dark Flow readiness checklist — Ops, build & deploy
+#
+# Grounded in outages and image/deploy fixes the portfolio actually shipped.
+
+group: ops
+title: Ops
+
+items:
+  - id: ops-uptime-monitor
+    severity: critical
+    title: the domain is under uptime monitoring
+    applies_when: the project has a public domain
+    check: >
+      Confirm a monitor exists and alerts somewhere a human reads. Downtime that
+      nobody is paged for is downtime nobody measures.
+    source: portfolio
+
+  - id: ops-tls-valid
+    severity: critical
+    title: TLS terminates correctly and the origin is reachable
+    applies_when: the project has a public domain
+    check: >
+      Confirm the certificate is valid and not near expiry, and that the edge is
+      not serving 5xx while the origin hangs. One outage presented as a hanging
+      TLS handshake behind a Cloudflare 521.
+    source: pageradar, seo/0023
+
+  - id: ops-canonical-host-redirect
+    severity: high
+    title: the www→apex redirect is correct and leaks nothing
+    applies_when: the project serves both www and apex
+    check: >
+      curl -I both hosts. Confirm a 301 to the canonical host, with no internal
+      port in the Location header and no literal template placeholder. Both
+      failures shipped — a `:3000` leak and a literal `${1}`.
+    source: mailmonitor, pageradar
+
+  - id: ops-lean-runtime-image
+    severity: medium
+    title: the runtime image carries only what runtime needs
+    applies_when: the project ships a container
+    check: >
+      Confirm build-only tooling (ORM CLIs, dev deps) is not in the final stage
+      and that no recursive chown runs at runtime. Removing both took one image
+      from 267 MB to 221 MB; another went from 1.1 GB to 446 MB.
+    source: mystize, adsynex
+
+  - id: ops-non-root-user
+    severity: high
+    title: the container runs as a non-root user
+    applies_when: the project ships a container
+    check: >
+      Confirm a USER directive and that file ownership is set at build time.
+    source: mystize
+
+  - id: ops-migrations-isolated
+    severity: high
+    title: migrations run in their own stage with their own dependencies
+    applies_when: the project uses a database with migrations
+    check: >
+      Confirm the migrator has the CLI and dependency closure it needs, rather
+      than borrowing them from the app image. Several crashloops traced to a
+      migrator missing its own node_modules or a symlinked engine.
+    source: qabot, baraholka, marketloop
+
+  - id: ops-healthcheck-correct
+    severity: high
+    title: the healthcheck actually passes on the deployed stack
+    applies_when: the project defines a container healthcheck
+    check: >
+      Confirm the check targets a reachable address — including the IPv6 case,
+      where a loopback-literal check fails while the app is healthy.
+    source: marketloop
+
+  - id: ops-observability-wired
+    severity: medium
+    title: unhandled errors reach the observability backend
+    applies_when: the project has observability configured
+    check: >
+      Confirm the framework error hook records the exception rather than only
+      logging it, so failures appear as traces and not just stdout.
+    source: studyclutch
+
+  - id: ops-ci-green
+    severity: high
+    title: CI runs build and lint on pull requests and is green
+    applies_when: the project has CI
+    check: >
+      Confirm CI is configured, required, and green on the base branch.
+    source: portfolio

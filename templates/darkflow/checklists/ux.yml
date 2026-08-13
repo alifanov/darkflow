@@ -1,0 +1,82 @@
+# Dark Flow readiness checklist — UX
+#
+# Grounded in UX defects the portfolio shipped. Uses the same two viewports as
+# the check-ux routine, so findings from both are comparable.
+
+group: ux
+title: UX
+
+items:
+  - id: ux-flows-complete-both-viewports
+    severity: critical
+    title: each key flow completes at 390×844 and at 1440×900
+    applies_when: the project has a reachable staging or production URL
+    check: >
+      Walk the entry flow, the core job, and the money path at both widths.
+      A flow that cannot be finished at one width is a fail. Never walk a
+      production step that writes real data — note it as not walked instead.
+    source: check-ux convention
+
+  - id: ux-states-reachable
+    severity: high
+    title: loading, empty and error states exist and can be reached
+    applies_when: the project has a web UI
+    check: >
+      Trigger them: submit the form empty, pass a bad value, open a list with no
+      items. A state nobody can reach is not a state.
+    source: check-ux convention
+
+  - id: ux-mobile-paywall
+    severity: high
+    title: the paywall and checkout are usable on a phone
+    applies_when: the project sells something
+    check: >
+      Confirm the paywall renders full-screen on mobile rather than as a clipped
+      desktop modal, that the submit control is reachable, and that trust signals
+      are visible at the decision point.
+    source: naturalwrite
+
+  - id: ux-no-overlay-regressions
+    severity: medium
+    title: overlays, sticky bars and effects do not cover interactive elements
+    applies_when: the project has a web UI
+    check: >
+      Check z-index layering around modals, sticky footers and celebratory
+      effects. A sticky bar covering the submit button is the classic failure.
+    source: naturalwrite
+
+  - id: ux-tap-targets
+    severity: medium
+    title: tap targets are large enough and not adjacent to destructive actions
+    applies_when: the project has a mobile web UI
+    check: >
+      Confirm primary controls meet a ~44px target and that a destructive action
+      is not one thumb-width from a common one.
+    source: portfolio
+
+  - id: ux-primary-action-discoverable
+    severity: high
+    title: the primary action on each screen is obvious without hunting
+    applies_when: the project has a web UI
+    check: >
+      For each key screen, confirm the next step is visible without scrolling or
+      guessing. Where you hesitate is the finding.
+    source: studyclutch, check-ux convention
+
+  - id: ux-accessibility-basics
+    severity: high
+    title: dynamic regions announce, and focus order is sane
+    applies_when: the project has a web UI
+    check: >
+      Confirm aria-live on regions that update without navigation (timers,
+      results), labelled form controls, visible focus, and a logical tab order.
+    source: srpskijezik
+
+  - id: ux-design-tokens
+    severity: medium
+    title: spacing, colour and radius come from tokens, not ad-hoc values
+    applies_when: the project has a design system or theme
+    check: >
+      Look for one-off arbitrary values where a token exists. Confirm dark and
+      light themes both define every colour they use.
+    source: Vargi

@@ -1,0 +1,181 @@
+# Dark Flow readiness checklist — SEO
+#
+# Grounded in the SEO lesson corpus (logos/memory/learnings/seo/lessons/) and in
+# defects actually shipped by the portfolio. `source:` points at the lesson that
+# established the rule.
+#
+# never_flag: findings that audits keep raising and that were verified NOT worth
+# fixing. The routine must suppress these, never report them as failures.
+
+group: seo
+title: SEO
+
+items:
+  - id: seo-lastmod-honest
+    severity: high
+    title: sitemap <lastmod> reflects the content change date, not build time
+    applies_when: the project serves a sitemap.xml
+    check: >
+      Fetch /sitemap.xml. Take 3 sample URLs and compare their <lastmod> against
+      the last content edit for those routes in git. Fail if every entry carries
+      the same deploy timestamp, if lastmod tracks file mtime, or if it is absent.
+      This was the one defect common to the entire portfolio.
+    source: seo/0028
+
+  - id: seo-no-changefreq-priority
+    severity: medium
+    title: sitemap does not rely on <changefreq> / <priority>
+    applies_when: the project serves a sitemap.xml
+    check: >
+      Google ignores both fields. Their presence is harmless, but treating them
+      as a lever is not — fail only if the codebase computes them as if they
+      influenced crawling (a comment, a heuristic, or a task referencing them).
+    source: seo/0028
+
+  - id: seo-no-noindex-on-target
+    severity: critical
+    title: the page meant to rank is not excluded from the index
+    applies_when: always
+    check: >
+      Grep for `noindex`, `robots: { index: false }`, and X-Robots-Tag across the
+      app. For each hit, confirm the page is genuinely not meant to rank. Check
+      the money/tool pages explicitly. sqlformatter.dev sat at position 87 for
+      this reason — three lines of its own code, not links or authority.
+    source: seo/0027
+
+  - id: seo-crawlability-chain
+    severity: critical
+    title: key pages are reachable by a plain <a href>
+    applies_when: always
+    check: >
+      From the homepage, confirm each key page is reachable by anchor tags that
+      exist in the served HTML — not router pushes, onClick handlers or JS-built
+      menus. A sitemap entry with no path to it does nothing. Verify the whole
+      chain in order; this is one problem, not four.
+    source: seo/0017, seo/0019
+
+  - id: seo-internal-links-bidirectional
+    severity: high
+    title: hub and spoke pages link to each other
+    applies_when: the project has a blog, docs or a content cluster
+    check: >
+      Pick one cluster. Confirm the pillar links to its spokes and each spoke
+      links back. Fail if pages exist only in the sitemap. The "max 100 links per
+      page" rule was retired before 2008 and is not a reason to fail this.
+    source: seo/0003, seo/0019
+
+  - id: seo-canonical-consolidates
+    severity: high
+    title: canonical tags point duplicates at one chosen URL
+    applies_when: the project serves the same content at more than one path
+    check: >
+      Find duplicate-ish routes (trailing slash, query params, pagination, www vs
+      apex). Confirm each declares a canonical to the chosen version. Duplicates
+      are not penalised — the damage is signals split across copies.
+    source: seo/0018
+
+  - id: seo-redirects-correct
+    severity: high
+    title: permanent moves return 301, and dead URLs return a real 404
+    applies_when: always
+    check: >
+      curl -I the known moved paths. Fail on 307/302 where the move is permanent,
+      and on soft-404s (a 200 rendering an "not found" page). The status code
+      decides which address survives in the index.
+    source: seo/0020
+
+  - id: seo-structured-data
+    severity: medium
+    title: JSON-LD lives in a shared template, not per page
+    applies_when: the project has pages eligible for a rich result
+    check: >
+      Confirm JSON-LD is emitted from a shared layout/component so it covers every
+      page of a type, and that values derive from a single source (a plan catalog,
+      the content record) rather than being hand-copied per landing.
+    source: seo/0013
+
+  - id: seo-demand-before-pages
+    severity: high
+    title: programmatic pages were generated only where demand was measured first
+    applies_when: the project generates pages from a template or dataset
+    check: >
+      Look for bulk-generated route groups. Confirm search demand was checked
+      before generation, not after. 42 generated pages with demand on four is the
+      failure mode; sqlformatter collapsed 18 such pages into one.
+    source: seo/0026
+
+  - id: seo-page-type-matches-intent
+    severity: high
+    title: each target page is the right *type* for its query
+    applies_when: always
+    check: >
+      For the main target queries, confirm the page type matches intent — a tool
+      for a "do it" query, an article for a "what is" query. A page can be well
+      optimised and still be the wrong page to send into that fight.
+    source: seo/0025
+
+  - id: seo-titles-unique
+    severity: medium
+    title: titles and meta descriptions are unique and not doubled up
+    applies_when: always
+    check: >
+      Sample 5 pages. Fail on duplicate titles across distinct pages, on a brand
+      suffix appended twice, and on descriptions outside ~150-160 chars.
+    source: qabot, sqlformatter
+
+  - id: seo-gsc-connected
+    severity: high
+    title: Search Console is verified and the sitemap is submitted
+    applies_when: the project has a public domain
+    check: >
+      Confirm domain verification exists and the sitemap was submitted. Without
+      it there is no instrument to read, and every later diagnosis is guesswork.
+    source: seo/0005
+
+  - id: seo-404s-on-internal-links
+    severity: critical
+    title: no internal link points at a 404
+    applies_when: always
+    check: >
+      Crawl the internal link graph one level deep from the homepage and the main
+      hubs. mystize lost its traffic to exactly this, combined with noindex on hubs.
+    source: seo/0027, mystize
+
+  - id: seo-measured-after-fix
+    severity: medium
+    title: the last SEO fix was closed with a before/after verdict
+    applies_when: the project has shipped an SEO fix in the last 60 days
+    check: >
+      Look in docs/logs/ or docs/state/ for a verdict on the previous fix —
+      worked / too early / noise / grew for another reason. An unclosed loop means
+      the next diagnosis starts blind.
+    source: seo/0014
+
+never_flag:
+  - id: seo-llms-txt
+    rule: >
+      Do not create, recommend, or file a task for /llms.txt. Google Search
+      ignores it. The only traffic ever observed against it was 5xx. Lighthouse
+      audits it anyway, which is what keeps re-filing it.
+    source: seo/0015, seo/0030
+
+  - id: seo-robots-txt-common-bug
+    rule: >
+      The robots.txt defect that audit tools score "high" was verified live in
+      4 of 7 sites and costs nothing. Do not fix it, do not file it.
+    source: seo/0022
+
+  - id: seo-cannibalization
+    rule: >
+      Two pages ranking for one query is usually not a problem. Identical titles
+      are not a diagnosis, and "average position" only reflects the best URL.
+      In the large majority of cases the correct action is to leave it alone.
+    source: seo/0021
+
+  - id: seo-sitemaps-api-indexed
+    rule: >
+      `contents[].indexed` from the Search Console Sitemaps API is marked
+      "Deprecated; do not use" and reads 0 for every site on earth. Never build a
+      finding on it. The useful field on the same row is `lastDownloaded`.
+      Three months of phantom tasks came from this.
+    source: seo/0029

@@ -1,0 +1,96 @@
+# Dark Flow readiness checklist — Security
+#
+# Grounded in defects actually shipped and then fixed by the portfolio.
+# Complements the `security-audit` routine: that one hunts new findings, this one
+# verifies the classes that have already bitten us stay fixed.
+
+group: security
+title: Security
+
+items:
+  - id: sec-authz-in-data-layer
+    severity: critical
+    title: authorization is enforced in the data layer, not only in a layout
+    applies_when: the project has privileged areas (admin, org-scoped data)
+    check: >
+      Confirm every privileged query checks the caller, and that middleware
+      enforces it too. A layout-level guard is bypassed by any route that does
+      not render through it — admin access was protected this way once.
+    source: mailmonitor
+
+  - id: sec-session-scoped-reads
+    severity: critical
+    title: data reads are scoped to the caller's session, not to a parameter
+    applies_when: the app exposes per-user resources
+    check: >
+      Look for handlers that take an identifier from the request and read it
+      without proving ownership. One tool read the latest email for any address
+      passed in, rather than the session's own address.
+    source: qabot
+
+  - id: sec-mass-assignment
+    severity: high
+    title: writes use an explicit field whitelist
+    applies_when: the app accepts object payloads on write
+    check: >
+      Confirm create/update paths pick allowed fields explicitly rather than
+      spreading the request body into the model.
+    source: tg-marketplace-platform
+
+  - id: sec-money-paths-race-free
+    severity: critical
+    title: money and credit paths are safe against races and replays
+    applies_when: the project handles payments, credits or withdrawals
+    check: >
+      Confirm balance changes are transactional and idempotent, that a webhook
+      arriving out of order cannot double-credit, and that claim tokens are
+      enforced. Real cases: a pending-deposit escalation exploit, subscriptions
+      linked incorrectly depending on webhook order, and an unenforced claim token
+      on anonymous purchase merge.
+    source: openhumancy, secscanner, studyclutch
+
+  - id: sec-secrets-not-committed
+    severity: critical
+    title: no secrets in git; .env.example is present and current
+    applies_when: always
+    check: >
+      Grep history and the working tree for keys and tokens. Confirm .env.example
+      lists every variable the app reads, with no real values.
+    source: portfolio
+
+  - id: sec-headers
+    severity: high
+    title: CSP, frame-ancestors and Permissions-Policy are enforced
+    applies_when: the project serves a web UI
+    check: >
+      Confirm CSP is enforcing rather than Report-Only, and that frame-ancestors
+      and Permissions-Policy are set. Report-Only left in place indefinitely
+      counts as a fail.
+    source: srpskijezik, tg-marketplace-platform
+
+  - id: sec-signed-urls
+    severity: high
+    title: user assets are served via signed URLs, not a public bucket ACL
+    applies_when: the project stores user-uploaded or generated assets
+    check: >
+      Confirm object storage is private and access goes through time-limited
+      signed URLs.
+    source: adsynex
+
+  - id: sec-prompt-injection-escaping
+    severity: high
+    title: user input reaching an LLM prompt is escaped or delimited
+    applies_when: the project sends user content to a model
+    check: >
+      Confirm user content is escaped or fenced so it cannot forge instructions
+      or close a structured prompt block.
+    source: adsynex
+
+  - id: sec-dependency-advisories
+    severity: high
+    title: no unresolved high-severity dependency advisories
+    applies_when: always
+    check: >
+      Confirm the audit is clean, or that each remaining advisory has an override
+      pinning a fixed version. The portfolio resolves these with pnpm overrides.
+    source: portfolio

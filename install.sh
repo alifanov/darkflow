@@ -261,8 +261,13 @@ ALL_DF_COMMANDS=(
   gsc-check ads-review coolify-check-deployment security-audit
   architecture-review update-config docs-audit
   build-optimization uptime-check check-design check-ux
-  mailbox-check fix-ci-issue web-vitals
+  mailbox-check fix-ci-issue web-vitals checklist-review
 )
+
+# Readiness checklist groups, fetched into ~/.darkflow/checklists/. Read by the
+# checklist-review routine; kept global (not per project) so every product is
+# scored against the same, versioned list.
+ALL_DF_CHECKLISTS=(code architecture ux seo ads security analytics ops)
 
 # Commands Dark Flow used to ship. Deleted from user scope on every run — a
 # leftover file keeps showing up in the /darkflow: menu, and (A9) a schedule that
@@ -328,7 +333,16 @@ install_global_helpers() {
     || warn "Could not fetch ci-wait.sh"
   gb_fetch "darkflow/mailbox/fetch.py" "${GLOBAL_DIR}/mailbox/fetch.py" || warn "Could not fetch mailbox/fetch.py"
   gb_fetch "darkflow/mailbox/send.py"  "${GLOBAL_DIR}/mailbox/send.py"  || warn "Could not fetch mailbox/send.py"
-  success "Installed global helpers (get-config.sh, ci-wait.sh, mailbox) into ${GLOBAL_DIR}/"
+
+  # Readiness checklists. Raw GitHub has no globbing, so the group list is explicit.
+  local g
+  mkdir -p "${GLOBAL_DIR}/checklists"
+  for g in "${ALL_DF_CHECKLISTS[@]}"; do
+    gb_fetch "darkflow/checklists/${g}.yml" "${GLOBAL_DIR}/checklists/${g}.yml" \
+      || warn "Could not fetch checklist: ${g}"
+  done
+
+  success "Installed global helpers (get-config.sh, ci-wait.sh, mailbox, ${#ALL_DF_CHECKLISTS[@]} checklists) into ${GLOBAL_DIR}/"
 }
 
 # Write ~/.darkflow/config (webapp_url + version). Preserves a custom webapp_url
@@ -1207,6 +1221,9 @@ HEREDOC
   echo "- \`/darkflow:uptime-check\` — DNS + HTTP + page-load check; site down → auto-approved critical task"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:check-design\` — visual quality, UI performance, production readiness → tasks"
   [[ "$MOD_IMPECCABLE" == true ]] && echo "- \`/darkflow:check-ux\` — key flows walked in a real browser, mobile + desktop → tasks"
+  # Always listed: ships disabled as a scheduled routine (opt in via Settings →
+  # Routines), but the slash command is installed for every project.
+  echo "- \`/darkflow:checklist-review [group]\` — score the product against the readiness checklists; report only, files no tasks"
 }
 
 # Writes .darkflow.d/claude.md with full Dark Flow instructions, then ensures

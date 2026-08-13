@@ -262,10 +262,28 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | `/darkflow:uptime-check` | DNS + HTTP + page-load check → **auto-approved** `critical` task if the site is down |
 | `/darkflow:check-design` | Visual quality, UI performance, production readiness → tasks *(optional)* |
 | `/darkflow:check-ux` | Key flows walked in a real browser, mobile + desktop → tasks *(optional)* |
+| `/darkflow:checklist-review [group]` | Score the product against the readiness checklists → `docs/state/readiness.md`. **Report only — files no tasks.** Ships disabled; enable per project in Settings → Routines |
 
 Routine commands automatically call `bash ~/.darkflow/get-config.sh` before running — this fetches the latest project settings (branch, language, merge strategy, modules, routine schedule) from the **Web UI Settings tab** into `.darkflow.d/state/config.json`. If the server is unreachable, commands fall back to the last fetched copy silently.
 
 **To edit project settings:** open the Web UI → project detail → **Settings** tab. Changes take effect the next time a routine or command runs. The database is the single source of truth — projects no longer carry a `.darkflow` config file.
+
+### Readiness checklists
+
+`checklist-review` scores a product against a versioned set of checklists in
+`~/.darkflow/checklists/` — eight groups (`code`, `architecture`, `ux`, `seo`, `ads`,
+`security`, `analytics`, `ops`), each item carrying the lesson or the project where the
+defect was originally paid for. They are global, not per project: one list scores the
+whole portfolio.
+
+Each group holds two lists. `items` is what must hold. **`never_flag`** is the other half —
+findings that audits keep raising and that were verified *not* worth fixing, so the routine
+suppresses them instead of re-filing them every week. A rule that lives only in a lesson gets
+re-discovered forever; putting it here is what stops that.
+
+Other audit routines hunt for new findings. This one asks whether the product still gets wrong
+the things already learned the expensive way. It files no tasks — it writes
+`docs/state/readiness.md` and prints a score.
 
 ---
 

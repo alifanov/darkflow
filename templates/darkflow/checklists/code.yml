@@ -1,0 +1,104 @@
+# Dark Flow readiness checklist — Code health
+#
+# Grounded in fixes the portfolio actually shipped. Complements the static
+# `fallow` pass inside architecture-review: these are the specific defect classes
+# that recurred across more than one project.
+
+group: code
+title: Code
+
+items:
+  - id: code-build-passes
+    severity: critical
+    title: the build passes on a clean checkout
+    applies_when: always
+    check: >
+      Run the project's build. A build that only works with a warm cache or a
+      stale node_modules is a fail.
+    source: portfolio
+
+  - id: code-lint-clean
+    severity: high
+    title: a linter and formatter are configured and clean
+    applies_when: always
+    check: >
+      Confirm the config exists and the repo passes it — ruff for Python,
+      eslint/prettier for JS/TS.
+    source: portfolio
+
+  - id: code-no-dead-exports
+    severity: medium
+    title: no unused files, exports or dependencies
+    applies_when: the project is TS/JS
+    check: >
+      Run the static pass and confirm dead exports and orphaned files were
+      removed rather than accumulated. scopegate and sqlformatter both carried
+      dead helpers and an unused component for months.
+    source: scopegate, sqlformatter
+
+  - id: code-bounded-caches
+    severity: high
+    title: in-memory maps used as caches or rate limiters are bounded
+    applies_when: the app keeps per-key state in a process-level Map
+    check: >
+      Confirm every long-lived Map has eviction or a size cap. Unbounded
+      rate-limit maps shipped in at least two projects and grow until the process
+      dies.
+    source: mailmonitor, sqlformatter
+
+  - id: code-client-ip-correct
+    severity: high
+    title: the client IP is taken from the correct X-Forwarded-For hop
+    applies_when: the app reads a client IP behind a proxy
+    check: >
+      Behind a trusted proxy the rightmost hop is the real client; the leftmost is
+      attacker-controlled. Rate limiting and geo keyed on the wrong hop are
+      trivially bypassed.
+    source: sqlformatter
+
+  - id: code-error-boundaries
+    severity: medium
+    title: errors are mapped to correct status codes at the boundary
+    applies_when: the app exposes an API or server actions
+    check: >
+      Confirm validation failures return 400 rather than surfacing as "Internal
+      error", and that errors crossing a serialization boundary keep their shape.
+    source: next-flow
+
+  - id: code-input-validation
+    severity: high
+    title: server actions and route handlers validate their input
+    applies_when: the app exposes server actions or route handlers
+    check: >
+      Confirm every mutation validates its payload at the trust boundary rather
+      than trusting the caller.
+    source: srpskijezik
+
+  - id: code-no-instanceof-chains
+    severity: medium
+    title: type dispatch uses a shared base rather than repeated instanceof blocks
+    applies_when: the project is TS/JS
+    check: >
+      Look for the same instanceof ladder repeated across files. One project
+      replaced eight such blocks with a single error base class.
+    source: scopegate
+
+  - id: code-complexity-hotspots
+    severity: medium
+    title: no untouched high-complexity hotspots in active code
+    applies_when: the project is TS/JS
+    check: >
+      Identify the highest-complexity functions and confirm the ones under active
+      change have been split. Real reductions: a 1046-line component at
+      cyclomatic 34, a handler at 42→6, a module at 36→5.
+    source: Vargi
+
+  - id: code-derived-from-one-source
+    severity: medium
+    title: derived data has exactly one source of truth
+    applies_when: always
+    check: >
+      Look for values duplicated across templates, landing pages or schemas —
+      prices, plan limits, offers. One project unified schema.org offer prices
+      across 10 landings after they drifted apart.
+    source: qabot, pageradar
