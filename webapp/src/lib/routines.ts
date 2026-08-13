@@ -38,7 +38,10 @@ export const ALL_ROUTINES: RoutineDef[] = [
   { name: "fix-ci-issue",             defaultCron: "*/15 * * * *", defaultModel: "sonnet", module: "ci-gate",         label: "Pick up source:ci failures → fix → retry up to 3× (every 15 min)" },
   { name: "analytics-review",         defaultCron: "0 8 * * *",   defaultModel: "sonnet", module: "analytics",        label: "OpenPanel + commits → issues (daily)" },
   { name: "observability-check",      defaultCron: "30 8 * * *",  defaultModel: "sonnet", module: "observability",    label: "Errors / latency → issues (daily)" },
-  { name: "gsc-check",                defaultCron: "0 8 * * 1",   defaultModel: "sonnet", module: "gsc",              label: "Search Console + SEO audit (weekly Mon)" },
+  // Renamed from `gsc-check` in 4.35.0 — the routine always was a full SEO audit
+  // with GSC as its data half; the old name hid that. Module key stays `gsc`: it is
+  // internal, and renaming it would invalidate every stored module list.
+  { name: "seo-check",                defaultCron: "0 8 * * 1",   defaultModel: "sonnet", module: "gsc",              label: "SEO audit + Search Console (weekly Mon)" },
   { name: "ads-review",               defaultCron: "0 9 * * 1",   defaultModel: "sonnet", module: "ads",              label: "Paid ads performance (weekly Mon)" },
   { name: "coolify-check-deployment", defaultCron: "0 9 * * *",   defaultModel: "sonnet", module: "coolify",          label: "Deployment status (daily)" },
   // Absorbed code-health (C2): the fallow step is optional inside the review — it

@@ -26,7 +26,7 @@ Install Dark Flow workflow from https://github.com/alifanov/darkflow
 Run the installer:
 curl -fsSL https://raw.githubusercontent.com/alifanov/darkflow/main/install.sh -o /tmp/darkflow-install.sh && bash /tmp/darkflow-install.sh
 
-Ask me which optional modules I want (analytics, observability, GSC, ads, Coolify, architecture review, design),
+Ask me which optional modules I want (analytics, observability, SEO, ads, Coolify, architecture review, design),
 then run the installer with the appropriate flags.
 After install, show me the routines I need to set up in Claude Code → Routines.
 ```
@@ -35,7 +35,7 @@ The agent will fetch the installer, ask about your stack, run it with the right 
 
 ### What the installer does
 
-1. Asks which optional modules apply to your project (analytics, observability, GSC, ads, Coolify, architecture review, docs audit, design, mailbox)
+1. Asks which optional modules apply to your project (analytics, observability, SEO, ads, Coolify, architecture review, docs audit, design, mailbox)
 2. Creates `docs/` folder structure with template files
 3. Writes `.darkflow.d/claude.md` with the Dark Flow agent workflow and adds a single `@.darkflow.d/claude.md` reference to `CLAUDE.md`
 4. Installs `/darkflow` and `/darkflow:*` slash commands for Claude Code
@@ -207,7 +207,7 @@ Daily
   */4h  uptime-check         → DNS + HTTP + page-load; site down → status=approved critical task
 
 Weekly
-  Mon 8:00  gsc-check (GSC + SEO) → proposed tasks
+  Mon 8:00  seo-check (SEO + GSC) → proposed tasks
   Mon 8:00  ads-review            → proposed tasks + ads snapshot (optional)
   Sun 2:00  architecture-review   → proposed tasks (Opus) + arch snapshot → syncs to web UI
   Sun 3:00  security-audit        → GitHub alerts + code review → auto-approved tasks (Opus) → syncs to web UI
@@ -255,7 +255,7 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | `/darkflow:fix-issues` | Pick up one approved task, implement, close |
 | `/darkflow:analytics-review` | OpenPanel + commits → tasks + analytics snapshot |
 | `/darkflow:observability-check` | Errors / slow queries / latency → tasks |
-| `/darkflow:gsc-check` | Google Search Console + technical/on-page SEO audit → tasks |
+| `/darkflow:seo-check` | Technical + on-page SEO audit, plus Google Search Console data → tasks |
 | `/darkflow:coolify-check-deployment` | Deployment status check → `critical` task on failed deploy |
 | `/darkflow:architecture-review` | Module boundaries + fallow code health → tasks + architecture snapshot |
 | `/darkflow:security-audit` | GitHub alerts (Dependabot, code + secret scanning) + code review → tasks + security snapshot |

@@ -83,12 +83,12 @@ while [[ $# -gt 0 ]]; do
                           shift ;;
     --with-analytics)     MOD_ANALYTICS=true; shift ;;
     --with-observability) MOD_OBSERVABILITY=true; shift ;;
-    --with-gsc)           MOD_GSC=true; shift ;;
+    --with-seo|--with-gsc) MOD_GSC=true; shift ;;
     --with-ads)           MOD_ADS=true; shift ;;
     --with-coolify)       MOD_COOLIFY=true; shift ;;
     --no-analytics)       MOD_ANALYTICS=false; shift ;;
     --no-observability)   MOD_OBSERVABILITY=false; shift ;;
-    --no-gsc)             MOD_GSC=false; shift ;;
+    --no-seo|--no-gsc)    MOD_GSC=false; shift ;;
     --no-ads)             MOD_ADS=false; shift ;;
     --no-coolify)         MOD_COOLIFY=false; shift ;;
     --with-arch-review)   MOD_ARCH_REVIEW=true; shift ;;
@@ -128,7 +128,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --force               Overwrite locally-modified files; skip version check"
       echo "  --with-analytics      Include analytics module (OpenPanel)"
       echo "  --with-observability  Include observability module (SigNoz/Datadog)"
-      echo "  --with-gsc            Include Google Search Console module"
+      echo "  --with-seo            Include SEO module (audit + Google Search Console)"
       echo "  --with-ads            Include paid ads module (Google Ads/Meta)"
       echo "  --with-coolify        Include Coolify deployment monitoring"
       echo "  --with-arch-review    Weekly architecture review (improve-codebase-architecture + fallow skills)"
@@ -258,7 +258,7 @@ BASH_BIN="$(command -v bash 2>/dev/null || echo /bin/bash)"
 # run, and an unused slash command is harmless.
 ALL_DF_COMMANDS=(
   add-issue install self-update fix-issues analytics-review observability-check
-  gsc-check ads-review coolify-check-deployment security-audit
+  seo-check ads-review coolify-check-deployment security-audit
   architecture-review update-config docs-audit
   build-optimization uptime-check check-design check-ux
   mailbox-check fix-ci-issue web-vitals checklist-review
@@ -275,6 +275,7 @@ ALL_DF_CHECKLISTS=(code architecture ux seo ads security analytics ops)
 RETIRED_DF_COMMANDS=(
   claude-md-update product-overview csp-setup grill
   vulnerability-check code-health design-audit design-critique design-harden
+  gsc-check
 )
 
 # Fetch a template (local clone or remote) to dest, always overwriting.
@@ -756,7 +757,7 @@ fi
 
 ask_module MOD_ANALYTICS     "Analytics"           "(OpenPanel) — daily review routine → ## Analytics in the daily log"
 ask_module MOD_OBSERVABILITY  "Observability"       "(SigNoz, Datadog, Grafana…) — daily error/latency monitoring routine"
-ask_module MOD_GSC            "Search Console"      "(Google Search Console) — weekly GSC + technical/on-page SEO audit → ## SEO in the daily log"
+ask_module MOD_GSC            "SEO"                 "weekly technical/on-page SEO audit + Google Search Console data → ## SEO in the daily log"
 ask_module MOD_ADS            "Paid Ads"            "(Google Ads, Meta…) — weekly review → ## Ads in the daily log"              false
 ask_module MOD_COOLIFY        "Coolify"             "deployment status check — one daily routine"
 ask_module MOD_ARCH_REVIEW    "Architecture review" "weekly architecture + code-health audit (improve-codebase-architecture + fallow skills)" false
@@ -1185,7 +1186,7 @@ HEREDOC
     local _obs_label="${OBS_TOOL:-Observability tool}"
     echo "- **Observability check** (Daily 8:30) — ${_obs_label}: errors / slow queries / latency → tasks"
   fi
-  [[ "$MOD_GSC"           == true ]] && echo "- **GSC check** (Weekly Mon 8:00) — Google Search Console + technical/on-page SEO audit → tasks"
+  [[ "$MOD_GSC"           == true ]] && echo "- **SEO check** (Weekly Mon 8:00) — technical/on-page SEO audit + Google Search Console → tasks"
   [[ "$MOD_ADS"           == true ]] && echo "- **Ads review** (Weekly Mon 8:00) — paid ads performance → tasks"
   [[ "$MOD_COOLIFY"       == true ]] && echo "- **Coolify check deployment** (Daily 9:00) — deploy status → critical task on failure"
   [[ "$MOD_ARCH_REVIEW"   == true ]] && echo "- **Architecture review** (Weekly Sun 2:00) — module boundaries + fallow code health → tasks"
@@ -1213,7 +1214,7 @@ HEREDOC
   echo "- \`/darkflow:fix-issues\` — pick up one approved task and close it"
   [[ "$MOD_ANALYTICS"     == true ]] && echo "- \`/darkflow:analytics-review\` — OpenPanel + commits → tasks"
   [[ "$MOD_OBSERVABILITY" == true ]] && echo "- \`/darkflow:observability-check\` — errors / slow queries / latency → tasks"
-  [[ "$MOD_GSC"           == true ]] && echo "- \`/darkflow:gsc-check\` — Google Search Console + technical/on-page SEO audit → tasks"
+  [[ "$MOD_GSC"           == true ]] && echo "- \`/darkflow:seo-check\` — technical/on-page SEO audit + Google Search Console → tasks"
   [[ "$MOD_ADS"           == true ]] && echo "- \`/darkflow:ads-review\` — paid ads performance → tasks"
   [[ "$MOD_COOLIFY"       == true ]] && echo "- \`/darkflow:coolify-check-deployment\` — deployment status check"
   [[ "$MOD_DOCS_AUDIT"        == true ]] && echo "- \`/darkflow:docs-audit\` — docs <-> code drift check → tasks"

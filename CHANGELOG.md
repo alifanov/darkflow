@@ -10,6 +10,12 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.35.0] — 2026-08-13
+
+- **Updated routine** — `gsc-check` переименована в **`seo-check`**. Рутина и раньше делала полный SEO-аудит (robots/sitemap/canonical/noindex, title/description/H1/alt/OG/JSON-LD/внутренние ссылки, URL/mobile/CWV) — имя это прятало, и SEO-команду не находили. Теперь имя описывает содержимое: SEO-аудит, внутри которого Search Console. Добавлена явная оговорка, что GSC — единственная половина с реальными данными: когда MCP подключён, Step 2 не опционален и его цифры задают приоритет находкам Step 3.
+- **Installer** — модуль в опроснике называется **SEO** (был «Search Console»), флаги `--with-seo` / `--no-seo` (старые `--with-gsc` / `--no-gsc` продолжают работать). Ключ модуля внутри остался `gsc` — он не виден снаружи, а его переименование обесценило бы все сохранённые списки модулей. `gsc-check` добавлена в `RETIRED_DF_COMMANDS`, так что старый файл команды удаляется из `~/.claude/commands/darkflow/` при обновлении.
+- **Web UI** — миграция `20260813120000_rename_gsc_check_to_seo_check` переименовывает `RoutineConfig.name` и `RoutineLog.routine` на месте: расписание, модель и `enabled` каждого проекта сохраняются, стрик `df runs` не рвётся. Только данные, схема не менялась.
+
 ## [4.34.1] — 2026-08-13
 
 - **Installer** — `install.sh` падал с кодом 1 на любом уже мигрированном проекте, то есть обновиться было нельзя нигде. Два места, оба про `set -euo pipefail`: (1) `reconcile_docs()` присваивала результат `find docs/decisions ... | head -1`, а `find` по несуществующей папке выходит с 1 — при `pipefail` это валило скрипт на шаге 1/4 (добавлен `|| true`); (2) `generate_darkflow_md()` заканчивалась строкой `[[ "$MOD_IMPECCABLE" == true ]] && echo ...`, и с выключенным модулем функция возвращала 1 — `generate_darkflow_md > .darkflow.d/claude.md` падало на шаге 4/4 (добавлен `return 0`). Обе ошибки молчаливые: установщик просто обрывался после заголовка шага, ничего не печатая.

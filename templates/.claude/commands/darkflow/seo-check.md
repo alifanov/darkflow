@@ -1,11 +1,16 @@
 ---
-description: Review Google Search Console data **and** run a technical + on-page SEO audit, then create tasks with concrete fixes.
+description: Full SEO check — technical + on-page audit plus Google Search Console data, then create tasks with concrete fixes.
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
 ---
 
 This routine has two halves:
 1. **GSC data** — what's actually happening in search (positions, CTR, impressions, indexing).
 2. **SEO audit** — why it's happening (on-page + technical issues in the codebase / live pages).
+
+GSC is the only half that carries **real measured data** — everything else is a static read of
+the code. When the GSC MCP is connected, Step 2 is never optional and never a footnote: run it
+first and let its numbers set the priority of what Step 3 finds. Skipping it because "the audit
+already found things" inverts the routine.
 
 ## Step 1 — Read project config
 
