@@ -64,6 +64,35 @@ write action to the GSC connection", not "go click in Search Console".
 
 **Request Indexing** (URL Inspection) genuinely has no public API and does require a human.
 
+### AI crawlers are measured in access logs, not in files
+
+**Never file a task to add or maintain `llms.txt`, and never report AI visibility from the fact
+that the file exists.** No LLM vendor has stated it reads other sites' `llms.txt`; Google's John
+Mueller: *"none of the AI services have said they're using LLMs.TXT (and you can tell when you
+look at your server logs that they don't even check for it)"*, and Gary Illyes confirmed Google
+has no plans to support it. Publishing an `llms.txt` (as OpenAI and Anthropic do for their own
+docs) is not the same as consuming one. The file is cheap and harmless — leave an existing one
+alone — but it is not evidence of anything and must never appear in a snapshot as a win.
+
+What AI crawlers actually do is visible in the origin access log. The log usually has no
+User-Agent field, so identify bots by the **published IP ranges**, not by name:
+
+| bot | IP list |
+|---|---|
+| GPTBot (training) | `https://openai.com/gptbot.json` |
+| OAI-SearchBot (ChatGPT search) | `https://openai.com/searchbot.json` |
+| ChatGPT-User (user-triggered) | `https://openai.com/chatgpt-user.json` |
+| Googlebot | `https://developers.google.com/static/search/apis/ipranges/googlebot.json` |
+| Google-Extended & co | `https://developers.google.com/static/search/apis/ipranges/special-crawlers.json` |
+| Bingbot (feeds ChatGPT search) | `https://www.bing.com/toolbox/bingbot.json` |
+
+For a Coolify/Traefik host the log is `/data/coolify/proxy/access.log` (JSON lines). Report three
+things per host: **how many bot requests, which paths, and which status codes they got**. A bot
+request that returns `503`/`5xx`/`404` is a real finding and outranks any on-page nitpick — a
+`www.` hostname answering `503` to Googlebot's `/robots.txt` means the site is invisible no matter
+what the pages contain. Zero bot requests at all is also a finding: nothing on the page level can
+fix a site nobody fetches.
+
 ## Step 3 — Technical + on-page SEO audit
 
 Audit the project's site for SEO problems. Work primarily from the **codebase** (it's the source of truth and lets you propose exact fixes); use `domain` to spot-check rendered pages where code alone is ambiguous.
