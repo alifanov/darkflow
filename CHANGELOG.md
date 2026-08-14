@@ -5,10 +5,22 @@ Format: `## [version] — YYYY-MM-DD` followed by categorised changes.
 
 Categories:
 - **New routine** — new routine added to the catalog (`webapp/src/lib/routines.ts`)
+- **New command** — new manual slash command (no schedule, no catalog entry)
 - **Updated routine** — existing routine instruction changed
 - **Workflow** — changes to `agent-workflow.md` or `tasks.md`
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
+
+## [4.37.0] — 2026-08-14
+
+- **New command** — `/darkflow:submit-to-directories [n|name]`: сабмит продукта в каталоги через реальный браузер (`ego-browser`, фолбэк `agent-browser`). Ручная команда, не рутина — формы требуют аккаунтов, капч и подтверждений по почте, человек в цикле по определению.
+  - Один «submission kit» собирается один раз перед браузером (название, тайтлайн, короткое/длинное описание, категории, прайсинг, лого + скриншоты, URL с UTM `utm_source=<directory>&utm_medium=referral&utm_campaign=directories`) — ошибка в нём иначе повторяется пятьдесят раз.
+  - Два жёстких правила: **никогда не платит** (платный листинг возвращается рекомендацией с ценой) и **никогда не выдумывает личность** (только реальная почта проекта — без одноразовых адресов, выдуманных реквизитов, липового MRR и отзывов).
+  - Всё, что упирается в карту, капчу, OAuth-сессию, недоступный ящик или бэйдж на своём сайте (`Smol Launch`), помечается `blocked` с указанием, что именно разблокирует.
+  - Состояние — в `docs/state/directories.md` (статусы `submitted` / `live` / `blocked` / `rejected` / `failed`), апдейт строк на месте; `submitted` перепроверяется на следующем запуске. Задач не заводит, кроме одного случая: изменение в самом продукте, от которого зависит листинг.
+- **Installer** — глобальный каталог `~/.darkflow/directories.csv`: 50 директорий с DR, типом ссылки, ценой и трафиком. Глобальный по той же причине, что и чек-листы: один версионированный список на весь портфель. Команда добавлена в `ALL_DF_COMMANDS`, CSV — в `install_global_helpers`.
+- **Checklists** — `seo.yml`: два новых пункта (`seo-directories-submitted` — продукт есть в бесплатных каталогах с DR ≥ 70; `seo-directories-attributed` — листинги ведут на URL с UTM) и `never_flag` `seo-directories-off-catalog` — не рекомендовать сабмиты за пределами каталога и bulk-сервисы.
+- **Docs** — README: строка в таблице команд + раздел «Directory catalog».
 
 ## [4.36.0] — 2026-08-14
 

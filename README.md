@@ -247,6 +247,7 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | `/darkflow:update` | Update Dark Flow to the latest version |
 | `/darkflow:install` | Re-run the Dark Flow installer |
 | `/darkflow:checklist-review [group]` | Score the product against the readiness checklists → `docs/state/readiness.md`. **Report only — files no tasks.** Run by hand; never scheduled |
+| `/darkflow:submit-to-directories [n\|name]` | Submit the product to the directory catalog in `~/.darkflow/directories.csv` through a real browser → `docs/state/directories.md`. **Never pays, never invents an identity.** Run by hand; never scheduled |
 
 ### Routine commands
 
@@ -293,6 +294,31 @@ launch, when picking up a project that has been quiet, or after a batch of fixes
 The audit routines hunt for new findings. This one asks whether the product still gets wrong
 the things already learned the expensive way. It files no tasks — it writes
 `docs/state/readiness.md` and prints a score.
+
+### Directory catalog
+
+`~/.darkflow/directories.csv` is the vetted list of product directories worth a submission —
+name, URL, Ahrefs DR, link type, price, traffic. Global and versioned, like the checklists:
+one list, the whole portfolio submitted from it.
+
+```bash
+/darkflow:submit-to-directories        # next 5 free candidates by DR
+/darkflow:submit-to-directories 10     # bigger batch
+/darkflow:submit-to-directories DevHunt
+```
+
+The command drives a real browser: it assembles one submission kit (tagline, descriptions,
+logo, screenshots, UTM-tagged URL), fills the forms, verifies each submission actually went
+through, and records the result in the project's `docs/state/directories.md`.
+
+Two things it never does: **pay** (a paid listing comes back as a recommendation with its
+price) and **invent an identity** (real project email only — no throwaway addresses, no made-up
+company details, no fabricated MRR). Anything needing a card, a captcha, an OAuth session or an
+unreadable mailbox is reported as `blocked`, with what would unblock it.
+
+**Manual command, not a routine** — directory forms mean accounts and email confirmations, so a
+human is in the loop by definition. `checklist-review`'s `seo` group scores what is still
+missing from the catalog.
 
 ---
 

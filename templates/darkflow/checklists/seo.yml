@@ -151,6 +151,30 @@ items:
       the next diagnosis starts blind.
     source: seo/0014
 
+  - id: seo-directories-submitted
+    severity: medium
+    title: the product is listed in the free high-DR directories
+    applies_when: the project has a public domain
+    check: >
+      Read docs/state/directories.md and compare it against the free/freemium rows
+      of ~/.darkflow/directories.csv with dr >= 70. Fail when the state file is
+      missing entirely, or when fewer than half of the applicable free rows are
+      `submitted` or `live`. Rows correctly skipped as not applicable (AI-only,
+      open-source-only, pre-launch) count as done, not as gaps.
+      Fix with /darkflow:submit-to-directories.
+    source: directories.csv
+
+  - id: seo-directories-attributed
+    severity: low
+    title: directory listings point at a UTM-tagged URL
+    applies_when: the project has listings in docs/state/directories.md
+    check: >
+      Sample 3 live listings and confirm the outbound link carries
+      ?utm_source=<directory>&utm_medium=referral&utm_campaign=directories.
+      Untagged listings all land in analytics as one anonymous referral bucket,
+      so nobody can tell which directory was worth the submission.
+    source: directories.csv
+
 never_flag:
   - id: seo-llms-txt
     rule: >
@@ -179,3 +203,11 @@ never_flag:
       finding on it. The useful field on the same row is `lastDownloaded`.
       Three months of phantom tasks came from this.
     source: seo/0029
+
+  - id: seo-directories-off-catalog
+    rule: >
+      Do not recommend "submit to N more directories" beyond
+      ~/.darkflow/directories.csv, and never a bulk / auto-submit service. The
+      catalog is the vetted list; everything outside it is a link farm, and a
+      paid listing is a purchase decision for a human, never a finding.
+    source: directories.csv

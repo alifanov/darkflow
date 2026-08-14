@@ -262,6 +262,7 @@ ALL_DF_COMMANDS=(
   architecture-review update-config docs-audit
   build-optimization uptime-check check-design check-ux
   mailbox-check fix-ci-issue web-vitals checklist-review
+  submit-to-directories
 )
 
 # Readiness checklist groups, fetched into ~/.darkflow/checklists/. Read by the
@@ -343,7 +344,12 @@ install_global_helpers() {
       || warn "Could not fetch checklist: ${g}"
   done
 
-  success "Installed global helpers (get-config.sh, ci-wait.sh, mailbox, ${#ALL_DF_CHECKLISTS[@]} checklists) into ${GLOBAL_DIR}/"
+  # Directory catalog read by submit-to-directories. Global for the same reason as
+  # the checklists: one versioned list, every product submitted from it.
+  gb_fetch "darkflow/directories.csv" "${GLOBAL_DIR}/directories.csv" \
+    || warn "Could not fetch directories.csv"
+
+  success "Installed global helpers (get-config.sh, ci-wait.sh, mailbox, ${#ALL_DF_CHECKLISTS[@]} checklists, directories.csv) into ${GLOBAL_DIR}/"
 }
 
 # Write ~/.darkflow/config (webapp_url + version). Preserves a custom webapp_url
@@ -1209,6 +1215,7 @@ HEREDOC
   echo ""
   echo "Manual commands (run by hand, never scheduled):"
   echo "- \`/darkflow:checklist-review [group]\` — score the product against the readiness checklists in \`~/.darkflow/checklists/\`; report only, files no tasks"
+  echo "- \`/darkflow:submit-to-directories [n|name]\` — submit the product to the directories in \`~/.darkflow/directories.csv\` through a real browser; state in \`docs/state/directories.md\`, never pays"
   echo ""
   echo "Routine commands (run any routine interactively or use as the routine prompt):"
   echo "- \`/darkflow:fix-issues\` — pick up one approved task and close it"

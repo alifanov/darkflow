@@ -1,0 +1,55 @@
+# Dark Flow directory catalog — where a product gets submitted for a dofollow backlink.
+# Read by /darkflow:submit-to-directories. Read-only: per-project submission state
+# lives in each project's docs/state/directories.md, never here.
+# dr = Ahrefs Domain Rating. traffic_per_dollar = monthly traffic bought per $1 (free = "free").
+name,url,dr,link,price,traffic_per_month,traffic_per_dollar,category,notes
+SourceForge,https://sourceforge.net,92,dofollow,freemium,,free,Software,Highest DR in the list. Needs a project page with description and links
+G2,https://www.g2.com,91,dofollow,free profile,,free,B2B reviews,Profile is free. Only pays off once there are 3+ real reviews
+Capterra,https://www.capterra.com,91,dofollow,free profile,,free,B2B reviews,Same as G2 (both Gartner-owned). Create together
+Indie Hackers,https://indiehackers.com,81,dofollow,free / $39,17000,436,Community,Liveliest traffic among the free ones. Product page + posting in the community
+SaaSHub,https://www.saashub.com,80,dofollow,free,,free,Alternatives,Must list itself as an alternative to competitors
+AlternativeTo,https://alternativeto.net,,check,free,,free,Alternatives,High-intent audience looking to replace a competitor
+BetaList,https://betalist.com,76,dofollow,free / $28.99,11000,379,Pre-launch,Audience hunts betas. Less useful for mature products
+Alternative.me,https://alternative.me,75,dofollow,free,,free,Alternatives,
+Product Hunt,https://www.producthunt.com,,dofollow if top of day,free,,free,Launch,Prepare separately: assets + 12:01 PST. Link is dofollow only for the top spot
+SoftwareWorld,https://www.softwareworld.co,73,dofollow,freemium,,free,B2B reviews,
+PeerPush,https://peerpush.com,73,dofollow,freemium / $39,,no data,Startups,Community-driven: needs activity, not just a submission
+FoundrList,https://foundrlist.com,72,dofollow,free,,free,SaaS,
+TinyLaunch,https://www.tinylaunch.com,72,dofollow,freemium,,free,Launch,
+Aura++,https://auraplusplus.com,72,dofollow,freemium / $17,,no data,Startups,
+Open Launch,https://open-launch.com,71,dofollow,free / $12,,no data,Launch,
+SideProjectors,https://www.sideprojectors.com,71,dofollow,freemium,,free,Side projects,Doubles as a marketplace — the product can be listed for sale
+Tiny Startups,https://tinystartups.com,71,dofollow,free,,free,Indie,
+Smol Launch,https://smollaunch.com,71,dofollow,freemium / $19,,no data,Launch,Dofollow activates after the badge is installed on your own site
+StartupBase,https://startupbase.io,70,dofollow,freemium,,free,Startups,
+TrustMRR,https://trustmrr.com,70,dofollow,free / $19,,no data,Startups,Startup revenue database. Requires disclosing MRR
+Versily,https://versily.com,69,dofollow,free,,free,SaaS/AI,
+Future Tools,https://www.futuretools.io,69,dofollow,free,,free,AI,AI products only
+Openhunts,https://openhunts.com,68,dofollow,freemium / $9.90,545,no data,Launch,
+acidtools,https://acidtools.com,66,dofollow,free,,free,Productivity/AI,
+MicroLaunch,https://microlaunch.net,62,dofollow,free / $39,1000,26,Micro-startups,
+DevHunt,https://devhunt.org,62,dofollow,free / $49,2000,41,Dev tools,Exact fit for developer tooling
+Launching Next,https://www.launchingnext.com,52,dofollow,free,,free,Launch,Permanent dofollow for free. Slow moderation
+OpenAlternative,https://openalternative.co,51,dofollow,free,,free,Open source,Open-source projects only
+EuroAlternative,https://euroalternative.co,25,dofollow,free,,free,EU alternatives,Niche: European alternatives to Big Tech. Fits self-hosted
+Tulimoa,https://tulimoa.com/discover,29,dofollow,free,,free,AI agents,SaaS catalog for AI agents
+StartupFa.me,https://startupfa.me,83,dofollow,paid,,free,Startups,One of the highest DRs among the paid ones
+Fazier,https://fazier.com,82,dofollow,freemium / $29,253,no data,SaaS,
+Twelve Tools,https://twelve.tools,81,dofollow,freemium / $36,,no data,Tools,
+Dang AI,https://dang.ai,81,dofollow,free / $29,2000,69,AI,
+findly.tools,https://findly.tools,80,dofollow,freemium / $19,,no data,Tools,
+Turbo0,https://turbo0.com,80,dofollow,$16.90,,no data,Launch,High DR for little money
+Toolpilot,https://www.toolpilot.ai,78,dofollow,paid,,free,AI,
+There's An AI For That,https://theresanaiforthat.com,77,dofollow,$49,546000,11143,AI,The only one with genuinely large traffic. You pay for clicks, not for the link
+Uneed,https://www.uneed.best,75,dofollow,$29,3000,103,Tools,
+LaunchIgniter,https://launchdirectories.com/directory/launchigniter,75,dofollow,$12,,no data,Launch,Best DR-per-dollar in the mid segment
+magicbox.tools,https://magicbox.tools,69,dofollow,$15.90,136,no data,AI,
+NextGen Tools,https://www.nxgntools.com,68,dofollow,$19,15,no data,AI/SaaS,
+Launch Llama Tools,https://tools.launchllama.co,66,dofollow,$24,,no data,Indie,
+toolsfine,https://toolsfine.com,64,dofollow,$10,,no data,Tools,
+Uno Directory,https://uno.directory,63,dofollow,$5,2000,400,Indie,Best DR per dollar in the whole list
+Toolfio,https://toolfio.com,61,dofollow,$19,,no data,SaaS,
+Indiehunt,https://indiehunt.io,60,dofollow,$9.50,,no data,Launch,
+Huzzler,https://huzzler.so,60,dofollow,$19,,no data,Startups,
+EarlyHunt,https://earlyhunt.com,59,dofollow,$19,,no data,Launch,
+Firsto,https://launchdirectories.com/directory/firsto,55,dofollow,$9.90,32000,3232,Tools,Noticeable traffic at a low price

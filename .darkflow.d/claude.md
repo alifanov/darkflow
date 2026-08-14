@@ -173,6 +173,7 @@ Workflow commands: `/darkflow:add-issue`, `/darkflow:update`, `/darkflow:install
 
 Manual commands (run by hand, never scheduled):
 - `/darkflow:checklist-review [group]` — score the product against the readiness checklists in `~/.darkflow/checklists/`; report only, files no tasks
+- `/darkflow:submit-to-directories [n|name]` — submit the product to the directories in `~/.darkflow/directories.csv` through a real browser; state in `docs/state/directories.md`, never pays
 
 Routine commands (run any routine interactively or use as the routine prompt):
 - `/darkflow:fix-issues` — pick up one approved task and close it
