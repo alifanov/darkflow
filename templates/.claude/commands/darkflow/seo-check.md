@@ -29,6 +29,27 @@ Do not fall back to browser automation for GSC data.
 
 Check Google Search Console data for the last week using MCP tools. Analyse positions, CTR, impressions, and indexing issues. For each meaningful finding, suggest a concrete fix and file it as a task (see task format below) with `--source gsc`.
 
+**Look in the repo before asking for GSC data.** Projects often keep exports of Performance
+reports in-tree — `grep -rl "impressions" docs/insights docs/logs 2>/dev/null` or a glob for
+`docs/insights/search-console/*.md`. Those tables carry per-query and per-page history the API
+window no longer covers, and reading them costs nothing. Found in four naturalwrite files only
+after a full round of "please export this from GSC" — check first.
+
+### The two "not indexed" statuses are different diagnoses
+
+They read almost the same and mean opposite things. Getting them backwards sends the fix in the
+wrong direction, so never paraphrase them into one bucket:
+
+| GSC status | means | fix direction |
+|---|---|---|
+| **Discovered – currently not indexed** | "found by Google, but not crawled yet… Google rescheduled the crawl" — crawl date is empty. **Not a quality signal.** | discovery/crawl: internal links, sitemap, server capacity |
+| **Crawled – currently not indexed** | crawled and rejected | content quality, intent match, duplication |
+
+`average position` in a query row is the **topmost** position across your URLs, not an average
+across them — two pages competing for one query is invisible in the summary by construction.
+Filtered queries also drop anonymized long-tail rows, so a filtered total is always lower than
+the real one. Never report a filtered number as the site's total.
+
 ### Never report indexation from the sitemaps API
 
 `searchConsole_list_sitemaps` / `get_sitemap` return `contents[].indexed`. Google's own API
@@ -141,11 +162,101 @@ Audit the project's site for SEO problems. Work primarily from the **codebase** 
 
 Check, in priority order:
 
-**Crawlability & indexation**
-- `robots.txt` — no unintentional blocks on important paths; sitemap referenced
-- `sitemap.xml` (or framework sitemap route) exists, lists only canonical/indexable URLs
-- No stray `noindex` on pages that should rank; canonicals are self-referencing and point the right way
-- HTTPS + consistent host (www vs non-www, trailing slash)
+**Crawlability & indexation — an AND-chain, not a list**
+
+The bot stops at the first broken link and nothing below it exists. Check the links **in order**,
+and never propose work below an unrepaired break (a sitemap entry, a schema block or an inbound
+link cannot route around a `Disallow`):
+
+1. `robots.txt` allows the path, and the sitemap is referenced there
+2. the URL returns **200 without a cookie or login** — `curl -s -o /dev/null -w '%{http_code}'`
+3. the **content is in the served HTML**, not only after client-side hydration
+4. the page has its **own** `<title>`/description/canonical
+5. it is in the sitemap, and its markup is present
+
+> 🪤 **`Disallow` + `noindex` cancel each other out.** Blocked pages are never crawled, so the
+> `noindex` is never seen, and the URL stays in the index as a bare link. To *hide* a page you must
+> first *unblock* it. GSC calls this "Indexed, though blocked by robots.txt"; a sitemap listing such
+> a URL raises "Sitemap contains urls which are blocked by robots.txt".
+
+> 🪤 **Next.js:** a `"use client"` page cannot export `metadata` — without a sibling `layout.tsx`
+> it silently inherits the homepage title. Grep for `"use client"` in `page.tsx` files that are
+> supposed to rank and check each has its own metadata source.
+
+**The page meant to rank is not the one excluded from the index** (critical, cheapest real finding)
+
+```bash
+grep -rn "index: *false\|noindex" --include="page.tsx" --include="*.ts" src app | grep -vE "login|account|checkout|admin|api"
+```
+
+Check every hit against the query it should serve, and check `X-Robots-Tag` on the live response
+too. sqlformatter.dev sat outside the top 100 for a month because its only page with an input
+field carried `robots: { index: false }`, added by hand as anti-cannibalization.
+
+**Removing a losing page is a ladder, and `noindex` is its last rung** — differentiate titles →
+re-link internally → canonical → 308 → and only then `noindex`, which drops the page from Search
+entirely "regardless of whether other sites link to it".
+
+**Canonical & duplicates**
+
+- Canonicals are self-referencing and point at the chosen version (trailing slash, query params, www vs apex, locale)
+- 🚩 **Next.js does not emit a canonical by itself** — `charset` and `viewport` are its only unconditional tags. This is the most common hole in Next projects; do not assume "it's an SEO framework" covers it
+- 🚩 **Never canonical page 2+ of a paginated sequence to page 1** — Google documents this as an anti-pattern verbatim. `rel=next/prev` has been dead since 2019
+- Signal strength, in order: **redirect > canonical > internal links > sitemap**. A canonical is a hint, not a rule — if external links point at `?utm=…` versions, the hint can lose
+- Duplicates are **not** penalised. The damage is signals split across copies, so file the task in those terms, never as "duplicate content penalty"
+
+**hreflang (multilingual projects only)**
+
+- 🚩 **Bidirectional or ignored — entirely, not partially.** If A lists B and B does not list A, Google drops the whole cluster. The frequent shape of this bug: the sitemap emits only the default-locale `<loc>` rows with `xhtml:link` alternates hanging off them, and the localized URLs never appear as `<loc>` themselves
+- The `<loc>` value and the `hreflang` `href` must match **character for character** — build both from the same call, a trailing slash is enough to break the pair
+- **"Alternate language pages are not detected by Search Console"** — the fix is unverifiable in GSC. Verify by `curl` and, weeks later, Performance → Countries
+
+**Redirects, 404s and soft-404s**
+
+- `curl -I` the known moved paths: a permanent move must answer **301/308**, not 302/307. With a temporary code the *source* stays canonical
+- 🚩 **Read the `Location` header to learn who answered.** An **absolute** URL means a proxy/hosting layer replied before the app — so the `301` in the repo never runs and the code in git is not the code in production. A **relative** `Location` means the framework answered. This trick works on any stack and settles "but it's fixed in the code" in one command
+- **Next.js codes are not what people assume:** `permanent: true` → **308**, `redirect()` → **307**, `permanentRedirect()` → 308, both → 303 inside a Server Action
+- 🪤 **`notFound()` returns 200 while streaming** — "Next.js will return a 200 HTTP status code for streamed responses, and 404 for non-streamed". Streaming starts at the first `loading.tsx`/`<Suspense>`, so a page can render "not found" with a 200 and become a soft-404. Verify with `curl -o /dev/null -w '%{http_code}'` on a deliberately bad URL, never by looking at the page
+- A custom `app/not-found.tsx` exists (the default Next stub has no navigation, and it is a real dead end for both crawlers and people)
+- Host-level breaks count too: a `www.` hostname with **no DNS record at all** is not a 404, it is an unreachable link — check `dig +short www.<domain>` alongside the redirect
+
+**sitemap: `lastmod` is the only field Google reads — and the only one you can lose by faking**
+
+This was the single defect shared by every site in the portfolio, and its root cause is the
+official Next.js example (`lastModified: new Date()`), copied verbatim.
+
+```bash
+curl -s https://<domain>/sitemap.xml | grep -o '<lastmod>[^<]*' | sort | uniq -c | sort -rn | head
+```
+
+- **Fail** if every entry carries the same timestamp (`new Date()` → freezes at the last deploy, or refreshes on every build), if values cluster within milliseconds (`fs.statSync().mtime` under Docker `COPY . .` = build time), or if the field is absent while the content genuinely changes
+- The date must be the last **significant** change to what a reader sees — "an update to the main content, the structured data, or links on the page is generally considered significant, however an update to the copyright date is not"
+- **Omitting the field is officially allowed**: "use a `lastmod` element for all the pages… or just the ones you're confident about". The choice is between truth and silence — lying is not one of the options, and trust is lost for the **whole site**, not the one URL
+- 🚫 **Google ignores `<priority>` and `<changefreq>`.** Their presence is harmless; treating them as a lever is not. Never file a task to tune them, and flag code that computes them as if they mattered
+- The sitemap **ping endpoint was retired in 2023** and now 404s. Resubmission goes through the Sitemaps API (see Step 2)
+
+**Programmatic pages: demand is measured before generation, not after**
+
+Find bulk-generated route groups (`[slug]`, `/convert/{a}-to-{b}`, a dataset-driven `generateStaticParams`).
+A template multiplies **pages**, never demand. If a group exists and there is no evidence demand was
+checked first, that is the finding — 35 of sqlformatter's 42 pages targeted queries with **zero**
+monthly searches, each one technically flawless: unique copy, correct canonical, in the sitemap,
+linked from the homepage.
+
+- Rule of thumb: **median demand < 50/mo across the dimension → one page, not N**. What matters is clicks from **one** page (`median × CTR`), never the total summed across the template
+- The relevant risk is not a penalty but the documented shapes of *scaled content abuse* and *doorway abuse* — cite them as descriptions, never as an accusation
+- Consolidating an existing group is a redirect job (many URLs → one, 301/308), and the result is measurable only 4–6 weeks later
+
+**Internal linking**
+
+- 🔑 **"Every page you care about should have a link from at least one other page on your site."** Being in the sitemap is not a link. Grep the rendered HTML for each key path to count real inbound `<a href>`s
+- Pagination that only links `1`, `N−1`, `N+1`, `last` buries the middle of an archive dozens of clicks deep — measured at 19 on a 320-post blog. A "Load more" button that *replaces* links is worse: it can cut a reachable graph from 371 URLs to 24
+- Hub and spoke link **both** ways; a tool and its explainer article link to each other (the common bug is the article linking to some *other* tool)
+- ❌ Do **not** file findings based on: the "3 clicks from home" rule (it does not exist — Google files it under crawling myths, and only affects crawl *frequency*), a "100 links per page" limit (retired before 2008), or nofollow sculpting (dead since 2009)
+- Frame it honestly: internal linking fixes **discovery**, not position — "crawling is necessary for a page to be in search results, but it's not a ranking signal"
+- **Crawl budget is not a finding below ~10k URLs** (thresholds: 1M+ URLs, or 10k+ with daily updates). "Small sites aren't crawled as often as big ones" is explicitly false
+
+**HTTPS + consistent host** (www vs non-www, trailing slash; note `site.com` = `site.com/` for the root, but `/page` ≠ `/page/`)
 
 **On-page**
 - Title tags — unique per page, primary keyword near the front, ~50–60 chars, no duplicates/missing
@@ -153,13 +264,28 @@ Check, in priority order:
 - Heading structure — exactly one `<h1>` per page, logical `h1→h2→h3` hierarchy
 - Image `alt` text on meaningful images
 - OpenGraph / Twitter card tags present for shareable pages
-- Structured data (JSON-LD) — only types that still earn a search feature, and only when the required properties are actually present (see below)
-- Internal linking — no orphan pages, descriptive anchor text
+- Structured data (JSON-LD) — only types that still earn a search feature, and only when the required properties are actually present (see the block above)
 
 **Technical foundations**
 - Readable URL structure (lowercase, hyphenated, no needless params)
 - Mobile viewport configured; no obvious mobile-breaking layout
 - Obvious performance regressions affecting Core Web Vitals (giant unoptimized images, render-blocking assets) — flag, don't deep-profile
+
+### Findings that are verified NOT worth filing
+
+These come back every audit because tools score them and blogs repeat them. Each was checked
+against the live portfolio and cost nothing. **Do not file them, do not list them in the snapshot,
+do not "just mention" them.**
+
+| non-finding | why |
+|---|---|
+| **`/llms.txt` missing** | see the Step 2 section — no vendor consumes it. Lighthouse audits it anyway, and that is what keeps re-filing it |
+| **`contents[].indexed` = 0** | deprecated API field, returns 0 for every site on earth |
+| **Cannibalization / two pages on one query** | Ahrefs: 80 manually reviewed cases, **1** needed action. Google's own docs never use the word. Identical titles are not a diagnosis, and site diversity means the 3rd and 4th URL of a cluster take nothing from anyone. File one only when leadership actually **swaps** between URLs week over week |
+| **`<priority>` / `<changefreq>` not tuned** | ignored by Google |
+| **"Add ratings to get stars"** | self-sourced reviews are a policy violation, so the task can never be completed honestly |
+| **Page length / "add more words"** | "The length of the content alone doesn't matter for ranking purposes" |
+| **The robots.txt nit that scanners rate "high"** | verified live on 4 of 7 sites, costs nothing |
 
 For each real issue found, file a task (format below) with `--source seo`. Prefer a small number of high-impact, specific tasks over an exhaustive nitpick list — group trivial same-type findings (e.g. "Add meta descriptions to 6 blog pages") into one task.
 
@@ -180,6 +306,21 @@ Add all recommendations as tasks with `--source gsc` **or** `--source seo` and a
   - [ ] <verifiable outcome, e.g. "Every /blog/* page has a unique <meta name='description'> 150–160 chars">
   - [ ] <additional criterion if needed>
   ```
+
+**Every criterion must be checkable from outside the code.** "The JSON-LD is present" is not one —
+markup can be valid and still draw nothing. Use the instrument that decides:
+
+| finding type | acceptance criterion |
+|---|---|
+| structured data | Rich Results Test on the live URL **detects the type** (it ignores JSON-LD comments, crawls as a smartphone, and does not check `noindex`/robots-blocked pages) |
+| redirect | `curl -I` returns 301/308 and the `Location` is the final URL — no chain |
+| noindex removed | `curl … \| grep robots` shows no `noindex`, and GSC URL Inspection says the page is indexable |
+| `lastmod` | the sitemap shows ≥2 distinct dates and one sampled URL's date matches its last content commit |
+| internal links | the target path appears as an `<a href>` in the served HTML of ≥1 other page |
+
+A criterion no instrument can produce (a GSC counter with no API, a metric only visible in the web
+UI) makes the task uncloseable — either hand it to a human with `--needs-human` or reword it
+around something measurable.
 
 Create with:
 ```bash
