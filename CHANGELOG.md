@@ -10,6 +10,10 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.35.1] — 2026-08-14
+
+- **Updated routine** — `seo-check`: запрет предлагать разметку под ретайрнутые фичи выдачи и считать победой разметку без обязательных свойств. До этого в списке стояло «Structured data (JSON-LD) … Organization, Product, Article, BreadcrumbList, **etc.**» — и в это «etc.» уехали мёртвые типы: 13.08 в mystize выкачены 10 страниц с `HowTo` (фича убрана в сентябре 2023) явно вместо `Article`, в sqlformatter — `FAQPage` на 11 страницах с комментарием «for the SERP» (карточка убрана 7 мая 2026). Добавлено: список ретайрнутых типов со ссылками на анонсы, ловушка «пошаговая страница ≠ HowTo» (шаги — `ItemList` внутри `Article`), и отдельно `SoftwareApplication`/`WebApplication` — тип живой, но требует `offers.price` + `aggregateRating`/`review`, которых у SaaS-лендинга без настоящих отзывов быть не может: разметку оставить, но не рапортовать как rich result и **не заводить задачу «добавить рейтинг»** (собственные отзывы о себе неприемлемы по правилам Google). Правило проверки: тип обязан быть в search gallery, «валидируется по schema.org» — не доказательство.
+
 ## [4.35.0] — 2026-08-13
 
 - **Updated routine** — `gsc-check` переименована в **`seo-check`**. Рутина и раньше делала полный SEO-аудит (robots/sitemap/canonical/noindex, title/description/H1/alt/OG/JSON-LD/внутренние ссылки, URL/mobile/CWV) — имя это прятало, и SEO-команду не находили. Теперь имя описывает содержимое: SEO-аудит, внутри которого Search Console. Добавлена явная оговорка, что GSC — единственная половина с реальными данными: когда MCP подключён, Step 2 не опционален и его цифры задают приоритет находкам Step 3.

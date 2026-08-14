@@ -131,6 +131,14 @@ Audit the project's site for SEO problems. Work primarily from the **codebase** 
 
 > ⚠️ **Schema markup detection:** `curl`/`web_fetch` strip `<script>` tags, so JSON-LD injected client-side won't show in static HTML. Detect structured data from the **source code** (e.g. `application/ld+json` blocks, Next.js metadata, schema components) or a rendered browser DOM — never report "no schema" based on a raw fetch alone.
 
+> 🛑 **Never propose markup for a retired search feature, and never call markup a win until its required properties are present.** A schema type earns a rich result only if it is listed in the [search gallery](https://developers.google.com/search/docs/appearance/structured-data/search-gallery) *and* the page carries every required property. Two failure modes, both silent — the markup validates, Google draws nothing.
+>
+> - **Retired — do not add, do not file tasks for, do not report as an SEO win:** `FAQPage` (rich result gone [7 May 2026](https://developers.google.com/search/docs/appearance/structured-data/faqpage); Search Console report and Rich Results Test support dropped with it), `HowTo` (gone since Sept 2023, [announced Aug 2023](https://developers.google.com/search/blog/2023/08/howto-faq-changes)), `sitelinks searchbox`. Existing markup may stay — Google explicitly says it need not be removed — but it buys nothing in Search.
+> - **`HowTo` is the trap:** a step-by-step page looks like `HowTo` and isn't. Use `Article`/`BlogPosting` and keep the steps as an `ItemList` inside it.
+> - **`SoftwareApplication`/`WebApplication` is live but conditional:** it needs `name`, `offers.price` **and** `aggregateRating` or `review`. A SaaS landing page with no genuine user ratings cannot satisfy that — and inventing them is a policy violation ("ratings must be sourced directly from users"; an entity reviewing itself is [ineligible](https://developers.google.com/search/docs/appearance/structured-data/review-snippet)). So: leave the markup, but **never report it as a rich-result win, and never file a task to "add ratings"**.
+> - **Safe, live and worth checking:** `Organization` (once, site-wide), `Article`/`BlogPosting`, `BreadcrumbList`, `Product` (real products only), `VideoObject`, `Event`, `Recipe`, `Dataset`.
+> - Before proposing any type not in that list, open the gallery and confirm it is still there. "It validates on schema.org" is not evidence of a search feature.
+
 Check, in priority order:
 
 **Crawlability & indexation**
@@ -145,7 +153,7 @@ Check, in priority order:
 - Heading structure — exactly one `<h1>` per page, logical `h1→h2→h3` hierarchy
 - Image `alt` text on meaningful images
 - OpenGraph / Twitter card tags present for shareable pages
-- Structured data (JSON-LD) for the relevant page types (Organization, Product, Article, BreadcrumbList, etc.)
+- Structured data (JSON-LD) — only types that still earn a search feature, and only when the required properties are actually present (see below)
 - Internal linking — no orphan pages, descriptive anchor text
 
 **Technical foundations**
