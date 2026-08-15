@@ -50,6 +50,48 @@ across them — two pages competing for one query is invisible in the summary by
 Filtered queries also drop anonymized long-tail rows, so a filtered total is always lower than
 the real one. Never report a filtered number as the site's total.
 
+### A drop in impressions is not a drop in traffic
+
+**Clicks are the only metric in the Performance report that survived the last audit of the tool
+itself.** Google logged a [data anomaly](https://support.google.com/webmasters/answer/6211453):
+*"A logging error prevented Search Console from accurately reporting impressions from May 13,
+2025 until April 27, 2026"* — impressions, CTR and average position were wrong for ~50 weeks and
+that history was never corrected; clicks were not affected. Treat impressions as the softest
+number in the tool, not the headline.
+
+**An impression below the first page has to be paginated to.** Verbatim: *"A link must get an
+impression for its position to be recorded. If a result does not get an impression — for example,
+if the result is on page 3 of search results, but the user only views page 1 — then its position
+is not recorded for that query."* So hundreds of daily impressions at average position 50–70 mean
+hundreds of daily visits to page 6–7 of a SERP. That is a machine reading the SERP, not an
+audience. **Never open a snapshot, a task or an acceptance criterion with impressions won or lost
+at position > 20** — state the clicks first, and if clicks were ~0 before and after, say plainly
+that nothing of value moved.
+
+**A drop is a different question from a deficiency**, and Google publishes the diagnostic tree —
+[Debugging drops in Google Search traffic](https://developers.google.com/search/docs/monitor-debug/debugging-search-traffic-drops).
+Its causes, in its own words: **algorithmic update · technical issues · security issues · spam
+issues · seasonality and changing interests · site moves and migrations**. Work that list before
+inventing a cause, and mark each one checked / excluded / not checkable:
+
+| check | where | API? |
+|---|---|---|
+| a confirmed update overlapping the drop window | [Search Status Dashboard](https://status.search.google.com/products/rGHU1u87FJnkP6W2GwMi/history) — the primary source, one fetch | no, but public |
+| a logged reporting glitch on those exact dates | [Data anomalies](https://support.google.com/webmasters/answer/6211453) | no, but public |
+| **which queries** disappeared | `searchAnalytics.query` with `dimensions: ["query","date"]` | yes |
+| manual action / security issue | Search Console → **Security & Manual Actions** | **no — web UI only** |
+
+The Search Console API has exactly four resources — `searchAnalytics`, `sitemaps`, `sites`,
+`urlInspection`. Manual actions and security issues are **not among them**, so a run that only
+used the API has not excluded two of the six causes; say so instead of writing "technical causes
+ruled out, nothing left".
+
+🚫 **"The site left the sandbox / the fresh-domain discovery period ended" is not a diagnosis.**
+It is on no Google list, Google denies the sandbox exists, and it conveniently explains any drop —
+which is what makes it useless. Splitting a drop by query almost always beats it: a drop
+concentrated on 3 URLs and one query shape is a ranking event; a drop spread evenly across
+everything is a reporting or crawling event.
+
 ### Never report indexation from the sitemaps API
 
 `searchConsole_list_sitemaps` / `get_sitemap` return `contents[].indexed`. Google's own API
