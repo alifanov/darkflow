@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getLatestDarkflowVersion } from "@/lib/darkflow-version";
+import { AutoRefresh } from "@/components/AutoRefresh";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export async function GlobalWorkerStatus() {
 
   return (
     <div className="ml-auto flex items-center gap-3 text-xs">
+      <AutoRefresh />
       {/* Version */}
       {version == null ? (
         <span className="font-mono px-1.5 py-0.5 rounded" style={{ background: "var(--border)", color: "var(--muted)" }}>

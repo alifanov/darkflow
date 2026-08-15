@@ -11,6 +11,10 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.37.3] — 2026-08-15
+
+- **Web UI** — шапка обновляет бейдж версии и статус воркера сама, раз в 30 секунд (`AutoRefresh`). `GlobalWorkerStatus` — серверный компонент, поэтому открытая вкладка вечно показывала версию и liveness на момент загрузки: после `install.sh --self-update` и рестарта воркера там так и висело `v4.36.0 ⚠ · worker offline`, хотя в БД уже было `4.37.2` и свежий heartbeat. Обновление идёт только когда вкладка на переднем плане.
+
 ## [4.37.2] — 2026-08-15
 
 - **Installer** — `read_config` теперь падает обратно на кэш `.darkflow.d/state/config.json`, когда Web UI недоступен. Раньше офлайновый `install.sh --force --yes` считал проект незарегистрированным и перегенерировал `.darkflow.d/claude.md` из дефолтов: `language` → English, `mergeStrategy` → direct — то есть тихо снимал с проекта его настоящие настройки, включая язык общения и PR-стратегию.
