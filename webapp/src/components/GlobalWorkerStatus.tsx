@@ -14,8 +14,10 @@ export async function GlobalWorkerStatus() {
   ]);
 
   const lastSeen = settings?.workerLastSeen ? new Date(settings.workerLastSeen).getTime() : null;
-  // Worker beats every ~30s tick; allow a couple of misses before "offline".
-  const alive = lastSeen != null && Date.now() - lastSeen < 90 * 1000;
+  // The watch loop beats once per tick, and a tick is 120s — a 90s window made a
+  // healthy worker read "offline" for a quarter of every tick. 300s = two missed
+  // ticks before we call it dead.
+  const alive = lastSeen != null && Date.now() - lastSeen < 300 * 1000;
   const version = settings?.workerVersion ?? null;
   const outdated = version != null && version !== latest;
 

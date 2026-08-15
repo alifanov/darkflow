@@ -140,24 +140,13 @@ export default async function ProjectPage({
       return b.number - a.number;
     });
 
-  // Multi-select filter: `filter` is a comma-separated list of card keys.
-  // No keys selected → show everything; otherwise show the union of all
-  // selected cards.
-  const VALID_KEYS = new Set<string>(CARDS.map((c) => c.key));
-  const selectedKeys = (filter ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter((k) => VALID_KEYS.has(k));
-  const matchesKey = (issue: (typeof sortedIssues)[number], key: string) =>
-    CARDS.find((c) => c.key === key)?.statuses.includes(issue.status) ?? false;
-  const displayed =
-    selectedKeys.length === 0
-      ? sortedIssues
-      : sortedIssues.filter((i) => selectedKeys.some((k) => matchesKey(i, k)));
-  const headingLabel =
-    selectedKeys.length === 0
-      ? "All issues"
-      : selectedKeys.map((k) => CARDS.find((c) => c.key === k)?.label ?? k).join(", ");
+  // Single-select filter: `filter` is one card key. Unset (or unknown) → show
+  // everything.
+  const selectedCard = CARDS.find((c) => c.key === filter) ?? null;
+  const displayed = selectedCard
+    ? sortedIssues.filter((i) => selectedCard.statuses.includes(i.status))
+    : sortedIssues;
+  const headingLabel = selectedCard?.label ?? "All issues";
 
   const now = Date.now();
   // Worker heartbeats every 30 s; 75 s tolerates one missed beat before flipping offline.
@@ -259,7 +248,7 @@ export default async function ProjectPage({
         <IssuesTab
           projectId={project.id}
           issues={sortedIssues}
-          selectedKeys={selectedKeys}
+          selectedKey={selectedCard?.key ?? null}
           displayed={displayed}
           headingLabel={headingLabel}
           minPriority={project.minPriority}
@@ -333,7 +322,7 @@ function isBelowPriorityThreshold(priority: string | null, minPriority: string):
 function IssuesTab({
   projectId,
   issues,
-  selectedKeys,
+  selectedKey,
   displayed,
   headingLabel,
   minPriority,
@@ -350,21 +339,14 @@ function IssuesTab({
     scheduledFor?: Date | string | null;
     comments?: IssueComment[] | null;
   }[];
-  selectedKeys: string[];
+  selectedKey: string | null;
   displayed: typeof issues;
   headingLabel: string;
   minPriority: string;
 }) {
-  // Clicking a card toggles its key in/out of the selection. Empty selection
-  // drops the `filter` param entirely (→ show all).
-  const toggleHref = (key: string) => {
-    const next = selectedKeys.includes(key)
-      ? selectedKeys.filter((k) => k !== key)
-      : [...selectedKeys, key];
-    return next.length === 0
-      ? `/projects/${projectId}`
-      : `/projects/${projectId}?filter=${next.join(",")}`;
-  };
+  // One card selected at a time; clicking the active card clears the filter.
+  const toggleHref = (key: string) =>
+    key === selectedKey ? `/projects/${projectId}` : `/projects/${projectId}?filter=${key}`;
 
   return (
     <>
@@ -372,7 +354,7 @@ function IssuesTab({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           {CARDS.map((card) => {
             const count = issues.filter((i) => card.statuses.includes(i.status)).length;
-            const isActive = selectedKeys.includes(card.key);
+            const isActive = card.key === selectedKey;
             const accent = STATUS_TEXT[card.key] ?? "var(--muted)";
             return (
               <Link
