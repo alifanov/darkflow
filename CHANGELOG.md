@@ -11,6 +11,10 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.37.2] — 2026-08-15
+
+- **Installer** — `read_config` теперь падает обратно на кэш `.darkflow.d/state/config.json`, когда Web UI недоступен. Раньше офлайновый `install.sh --force --yes` считал проект незарегистрированным и перегенерировал `.darkflow.d/claude.md` из дефолтов: `language` → English, `mergeStrategy` → direct — то есть тихо снимал с проекта его настоящие настройки, включая язык общения и PR-стратегию.
+
 ## [4.37.1] — 2026-08-15
 
 - **Updated routine** — `seo-check`: новый блок «A drop in impressions is not a drop in traffic». Причина: mystize 25 дней разбирал обвал показов (166 → 0 за три дня) и выдал диагноз «закончился discovery-период молодого домена» → эскалация в ссылочное (#34) с критерием приёмки «показы вернулись к > 100/день». Все показы шли с позиций 52–68 при 4–6 кликах за 27 дней, то есть упала метрика ценой в пять кликов.

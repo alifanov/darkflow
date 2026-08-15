@@ -178,6 +178,18 @@ _DF_CFG_FETCHED=false
 _fetch_project_config_json() {
   $_DF_CFG_FETCHED && return 0
   _DF_CFG_FETCHED=true
+  _fetch_project_config_live
+  # Web UI unreachable → fall back to the cached copy of the last successful
+  # fetch. Without it an offline re-install regenerates claude.md from the
+  # defaults (English / direct) and silently drops the project's real settings.
+  if [[ -z "$_DF_CFG_JSON" && -f ".darkflow.d/state/config.json" ]] && command -v jq &>/dev/null; then
+    local cached; cached=$(cat .darkflow.d/state/config.json 2>/dev/null || true)
+    jq -e '.id' >/dev/null 2>&1 <<< "$cached" && _DF_CFG_JSON="$cached"
+  fi
+  return 0
+}
+
+_fetch_project_config_live() {
   command -v curl &>/dev/null || return 0
   command -v jq   &>/dev/null || return 0
   command -v gh   &>/dev/null || return 0
