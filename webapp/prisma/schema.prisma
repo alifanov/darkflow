@@ -71,11 +71,11 @@ model Issue {
   title           String
   body            String?
   url             String?
+  // proposed | approved | in-progress | needs-human | closed
   status          String    @default("proposed")
   priority        String?
   source          String?
   action          String?
-  needsHuman      Boolean   @default(false)
   comments        Json?
   // Snooze: fix-issues does not pick the task up before this moment. Null = no delay.
   scheduledFor    DateTime?
@@ -91,7 +91,6 @@ model Issue {
   @@unique([projectId, number])
   @@index([status])
   @@index([projectId, status])
-  @@index([projectId, needsHuman])
   @@index([createdAt])
   @@index([closedAt])
 }

@@ -12,6 +12,7 @@ const STATUS_COLORS: Record<string, string> = {
   approved: "#1a3a1a",
   closed: "#3a1a1a",
   "in-progress": "#2a2a0a",
+  "needs-human": "#3a1a3a",
 };
 
 const STATUS_TEXT: Record<string, string> = {
@@ -19,6 +20,7 @@ const STATUS_TEXT: Record<string, string> = {
   approved: "var(--green)",
   closed: "var(--red)",
   "in-progress": "#e3b341",
+  "needs-human": "#c084fc",
 };
 
 function Meta({ label, children }: { label: string; children: React.ReactNode }) {
@@ -59,7 +61,6 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
         {issue.priority && <Meta label="Priority">{issue.priority}</Meta>}
         {issue.source && <Meta label="Source">{issue.source}</Meta>}
         {issue.action && <Meta label="Action">{issue.action}</Meta>}
-        {issue.needsHuman && <Meta label="Needs human">yes</Meta>}
         {issue.createdAt && (
           <Meta label="Created">
             <LocalTime date={issue.createdAt} />

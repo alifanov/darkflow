@@ -1064,10 +1064,8 @@ run_routine() {
     # Revive anything stuck in-progress before checking the queue, so a task
     # stranded by a crashed previous run is immediately eligible again.
     revive_stuck_issues
-    # Count approved tasks this routine should act on. status:approved is the
-    # single source of truth: needs-human is kept mutually exclusive with it at
-    # write time (every path that sets needs-human moves status off approved,
-    # and approving always clears needs-human), so no re-filter needed here.
+    # Count approved tasks this routine should act on. status is a single value,
+    # so "approved" already excludes needs-human — no re-filter needed here.
     # The one exclusion left is action:reply — those are mailbox-owned
     # (mailbox-check sends the reply), not a code task for us.
     # fix-ci-issue only ever picks up source:ci, so it narrows server-side.

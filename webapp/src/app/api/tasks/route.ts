@@ -14,6 +14,8 @@ interface CreateTaskBody {
   priority?: string;
   source?: string;
   status?: string;
+  // Compat: pre-4.38 callers sent this alongside status. It only ever meant
+  // status "needs-human" — translated below, never stored.
   needsHuman?: boolean;
   action?: string;
   scheduledFor?: string;
@@ -83,11 +85,10 @@ export async function POST(req: NextRequest) {
   const task = await createWithNextNumber(project.id, {
     title: body.title,
     body: body.body ?? null,
-    status: body.status ?? "proposed",
+    status: body.needsHuman ? "needs-human" : body.status ?? "proposed",
     priority,
     source,
     action: body.action ?? null,
-    needsHuman: body.needsHuman ?? false,
     scheduledFor: body.scheduledFor ? new Date(body.scheduledFor) : null,
     comments: body.comments?.length ? (body.comments as unknown as Prisma.InputJsonValue) : undefined,
     createdAt: body.createdAt ? new Date(body.createdAt) : new Date(),
@@ -120,7 +121,8 @@ export async function GET(req: NextRequest) {
   if (source) where.source = source;
   const action = sp.get("action");
   if (action) where.action = action;
-  if (sp.get("needsHuman") === "true") where.needsHuman = true;
+  // Compat with pre-4.38 callers: ?needsHuman=true is the "needs-human" status.
+  if (sp.get("needsHuman") === "true") where.status = "needs-human";
 
   const tasks = await prisma.issue.findMany({
     where,
@@ -133,7 +135,6 @@ export async function GET(req: NextRequest) {
       priority: true,
       source: true,
       action: true,
-      needsHuman: true,
       scheduledFor: true,
       comments: true,
       createdAt: true,

@@ -15,6 +15,7 @@ const STATUS_COLORS: Record<string, string> = {
   approved: "#1a3a1a",
   closed: "#3a1a1a",
   "in-progress": "#2a2a0a",
+  "needs-human": "#3a2a0a",
 };
 
 const STATUS_TEXT: Record<string, string> = {
@@ -22,6 +23,7 @@ const STATUS_TEXT: Record<string, string> = {
   approved: "var(--green)",
   closed: "var(--red)",
   "in-progress": "#e3b341",
+  "needs-human": "var(--yellow, #d29922)",
 };
 
 export interface IssueComment {
@@ -39,7 +41,6 @@ interface IssueTableRowProps {
     status: string;
     priority: string | null;
     url: string | null;
-    needsHuman: boolean;
     scheduledFor?: Date | string | null;
     comments?: IssueComment[] | null;
   };
@@ -127,7 +128,15 @@ export function IssueTableRow({ issue, showApprove, showClose, showTaskLink, sho
         </td>
         <td className="py-3 px-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ background: bg, color }}>
+            <span
+              className="rounded-full px-2.5 py-0.5 text-xs font-medium"
+              style={{ background: bg, color }}
+              title={
+                issue.status === "needs-human"
+                  ? "Was approved, then bounced back — needs a manual step, then Close (not Approve)"
+                  : undefined
+              }
+            >
               {issue.status}
             </span>
             {snoozed && (
@@ -137,15 +146,6 @@ export function IssueTableRow({ issue, showApprove, showClose, showTaskLink, sho
                 title="fix-issues will not pick this task up before this date"
               >
                 ⏰ {snoozedUntil!.toLocaleDateString()}
-              </span>
-            )}
-            {issue.needsHuman && (
-              <span
-                className="rounded-full px-2.5 py-0.5 text-xs font-medium"
-                style={{ background: "#3a2a0a", color: "var(--yellow, #d29922)" }}
-                title="Was approved, then bounced back — needs a manual step, then Close (not Approve)"
-              >
-                needs human
               </span>
             )}
           </div>

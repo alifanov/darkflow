@@ -13,11 +13,10 @@ export default async function ApprovalsPage() {
       id: true,
       name: true,
       issues: {
-        // needsHuman tasks were already approved once but got bounced back to
-        // "proposed" by fix-issues when it hit a manual step it can't do
-        // itself — they belong on the project page's "Needs Human" card, not
-        // back in this queue asking to be re-approved forever.
-        where: { status: "proposed", needsHuman: false },
+        // A task bounced back by fix-issues gets status "needs-human", not
+        // "proposed", so it no longer lands here asking to be re-approved
+        // forever — it shows on the project page's "Needs Human" card instead.
+        where: { status: "proposed" },
         orderBy: { number: "desc" },
       },
     },

@@ -1,4 +1,4 @@
-export const TASK_STATUSES = ["proposed", "approved", "in-progress", "closed"] as const;
+export const TASK_STATUSES = ["proposed", "approved", "in-progress", "needs-human", "closed"] as const;
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 
 export function isTaskStatus(value: string): value is TaskStatus {

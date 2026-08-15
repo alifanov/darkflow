@@ -6,7 +6,7 @@ Describes how the agent (Claude Code) and a human jointly run the task queue thr
 
 ## Task fields
 
-Every task carries: `number` (per-project, human-facing "#N"), `title`, `body`, `status`, `priority`, `source`, `action` (mailbox only), `needsHuman`, `scheduledFor`, and `comments`.
+Every task carries: `number` (per-project, human-facing "#N"), `title`, `body`, `status`, `priority`, `source`, `action` (mailbox only), `scheduledFor`, and `comments`.
 
 ### `status` — lifecycle (state machine)
 
@@ -17,9 +17,10 @@ Exactly one status at a time. There is no separate open/closed field — `closed
 | `proposed` | Default when the agent creates a task | Agent |
 | `approved` | Human approved — agent may pick it up | Human (or Agent for categories in [`auto-approve.md`](./auto-approve.md)) |
 | `in-progress` | Agent started work; left a comment with a summary | Agent |
+| `needs-human` | The agent can't proceed on its own (missing access, config, failed checks, external service) — the comments say what's needed. Parked out of the approved queue until a human acts. | Agent (`df task needs-human <n>`) |
 | `closed` | Terminal — either the agent shipped the fix, or a human declined it (Reject) or dismissed it (Close). Comments explain which. | Agent or Human |
 
-`needsHuman` (boolean) — the agent can't proceed on its own (missing access, config, failed checks, external service). See the task's comments for what's needed. Mutually exclusive with `approved`: every path that sets `needsHuman` moves status off `approved`, and approving always clears `needsHuman`.
+Approving a task overwrites `needs-human` — one value, so the two can never disagree.
 
 `scheduledFor` (nullable timestamp) — snooze: `fix-issues` does not pick the task up before this moment, even when it is `approved`. Set at creation with `df task create --after <ISO date>`, later with `df task snooze <n> <ISO date|clear>` or the Snooze button in the Web UI. Null = no delay.
 

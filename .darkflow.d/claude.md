@@ -91,9 +91,9 @@ rg -l '^## <Section>' docs/logs/          # which days carried the observation
 A run that left no section **breaks the streak** — it is evidence the thing was not there, not a
 gap in the record.
 
-**Improvements are `proposed`, never `needsHuman`.** In Dark Flow `needsHuman` means "the agent is
-stuck: no access, no config, the checks failed", and it is mutually exclusive with `approved`.
-The triage queue in the Web UI is already where a proposal waits for the owner.
+**Improvements are `proposed`, never `needs-human`.** In Dark Flow `needs-human` is the status
+meaning "the agent is stuck: no access, no config, the checks failed" — one status value, so a
+task is never both. The triage queue in the Web UI is already where a proposal waits for the owner.
 
 ### What a routine commits
 

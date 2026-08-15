@@ -19,18 +19,21 @@ const STATUS_COLORS: Record<string, string> = {
   proposed: "#1f3a5f",
   approved: "#1a3a1a",
   "in-progress": "#2a2a0a",
+  "needs-human": "#3a1a3a",
 };
 
 const STATUS_TEXT: Record<string, string> = {
   proposed: "var(--accent)",
   approved: "var(--green)",
   "in-progress": "#e3b341",
+  "needs-human": "#c084fc",
 };
 
 const CARDS: { key: string; label: string; statuses: string[] }[] = [
   { key: "proposed", label: "Needs approval", statuses: ["proposed"] },
   { key: "approved", label: "Approved", statuses: ["approved"] },
   { key: "in-progress", label: "In progress", statuses: ["in-progress"] },
+  { key: "needs-human", label: "Needs Human", statuses: ["needs-human"] },
 ];
 
 const TABS: { key: "issues" | "logs" | "routines" | "mailbox" | "settings"; label: string }[] = [
@@ -139,16 +142,14 @@ export default async function ProjectPage({
 
   // Multi-select filter: `filter` is a comma-separated list of card keys.
   // No keys selected → show everything; otherwise show the union of all
-  // selected cards (statuses match by card, "needs-human" matches the flag).
-  const VALID_KEYS = new Set<string>([...CARDS.map((c) => c.key), "needs-human"]);
+  // selected cards.
+  const VALID_KEYS = new Set<string>(CARDS.map((c) => c.key));
   const selectedKeys = (filter ?? "")
     .split(",")
     .map((s) => s.trim())
     .filter((k) => VALID_KEYS.has(k));
   const matchesKey = (issue: (typeof sortedIssues)[number], key: string) =>
-    key === "needs-human"
-      ? issue.needsHuman
-      : (CARDS.find((c) => c.key === key)?.statuses.includes(issue.status) ?? false);
+    CARDS.find((c) => c.key === key)?.statuses.includes(issue.status) ?? false;
   const displayed =
     selectedKeys.length === 0
       ? sortedIssues
@@ -156,9 +157,7 @@ export default async function ProjectPage({
   const headingLabel =
     selectedKeys.length === 0
       ? "All issues"
-      : selectedKeys
-          .map((k) => (k === "needs-human" ? "Needs Human" : CARDS.find((c) => c.key === k)?.label ?? k))
-          .join(", ");
+      : selectedKeys.map((k) => CARDS.find((c) => c.key === k)?.label ?? k).join(", ");
 
   const now = Date.now();
   // Worker heartbeats every 30 s; 75 s tolerates one missed beat before flipping offline.
@@ -348,7 +347,6 @@ function IssuesTab({
     status: string;
     priority: string | null;
     url: string | null;
-    needsHuman: boolean;
     scheduledFor?: Date | string | null;
     comments?: IssueComment[] | null;
   }[];
@@ -357,8 +355,6 @@ function IssuesTab({
   headingLabel: string;
   minPriority: string;
 }) {
-  const needsHumanIssues = issues.filter((i) => i.needsHuman);
-
   // Clicking a card toggles its key in/out of the selection. Empty selection
   // drops the `filter` param entirely (→ show all).
   const toggleHref = (key: string) => {
@@ -369,8 +365,6 @@ function IssuesTab({
       ? `/projects/${projectId}`
       : `/projects/${projectId}?filter=${next.join(",")}`;
   };
-
-  const isNeedsHumanActive = selectedKeys.includes("needs-human");
 
   return (
     <>
@@ -399,21 +393,6 @@ function IssuesTab({
               </Link>
             );
           })}
-          <Link
-            href={toggleHref("needs-human")}
-            className="rounded-lg border p-4 flex flex-col gap-1 transition-colors"
-            style={{
-              background: isNeedsHumanActive ? "#3a1a3a" : "var(--surface)",
-              borderColor: isNeedsHumanActive ? "#c084fc" : "var(--border)",
-            }}
-          >
-            <span className="text-2xl font-bold" style={{ color: needsHumanIssues.length > 0 ? "#c084fc" : "var(--muted)" }}>
-              {needsHumanIssues.length}
-            </span>
-            <span className="text-xs" style={{ color: "var(--muted)" }}>
-              Needs Human
-            </span>
-          </Link>
         </div>
       )}
 

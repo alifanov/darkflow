@@ -120,7 +120,7 @@ case "$sub" in
         --source) qs+="&source=$(_urlencode "$2")"; shift 2 ;;
         --action) qs+="&action=$(_urlencode "$2")"; shift 2 ;;
         --state) qs+="&state=$(_urlencode "$2")"; shift 2 ;;
-        --needs-human) qs+="&needsHuman=true"; shift ;;
+        --needs-human) qs+="&status=needs-human"; shift ;;
         --format) fmt="$2"; shift 2 ;;
         *) usage ;;
       esac
@@ -129,7 +129,7 @@ case "$sub" in
     # EVERY task before filing (P7) instead of only its own --source bucket.
     if [[ "$fmt" == "compact" ]]; then
       _api GET "/api/tasks?${qs}" \
-        | jq -r '.[] | "#\(.number) [\(.status)\(if .needsHuman then "/needs-human" else "" end)] \(.source // "manual"): \(.title)"'
+        | jq -r '.[] | "#\(.number) [\(.status)] \(.source // "manual"): \(.title)"'
     else
       _api GET "/api/tasks?${qs}"
     fi
@@ -141,7 +141,7 @@ case "$sub" in
     ;;
 
   create)
-    title="" body="" priority="medium" source="manual" status="" action="" needs_human=false after=""
+    title="" body="" priority="medium" source="manual" status="" action="" after=""
     while [[ $# -gt 0 ]]; do
       case "$1" in
         --title) title="$2"; shift 2 ;;
@@ -150,7 +150,7 @@ case "$sub" in
         --source) source="$2"; shift 2 ;;
         --status) status="$2"; shift 2 ;;
         --action) action="$2"; shift 2 ;;
-        --needs-human) needs_human=true; shift ;;
+        --needs-human) status="needs-human"; shift ;;
         --after) after="$2"; shift 2 ;;
         *) usage ;;
       esac
@@ -159,9 +159,8 @@ case "$sub" in
     payload=$(jq -n \
       --arg repoUrl "$REPO_URL" --arg title "$title" --arg body "$body" \
       --arg priority "$priority" --arg source "$source" --arg status "$status" --arg action "$action" \
-      --arg after "$after" \
-      --argjson needsHuman "$needs_human" '
-      {repoUrl:$repoUrl, title:$title, priority:$priority, source:$source, needsHuman:$needsHuman}
+      --arg after "$after" '
+      {repoUrl:$repoUrl, title:$title, priority:$priority, source:$source}
       + (if $body != "" then {body:$body} else {} end)
       + (if $status != "" then {status:$status} else {} end)
       + (if $action != "" then {action:$action} else {} end)
@@ -186,9 +185,9 @@ case "$sub" in
 
   needs-human)
     n=$(_task_number "${1:-}")
-    # Pulls the task off the approved queue and flags it for a human — mirrors
-    # what "approve" undoes (approve always clears needsHuman).
-    _api PATCH "/api/tasks/${n}?repoUrl=${REPO_Q}" '{"needsHuman":true,"status":"proposed"}' >/dev/null
+    # Pulls the task off the approved queue and parks it on the human — mirrors
+    # what "approve" undoes (approving overwrites this status).
+    _api PATCH "/api/tasks/${n}?repoUrl=${REPO_Q}" '{"status":"needs-human"}' >/dev/null
     ;;
 
   snooze)

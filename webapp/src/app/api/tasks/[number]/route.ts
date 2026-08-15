@@ -31,6 +31,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ numb
 interface PatchTaskBody {
   status?: string;
   priority?: string;
+  // Compat: pre-4.38 callers sent this alongside status. true → "needs-human",
+  // false → clear it (the caller's own status wins if it sent one).
   needsHuman?: boolean;
   action?: string | null;
   scheduledFor?: string | null;
@@ -68,7 +70,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ nu
     if (body.status === "closed") data.closedAt = new Date();
   }
   if (body.priority !== undefined) data.priority = body.priority;
-  if (body.needsHuman !== undefined) data.needsHuman = body.needsHuman;
+  if (body.needsHuman === true) data.status = "needs-human";
   if (body.action !== undefined) data.action = body.action;
   if (body.scheduledFor !== undefined) data.scheduledFor = body.scheduledFor ? new Date(body.scheduledFor) : null;
 

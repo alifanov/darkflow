@@ -6,10 +6,8 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const count = await prisma.issue.count({
-      where: {
-        status: { not: "closed" },
-        OR: [{ needsHuman: true }, { status: "proposed" }],
-      },
+      // Everything waiting on the owner: a proposal to triage, or a stuck task.
+      where: { status: { in: ["proposed", "needs-human"] } },
     });
     return NextResponse.json({ count });
   } catch (err) {

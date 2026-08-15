@@ -11,6 +11,13 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.38.0] — 2026-08-15
+
+- **Data model** — `needsHuman` слит в `status`. Это никогда не был независимый флаг: каждый путь записи ставил его в паре со статусом (`df task needs-human` → `proposed` + флаг, approve → `approved` + сброс), а документация прямо называла их взаимоисключающими. Теперь статус — одно значение: `proposed | approved | in-progress | needs-human | closed`.
+  - Миграция `20260815120000_merge_needs_human_into_status`: открытые задачи с флагом переехали в `status = needs-human` (17 штук), колонка и индекс `Issue_projectId_needsHuman_idx` удалены. У закрытых задач флаг не сохранён — на терминальном статусе он ничего не значил.
+  - Ушли: булева колонка, индекс, условие `needsHuman: false` в очереди аппрувов, отдельная карточка «Needs Human» со спецкейсом в фильтре проекта, отдельный бейдж в строке задачи, `.needsHuman != true` в jq-выборках `fix-issues` и `fix-ci-issue`. `/api/needs-human-count` — обычный `count` по двум статусам.
+  - Снаружи `df` не изменился: `--needs-human` и `df task needs-human <n>` работают как раньше, просто пишут статус. API продолжает принимать `needsHuman` от воркеров до 4.38 — совместимость на время раскатки.
+
 ## [4.37.3] — 2026-08-15
 
 - **Web UI** — шапка обновляет бейдж версии и статус воркера сама, раз в 30 секунд (`AutoRefresh`). `GlobalWorkerStatus` — серверный компонент, поэтому открытая вкладка вечно показывала версию и liveness на момент загрузки: после `install.sh --self-update` и рестарта воркера там так и висело `v4.36.0 ⚠ · worker offline`, хотя в БД уже было `4.37.2` и свежий heartbeat. Обновление идёт только когда вкладка на переднем плане.

@@ -11,8 +11,8 @@ For categories in the **allowlist below**, the producing command creates the tas
 
 Auto-approve does **not** mean unsafe auto-merge. Before touching any code, `fix-issues`:
 
-1. Runs the full quality-check suite for the stack (lint → test → build). If any step fails, it sets `needsHuman` and stops — nothing is merged.
-2. Escalates anything that needs a human (secret rotation, infra change, missing env var) to `needsHuman` and stops.
+1. Runs the full quality-check suite for the stack (lint → test → build). If any step fails, it sets `status:needs-human` and stops — nothing is merged.
+2. Escalates anything that needs a human (secret rotation, infra change, missing env var) to `status:needs-human` and stops.
 
 Auto-approve only removes the *triage* step; the *execution* gate stays intact.
 

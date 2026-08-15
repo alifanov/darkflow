@@ -9,10 +9,9 @@ export async function POST(
     const { id } = await params;
     const result = await prisma.issue.updateMany({
       where: { id },
-      // Approving overrides the needs-human gate — the worker excludes
-      // needs-human from its queue, so leaving it on would make an approved
-      // task silently never get picked up.
-      data: { status: "approved", needsHuman: false },
+      // Approving overwrites needs-human — it is a status value now, so the
+      // two can no longer disagree.
+      data: { status: "approved" },
     });
     if (result.count === 0) {
       return NextResponse.json({ error: "Issue not found" }, { status: 404 });

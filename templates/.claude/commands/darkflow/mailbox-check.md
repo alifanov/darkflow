@@ -55,7 +55,7 @@ For each such task:
    ~/.darkflow/df task close $number
    ```
 
-6. If send fails: `~/.darkflow/df task needs-human $number` (needs-human and status:approved are mutually exclusive — parking it for a human must drop it from the approved queue), leave a comment with the error. Continue to the next task.
+6. If send fails: `~/.darkflow/df task needs-human $number` (sets `status:needs-human`, which drops it from the approved queue), leave a comment with the error. Continue to the next task.
 
 ## Step 3 — Fetch new mail
 

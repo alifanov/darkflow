@@ -13,11 +13,11 @@ Load the project config (contract in `.darkflow.d/claude.md` → *Project config
 
 ## Step 2 — Pick the next CI task
 
-Pick exactly **one** open task with `source:ci` and `status:approved`, skipping any that carry `needs-human` (already parked). Within the candidates, take the **oldest** (smallest number) — one open task per failing branch, FIFO:
+Pick exactly **one** open task with `source:ci` and `status:approved` (a task already parked for a human carries `status:needs-human`, so it is out of this list by construction). Take the **oldest** (smallest number) — one open task per failing branch, FIFO:
 
 ```bash
 n=$(~/.darkflow/df task list --source ci --status approved --state open | jq -r '
-      [ .[] | select(.needsHuman != true) | .number ] | min // empty')
+      [ .[].number ] | min // empty')
 ```
 
 If `$n` is empty, stop — nothing to do this run.
