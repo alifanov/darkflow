@@ -71,12 +71,23 @@ export function ProjectRow({
 }: ProjectRowProps) {
   const router = useRouter();
 
-  const navigate = () => router.push(`/projects/${id}`);
+  const navigate = (query = "") => router.push(`/projects/${id}${query}`);
+
+  // A count cell jumps straight into the matching filtered view instead of the
+  // unfiltered project page (the row's own handler).
+  const drillDown = (query: string) => ({
+    className: "py-3 px-4 text-right text-sm hover:underline underline-offset-2",
+    onClick: (e: React.MouseEvent) => {
+      e.stopPropagation();
+      navigate(query);
+    },
+  });
+  const noDrill = { className: "py-3 px-4 text-right text-sm" };
 
   return (
     <tr
       className="project-row cursor-pointer"
-      onClick={navigate}
+      onClick={() => navigate()}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -146,23 +157,32 @@ export function ProjectRow({
       </td>
 
       {/* Needs approval */}
-      <td className="py-3 px-4 text-right text-sm" style={{ color: proposedCount > 0 ? "var(--accent)" : "var(--muted)" }}>
+      <td
+        {...(proposedCount > 0 ? drillDown("?filter=proposed") : noDrill)}
+        style={{ color: proposedCount > 0 ? "var(--accent)" : "var(--muted)" }}
+      >
         {proposedCount > 0 ? proposedCount : "—"}
       </td>
 
       {/* Approved */}
-      <td className="py-3 px-4 text-right text-sm" style={{ color: approvedCount > 0 ? "var(--green)" : "var(--muted)" }}>
+      <td
+        {...(approvedCount > 0 ? drillDown("?filter=approved") : noDrill)}
+        style={{ color: approvedCount > 0 ? "var(--green)" : "var(--muted)" }}
+      >
         {approvedCount > 0 ? approvedCount : "—"}
       </td>
 
       {/* Needs Human */}
-      <td className="py-3 px-4 text-right text-sm" style={{ color: needsHumanCount > 0 ? "#c084fc" : "var(--muted)" }}>
+      <td
+        {...(needsHumanCount > 0 ? drillDown("?filter=needs-human") : noDrill)}
+        style={{ color: needsHumanCount > 0 ? "#c084fc" : "var(--muted)" }}
+      >
         {needsHumanCount > 0 ? `${needsHumanCount} 👤` : "—"}
       </td>
 
       {/* Errors (failed routine runs, last 7 days) */}
       <td
-        className="py-3 px-4 text-right text-sm"
+        {...(errorCount > 0 ? drillDown("?tab=logs") : noDrill)}
         style={{ color: errorCount > 0 ? "var(--red)" : "var(--muted)" }}
         title={errorCount > 0 ? `${errorCount} failed routine run(s) in the last 24h` : "No routine errors in the last 24h"}
       >
