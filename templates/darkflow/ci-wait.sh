@@ -47,7 +47,18 @@ done
 # ponytail: a second workflow on the same push registers a beat later than the
 # first — re-list once so a sibling job can't sneak past as a false green.
 sleep 5
-ids=$(runs_for_head)
+relisted=$(runs_for_head)
+# runs_for_head hides API errors behind 2>/dev/null, so a GitHub outage returns an empty
+# list rather than an error. Assigning that straight to `ids` made the loop below run zero
+# times, leaving failed=0 — a silent "green" that watched nothing. Seen 2026-08-17 during
+# an Actions major_outage: `ci-wait exit: 0` with no "watching run" line, while Build was
+# red on the very commit being verified. Keep the list we already had instead.
+[[ -n "$relisted" ]] && ids="$relisted"
+
+if [[ -z "$ids" ]]; then
+  echo "ci-wait: run list came back empty — verified nothing, not calling this green"
+  exit 2
+fi
 
 failed=0
 for id in $ids; do
