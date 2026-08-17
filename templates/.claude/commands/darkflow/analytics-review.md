@@ -7,9 +7,16 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, AskUser
 
 Load the project config (contract in `.darkflow.d/claude.md` → *Project config*). Uses: `language`, `minPriority`.
 
-Analytics come from the **OpenPanel MCP** registered for this project — a `read` client already
-scoped to one project, so there is nothing to select. **No OpenPanel MCP → stop here**: write the
-snapshot (Step 6) with `null` values and exit without tasks.
+Analytics come from **`~/.darkflow/openpanel`**, a read-only CLI over the self-hosted export API.
+Run it **from the project root** — that is how it finds the project's credentials (`.env`, or
+`.claude/settings.local.json` → `env`). There is no OpenPanel MCP: `openpanel-mcp-server` never
+answers the stdio handshake, so never try to register or reconnect one.
+
+```bash
+~/.darkflow/openpanel funnel --days 7 --events session_start   # smoke test + the gate number
+```
+**Exits with `missing credentials: …` → stop here**: write the snapshot (Step 6) with `null` values,
+say in one line which variable is missing, and exit without tasks.
 
 **Read the project's metrics doc before querying anything** (usually
 `docs/state/product/metrics.md`; find it via *When to read docs* in `.darkflow.d/claude.md`). It
@@ -18,42 +25,60 @@ number is read — events that fire twice per action, test accounts filtered in 
 OpenPanel. **Never invent event names**: a query for an event that does not exist returns no
 series, which is indistinguishable from a real zero.
 
-**Then the gate, before any other query.** Pull visitors and top-of-funnel entries for the 7-day
-window. If either is under **100 visitors** or **10 funnel entries**, the window is noise: write
-the snapshot (Step 6), append nothing to the log, create no tasks, and say in one line which
-number failed the gate. Everything below assumes the gate passed.
+**Then the gate, before any other query.** `profiles` on the top-of-funnel event is the visitor
+number. If it is under **100 visitors** or the first real funnel step is under **10 entries**, the
+window is noise: write the snapshot (Step 6), append nothing to the log, create no tasks, and say
+in one line which number failed the gate. Everything below assumes the gate passed.
 
-Query notes that change the data rather than the call: `previous: true` returns the
-previous-period comparison in the same call — always use it instead of querying twice. Custom
-properties in a breakdown need the `properties.` prefix; built-ins (`path`, `country`, `device`,
-`browser`, `os`) go bare. Keep the whole run inside **one 7-day window** and under ~15 chart
-calls; if a cut needs more, drop the cut.
+What the CLI does and does not do:
+
+- **`--prev` gives the previous equal window** in the same command — use it instead of running a
+  second window by hand, and never pass `--start end-7` (both ends are inclusive, so that
+  double-counts the boundary day).
+- **Event properties are not readable at all.** No `amount`, `plan`, `source`, `method` — the
+  export endpoint does not return them. A question that rests on a property is *not measurable
+  here*; take it from the billing provider or the database, and never report it as zero.
+- **There is no `device` field** — mobile vs desktop reads off `os`.
+- Every number is counted client-side from raw rows, so cost is real: ~10 requests per 1000 rows
+  per event per window. Stay inside **one 7-day window** and drop a cut rather than widen the run.
 
 ## Step 2 — The funnel
 
-The core of the routine. A table with **every step of the canonical funnel**, top to bottom, no
-step omitted:
+The core of the routine — one command for the whole funnel, in the order the metrics doc defines:
+
+```bash
+~/.darkflow/openpanel funnel --prev --days 7 --events <step1,step2,step3,...>
+```
+
+A table with **every step of the canonical funnel**, top to bottom, no step omitted:
 
 | Step | 7d | Step conversion | Δ vs previous 7d |
 |---|---|---|---|
 
+- **Report `profiles`, not `events`** — an event that fires both server- and client-side counts
+  twice, and `profiles` is stable per identified user. `devices` only covers client-side sends
+  (a server send has no `deviceId`). Say which column you are quoting.
 - A step that is **zero** is reported as zero, with how long it has been zero.
 - State the **single largest drop between adjacent steps** explicitly — that is the headline
   finding, everything else is secondary to it.
-- Convert event counts to **user counts** where an event double-fires; say which you report.
 - A step nothing is instrumented for is a blind spot, not a zero — that is a finding in itself.
 
 ## Step 3 — Segment the largest drop
 
 Do **not** cut the whole funnel three ways by default. Take the step with the largest drop and cut
-**that step** by `device`, then by `country`, then by entry `path` — stopping as soon as a cut
-leaves segments in single digits. Widen to 30 days if that rescues the sample; say which window
-each table uses. A difference resting on one or two conversions is a direction, never a result,
-and never a task.
+**that step** only:
 
-**Server-side events carry no device or country** (they return device `server` and a two-NUL
-country). Segment down to the last client-side step and say where the cut stops, rather than
-reporting a server step as "unknown".
+```bash
+~/.darkflow/openpanel breakdown --event <step> --by os      # then country, then path
+```
+
+Stop as soon as a cut leaves segments in single digits. Widen to 30 days if that rescues the
+sample; say which window each table uses. A difference resting on one or two conversions is a
+direction, never a result, and never a task.
+
+**Server-side events carry no os, browser or country** — they show up as `(server/unset)`.
+Segment down to the last client-side step and say where the cut stops, rather than reporting a
+server step as "unknown".
 
 ## Step 4 — Everything else in the window
 
@@ -62,8 +87,8 @@ the same 7 days (`git log --since="7 days ago"`) — a metric that moved the day
 a causal lead.
 
 Application and server errors are `/darkflow:observability-check`; paid ads are
-`/darkflow:ads-review`; OpenPanel access here is read-only — never create dashboards or saved
-reports.
+`/darkflow:ads-review`. The CLI only reads (`GET /export/events`), so there is nothing to create
+in OpenPanel from here.
 
 ## Step 5 — Findings → recommendations → delivery
 
@@ -144,10 +169,12 @@ EOF
 }
 ```
 
-`visitors7d` comes from the gate query in Step 1. `usersTotal` and `revenue7d` are **not** part of
-the funnel window — fill them only if the metrics doc names the event that carries them (a
-lifetime user count, a purchase event with a value property); otherwise `null`. Never estimate.
-`adsSpend7d` stays `null` here — ad spend is owned by `/darkflow:ads-review`.
+`visitors7d` is `profiles` on the top-of-funnel event from Step 1. **`revenue7d` is always `null`
+from this routine** — revenue lives in a payment event's `amount` property, and the export endpoint
+returns no properties at all; take revenue from the billing provider instead, and never estimate it
+from event counts. `usersTotal` is a lifetime number, not a 7-day one: fill it only if the metrics
+doc names an event or source that carries it, otherwise `null`. `adsSpend7d` stays `null` here —
+ad spend is owned by `/darkflow:ads-review`.
 
 Then append a `## Analytics` section to `docs/logs/$(date +%F).md`, reusing the exact heading
 previous runs used so the streak stays greppable. It carries: the funnel table, the headline drop,

@@ -11,6 +11,15 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.39.0] — 2026-08-17
+
+- **Installer** — OpenPanel CLI теперь раскатывается Dark Flow: `templates/darkflow/openpanel` → `~/.darkflow/openpanel` (+ `~/.claude/skills/openpanel/` — SKILL.md и симлинк на тот же файл, чтобы скилл находился по описанию в любом проекте). Раньше скрипт лежал только в `~/.claude/skills/` руками: вне репозитория, без версии, без раскатки на другие машины.
+- **Installer** — блок «OpenPanel integration» больше не печатает `claude mcp add … api.openpanel.dev` (мёртвый MCP + чужой облачный хост), а спрашивает read-клиент и пишет `OPENPANEL_API_URL / READ_CLIENT_ID / READ_CLIENT_SECRET / PROJECT_ID` в `.env` проекта — тем же `_env_add`, что и mailbox с observability. Пропускается, если клиент уже настроен.
+- **Updated routine** — `analytics-review` переведён с несуществующего OpenPanel MCP на CLI. Рутина требовала MCP и выходила с «No OpenPanel MCP → stop here» — то есть на всех проектах не давала ничего. Убраны инструкции облачного chart API (`previous: true`, префикс `properties.`, «~15 chart calls»); добавлены `funnel --prev`, `breakdown --by os`, правило «считать `profiles`, а не события», и явное «`revenue7d` всегда `null`» — эндпоинт не отдаёт properties, выручка берётся из биллинга.
+- **Fix** — креды CLI читаются из локальных настроек проекта по цепочке: env → ближайший `.env` → `.claude/settings.local.json` → `env` → `~/.darkflow/env`; `OPENPANEL_API_URL` подхватывается из `NEXT_PUBLIC_OPENPANEL_API_URL`. Три разных контракта по проектам свелись к одному, secscanner заработал без правок конфига.
+- **Fix** — `breakdown --by device` резал по несуществующему полю: в ответе есть `deviceId`, но нет `device`, поэтому весь срез схлопывался в `(server/unset)`. Выбор `device` убран, дефолт — `os`.
+- **Docs** — комментарии о дефектах API и SKILL.md переписаны по замерам от 2026-08-17: `limit` соблюдается, но >10 обрывает walk (80 строк против 4 на том же окне); page 1 отдаёт ~4 строки при любом лимите; `totalCount` не отслеживает ни окно, ни выборку; `start`/`end` **соблюдаются**; `includes=properties,referrer,...` не добавляет ни одного поля. `selftest` больше не привязан к вбитым датам и проверяет, что маленькая страница по-прежнему честнее большой.
+
 ## [4.38.3] — 2026-08-17
 
 - **Security** — `nanoid` поднят до 3.3.18 в `webapp/pnpm-lock.yaml` (dependabot-алерт: кастомные генераторы зациклиться при `size=0`). Транзитивная зависимость `postcss`, правится только лок-файлом.

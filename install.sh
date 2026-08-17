@@ -47,6 +47,10 @@ MAILBOX_SMTP_HOST=""
 MAILBOX_SMTP_PORT=""
 MAILBOX_SMTP_USER=""
 MAILBOX_SMTP_PASSWORD=""
+OP_API_URL=""
+OP_CLIENT_ID=""
+OP_CLIENT_SECRET=""
+OP_PROJECT_ID=""
 WEBAPP_URL="http://localhost:5555"
 
 BOLD="\033[1m"
@@ -345,6 +349,21 @@ install_global_helpers() {
   gb_fetch "darkflow/ci-wait.sh" "${GLOBAL_DIR}/ci-wait.sh" \
     && chmod +x "${GLOBAL_DIR}/ci-wait.sh" \
     || warn "Could not fetch ci-wait.sh"
+
+  # OpenPanel read CLI — the analytics-review data source (the OpenPanel MCP server
+  # never answers the stdio handshake, so there is no MCP path). The skill dir keeps a
+  # symlink so interactive Claude sessions still discover it by description, while the
+  # code lives in exactly one place and self-update versions it.
+  if gb_fetch "darkflow/openpanel" "${GLOBAL_DIR}/openpanel"; then
+    chmod +x "${GLOBAL_DIR}/openpanel"
+    mkdir -p "$HOME/.claude/skills/openpanel"
+    gb_fetch "darkflow/skills/openpanel/SKILL.md" "$HOME/.claude/skills/openpanel/SKILL.md" \
+      || warn "Could not fetch openpanel SKILL.md"
+    rm -f "$HOME/.claude/skills/openpanel/openpanel"
+    ln -s "${GLOBAL_DIR}/openpanel" "$HOME/.claude/skills/openpanel/openpanel"
+  else
+    warn "Could not fetch openpanel (analytics CLI)"
+  fi
   gb_fetch "darkflow/mailbox/fetch.py" "${GLOBAL_DIR}/mailbox/fetch.py" || warn "Could not fetch mailbox/fetch.py"
   gb_fetch "darkflow/mailbox/send.py"  "${GLOBAL_DIR}/mailbox/send.py"  || warn "Could not fetch mailbox/send.py"
 
@@ -361,7 +380,7 @@ install_global_helpers() {
   gb_fetch "darkflow/directories.csv" "${GLOBAL_DIR}/directories.csv" \
     || warn "Could not fetch directories.csv"
 
-  success "Installed global helpers (get-config.sh, ci-wait.sh, mailbox, ${#ALL_DF_CHECKLISTS[@]} checklists, directories.csv) into ${GLOBAL_DIR}/"
+  success "Installed global helpers (get-config.sh, ci-wait.sh, openpanel, mailbox, ${#ALL_DF_CHECKLISTS[@]} checklists, directories.csv) into ${GLOBAL_DIR}/"
 }
 
 # Write ~/.darkflow/config (webapp_url + version). Preserves a custom webapp_url
@@ -814,16 +833,30 @@ fi
 
 # ── OpenPanel integration ─────────────────────────────────────────────────────
 
-if [[ "$MOD_ANALYTICS" == true && "$NON_INTERACTIVE" == false && -t 0 ]]; then
+# analytics-review reads OpenPanel through ~/.darkflow/openpanel, which takes its
+# credentials from this project's .env (or .claude/settings.local.json → env). The MCP
+# server is dead — openpanel-mcp-server never answers `initialize` — so there is nothing
+# to register with `claude mcp add`. Skip the prompt when a read client is already there.
+if [[ "$MOD_ANALYTICS" == true && "$NON_INTERACTIVE" == false && -t 0 ]] \
+   && ! grep -qE '^OPENPANEL_(READ_)?CLIENT_ID=' .env 2>/dev/null \
+   && ! grep -q 'OPENPANEL_READ_CLIENT_ID' .claude/settings.local.json 2>/dev/null; then
   echo ""
   echo -e "${BOLD}OpenPanel integration${RESET}"
   echo ""
-  echo "  The analytics-review routine reads data via the OpenPanel MCP."
-  echo "  Create a read client in OpenPanel (Settings → API Clients), then"
-  echo "  register the MCP in this project:"
+  echo "  analytics-review reads OpenPanel via ~/.darkflow/openpanel (read-only)."
+  echo "  Create a read client in OpenPanel (Settings → API Clients), then paste it here."
+  echo "  Leave the client id empty to skip — the routine will report it as unconfigured."
   echo ""
-  echo "    TOKEN=\$(echo -n \"CLIENT_ID:CLIENT_SECRET\" | base64)"
-  echo "    claude mcp add --transport http openpanel \"https://api.openpanel.dev/mcp?token=\$TOKEN\""
+  read -rp "  Read client id: " OP_CLIENT_ID
+  if [[ -n "$OP_CLIENT_ID" ]]; then
+    read -rsp "  Read client secret: " OP_CLIENT_SECRET; echo ""
+    read -rp "  API URL [https://openpanel.chatindex.app/api]: " OP_API_URL
+    [[ -z "$OP_API_URL" ]] && OP_API_URL="https://openpanel.chatindex.app/api"
+    # The CLI falls back to the git-root directory name, but an explicit id is the
+    # difference between a real zero and "that project does not exist".
+    read -rp "  OpenPanel project id [$(basename "$PWD")]: " OP_PROJECT_ID
+    [[ -z "$OP_PROJECT_ID" ]] && OP_PROJECT_ID="$(basename "$PWD")"
+  fi
   echo ""
 fi
 
@@ -1174,7 +1207,7 @@ HEREDOC
   echo "- **Any UI/UX task** → \`docs/state/spec/screens.md\` + \`docs/state/spec/flows/\`"
   echo "- **Changing a user flow** → \`docs/state/spec/flows/\`"
   echo "- **Product / marketing decisions** → \`docs/state/product/positioning.md\` + \`docs/state/product/product.md\` + \`docs/state/product/pricing.md\`"
-  [[ "$MOD_ANALYTICS" == true ]] && echo "- **Working with analytics events** → \`docs/state/product/metrics.md\` (not guessing event names)"
+  [[ "$MOD_ANALYTICS" == true ]] && echo "- **Working with analytics events** → \`docs/state/product/metrics.md\` (not guessing event names). Read the data with \`~/.darkflow/openpanel\` (skill \`openpanel\`) from the project root — there is no OpenPanel MCP server, it never answers the handshake"
   echo "- **Context on what's working / broken right now** → the last 2–3 files in \`docs/logs/\`"
   echo "- **Before architectural changes** → \`docs/state/arch.md\` — the current map and its \`## Decisions\` table"
 
@@ -1742,7 +1775,7 @@ if [[ "$DRY_RUN" == false ]]; then
   # Integration credentials — always live in the project's main .env. We append
   # only the keys that aren't already there, so re-runs never clobber values the
   # user edited by hand.
-  if [[ -n "$OBS_URL" || -n "$OBS_API_KEY" || -n "$MAILBOX_IMAP_HOST" ]]; then
+  if [[ -n "$OBS_URL" || -n "$OBS_API_KEY" || -n "$MAILBOX_IMAP_HOST" || -n "$OP_CLIENT_ID" ]]; then
     touch .env
     _env_new=""
     _env_add() { # _env_add KEY VALUE [COMMENT]
@@ -1765,6 +1798,12 @@ if [[ "$DRY_RUN" == false ]]; then
       _env_add MAILBOX_SMTP_PORT "${MAILBOX_SMTP_PORT:-587}"
       _env_add MAILBOX_SMTP_USER "$MAILBOX_SMTP_USER"
       _env_add MAILBOX_SMTP_PASSWORD "$MAILBOX_SMTP_PASSWORD"
+    fi
+    if [[ -n "$OP_CLIENT_ID" ]]; then
+      _env_add OPENPANEL_API_URL "$OP_API_URL" "# OpenPanel — read client for ~/.darkflow/openpanel"
+      _env_add OPENPANEL_READ_CLIENT_ID "$OP_CLIENT_ID"
+      _env_add OPENPANEL_READ_CLIENT_SECRET "$OP_CLIENT_SECRET"
+      _env_add OPENPANEL_PROJECT_ID "$OP_PROJECT_ID"
     fi
     if [[ -n "$_env_new" ]]; then
       { echo ""; echo "# Dark Flow — integration credentials"; printf '%s' "$_env_new"; } >> .env

@@ -1,0 +1,342 @@
+#!/usr/bin/env python3
+"""OpenPanel read CLI — replaces the openpanel MCP server, which hangs on the
+MCP stdio handshake (openpanel-mcp-server@1.0.0 never answers `initialize`).
+
+Talks to the self-hosted export API directly:
+  GET {OPENPANEL_API_URL}/export/events?project_id=&event=&start=&end=&page=&limit=
+
+Credentials are per project, read in this order (first non-empty wins):
+  1. the real environment
+  2. the nearest .env at or above the CWD
+  3. .claude/settings.local.json → "env" at the git root
+  4. ~/.darkflow/env — OPENPANEL_API_URL only (one self-hosted instance, every project)
+Keys: OPENPANEL_READ_CLIENT_ID / OPENPANEL_READ_CLIENT_SECRET / OPENPANEL_API_URL
+
+Commands:
+  funnel    --events a,b,c   counts + unique users per event, optional prev-period delta
+  breakdown --event X --by   one event grouped by os/browser/country/city/path
+  events    --event X        raw event JSON (escape hatch)
+
+ponytail: stdlib only, no chart/aggregate endpoints — this instance exposes
+/export/events and nothing else, so every number here is counted client-side.
+"""
+
+import argparse
+import json
+import os
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+from collections import Counter
+from datetime import date, timedelta
+
+PROJECT_ID = None  # resolved per run: --project > OPENPANEL_PROJECT_ID > git-root basename
+
+# Three measured defects in this endpoint, each of which silently undercounts if
+# trusted (measured 2026-08-17 against openpanel.chatindex.app, project pageradar):
+#
+# 1. A `limit` above ~10 truncates the walk. The server honours the number itself
+#    (limit=100 does return 100 rows), but then reports page 2 as empty: the window
+#    2026-08-10..16 yields 80 unique rows at limit=10 and only 4 at limit=100. So
+#    PAGE_LIMIT stays small — the cost is requests, the alternative is a 20x
+#    undercount. cmd_selftest asserts this, so raising it fails loudly.
+# 2. Page 1 is short — ~4 rows whatever the limit — and the full pages start at
+#    page 2. Any loop that stops on `len(rows) < limit` exits immediately.
+# 3. `meta.totalCount` tracks neither the window nor the row set: 25 claimed for a
+#    window whose real set is 80 rows, and merely adding `includes=` to the query
+#    changed the same window's claim from 25 to 272.
+#
+# Therefore: the only trustworthy count is an exhaustive page walk to an empty page,
+# deduped by event id. `totalCount` is reported as a hint and never believed.
+PAGE_LIMIT = 10
+MAX_PAGES = 2000  # 20k events per event name per window; warns on stderr if hit
+
+
+def find_up(name):
+    """Nearest `name` at or above the CWD. The search starts at the CWD, not at this
+    file — the script lives in a global skill dir, the .env lives in the project."""
+    d = os.getcwd()
+    while True:
+        p = os.path.join(d, name)
+        if os.path.exists(p):
+            return p
+        parent = os.path.dirname(d)
+        if parent == d:
+            return None
+        d = parent
+
+
+def resolve_project(explicit):
+    """--project > OPENPANEL_PROJECT_ID > basename of the git root above the CWD."""
+    if explicit:
+        return explicit
+    if os.environ.get("OPENPANEL_PROJECT_ID"):
+        return os.environ["OPENPANEL_PROJECT_ID"]
+    gitdir = find_up(".git")
+    if gitdir:
+        return os.path.basename(os.path.dirname(gitdir))
+    sys.exit("cannot tell which OpenPanel project: pass --project or set OPENPANEL_PROJECT_ID")
+
+
+def load_dotenv(path):
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip().strip("'\""))
+
+
+def load_settings_local():
+    """The `env` block of .claude/settings.local.json at the git root. Some projects keep
+    the read client there rather than in .env, because Claude Code exports that block."""
+    gitdir = find_up(".git")
+    if not gitdir:
+        return
+    p = os.path.join(os.path.dirname(gitdir), ".claude", "settings.local.json")
+    if not os.path.exists(p):
+        return
+    try:
+        with open(p) as f:
+            env = (json.load(f) or {}).get("env") or {}
+    except (json.JSONDecodeError, OSError):
+        return  # a broken settings file is not this CLI's problem
+    for k, v in env.items():
+        if isinstance(v, str):
+            os.environ.setdefault(k, v)
+
+
+def load_env():
+    """Per-project credentials, first non-empty wins: real env → nearest .env at or
+    above the CWD → .claude/settings.local.json `env` → ~/.darkflow/env (API URL only,
+    since one self-hosted instance serves every project). setdefault gives that order."""
+    envfile = find_up(".env")
+    if envfile:
+        load_dotenv(envfile)
+    load_settings_local()
+    global_env = os.path.expanduser("~/.darkflow/env")
+    if os.path.exists(global_env):
+        load_dotenv(global_env)
+
+    # The API URL is not a secret, and any instrumented project already ships it to the
+    # browser — so NEXT_PUBLIC_ counts as a source for it, but never for the credentials.
+    api = os.environ.get("OPENPANEL_API_URL") or os.environ.get("NEXT_PUBLIC_OPENPANEL_API_URL")
+    cid = os.environ.get("OPENPANEL_READ_CLIENT_ID") or os.environ.get("OPENPANEL_CLIENT_ID")
+    sec = os.environ.get("OPENPANEL_READ_CLIENT_SECRET") or os.environ.get("OPENPANEL_CLIENT_SECRET")
+    missing = [n for n, v in (("OPENPANEL_API_URL", api), ("OPENPANEL_READ_CLIENT_ID", cid),
+                              ("OPENPANEL_READ_CLIENT_SECRET", sec)) if not v]
+    if missing:
+        sys.exit(f"missing credentials: {', '.join(missing)} — put them in the project's "
+                 ".env (or .claude/settings.local.json → env)")
+    return api.rstrip("/"), {"openpanel-client-id": cid, "openpanel-client-secret": sec}
+
+
+def get(api, headers, event, start, end, page, limit):
+    q = {"project_id": PROJECT_ID, "start": start, "end": end, "limit": limit, "page": page}
+    if event:
+        q["event"] = event
+    req = urllib.request.Request(f"{api}/export/events?" + urllib.parse.urlencode(q),
+                                 headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=90) as r:
+            return json.load(r)
+    except urllib.error.HTTPError as e:
+        sys.exit(f"{event or 'all'}: HTTP {e.code} {e.read()[:200].decode(errors='replace')}")
+
+
+def fetch(api, headers, event, start, end, limit=PAGE_LIMIT):
+    """Every event of one name in [start, end), by exhaustive page walk.
+
+    Returns (rows, claimed) where `claimed` is the server's meta.totalCount, kept only
+    so callers can surface the disagreement. len(rows) is the real count — see the
+    defect notes at the top of this file. `limit` is only for cmd_selftest, which walks
+    twice to prove the small page is still the honest one.
+    """
+    rows, page, claimed = {}, 1, None
+    while page <= MAX_PAGES:
+        body = get(api, headers, event, start, end, page, limit)
+        if claimed is None:
+            claimed = body["meta"]["totalCount"]
+        got = body.get("data") or []
+        if not got:
+            break
+        rows.update({r["id"]: r for r in got})
+        page += 1
+    else:
+        print(f"warning: {event or 'all'} hit MAX_PAGES at {len(rows)} rows — count is a floor",
+              file=sys.stderr)
+    return list(rows.values()), claimed
+
+
+def window(args):
+    """Both ends are INCLUSIVE server-side, so --days 7 spans end-6..end, not end-7..end.
+    Passing end-7 would put the boundary day in this window and the previous one both,
+    double-counting it in every delta."""
+    end = date.fromisoformat(args.end) if args.end else date.today()
+    start = (date.fromisoformat(args.start) if args.start
+             else end - timedelta(days=args.days - 1))
+    return start.isoformat(), end.isoformat()
+
+
+def keep(rows, paths):
+    return [r for r in rows if r.get("path") in paths] if paths else rows
+
+
+def tally(rows, claimed=None):
+    """Events double-fire (user_signed_up: server + client), so uniques matter more
+    than the raw count. Server-side events carry no deviceId — profiles cover them.
+    `events` is the walked count; `claimed` is what the server said, for comparison."""
+    return {
+        "events": len(rows),
+        "claimed": claimed,
+        "devices": len({r["deviceId"] for r in rows if r.get("deviceId")}),
+        "profiles": len({r["profileId"] for r in rows if r.get("profileId")}),
+    }
+
+
+def prev_window(start, end):
+    """The equal-length window immediately before, ending the day before `start`."""
+    s, e = date.fromisoformat(start), date.fromisoformat(end)
+    days = (e - s).days + 1  # inclusive on both ends
+    return (s - timedelta(days=days)).isoformat(), (s - timedelta(days=1)).isoformat()
+
+
+def cmd_funnel(args, api, headers):
+    start, end = window(args)
+    paths = set(args.paths.split(",")) if args.paths else None
+    names = [e.strip() for e in args.events.split(",") if e.strip()]
+
+    def one(name, s, e):
+        got, claimed = fetch(api, headers, name, s, e)
+        return tally(keep(got, paths), None if paths else claimed)
+
+    rows = {n: one(n, start, end) for n in names}
+    prev = {}
+    if args.prev:
+        ps, pe = prev_window(start, end)
+        prev = {n: one(n, ps, pe) for n in names}
+
+    if args.json:
+        print(json.dumps({"window": [start, end], "paths": sorted(paths) if paths else None,
+                          "current": rows, "previous": prev or None}, indent=2))
+        return
+
+    print(f"window {start} → {end}" + (f"   paths: {len(paths)} filtered" if paths else ""))
+    head = f"{'event':<32}{'events':>8}{'devices':>9}{'profiles':>9}"
+    print(head + (f"{'Δ events':>10}" if args.prev else ""))
+    print("-" * (len(head) + (10 if args.prev else 0)))
+    for n in names:
+        c = rows[n]
+        line = f"{n:<32}{c['events']:>8}{c['devices']:>9}{c['profiles']:>9}"
+        if args.prev:
+            was = prev[n]["events"]
+            line += f"{c['events'] - was:>+10}" if was else f"{'new' if c['events'] else '—':>10}"
+        print(line)
+
+
+def cmd_breakdown(args, api, headers):
+    start, end = window(args)
+    got, _ = fetch(api, headers, args.event, start, end)
+    rows = keep(got, set(args.paths.split(",")) if args.paths else None)
+    # ponytail: blank/NUL means the event came from the server, not a browser
+    counts = Counter((r.get(args.by) or "").replace("\x00", "") or "(server/unset)" for r in rows)
+    if args.json:
+        print(json.dumps({"window": [start, end], "event": args.event, "by": args.by,
+                          "total": len(rows), "counts": dict(counts.most_common())}, indent=2))
+        return
+    print(f"{args.event} by {args.by}   {start} → {end}   total {len(rows)}")
+    for k, v in counts.most_common(args.top):
+        print(f"  {k:<40}{v:>6}")
+
+
+def cmd_events(args, api, headers):
+    start, end = window(args)
+    rows, _ = fetch(api, headers, args.event, start, end)
+    rows.sort(key=lambda r: r.get("createdAt") or "", reverse=True)
+    print(json.dumps(rows[: args.limit] if args.limit else rows, indent=2))
+
+
+def cmd_selftest(args, api, headers):
+    """Asserts the properties the walk relies on. Run after touching fetch().
+
+    The window is the last full week, not a fixed date range — a hardcoded window
+    eventually ages out of retention and the test starts asserting about nothing."""
+    ev = args.event
+    end = date.today() - timedelta(days=1)
+    b0, b1 = (end - timedelta(days=6)).isoformat(), end.isoformat()
+    a0, a1 = prev_window(b0, b1)
+    late, _ = fetch(api, headers, ev, b0, b1)
+    early, _ = fetch(api, headers, ev, a0, a1)
+
+    stray = [r["createdAt"] for r in late if not (b0 <= r["createdAt"][:10] <= b1)]
+    assert not stray, f"rows outside the requested window: {stray[:3]}"
+
+    again, _ = fetch(api, headers, ev, b0, b1)
+    assert len(again) == len(late), f"walk is not stable: {len(late)} then {len(again)}"
+
+    overlap = {r["id"] for r in late} & {r["id"] for r in early}
+    assert not overlap, f"adjacent windows share {len(overlap)} events — boundary is inclusive"
+
+    assert len(late) > PAGE_LIMIT, f"only {len(late)} rows — pagination is not advancing"
+
+    # Defect 1: a bigger page truncates the walk, so the small-page walk must be the
+    # ceiling. If this ever fails, the server was fixed and PAGE_LIMIT can go up.
+    big, _ = fetch(api, headers, ev, b0, b1, limit=100)
+    assert len(big) <= len(late), (
+        f"limit=100 walk returned {len(big)} vs {len(late)} at limit={PAGE_LIMIT} — "
+        "the page cap is gone, PAGE_LIMIT can be raised")
+
+    print(f"ok  {ev}: {b0}..{b1} = {len(late)} rows, {a0}..{a1} = {len(early)} rows, disjoint; "
+          f"limit=100 walk = {len(big)} rows (why PAGE_LIMIT stays {PAGE_LIMIT})")
+
+
+def main():
+    p = argparse.ArgumentParser(prog="openpanel", description=__doc__.split("\n")[0])
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    def dates(sp):
+        sp.add_argument("--project", help="OpenPanel project id (default: git-root name)")
+        sp.add_argument("--start", help="YYYY-MM-DD (default: end - days)")
+        sp.add_argument("--end", help="YYYY-MM-DD (default: today)")
+        sp.add_argument("--days", type=int, default=7)
+        sp.add_argument("--paths", help="comma-separated path allowlist, e.g. /,/pricing")
+        sp.add_argument("--json", action="store_true")
+
+    f = sub.add_parser("funnel", help="counts + unique users per event")
+    f.add_argument("--events", required=True, help="comma-separated event names, funnel order")
+    f.add_argument("--prev", action="store_true", help="also fetch the preceding equal window")
+    dates(f)
+    f.set_defaults(fn=cmd_funnel)
+
+    b = sub.add_parser("breakdown", help="group one event by a field")
+    b.add_argument("--event", required=True)
+    # No `device` here: the export carries deviceId but no device field, so `--by device`
+    # used to group every row under "(server/unset)". Mobile vs desktop reads off `os`.
+    b.add_argument("--by", default="os",
+                   choices=["os", "browser", "country", "city", "path"])
+    b.add_argument("--top", type=int, default=15)
+    dates(b)
+    b.set_defaults(fn=cmd_breakdown)
+
+    e = sub.add_parser("events", help="raw event JSON")
+    e.add_argument("--event")
+    e.add_argument("--limit", type=int, default=0, help="0 = all")
+    dates(e)
+    e.set_defaults(fn=cmd_events)
+
+    t = sub.add_parser("selftest", help="assert the pagination walk still holds")
+    t.add_argument("--project", help="OpenPanel project id (default: git-root name)")
+    t.add_argument("--event", default="session_start")
+    t.set_defaults(fn=cmd_selftest)
+
+    args = p.parse_args()
+    api, headers = load_env()
+    global PROJECT_ID
+    PROJECT_ID = resolve_project(args.project)
+    args.fn(args, api, headers)
+
+
+if __name__ == "__main__":
+    main()
