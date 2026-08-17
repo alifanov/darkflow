@@ -3,6 +3,7 @@
         web-stop reload
 
 WORKER := $(HOME)/.darkflow/darkflow-run.sh
+WEB_PORT ?= 5555
 UID_ := $(shell id -u)
 WEB_SVC := gui/$(UID_)/com.darkflow.web
 WORKER_SVC := gui/$(UID_)/com.darkflow.worker
@@ -14,7 +15,10 @@ up: ## Start Postgres in the background (webapp runs on the host — see `make w
 	docker compose up -d
 
 web: ## Build and run the webapp INTERACTIVELY in your shell (http://localhost:5555) — required for the cmux launch buttons
-	cd webapp && pnpm build && PORT=5555 pnpm start
+	@-launchctl bootout $(WEB_SVC) 2>/dev/null || true
+	@pid=$$(/usr/sbin/lsof -ti tcp:$(WEB_PORT) -sTCP:LISTEN 2>/dev/null); \
+	if [ -n "$$pid" ]; then echo "freeing :$(WEB_PORT) (pid $$pid)"; kill $$pid 2>/dev/null; /bin/sleep 1; fi
+	cd webapp && pnpm build && PORT=$(WEB_PORT) pnpm start
 
 docker-up: ## Start Postgres + webapp in Docker (no cmux launch button; http://localhost:5555)
 	docker compose --profile docker up -d
