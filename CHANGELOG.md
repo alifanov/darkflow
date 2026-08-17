@@ -11,6 +11,10 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.38.3] — 2026-08-17
+
+- **Security** — `nanoid` поднят до 3.3.18 в `webapp/pnpm-lock.yaml` (dependabot-алерт: кастомные генераторы зациклиться при `size=0`). Транзитивная зависимость `postcss`, правится только лок-файлом.
+
 ## [4.38.2] — 2026-08-17
 
 - **Ops** — `make web` сначала освобождает порт, потом собирает. Если на `:5555` уже висел вебапп (прошлый интерактивный запуск или остаток launchd), таргет честно тратил несколько минут на `pnpm build` и падал в конце на `EADDRINUSE`. Теперь `bootout` стрея из launchd + `kill` слушателя порта идут до сборки; порт вынесен в `WEB_PORT ?= 5555`.
