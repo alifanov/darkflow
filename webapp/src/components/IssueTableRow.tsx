@@ -9,22 +9,7 @@ import { SnoozeIssueButton } from "@/components/SnoozeIssueButton";
 import { CloseIssueButton } from "@/components/CloseIssueButton";
 import { LaunchInCmuxButton } from "@/components/LaunchInCmuxButton";
 import { Markdown } from "@/components/Markdown";
-
-const STATUS_COLORS: Record<string, string> = {
-  proposed: "#1f3a5f",
-  approved: "#1a3a1a",
-  closed: "#3a1a1a",
-  "in-progress": "#2a2a0a",
-  "needs-human": "#3a2a0a",
-};
-
-const STATUS_TEXT: Record<string, string> = {
-  proposed: "var(--accent)",
-  approved: "var(--green)",
-  closed: "var(--red)",
-  "in-progress": "#e3b341",
-  "needs-human": "var(--yellow, #d29922)",
-};
+import { STATUS_COLORS, STATUS_TEXT } from "@/lib/status-colors";
 
 export interface IssueComment {
   author?: string;

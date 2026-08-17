@@ -12,22 +12,9 @@ import { readConstraints } from "@/lib/constraints";
 import { MailboxRow } from "@/components/MailboxRow";
 import { MailboxSyncButton } from "@/components/MailboxSyncButton";
 import { readMailboxEnv, isMailboxConfigured } from "@/lib/mailbox-config";
+import { STATUS_COLORS, STATUS_TEXT } from "@/lib/status-colors";
 
 export const dynamic = "force-dynamic";
-
-const STATUS_COLORS: Record<string, string> = {
-  proposed: "#1f3a5f",
-  approved: "#1a3a1a",
-  "in-progress": "#2a2a0a",
-  "needs-human": "#3a1a3a",
-};
-
-const STATUS_TEXT: Record<string, string> = {
-  proposed: "var(--accent)",
-  approved: "var(--green)",
-  "in-progress": "#e3b341",
-  "needs-human": "#c084fc",
-};
 
 const CARDS: { key: string; label: string; statuses: string[] }[] = [
   { key: "proposed", label: "Needs approval", statuses: ["proposed"] },
@@ -362,7 +349,8 @@ function IssuesTab({
                 href={toggleHref(card.key)}
                 className="rounded-lg border p-4 flex flex-col gap-1 transition-colors"
                 style={{
-                  background: isActive ? STATUS_COLORS[card.key] ?? "var(--surface)" : "var(--surface)",
+                  // Card is tinted with its status colour always; active state just brightens the border.
+                  background: STATUS_COLORS[card.key] ?? "var(--surface)",
                   borderColor: isActive ? accent : "var(--border)",
                 }}
               >
