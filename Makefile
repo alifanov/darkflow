@@ -1,9 +1,11 @@
-.PHONY: help up down web logs restart ps db-shell docker-up \
+.PHONY: help up down web web-screen web-screen-stop logs restart ps db-shell docker-up \
         worker-run worker-start worker-reload worker-stop worker-status worker-logs \
         web-stop reload
 
 WORKER := $(HOME)/.darkflow/darkflow-run.sh
 WEB_PORT ?= 5555
+WEB_SCREEN := dfweb
+WEB_EXIT_LOG := $(HOME)/.darkflow/web-exit.log
 UID_ := $(shell id -u)
 WEB_SVC := gui/$(UID_)/com.darkflow.web
 WORKER_SVC := gui/$(UID_)/com.darkflow.worker
@@ -19,6 +21,30 @@ web: ## Build and run the webapp INTERACTIVELY in your shell (http://localhost:5
 	@pid=$$(/usr/sbin/lsof -ti tcp:$(WEB_PORT) -sTCP:LISTEN 2>/dev/null); \
 	if [ -n "$$pid" ]; then echo "freeing :$(WEB_PORT) (pid $$pid)"; kill $$pid 2>/dev/null; /bin/sleep 1; fi
 	cd webapp && pnpm build && PORT=$(WEB_PORT) pnpm start
+
+# Same as `make web`, but detached: the server lives in its own screen session, so
+# closing the tab (or a stray Ctrl-C) can't reach it, and a restart loop brings it
+# back ~2s after any death. Still YOUR interactive session, so cmux buttons work.
+# Every death is appended to ~/.darkflow/web-exit.log with its exit code:
+# 143 = SIGTERM from outside · 137 = OOM · 0 = graceful shutdown request.
+web-screen: ## Build + run the webapp detached in a screen session, auto-restarting (survives closing the tab)
+	@-launchctl bootout $(WEB_SVC) 2>/dev/null || true
+	@-screen -S $(WEB_SCREEN) -X quit >/dev/null 2>&1 || true
+	@pid=$$(/usr/sbin/lsof -ti tcp:$(WEB_PORT) -sTCP:LISTEN 2>/dev/null); \
+	if [ -n "$$pid" ]; then echo "freeing :$(WEB_PORT) (pid $$pid)"; kill $$pid 2>/dev/null; /bin/sleep 1; fi
+	cd webapp && pnpm build
+	@screen -dmS $(WEB_SCREEN) bash -c 'cd $(CURDIR)/webapp && while true; do \
+	  PORT=$(WEB_PORT) pnpm start; \
+	  echo "$$(date "+%F %T") exit=$$?" >> $(WEB_EXIT_LOG); \
+	  sleep 2; \
+	done'
+	@echo "webapp detached in screen '$(WEB_SCREEN)' — http://localhost:$(WEB_PORT)"
+	@echo "  live logs:  screen -r $(WEB_SCREEN)   (detach again: Ctrl-A D)"
+	@echo "  deaths:     cat $(WEB_EXIT_LOG)"
+	@echo "  stop:       make web-screen-stop"
+
+web-screen-stop: ## Stop the detached screen webapp (and its restart loop)
+	-screen -S $(WEB_SCREEN) -X quit
 
 docker-up: ## Start Postgres + webapp in Docker (no cmux launch button; http://localhost:5555)
 	docker compose --profile docker up -d

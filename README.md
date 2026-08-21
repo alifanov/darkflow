@@ -75,6 +75,8 @@ the webapp comes up in a container on the same **http://localhost:5555**.
 |---|---|
 | `make up` | Start Postgres in the background |
 | `make web` | Build & run the webapp on the host (port 5555) |
+| `make web-screen` | Same, but detached in a `screen` session with an auto-restart loop — survives closing the tab; deaths logged to `~/.darkflow/web-exit.log` |
+| `make web-screen-stop` | Stop the detached webapp and its restart loop |
 | `make docker-up` | Start Postgres + webapp in Docker (port 5555) |
 | `make down` | Stop Docker services |
 | `make logs` | Stream Docker logs (Ctrl-C to stop) |
