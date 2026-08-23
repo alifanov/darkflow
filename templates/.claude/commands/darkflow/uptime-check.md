@@ -87,10 +87,11 @@ Otherwise create the task **auto-approved** so `fix-issues` acts immediately:
   - Check that failed: <dns | connection | http_5xx | http_4xx | empty_body | error_page>
   - Observed: <http_code, curl error, or marker text>
 
-  ## What to do
-  <best-effort hypothesis: redeploy, fix DNS, restart container, fix routing, renew cert>
-  Investigate the deploy/infra first; if the fix needs credentials or infrastructure
-  access that isn't available, escalate to `needs-human`.
+  ## Plan
+  - [ ] 1. <best-effort hypothesis: redeploy, fix DNS, restart container, fix routing, renew cert>
+        Investigate the deploy/infra first; if the fix needs credentials or infrastructure
+        access that isn't available, escalate to `needs-human`.
+  - [ ] 2. <next step, if the fix needs one>
 
   ## Acceptance criteria
   - [ ] <URL> returns HTTP 200 and the page renders expected content

@@ -36,8 +36,9 @@ Priority vocabulary: `critical` / `high` / `medium` / `low`. **Only create tasks
   ## Problem
   <metric, current value, comparison to previous period>
 
-  ## What to do
-  <concrete fix — specific table, query, endpoint, or config to change>
+  ## Plan
+  - [ ] 1. <concrete fix — specific table, query, endpoint, or config to change>
+  - [ ] 2. <next step, if the fix needs one>
 
   ## Acceptance criteria
   - [ ] <measurable outcome, e.g. "p95 latency on /api/users drops below 500ms">

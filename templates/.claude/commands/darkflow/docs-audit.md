@@ -51,8 +51,9 @@ Create a task for each significant mismatch. Group trivially related mismatches 
   ## Problem
   <what the docs claim vs what the code actually does, with file paths on both sides>
 
-  ## What to do
-  <which doc file to update and to what>
+  ## Plan
+  - [ ] 1. <which doc file to update and to what>
+  - [ ] 2. <next step, if the fix needs one>
 
   ## Acceptance criteria
   - [ ] <doc file matches code reality on this point>

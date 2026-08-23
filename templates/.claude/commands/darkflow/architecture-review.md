@@ -89,8 +89,9 @@ One task per significant, independent, high-confidence finding. Group trivially 
 ## Problem
 <what was found, with file paths — why it is dead / duplicated / cyclic / mislayered>
 
-## What to do
-<specific change: which files, what to delete, extract or reorder>
+## Plan
+- [ ] 1. <specific change: which files, what to delete, extract or reorder>
+- [ ] 2. <next step, if the fix needs one>
 
 ## Acceptance criteria
 - [ ] <measurable: "src/lib/legacy.ts removed, build + typecheck pass, no remaining importers">

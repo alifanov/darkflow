@@ -94,8 +94,9 @@ Create a task for each significant, independent optimization. Group trivially re
   ## Problem
   <current state with file paths — what is slow / wasteful and why>
 
-  ## What to do
-  <specific change: which file, what to add/change, exact config if short enough>
+  ## Plan
+  - [ ] 1. <specific change: which file, what to add/change, exact config if short enough>
+  - [ ] 2. <next step, if the fix needs one>
 
   ## Acceptance criteria
   - [ ] <measurable outcome, e.g. "CI install step drops from ~90s to ~15s on cache hit">

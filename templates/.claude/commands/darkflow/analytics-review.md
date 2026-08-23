@@ -139,8 +139,9 @@ metrics dump with no conclusion. `$DARKFLOW_HEADLESS` is set when the worker run
   ## Problem
   <what the data shows and why it matters — numbers, the segment it applies to, file:line>
 
-  ## What to do
-  <concrete action — specific page, flow, component, or event>
+  ## Plan
+  - [ ] 1. <concrete action — specific page, flow, component, or event>
+  - [ ] 2. <next step, if the fix needs one>
 
   ## Acceptance criteria
   - [ ] <measurable outcome, e.g. "Step 2 → Step 3 conversion rises above 60%">

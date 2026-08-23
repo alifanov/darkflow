@@ -89,6 +89,10 @@ Otherwise create a task (priority `high` if LCP/CLS/TBT — the Core Web Vitals 
   image / render-blocking CSS / slow TTFB; CLS → images without dimensions / injected
   content; TBT → heavy JS on the main thread / hydration.>
 
+  ## Plan
+  - [ ] 1. <the fix for the worst metric — which file, image, script or CSS to change>
+  - [ ] 2. <next step, if the fix needs one>
+
   ## Acceptance criteria
   - [ ] <poor metric> back under its "good" threshold on the next web-vitals run
   - [ ] No new metric regressed into "poor"

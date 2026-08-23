@@ -62,8 +62,9 @@ is theirs, not yours.
 ## Problem
 <what was found, which page or component, why it matters — for a metric: current value vs target>
 
-## What to do
-<concrete change — specific file, component, asset or CSS>
+## Plan
+- [ ] 1. <concrete change — specific file, component, asset or CSS>
+- [ ] 2. <next step, if the fix needs one>
 
 ## Acceptance criteria
 - [ ] <verifiable outcome — e.g. "LCP below 2.5s on Lighthouse mobile">

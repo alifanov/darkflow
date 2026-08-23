@@ -341,8 +341,9 @@ Add all recommendations as tasks with `--source gsc` **or** `--source seo` and a
   ## Problem
   <metric/finding, current value, affected URL or page group, and how it was detected (GSC vs code audit)>
 
-  ## What to do
-  <concrete SEO action — specific tag, file, component, or config to change>
+  ## Plan
+  - [ ] 1. <concrete SEO action — specific tag, file, component, or config to change>
+  - [ ] 2. <next step, if the fix needs one>
 
   ## Acceptance criteria
   - [ ] <verifiable outcome, e.g. "Every /blog/* page has a unique <meta name='description'> 150–160 chars">

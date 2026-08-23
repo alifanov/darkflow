@@ -915,34 +915,32 @@ mailbox_file_config_issue() {
     --title "Configure mailbox integration (MAILBOX_* in .env)" \
     --source mailbox --priority high --needs-human \
     --body "$(cat <<'BODY'
-## Mailbox routine is enabled but not configured
+## Problem
 
 The `mailbox-check` routine is scheduled and running, but `MAILBOX_IMAP_HOST` is
 empty in `.env` — so it can neither read incoming mail nor send replies.
 Every scheduled run is currently a no-op.
 
-## What to do
+## Plan
 
-Add the mailbox credentials to `.env` (git-ignored) in the project root:
+- [ ] 1. Add the mailbox credentials to `.env` (git-ignored) in the project root:
 
-```
-MAILBOX_IMAP_HOST=imap.example.com
-MAILBOX_IMAP_PORT=993
-MAILBOX_IMAP_USER=you@example.com
-MAILBOX_IMAP_PASSWORD=...
-MAILBOX_SMTP_HOST=smtp.example.com
-MAILBOX_SMTP_PORT=465
-MAILBOX_SMTP_USER=you@example.com
-MAILBOX_SMTP_PASSWORD=...
-```
+      MAILBOX_IMAP_HOST=imap.example.com
+      MAILBOX_IMAP_PORT=993
+      MAILBOX_IMAP_USER=you@example.com
+      MAILBOX_IMAP_PASSWORD=...
+      MAILBOX_SMTP_HOST=smtp.example.com
+      MAILBOX_SMTP_PORT=465
+      MAILBOX_SMTP_USER=you@example.com
+      MAILBOX_SMTP_PASSWORD=...
 
-Or, if you don't want the mailbox integration, disable the routine instead: toggle
-`mailbox-check` off in the Web UI (Settings → Routine schedule).
+- [ ] 2. Or, if you don't want the mailbox integration at all, skip step 1 and toggle
+      `mailbox-check` off in the Web UI (Settings → Routine schedule).
 
 ## Acceptance criteria
 
-- [ ] `.env` has the `MAILBOX_*` vars **or** `mailbox-check` is disabled
-- [ ] `mailbox-check` no longer reports "not configured"
+- [ ] `grep MAILBOX_IMAP_HOST .env` returns a non-empty value **or** `mailbox-check` is off in the Web UI
+- [ ] The next `mailbox-check` run log no longer says "not configured"
 BODY
 )" 2>/dev/null) || num=""
 

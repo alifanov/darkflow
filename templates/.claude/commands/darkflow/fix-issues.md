@@ -51,9 +51,18 @@ Fetch the full task content before touching any code:
 
 Read the title, body, and all comments carefully. If the task references other tasks, read those too.
 
+The body carries a `## Plan` — it is a starting point written when the finding was filed, not a
+contract. Follow it where it still holds; where the code has moved on, rewrite it and say so in
+the closing comment. The `## Acceptance criteria` are the contract: each one names the command,
+report or URL that decides it, and every one must pass before the task closes.
+
 ## Step 4 — Do the work
 
 Implement all the changes needed for it.
+
+**If you stop half-way** — escalating to `needs-human`, or handing the task back — say which plan
+steps are done and which are not in the comment. The plan in the body is not editable from the
+CLI, so the comment is the only record of how far it got.
 
 **Product language is always English.** The `language` setting is the *communication* language (issues, comments, commits, chat) — it never changes what you write inside the product. All source code, identifiers, code comments, UI copy, user-facing strings, and logs you add must be in English, even when `language` is set to something else.
 

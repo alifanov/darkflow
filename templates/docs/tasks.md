@@ -60,26 +60,54 @@ Exactly one, and it is **required** — every task must carry a priority. Replac
 
 ---
 
+## Task body — the template
+
+Three sections, in this order. One shape for every task — routine-filed or hand-written.
+
+```markdown
+## Problem
+
+Source: docs/logs/2026-05-16.md — ## Analytics
+
+<What is wrong, where, and why it matters — numbers, the segment it applies to, file:line>
+
+## Plan
+
+- [ ] 1. <first concrete step — the file to touch, the change to make>
+- [ ] 2. <second step>
+
+## Acceptance criteria
+
+- [ ] `pnpm exec fallow dead-code` no longer reports src/lib/legacy.ts
+- [ ] Step 2 → Step 3 in OpenPanel is above 60% after 7 days
+```
+
+| Section | What belongs there |
+|---|---|
+| `Problem` | What breaks, for whom, with evidence. Never a bare observation ("low conversion on step 2"). |
+| `Plan` | 2–5 concrete steps — the files to touch, the change to make. A starting point, not a contract: the agent that picks the task up may rewrite it, and says so when it does. Unsure of a step? Write the ones you are sure of. |
+| `Acceptance criteria` | What must be **true** when it is done — and **every criterion names the instrument that decides it**: a command, a report, a URL. "The fix works" is not a criterion; `pnpm build` passing is. Plan is the steps, this is the outcome — never the same list twice. |
+
+`## Out of scope` is an optional fourth section — one line, only when the task borders on a
+bigger change someone would otherwise drag in.
+
+There is no separate "how to verify" section: a criterion that does not say how it is checked
+is not a criterion yet, so the check lives on the criterion itself.
+
+---
+
 ## Roles: who does what
 
 ### Agent (Claude Code)
 
-1. **Creates a task** from each finding that clears the threshold:
+1. **Creates a task** from each finding that clears the threshold — body per
+   [the template](#task-body--the-template):
    ```bash
    ~/.darkflow/df task create \
      --title "Short, action-oriented description" \
      --source <...> --priority <...> --status proposed \
      --body "$(cat <<'EOF'
-   ## Context
-
-   Source: docs/logs/2026-05-16.md — ## Analytics
-
-   <Brief description of the problem and its impact on the metric>
-
-   ## Acceptance criteria
-
-   - [ ] <concrete, measurable outcome>
-   - [ ] <second criterion if needed>
+   <the four sections>
    EOF
    )"
    ```

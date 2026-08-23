@@ -37,8 +37,9 @@ record the finding under Hypotheses in the snapshot, and surface the rejection i
   ## Problem
   <metric, current value, comparison to previous period>
 
-  ## What to do
-  <concrete action — specific campaign, ad group, keyword, or audience to change>
+  ## Plan
+  - [ ] 1. <concrete action — specific campaign, ad group, keyword, or audience to change>
+  - [ ] 2. <next step, if the fix needs one>
 
   ## Acceptance criteria
   - [ ] <measurable outcome, e.g. "CPA on campaign X drops below $15">

@@ -79,8 +79,9 @@ GitHub alert: <html_url, for a GitHub-sourced finding>
 Identifier:   <GHSA / rule.id / secret type — omit for a code-review finding>
 Severity:     <critical | high | medium>
 
-## What to do
-<concrete remediation — exact version to upgrade to, code to change, key to rotate>
+## Plan
+- [ ] 1. <concrete remediation — exact version to upgrade to, code to change, key to rotate>
+- [ ] 2. <next step, if the fix needs one>
 
 ## Acceptance criteria
 - [ ] <verifiable outcome>

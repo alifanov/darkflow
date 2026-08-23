@@ -79,8 +79,9 @@ step 3 unreachable on mobile (390px)", "Add error state to signup form on invali
 ## Problem
 <flow, step, viewport. What you did, what happened, what you expected>
 
-## What to do
-<concrete change — specific page, component, copy or flow step>
+## Plan
+- [ ] 1. <concrete change — specific page, component, copy or flow step>
+- [ ] 2. <next step, if the fix needs one>
 
 ## Acceptance criteria
 - [ ] <verifiable outcome — the flow completes at 390px, the error message appears, …>
