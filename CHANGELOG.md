@@ -11,6 +11,10 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.41.1] — 2026-08-24
+
+- **Security** — закрыт последний открытый high-алерт Dependabot (#14): `deepmerge-ts` 7.1.5 → 8.0.2 через `pnpm.overrides` в `webapp/package.json`. Пакет приезжает транзитивно из `@prisma/config`, прямой зависимости нет, поэтому override — единственный способ поднять версию, не дожидаясь релиза Prisma. `pnpm build` проходит.
+
 ## [4.41.0] — 2026-08-23
 
 - **Workflow** — у задачи теперь один канонический шаблон тела, зафиксированный в `docs/tasks.md` → *Task body — the template*: `## Problem` → `## Plan` → `## Acceptance criteria`. До этого шаблонов было два и они разошлись: `docs/tasks.md`, `add-issue` и воркер писали `Context / Acceptance criteria`, а двенадцать routine-команд — `Problem / What to do / Acceptance criteria`. Ни один из двух не содержал плана работ, поэтому задача приезжала к `fix-issues` без единого шага: «что не так» и «что должно стать правдой» были, а «что конкретно сделать» — нет.
