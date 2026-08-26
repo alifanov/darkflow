@@ -56,34 +56,46 @@ contract. Follow it where it still holds; where the code has moved on, rewrite i
 the closing comment. The `## Acceptance criteria` are the contract: each one names the command,
 report or URL that decides it, and every one must pass before the task closes.
 
-### Tasks that land one step per run
+### Tasks that land over several runs
 
-A `## Plan` heading written as **`## Plan (one step per run)`** means the task is too big for a
-single run and was deliberately split. Everything else about the section is unchanged — the same
+A `## Plan` heading written as **`## Plan (multi-run)`** means the task is too big for a single
+run and was deliberately split. Everything else about the section is unchanged — the same
 numbered checkboxes.
 
 ```markdown
-## Plan (one step per run)
+## Plan (multi-run)
 
 - [ ] 1. Extract the shared helper
 - [ ] 2. Migrate the three call sites
 - [ ] 3. Delete the old copies
+- [ ] 4. Drop the feature flag
 ```
 
-The body is not editable from the CLI, so **progress lives in the comments**. Count the comments
-whose first line starts with `Step K/M` — that is how many steps are already done. This run does
-step `K+1` and nothing else: one step, one commit or PR, one comment, task stays open. Only the
-last step closes it.
+The body is not editable from the CLI, so **progress lives in the comments**. The marker is the
+comment's first line, `Progress: K/N` — steps `1..K` of `N` are done. Read the highest one; this
+run starts at step `K+1`.
+
+**Take as many steps as genuinely fit one run** — a contiguous block starting at `K+1`, never
+skipping ahead. Where to stop is a judgement call, and the honest cut is where the next step
+would make the change hard to review or hard to verify:
+
+- steps that are one change seen from different files → do them together
+- a step that needs the previous one deployed, or a migration to have run → stop before it
+- the diff is getting big enough that a reviewer would ask for it to be split → stop
+- checks pass and the work so far stands on its own → a fine place to stop, even mid-plan
+
+One run, one commit or PR, one comment — however many steps it carried. The task stays open until
+`K = N`; only the run that lands the last step closes it.
 
 A plain `## Plan` heading means what it always did: the whole task is finished in this run.
 
-Such a task keeps winning Step 2's ranking until it is done — that is the point: it lands one
-piece per tick instead of competing with itself.
+Such a task keeps winning Step 2's ranking until it is done — that is the point: it lands what it
+can per tick instead of competing with itself.
 
 ## Step 4 — Do the work
 
-Implement all the changes needed for it — or, under `## Plan (one step per run)`, everything
-step `K+1` names and nothing beyond it.
+Implement all the changes needed for it — or, under `## Plan (multi-run)`, the block of steps
+from `K+1` onwards that fits this run, and nothing beyond it.
 
 **If you stop half-way** — escalating to `needs-human`, or handing the task back — say which plan
 steps are done and which are not in the comment. The plan in the body is not editable from the
@@ -187,11 +199,11 @@ After landing, leave a comment on the task with a brief summary of what was done
 Landed: <PR URL | commit SHA(s)>"
 ```
 
-Under `## Plan (one step per run)` the comment's **first line** is the progress marker, and the
-step number is what the next run reads:
+Under `## Plan (multi-run)` the comment's **first line** is the progress marker — the last step
+this run finished, out of the total — and it is what the next run reads:
 
 ```bash
-~/.darkflow/df task comment $n --body "Step 2/3 — <what this step changed>
+~/.darkflow/df task comment $n --body "Progress: 3/4 — steps 2-3, <what landed>
 Landed: <PR URL | commit SHA(s)>"
 ```
 
