@@ -19,7 +19,7 @@ Walk through **only the missing fields** conversationally — skip any field alr
    - medium — this month
    - low — someday / nice-to-have (allowed for manual tasks; scheduled routines never auto-create `low`)
 
-4. **Description** — "Briefly describe the problem and what done looks like." Use the answer to fill the body template from `docs/tasks.md` → *Task body — the template*: a `## Problem` paragraph, a `## Plan` of 2–5 checkbox steps, and 1–3 `## Acceptance criteria` — each one naming the command, report or URL that decides it. Do not ask the user for the plan: draft it yourself from the description and the code, and show it in the confirmation.
+4. **Description** — "Briefly describe the problem and what done looks like." Use the answer to fill the body template from `docs/tasks.md` → *Task body — the template*: a `## Problem` paragraph, a `## Plan` of 2–5 checkbox steps, and 1–3 `## Acceptance criteria` — each one naming the command, report or URL that decides it. Do not ask the user for the plan: draft it yourself from the description and the code, and show it in the confirmation. If the work plainly does not fit one run (a migration, a refactor across many call sites), title the section `## Plan (one step per run)` instead — `fix-issues` then lands one step per tick and closes the task on the last one. Default to the plain `## Plan`.
 
 5. **Timing** (only if the user mentioned a date/"not before" constraint) — add `--after <ISO date>` to the create command so fix-issues won't pick the task up before that moment. Don't ask about this proactively.
 

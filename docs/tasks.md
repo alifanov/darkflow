@@ -86,6 +86,7 @@ Source: docs/logs/2026-05-16.md — ## Analytics
 |---|---|
 | `Problem` | What breaks, for whom, with evidence. Never a bare observation ("low conversion on step 2"). |
 | `Plan` | 2–5 concrete steps — the files to touch, the change to make. A starting point, not a contract: the agent that picks the task up may rewrite it, and says so when it does. Unsure of a step? Write the ones you are sure of. |
+| `Plan (one step per run)` | The same section, opted into being done over several runs. `fix-issues` lands **one** step per tick — one commit or PR each — and closes the task only on the last one. Progress lives in the task's comments (`Step K/M — …`), because the body is not editable from the CLI. Use it when a task genuinely does not fit one run; a plain `## Plan` is still the default and finishes in one. |
 | `Acceptance criteria` | What must be **true** when it is done — and **every criterion names the instrument that decides it**: a command, a report, a URL. "The fix works" is not a criterion; `pnpm build` passing is. Plan is the steps, this is the outcome — never the same list twice. |
 
 `## Out of scope` is an optional fourth section — one line, only when the task borders on a
