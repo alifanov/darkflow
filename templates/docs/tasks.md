@@ -85,7 +85,8 @@ Source: docs/logs/2026-05-16.md — ## Analytics
 | Section | What belongs there |
 |---|---|
 | `Problem` | What breaks, for whom, with evidence. Never a bare observation ("low conversion on step 2"). |
-| `Plan` | 2–5 concrete steps — the files to touch, the change to make. A starting point, not a contract: the agent that picks the task up may rewrite it, and says so when it does. Unsure of a step? Write the ones you are sure of. |
+| `Plan` | 2–5 concrete steps — the files to touch, the change to make. **Write the steps to be as independent of each other as possible**: each one lands on its own, leaves the project working, and can be done in a separate run without the ones after it. Order them so the earlier steps never depend on the later ones, and split a step that only makes sense together with the next into a single step instead of two. A starting point, not a contract: the agent that picks the task up may rewrite it, and says so when it does. Unsure of a step? Write the ones you are sure of. |
+| `Plan (multi-run)` | The same section, opted into being closed over several runs. `fix-issues` takes as many steps as genuinely fit one tick — a contiguous block, one commit or PR for it — and closes the task only once the last step lands. Progress lives in the task's comments (`Progress: K/N — …`), because the body is not editable from the CLI. This is what the independence rule above is for: a step that can't stand alone can't be a stopping point. Use it when a task genuinely does not fit one run; a plain `## Plan` is still the default and finishes in one. |
 | `Acceptance criteria` | What must be **true** when it is done — and **every criterion names the instrument that decides it**: a command, a report, a URL. "The fix works" is not a criterion; `pnpm build` passing is. Plan is the steps, this is the outcome — never the same list twice. |
 
 `## Out of scope` is an optional fourth section — one line, only when the task borders on a
