@@ -11,6 +11,12 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.43.3] — 2026-08-27
+
+### Webapp
+- Кнопка «Fix in cmux» больше не упоминает `needs-human`: промпт стал нейтральным —
+  «Задача #N: посмотри её (df task view N) и выполни».
+
 ## [4.43.2] — 2026-08-27
 
 - **Fixed** — счётчик «Approved» в списке проектов больше не врёт: засноуженные задачи

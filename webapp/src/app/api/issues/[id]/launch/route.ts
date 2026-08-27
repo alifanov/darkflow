@@ -29,13 +29,11 @@ export async function POST(
     }
 
     const n = issue.number;
-    // Interactive claude session focused on this one needs-human issue. Keep the
-    // prompt free of single quotes — it is wrapped in single quotes inside the
-    // shell command cmux runs.
+    // Interactive claude session focused on this one task. Keep the prompt free
+    // of single quotes — it is wrapped in single quotes inside the shell command
+    // cmux runs.
     const prompt =
-      `Issue #${n} помечен needs-human и требует ручного вмешательства. ` +
-      `Посмотри его: df task view ${n}. ` +
-      `Разберись, почему он заблокирован, и давай вместе доведём до решения.`;
+      `Задача #${n}: посмотри её (df task view ${n}) и выполни.`;
     const safePrompt = prompt.replace(/'/g, "");
     // --worktree isolates each fix in its own git worktree so several issues can be
     // worked on in parallel without stepping on each other.
