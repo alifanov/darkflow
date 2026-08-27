@@ -48,6 +48,7 @@ interface ProjectRowProps {
   language: string;
   proposedCount: number;
   approvedCount: number;
+  snoozedCount?: number;
   needsHumanCount: number;
   totalIssues: number;
   errorCount: number;
@@ -64,6 +65,7 @@ export function ProjectRow({
   language,
   proposedCount,
   approvedCount,
+  snoozedCount = 0,
   needsHumanCount,
   totalIssues,
   errorCount,
@@ -166,10 +168,14 @@ export function ProjectRow({
 
       {/* Approved */}
       <td
-        {...(approvedCount > 0 ? drillDown("?filter=approved") : noDrill)}
+        {...(approvedCount + snoozedCount > 0 ? drillDown("?filter=approved") : noDrill)}
         style={{ color: approvedCount > 0 ? "var(--green)" : "var(--muted)" }}
+        title={snoozedCount > 0 ? `${snoozedCount} snoozed until a future date — the worker skips those` : undefined}
       >
         {approvedCount > 0 ? approvedCount : "—"}
+        {snoozedCount > 0 && (
+          <span style={{ color: "var(--muted)", fontSize: "0.85em" }}> +{snoozedCount}⏸</span>
+        )}
       </td>
 
       {/* Needs Human */}

@@ -87,7 +87,7 @@ export default async function ProjectsPage({
         _count: { select: { issues: { where: { status: { not: "closed" } } } } },
         issues: {
           where: { status: { not: "closed" } },
-          select: { id: true, status: true },
+          select: { id: true, status: true, scheduledFor: true },
         },
         routineLogs: {
           orderBy: { timestamp: "desc" },
@@ -173,7 +173,16 @@ export default async function ProjectsPage({
                     branch={p.branch}
                     language={p.language}
                     proposedCount={p.issues.filter((i) => i.status === "proposed").length}
-                    approvedCount={p.issues.filter((i) => i.status === "approved").length}
+                    approvedCount={
+                      p.issues.filter(
+                        (i) => i.status === "approved" && !(i.scheduledFor && i.scheduledFor > new Date()),
+                      ).length
+                    }
+                    snoozedCount={
+                      p.issues.filter(
+                        (i) => i.status === "approved" && !!i.scheduledFor && i.scheduledFor > new Date(),
+                      ).length
+                    }
                     needsHumanCount={p.issues.filter((i) => i.status === "needs-human").length}
                     totalIssues={p._count.issues}
                     errorCount={routineErrors.get(p.id) ?? 0}

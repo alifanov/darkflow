@@ -11,6 +11,13 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.43.2] — 2026-08-27
+
+- **Fixed** — счётчик «Approved» в списке проектов больше не врёт: засноуженные задачи
+  (`scheduledFor` в будущем) вычтены из основного числа и показаны отдельно как `+N⏸`.
+  Воркер их пропускает по гейту в `run_routine()`, поэтому «6 approved» при одной реально
+  готовой задаче читалось как поломка `fix-issues`.
+
 ## [4.43.1] — 2026-08-26
 
 - **Docs** — правило независимости шагов и строка `Plan (multi-run)` перенесены в `templates/docs/tasks.md` — источник истины, из которого установщик раскатывает `docs/tasks.md` в проектах. В 4.43.0 правка ушла только в копию `docs/tasks.md`, и `install.sh --force` её затёр.
