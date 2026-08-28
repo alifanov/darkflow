@@ -90,11 +90,11 @@ which is why `--by` has no `device` choice.
 `profileId` is stable per user once identified, so per-user funnels *are* possible: pull
 `events` for each stage and intersect the profile sets.
 
-## Three API defects this CLI works around
+## Four API defects this CLI works around
 
-Numbers straight from the raw endpoint are wrong in three ways (measured 2026-08-17
-against `openpanel.chatindex.app`). All three are handled inside the script; they matter
-when reading its output or editing it.
+Numbers straight from the raw endpoint are wrong in four ways (1–3 measured 2026-08-17,
+4 measured 2026-08-28, against `openpanel.chatindex.app`). All four are handled inside
+the script; they matter when reading its output or editing it.
 
 1. **A `limit` above ~10 truncates the walk.** The server honours the number itself —
    `limit=100` really returns 100 rows — but then calls page 2 empty. The same window
@@ -106,6 +106,19 @@ when reading its output or editing it.
 3. **`meta.totalCount` tracks neither the window nor the row set** — 25 claimed for a
    window whose real set is 80 rows, and adding `includes=` to the query moved the same
    claim from 25 to 272. It is reported as `claimed` and never believed.
+4. **No single query is complete — `fetch()` returns the union of a wide walk and a walk
+   per day.** The two miss different rows, and slicing finer does not converge:
+   * a multi-day walk drops whole days for a *sparse* event — `scan_created` over
+     22–28.08 serves page 1 (two rows dated 27.08), page 2 (two rows dated 22.08), then
+     empty pages forever: **4 rows of the real 11**;
+   * a per-day walk misses rows only the wide window returns — on 24.08 the day window
+     and its 6-hour slices both give 11 `session_start`, while the 22–28 walk returns two
+     more (05:35 and 06:34 UTC).
+
+   Dense events were always counted right by the wide walk, which is why this hid for so
+   long: `selftest` runs on `session_start`. **A hand-rolled query over a multi-day window
+   silently undercounts a sparse event by ~3x** — use the CLI, or query day by day and
+   union with the wide window.
 
 **Both `start` and `end` are inclusive**, and they *are* honoured (rows never fall outside
 the requested window — asserted by `selftest`). `--days 7` therefore spans `end-6..end`;

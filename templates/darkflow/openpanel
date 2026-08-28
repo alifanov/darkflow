@@ -134,7 +134,10 @@ def load_env():
 
 
 def get(api, headers, event, start, end, page, limit):
-    q = {"project_id": PROJECT_ID, "start": start, "end": end, "limit": limit, "page": page}
+    # includes=properties: without it every row comes back with properties=null, silently —
+    # breakdown/funnel filters that read .properties just see nothing (Task #391).
+    q = {"project_id": PROJECT_ID, "start": start, "end": end, "limit": limit, "page": page,
+         "includes": "properties"}
     if event:
         q["event"] = event
     req = urllib.request.Request(f"{api}/export/events?" + urllib.parse.urlencode(q),
@@ -146,14 +149,8 @@ def get(api, headers, event, start, end, page, limit):
         sys.exit(f"{event or 'all'}: HTTP {e.code} {e.read()[:200].decode(errors='replace')}")
 
 
-def fetch(api, headers, event, start, end, limit=PAGE_LIMIT):
-    """Every event of one name in [start, end), by exhaustive page walk.
-
-    Returns (rows, claimed) where `claimed` is the server's meta.totalCount, kept only
-    so callers can surface the disagreement. len(rows) is the real count — see the
-    defect notes at the top of this file. `limit` is only for cmd_selftest, which walks
-    twice to prove the small page is still the honest one.
-    """
+def walk_window(api, headers, event, start, end, limit=PAGE_LIMIT):
+    """Every event of one name in [start, end], by exhaustive page walk of ONE window."""
     rows, page, claimed = {}, 1, None
     while page <= MAX_PAGES:
         body = get(api, headers, event, start, end, page, limit)
@@ -167,6 +164,39 @@ def fetch(api, headers, event, start, end, limit=PAGE_LIMIT):
     else:
         print(f"warning: {event or 'all'} hit MAX_PAGES at {len(rows)} rows — count is a floor",
               file=sys.stderr)
+    return rows, claimed
+
+
+def fetch(api, headers, event, start, end, limit=PAGE_LIMIT):
+    """Every event of one name in [start, end]: the whole window walked at once, UNION
+    the same window walked one day at a time.
+
+    Defect 5 (measured 2026-08-28) — neither walk alone is complete, and they miss
+    different rows:
+
+    * A multi-day walk drops whole days for a *sparse* event. `scan_created` over
+      22..28.08 serves page 1 (two rows dated 27.08), page 2 (two rows dated 22.08),
+      then empty pages forever: 4 rows of the real 11. Dense events are unaffected,
+      which is why the old selftest — on session_start — passed throughout.
+    * A per-day walk misses rows that only the wide window returns. On 24.08 the day
+      window serves 11 session_start rows and 6-hour slices of that day agree with it,
+      yet the 22..28 walk returns two more (05:35 and 06:34 UTC) that no narrow window
+      ever produces.
+
+    So neither is a superset and slicing finer does not converge: take the union. Cost
+    is one extra request per day per event, which at these volumes is nothing.
+
+    `claimed` is meta.totalCount from the wide walk, kept only so callers can surface
+    the disagreement — it tracks neither the window nor the row set (defect 3), and with
+    an event filter it ignores the window entirely.
+    """
+    rows, claimed = walk_window(api, headers, event, start, end, limit)
+    day = date.fromisoformat(start[:10])
+    last = date.fromisoformat(end[:10])
+    while day <= last:
+        got, _ = walk_window(api, headers, event, day.isoformat(), day.isoformat(), limit)
+        rows.update(got)
+        day += timedelta(days=1)
     return list(rows.values()), claimed
 
 
@@ -281,6 +311,12 @@ def cmd_selftest(args, api, headers):
 
     assert len(late) > PAGE_LIMIT, f"only {len(late)} rows — pagination is not advancing"
 
+    # Defect 4 (Task #391): `includes=properties` missing from the query silently returns
+    # properties=null on every row — breakdowns/funnel filters that read .properties see
+    # nothing, with no error. At least one row of any real event should carry properties.
+    with_props = [r for r in late if r.get("properties")]
+    assert with_props, f"every one of {len(late)} rows has empty properties — includes=properties is missing from get()"
+
     # Defect 1: a bigger page truncates the walk, so the small-page walk must be the
     # ceiling. If this ever fails, the server was fixed and PAGE_LIMIT can go up.
     big, _ = fetch(api, headers, ev, b0, b1, limit=100)
@@ -288,8 +324,20 @@ def cmd_selftest(args, api, headers):
         f"limit=100 walk returned {len(big)} vs {len(late)} at limit={PAGE_LIMIT} — "
         "the page cap is gone, PAGE_LIMIT can be raised")
 
+    # Defect 5 (Task: воронка 28.08): a multi-day window drops days for sparse events,
+    # so fetch() splits the window into single days. Guard the split itself: it must
+    # never return less than the one-shot walk, and must not lose the boundary days.
+    one_shot, _ = walk_window(api, headers, ev, b0, b1)
+    ids = {r["id"] for r in late}
+    assert not set(one_shot) - ids, "fetch() lost rows the one-shot walk found — union is broken"
+    per_day, _ = walk_window(api, headers, ev, b1, b1)
+    assert not set(per_day) - ids, "fetch() lost rows a single-day walk found — union is broken"
+    days = {r["createdAt"][:10] for r in late}
+    assert b0 in days and b1 in days, f"boundary days missing from the split walk: {sorted(days)[:3]}"
+
     print(f"ok  {ev}: {b0}..{b1} = {len(late)} rows, {a0}..{a1} = {len(early)} rows, disjoint; "
-          f"limit=100 walk = {len(big)} rows (why PAGE_LIMIT stays {PAGE_LIMIT})")
+          f"limit=100 walk = {len(big)} rows (why PAGE_LIMIT stays {PAGE_LIMIT}); "
+          f"one-shot multi-day walk = {len(one_shot)} rows vs {len(late)} for the union (defect 5)")
 
 
 def main():
