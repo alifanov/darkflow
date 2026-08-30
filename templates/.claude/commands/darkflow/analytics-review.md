@@ -73,7 +73,11 @@ A table with **every step of the canonical funnel**, top to bottom, no step omit
 - A step that is **zero** is reported as zero, with how long it has been zero.
 - State the **single largest drop between adjacent steps** explicitly — that is the headline
   finding, everything else is secondary to it.
-- A step nothing is instrumented for is a blind spot, not a zero — that is a finding in itself.
+- **The funnel ends at the payment event itself, never at "reached checkout".** The event *count*
+  is measurable here like any other step — it is only the money amount that OpenPanel cannot give
+  (Step 6). A funnel whose last step is `checkout_started` cannot answer why sales are low.
+- A step nothing is instrumented for is a blind spot, not a zero — that is a finding in itself. A
+  missing payment event is the highest-priority instrumentation gap there is: file it.
 
 ## Step 3 — Segment the largest drop
 
@@ -218,17 +222,21 @@ EOF
 
 `visitors7d` is `profiles` on the top-of-funnel event from Step 1.
 
-**`revenue7d` never comes from OpenPanel** — revenue lives in a payment event's `amount` property
-and the export endpoint returns no properties at all. Never estimate it from event counts. It comes
-from the billing provider, through one optional project-local hook:
+**How many sales is a funnel step; how much they brought is not.** The payment event's *count*
+belongs in Step 2 with every other step and is measured there. Only the **amount** is out of reach:
+it lives in that event's `amount` property, and the export endpoint returns no properties at all.
+Never estimate money from event counts.
+
+`revenue7d` therefore comes from the billing provider, through one optional project-local hook:
 
 ```bash
 [ -x .darkflow.d/revenue.sh ] && .darkflow.d/revenue.sh 7    # prints one line: "<amount> <currency>", e.g. "412.00 USD"
 ```
-No hook, or a non-zero exit, or unparseable output → `revenue7d` stays `null` and the run says so
-in one line. Writing the hook is per-project work (Stripe, Paddle, the app's own database) — a few
-lines of `curl`, deliberately not shipped in this template. **Without it the funnel ends at
-"someone reached checkout", and "why are sales low" has no last step to answer with.** `usersTotal` is a lifetime number, not a 7-day one: fill it only if the metrics
+No hook, or a non-zero exit, or unparseable output → `revenue7d` stays `null`, the run says so in
+one line, and that is a perfectly normal run: the funnel still ends at the payment event and still
+shows where sales are lost. Writing the hook is per-project work (Stripe, Paddle, the app's own
+database) — a few lines of `curl`, deliberately not shipped in this template. It answers the
+narrower question the counts cannot: whether the sales that *do* happen are getting smaller. `usersTotal` is a lifetime number, not a 7-day one: fill it only if the metrics
 doc names an event or source that carries it, otherwise `null`. `adsSpend7d` stays `null` here —
 ad spend is owned by `/darkflow:ads-review`.
 
