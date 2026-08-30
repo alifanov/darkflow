@@ -256,7 +256,7 @@ All `/darkflow:*` commands are installed automatically and available inside Clau
 | Command | What it does |
 |---|---|
 | `/darkflow:fix-issues` | Pick up one approved task, implement, close |
-| `/darkflow:analytics-review` | OpenPanel + commits → tasks + analytics snapshot |
+| `/darkflow:analytics-review` | Funnel WoW/DoD, why the worst step drops, commits + hypotheses → tasks + snapshot |
 | `/darkflow:observability-check` | Errors / slow queries / latency → tasks |
 | `/darkflow:seo-check` | Technical + on-page SEO audit, plus Google Search Console data → tasks |
 | `/darkflow:coolify-check-deployment` | Deployment status check → `critical` task on failed deploy |

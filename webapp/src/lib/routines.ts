@@ -36,7 +36,7 @@ export const ALL_ROUTINES: RoutineDef[] = [
   { name: "housekeeping",        defaultCron: "0 5 * * *",    defaultModel: "sonnet", module: null,              label: "Stuck tasks + stuck HEAD + worktree/branch cleanup (daily, no agent)" },
   // Optional modules
   { name: "fix-ci-issue",             defaultCron: "*/15 * * * *", defaultModel: "sonnet", module: "ci-gate",         label: "Pick up source:ci failures → fix → retry up to 3× (every 15 min)" },
-  { name: "analytics-review",         defaultCron: "0 8 * * *",   defaultModel: "sonnet", module: "analytics",        label: "OpenPanel + commits → issues (daily)" },
+  { name: "analytics-review",         defaultCron: "0 8 * * *",   defaultModel: "sonnet", module: "analytics",        label: "Funnel WoW/DoD + commits + hypotheses → tasks (daily)" },
   { name: "observability-check",      defaultCron: "30 8 * * *",  defaultModel: "sonnet", module: "observability",    label: "Errors / latency → issues (daily)" },
   // Renamed from `gsc-check` in 4.35.0 — the routine always was a full SEO audit
   // with GSC as its data half; the old name hid that. Module key stays `gsc`: it is

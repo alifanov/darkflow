@@ -42,18 +42,30 @@ What the CLI does and does not do:
 - Every number is counted client-side from raw rows, so cost is real: ~10 requests per 1000 rows
   per event per window. Stay inside **one 7-day window** and drop a cut rather than widen the run.
 
-## Step 2 — The funnel
+## Step 2 — The funnel, and how it moved
 
-The core of the routine — one command for the whole funnel, in the order the metrics doc defines:
+The core of the routine — two commands over the same event list, in the order the metrics doc
+defines:
 
 ```bash
-~/.darkflow/openpanel funnel --prev --days 7 --events <step1,step2,step3,...>
+YDAY=$(date -v-1d +%F 2>/dev/null || date -d yesterday +%F)
+~/.darkflow/openpanel funnel --prev --days 7 --events <step1,step2,step3,...>              # week vs previous week
+~/.darkflow/openpanel funnel --prev --days 1 --end "$YDAY" --events <step1,step2,step3,...>  # yesterday vs the day before
 ```
+
+**Yesterday, never today.** `--end` defaults to today, and today is a partial day — a
+today-vs-yesterday table shows a fake collapse on every single step.
 
 A table with **every step of the canonical funnel**, top to bottom, no step omitted:
 
-| Step | 7d | Step conversion | Δ vs previous 7d |
-|---|---|---|---|
+| Step | 7d | Step conversion | Δ WoW | Δ DoD |
+|---|---|---|---|---|
+
+- The two deltas answer different questions. **Δ WoW is the trend; Δ DoD is the alarm** — a step
+  that fell yesterday but not over the week points at something that shipped or broke in the last
+  day, and Step 4 has the commit list to match it against.
+- One day is a small sample: a DoD move on a step with fewer than 10 entries is noise. Say so and
+  lean on WoW rather than reporting a percentage off three conversions.
 
 - **Report `profiles`, not `events`** — an event that fires both server- and client-side counts
   twice, and `profiles` is stable per identified user. `devices` only covers client-side sends
@@ -80,15 +92,49 @@ direction, never a result, and never a task.
 Segment down to the last client-side step and say where the cut stops, rather than reporting a
 server step as "unknown".
 
-## Step 4 — Everything else in the window
+## Step 3.5 — Why that step drops
 
-Same window: activation and feature events, retention signals, anomalies. Check what shipped over
-the same 7 days (`git log --since="7 days ago"`) — a metric that moved the day a commit landed is
-a causal lead.
+A count says a step loses people; it never says why. Before writing a single finding about the
+largest drop, look at the step itself:
 
-Application and server errors are `/darkflow:observability-check`; paid ads are
-`/darkflow:ads-review`. The CLI only reads (`GET /export/events`), so there is nothing to create
-in OpenPanel from here.
+1. **Walk it.** Open the page or flow of the failing step in a real browser (the `ego-browser`
+   skill, fall back to `agent-browser`), at a phone width, and try to complete it as a stranger
+   would. Record: console errors, a request that returns 4xx/5xx, a CTA that does nothing, a form
+   that rejects valid input, a redirect that loops.
+2. **Check the errors behind it.** Query the project's observability tool for errors and 5xx on
+   that page's routes over the same window. An error spike starting the day the step fell *is* the
+   finding — the conversion number is only how it was noticed.
+
+**Real breakage is an incident, not an observation**: file it on first sight with
+`--status approved` and skip the 3-run threshold in Step 5 entirely. Nothing broken → say so in one
+line and the drop stays an ordinary observation.
+
+One page, one pass, aimed at the failing step. The full flow walk is `/darkflow:check-ux` and the
+full error sweep is `/darkflow:observability-check`.
+
+## Step 4 — Commits, hypotheses, everything else
+
+**What shipped.** List the window's commits by date and line them up against the Step 2 deltas:
+
+```bash
+git log --since="7 days ago" --date=short --pretty='%ad %h %s'
+```
+A step that dropped on the day a commit touching that page landed is a **causal lead** — name the
+commit, its date and the step in the finding. A commit that touched nothing on that path is not a
+lead, however good the timing looks.
+
+**The hypothesis ledger** — `docs/state/hypotheses.md`, read before anything is proposed:
+
+- **Open bets** (`tracking`, `testing`) on a step that moved this window → update the entry's
+  evidence counter and state which way the data went. That is what the ledger is for.
+- **Closed bets** (`confirmed`, `refuted`, `abandoned`) → a refuted bet does not return as a
+  finding without *new* data. And when the funnel now contradicts a `confirmed` one, that
+  contradiction is the headline, ahead of any fresh observation.
+
+**The rest of the window:** activation and feature events, retention signals, anomalies.
+
+Paid ads are `/darkflow:ads-review`. The CLI only reads (`GET /export/events`), so there is
+nothing to create in OpenPanel from here.
 
 ## Step 5 — Findings → recommendations → delivery
 
@@ -170,10 +216,19 @@ EOF
 }
 ```
 
-`visitors7d` is `profiles` on the top-of-funnel event from Step 1. **`revenue7d` is always `null`
-from this routine** — revenue lives in a payment event's `amount` property, and the export endpoint
-returns no properties at all; take revenue from the billing provider instead, and never estimate it
-from event counts. `usersTotal` is a lifetime number, not a 7-day one: fill it only if the metrics
+`visitors7d` is `profiles` on the top-of-funnel event from Step 1.
+
+**`revenue7d` never comes from OpenPanel** — revenue lives in a payment event's `amount` property
+and the export endpoint returns no properties at all. Never estimate it from event counts. It comes
+from the billing provider, through one optional project-local hook:
+
+```bash
+[ -x .darkflow.d/revenue.sh ] && .darkflow.d/revenue.sh 7    # prints one line: "<amount> <currency>", e.g. "412.00 USD"
+```
+No hook, or a non-zero exit, or unparseable output → `revenue7d` stays `null` and the run says so
+in one line. Writing the hook is per-project work (Stripe, Paddle, the app's own database) — a few
+lines of `curl`, deliberately not shipped in this template. **Without it the funnel ends at
+"someone reached checkout", and "why are sales low" has no last step to answer with.** `usersTotal` is a lifetime number, not a 7-day one: fill it only if the metrics
 doc names an event or source that carries it, otherwise `null`. `adsSpend7d` stays `null` here —
 ad spend is owned by `/darkflow:ads-review`.
 

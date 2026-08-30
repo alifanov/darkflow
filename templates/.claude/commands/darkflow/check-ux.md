@@ -26,6 +26,16 @@ reported as if it had been.
 
 ## Step 2 — Pick the flows
 
+**Start from the data, not the sitemap.** If `analytics-review` has run, it already named the
+step that loses the most people:
+
+```bash
+cat .darkflow.d/state/metrics/analytics.json 2>/dev/null      # visitors, window
+rg -A30 '^## Analytics' docs/logs/*.md | tail -60             # the funnel table + headline drop
+```
+That step's flow is walked **first**, and its finding outranks anything found elsewhere — it is the
+one with a number attached. No such section (never ran, or a clean run) → pick flows as below.
+
 Read `docs/state/spec/flows/` when it exists — those are the flows the product says it has.
 Otherwise derive them from `sitemap.xml` and the navigation: the entry path (landing → signup),
 the core job the product exists for, and the money path (pricing → checkout) when there is one.
