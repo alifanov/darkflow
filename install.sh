@@ -682,7 +682,13 @@ fi
 
 if [[ -z "$PROJECT_NAME" ]]; then
   if [[ -f "package.json" ]]; then
-    inferred=$(node -p "require('./package.json').name" 2>/dev/null || true)
+    # A package.json with no "name" field makes `node -p` print the literal
+    # string "undefined" and exit 0, so the -n guard below passes and the
+    # fallback to the directory name never runs — the project registers as
+    # "undefined". Coerce to an empty string in JS, and reject the literals
+    # defensively for older node builds.
+    inferred=$(node -p "require('./package.json').name || ''" 2>/dev/null || true)
+    [[ "$inferred" == "undefined" || "$inferred" == "null" ]] && inferred=""
     [[ -n "$inferred" ]] && PROJECT_NAME="$inferred"
   fi
   [[ -z "$PROJECT_NAME" ]] && PROJECT_NAME="$(basename "$TARGET_DIR")"
