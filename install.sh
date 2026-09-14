@@ -449,8 +449,8 @@ write_launchd_plists() {
   local ld_path; ld_path="$(_launchd_path)"
 
   local wplist="$la/com.darkflow.worker.plist"
-  if [[ ! -f "$wplist" ]]; then
-    cat > "$wplist" <<EOF
+  local wcontent
+  wcontent=$(cat <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -482,7 +482,25 @@ write_launchd_plists() {
 </dict>
 </plist>
 EOF
+)
+  if [[ ! -f "$wplist" ]]; then
+    printf '%s\n' "$wcontent" > "$wplist"
     success "Wrote launchd agent ${wplist}"
+  elif [[ "$(cat "$wplist" 2>/dev/null)" != "$wcontent" ]]; then
+    # Still create-if-missing — a hand-tuned plist is never clobbered. But the
+    # silence was the problem: a plist written before the operator installed a
+    # modern bash still names /bin/bash (3.2 on macOS), which cannot even parse
+    # darkflow-run.sh, so every launchd run dies with a syntax error and nothing
+    # in the install output says why. Same for a PATH that predates a new tool.
+    printf '%s\n' "$wcontent" > "${wplist}.new"
+    warn "Existing launchd agent differs from what this install would generate — keeping yours."
+    dim  "  current:   ${wplist}"
+    dim  "  generated: ${wplist}.new"
+    dim  "  Check the interpreter and PATH lines; this install would use:"
+    dim  "    ${BASH_BIN}"
+    dim  "    ${ld_path}"
+    dim  "  To adopt the generated one:"
+    dim  "    mv ${wplist}.new ${wplist} && launchctl kickstart -k gui/\$(id -u)/com.darkflow.worker"
   fi
 
   # NOTE: no launchd agent for the webapp. cmux's control socket rejects
