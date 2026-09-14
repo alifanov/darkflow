@@ -659,7 +659,7 @@ ci_watch() {
   [[ -x "$DF_BIN" ]] || { _CI_SUMMARY="df CLI missing - cannot file ci tasks"; return 0; }
   command -v jq &>/dev/null || { _CI_SUMMARY="jq missing - cannot file ci tasks"; return 0; }
 
-  local branch title failed="" report=""
+  local branch title failed="" report="" gh_ran=false
   branch=$(darkflow_val "branch" "main")
   title="CI failure on ${branch}"
 
@@ -668,6 +668,7 @@ ci_watch() {
   repo=$(_get_repo_url_cached)
   repo="${repo#https://github.com/}"
   if [[ -n "$repo" ]] && command -v gh &>/dev/null; then
+    gh_ran=true
     local runs latest
     runs=$(gh run list -R "$repo" -b "$branch" -L 40 \
              --json name,conclusion,status,createdAt,url,databaseId,event 2>/dev/null || echo "")
@@ -784,9 +785,21 @@ _Filed by the \`ci-watch\` routine (local worker, no agent). \`fix-ci-issue\` pi
   # red, and a still-red local check never writes the HEAD marker.
   local n
   n=$(ci_open_task "$title")
-  if [[ -n "$n" ]]; then
+  if [[ "$gh_ran" == false && "$local_ran" == false ]]; then
+    # Neither probe actually observed anything: no `gh` on PATH (or no GitHub
+    # remote), and no local lint/test to run. `failed` is empty here because we
+    # looked at nothing, not because anything was green — so do NOT close an
+    # open CI task and do NOT report green. Say what was missed instead.
+    if command -v gh &>/dev/null; then
+      _CI_SUMMARY="ci not checked - no GitHub remote, and no local checks to run"
+    else
+      _CI_SUMMARY="gh missing - GitHub Actions not queried, ci state unknown"
+    fi
+  elif [[ -n "$n" ]]; then
     "$DF_BIN" task close "$n" >/dev/null 2>&1 || true
     _CI_SUMMARY="ci green again - closed task #${n}"
+  elif [[ "$local_ran" == true && "$gh_ran" == false ]]; then
+    _CI_SUMMARY="ci ok - local checks pass (GitHub Actions not queried)"
   elif [[ "$local_ran" == true ]]; then
     _CI_SUMMARY="ci ok - workflows green, local checks pass"
   else
