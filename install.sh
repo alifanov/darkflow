@@ -424,7 +424,12 @@ write_global_config() {
 # need to point PATH at an arm64 (nvm) node by hand — the plist comment says so.
 _launchd_path() {
   local base="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin" prefix="" bin d
-  for bin in claude node; do
+  # Every binary the worker shells out to, not just the engines: gh (ci-watch's
+  # GitHub Actions probe, repo-url fallback), jq (config + task parsing),
+  # python3 (process-group isolation), pnpm/ruff (ci-watch's local lint). A tool
+  # missing from launchd's PATH does not error — the routine that needs it takes
+  # its "not available" branch and reports a state it never observed.
+  for bin in claude codex node gh jq python3 pnpm ruff; do
     d="$(command -v "$bin" 2>/dev/null || true)"
     [[ -n "$d" ]] || continue
     d="$(cd "$(dirname "$d")" && pwd)"
