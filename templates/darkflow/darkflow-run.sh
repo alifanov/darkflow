@@ -1205,7 +1205,7 @@ run_routine() {
     if [[ -f "$_cmd_file" ]]; then
       ( cd "$_run_dir" && run_in_pgid codex exec --model "${model}" \
           --dangerously-bypass-approvals-and-sandbox \
-          "$(cat "$_cmd_file")" ) > "$_stream_file" || exit_code=$?
+          -- "$(cat "$_cmd_file")" ) > "$_stream_file" || exit_code=$?
     else
       log "ERROR  ${name} — engine=codex but command file missing: ${_cmd_file}"
       exit_code=1
