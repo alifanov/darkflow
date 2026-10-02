@@ -24,6 +24,6 @@ Check for stale slash commands that are no longer part of Dark Flow:
    curl -fsSL https://api.github.com/repos/alifanov/darkflow/contents/templates/.claude/commands/darkflow \
      | grep '"name"' | grep '\.md"' | sed 's/.*"name": "\(.*\)".*/\1/'
    ```
-2. List all files currently in `.claude/commands/darkflow/` (relative to the project root).
+2. List all files currently in `~/.claude/commands/darkflow/`.
 3. If there are any local files **not** in the canonical list, show them to the user and ask whether to delete them (they are likely leftovers from an older Dark Flow version).
 4. Delete only the files the user confirms.

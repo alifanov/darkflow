@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep
 
 Audit the `docs/` knowledge base against the actual code and recent history — find drift between what the docs claim and what the code does — then create tasks for each significant mismatch.
 
-This is a **verification check**: it answers "are the docs still true?" It does not rewrite docs (that is a human/`fix-issues` decision) and it does not produce a product narrative (that is `/darkflow:product-overview`).
+This is a **verification check**: it answers "are the docs still true?" It does not rewrite docs (that is a human/`fix-issues` decision) and it does not produce a product narrative.
 
 ## Step 1 — Read project config
 

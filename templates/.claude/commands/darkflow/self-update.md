@@ -38,7 +38,7 @@ If no worker was running, just note that the user should start it themselves whe
 Check if `.darkflow.d/state/config.json` is already ignored. If not, add it:
 
 ```bash
-grep -qxF '.darkflow' .gitignore 2>/dev/null || echo '.darkflow' >> .gitignore
+grep -qxF '.darkflow.d/state/config.json' .gitignore 2>/dev/null || echo '.darkflow.d/state/config.json' >> .gitignore
 ```
 
 ## Step 3 — Verify
@@ -46,7 +46,7 @@ grep -qxF '.darkflow' .gitignore 2>/dev/null || echo '.darkflow' >> .gitignore
 After the installer exits, confirm the update succeeded:
 
 ```bash
-grep '^version=' .darkflow
+jq -r .darkflowVersion .darkflow.d/state/config.json
 ```
 
 Compare the installed version against the latest release:

@@ -15,10 +15,7 @@ Load the project config (contract in `.darkflow.d/claude.md` → *Project config
 
 ## Step 2 — Resolve the URL to measure
 
-If `domain` is set, use it. Otherwise auto-discover the production URL the same way `uptime-check` does (first match wins): Coolify FQDN, `vercel.json` / `.vercel/project.json`, `netlify.toml`, `CNAME`, `package.json` → `homepage`, or a production URL stated in `README.md` / `docs/`. If found, persist it:
-```bash
-grep -q "^site_url=" .darkflow || echo "site_url=<discovered-url>" >> .darkflow
-```
+If `domain` is set, use it. Otherwise auto-discover the production URL the same way `uptime-check` does (first match wins): Coolify FQDN, `vercel.json` / `.vercel/project.json`, `netlify.toml`, `CNAME`, `package.json` → `homepage`, or a production URL stated in `README.md` / `docs/`. If found, use it for this run and say in the output that `domain` should be set in the Web UI.
 
 The URL just has to be reachable **from this machine** (public, staging, or `localhost` all work). If no URL can be determined at all, **do not create a task** — output `web-vitals: no site_url — skipping` and write a snapshot (Step 5) noting the target is unknown. Done.
 

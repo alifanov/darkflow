@@ -1,5 +1,5 @@
 ---
-description: Check Coolify deployment status; file a high-priority task on a failed deploy. Passive — fixes nothing.
+description: Check Coolify deployment status; file a critical-priority task on a failed deploy. Passive — fixes nothing.
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch
 ---
 

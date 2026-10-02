@@ -24,10 +24,7 @@ If `domain` is set, use it. Otherwise, auto-discover the production URL from the
 - `package.json` → `homepage`
 - A production URL stated in `README.md` or `docs/`
 
-If a URL is found this way, persist it for next time:
-```bash
-grep -q "^site_url=" .darkflow || echo "site_url=<discovered-url>" >> .darkflow
-```
+If a URL is found this way, use it for this run and say in the output that `domain` should be set in the Web UI.
 
 If no URL can be determined at all, **do not create an issue**. Output `uptime-check: no site_url configured and none discoverable — skipping` and still write the snapshot (Step 5) noting that the target is unknown. Done.
 

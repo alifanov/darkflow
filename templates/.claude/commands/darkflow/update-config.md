@@ -28,31 +28,23 @@ For any value **not** provided as an argument, ask the user interactively:
 
 If the user presses Enter without input, keep the current value unchanged.
 
-## Step 3 — Update `.darkflow.d/state/config.json`
+## Step 3 — Update the settings in the Web UI
 
-For each changed value, update the corresponding key in `.darkflow.d/state/config.json` in-place:
+`language` and `branch` live in the Web UI database; `.darkflow.d/state/config.json` is only a cache that `get-config.sh` overwrites. Ask the user to change the values in the Web UI, then refresh the cache:
 
 ```bash
-# macOS
-sed -i '' "s/^language=.*/language=<NEW_LANG>/" .darkflow
-sed -i '' "s/^branch=.*/branch=<NEW_BRANCH>/" .darkflow
-
-# Linux
-sed -i "s/^language=.*/language=<NEW_LANG>/" .darkflow
-sed -i "s/^branch=.*/branch=<NEW_BRANCH>/" .darkflow
+bash ~/.darkflow/get-config.sh
 ```
 
 ## Step 4 — Update `.darkflow.d/claude.md`
 
-Read `.darkflow.d/claude.md`. Update the two lines in-place:
+Read `.darkflow.d/claude.md`. Update the main-branch line in-place:
 
 ```bash
 # macOS
-sed -i '' "s/^\*\*Language:\*\* .*/\*\*Language:\*\* <NEW_LANG> — use this language for tasks, comments, commit messages, and all agent-facing text./" .darkflow.d/claude.md
 sed -i '' "s/^\*\*Main branch:\*\* .*/\*\*Main branch:\*\* \`<NEW_BRANCH>\`/" .darkflow.d/claude.md
 
 # Linux
-sed -i "s/^\*\*Language:\*\* .*/\*\*Language:\*\* <NEW_LANG> — use this language for tasks, comments, commit messages, and all agent-facing text./" .darkflow.d/claude.md
 sed -i "s/^\*\*Main branch:\*\* .*/\*\*Main branch:\*\* \`<NEW_BRANCH>\`/" .darkflow.d/claude.md
 ```
 
@@ -74,7 +66,7 @@ Only include values that actually changed in the commit message. Note: `.darkflo
 
 Print a summary of what changed:
 ```
-Updated .darkflow and .darkflow.d/claude.md:
+Updated settings and .darkflow.d/claude.md:
   language: <OLD> → <NEW>
   branch:   <OLD> → <NEW>
 ```
