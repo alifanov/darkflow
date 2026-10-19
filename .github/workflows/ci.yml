@@ -34,6 +34,10 @@ jobs:
           node-version: 22
           cache: pnpm
           cache-dependency-path: webapp/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
+      # ponytail: not --frozen-lockfile — dependabot regenerates pnpm-lock.yaml
+      # without the pnpm.overrides block, which trips ERR_PNPM_LOCKFILE_CONFIG_MISMATCH.
+      # Overrides still apply (they live in package.json); restore --frozen-lockfile
+      # if dependabot ever learns pnpm.overrides, or if human PRs start landing here.
+      - run: pnpm install --no-frozen-lockfile
       - run: pnpm exec prisma migrate deploy
       - run: pnpm build
