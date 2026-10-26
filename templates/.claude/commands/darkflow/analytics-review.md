@@ -3,7 +3,7 @@ description: Review analytics and recent commits, then create tasks.
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, AskUserQuestion
 ---
 
-## Step 1 — Config, funnel definition, signal gate
+## Step 1 — Config, funnel definition, window size
 
 Load the project config (contract in `.darkflow.d/claude.md` → *Project config*). Uses: `language`, `minPriority`.
 
@@ -13,7 +13,7 @@ Run it **from the project root** — that is how it finds the project's credenti
 answers the stdio handshake, so never try to register or reconnect one.
 
 ```bash
-~/.darkflow/openpanel funnel --days 7 --events session_start   # smoke test + the gate number
+~/.darkflow/openpanel funnel --days 7 --events session_start   # smoke test + the visitor number
 ```
 **Exits with `missing credentials: …` → stop here**: write the snapshot (Step 6) with `null` values,
 say in one line which variable is missing, and exit without tasks.
@@ -25,10 +25,10 @@ number is read — events that fire twice per action, test accounts filtered in 
 OpenPanel. **Never invent event names**: a query for an event that does not exist returns no
 series, which is indistinguishable from a real zero.
 
-**Then the gate, before any other query.** `profiles` on the top-of-funnel event is the visitor
-number. If it is under **100 visitors** or the first real funnel step is under **10 entries**, the
-window is noise: write the snapshot (Step 6), append nothing to the log, create no tasks, and say
-in one line which number failed the gate. Everything below assumes the gate passed.
+**No signal gate — every run walks every step.** `profiles` on the top-of-funnel event is the
+visitor number. A small window (under **100 visitors**, or the first real funnel step under **10
+entries**) does not stop the run: flag it in one line, read conversions as direction rather than
+precise rates, and let the thresholds in Step 4 and Step 6 hold back tasks.
 
 What the CLI does and does not do:
 
@@ -165,7 +165,9 @@ Same metric / funnel step / page → do not file again; update the existing task
 situation materially changed.
 
 **Priority:** `critical` — revenue or signup loss right now · `high` — sizeable drop-off on a key
-flow · `medium` — non-urgent optimisation · `low` — polish, instrumentation gaps. **Never inflate
+flow · `medium` — non-urgent optimisation · `low` — polish, instrumentation gaps. **Anything that
+touches money — payments, renewals, subscriber churn, refunds, ad spend with no return — is never
+below `high`.** **Never inflate
 a priority to clear `minPriority`.** If `df task create` is rejected (`priority <x> below project
 minPriority <y>`), keep the honest priority, log the finding, and surface the rejection in the
 output so the owner can raise it by hand.
