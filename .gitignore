@@ -6,3 +6,4 @@
 .darkflow.d/mailbox/state/
 .darkflow.d/*.log
 .darkflow
+.darkflow.d/state/config.json
