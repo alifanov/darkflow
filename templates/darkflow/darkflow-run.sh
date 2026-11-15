@@ -852,7 +852,7 @@ uptime_preflight() {
 
   local body_file; body_file=$(mktemp)
   _CLEANUP_FILES+=("$body_file")
-  local curl_w="" curl_rc=0
+  local curl_w="" curl_rc=0 _probe_out=""
   curl_w=$(curl -sS -A "darkflow-uptime/1.0" -L --max-time 25 -o "$body_file" \
     -w 'http_code=%{http_code} time_total=%{time_total}' "$url" 2>/dev/null) || curl_rc=$?
 
@@ -871,6 +871,12 @@ uptime_preflight() {
         _UPTIME_ESCALATE_REASON="empty/short body (${body_size} bytes)"
       elif grep -qiE 'Bad Gateway|Gateway Time-?out|Service Unavailable|no (available )?server( available)?|Application error|This site can.?t be reached|Welcome to nginx' "$body_file"; then
         _UPTIME_ESCALATE_REASON="error marker in body"
+      # Optional project hook: an executable .darkflow.d/uptime-probe.sh adds
+      # project-specific checks (e.g. prod lagging the base branch). Non-zero exit
+      # escalates; its last stdout line is the reason.
+      elif [[ -x "${DARKFLOW_D}/uptime-probe.sh" ]] \
+           && ! _probe_out=$( cd "$PROJECT_ROOT" && "${DARKFLOW_D}/uptime-probe.sh" 2>/dev/null ); then
+        _UPTIME_ESCALATE_REASON="uptime-probe.sh: $(tail -n1 <<< "$_probe_out")"
       else
         local status="ok" latency_ms latency_s
         latency_ms=$(awk "BEGIN{printf \"%d\", ${time_total}*1000}")

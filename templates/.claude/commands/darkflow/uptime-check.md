@@ -61,7 +61,11 @@ curl -sS -A "darkflow-uptime/1.0" -L --max-time 25 \
 Inspect `/tmp/uptime_body.html`:
 - Body is empty or < 200 bytes → status **down**, reason `empty_body`.
 - Body contains an obvious failure marker (case-insensitive): `Bad Gateway`, `Gateway Timeout`, `Service Unavailable`, `no available server` / `no server available` (Traefik/Coolify when the backend is down — note these can come with an HTTP **200**), `Application error`, `This site can't be reached`, default `Welcome to nginx`, an unstyled framework error stack, or a maintenance page when none is expected → status **down**, reason `error_page` (quote the marker found).
-- Otherwise → status **ok**. Note the `<title>` for the snapshot.
+- Otherwise → continue to 3d. Note the `<title>` for the snapshot.
+
+**3d. Project probe (optional)**
+
+If `.darkflow.d/uptime-probe.sh` exists and is executable, run it from the project root. Exit `0` → status **ok**. Non-zero → status **down**, reason `probe`, observed = its stdout (e.g. prod lagging the base branch, CI runner offline). Re-run it once before filing to rule out a blip. The fix plan comes from the message, not a redeploy guess — e.g. a lagging deploy: check the CI runner and the deploy job, then trigger the deploy.
 
 ## Step 4 — File a critical task if down
 
@@ -81,7 +85,7 @@ Otherwise create the task **auto-approved** so `fix-issues` acts immediately:
   ```
   ## What's broken
   <URL> is unreachable / broken as of <timestamp>.
-  - Check that failed: <dns | connection | http_5xx | http_4xx | empty_body | error_page>
+  - Check that failed: <dns | connection | http_5xx | http_4xx | empty_body | error_page | probe>
   - Observed: <http_code, curl error, or marker text>
 
   ## Plan
