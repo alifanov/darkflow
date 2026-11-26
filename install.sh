@@ -1060,14 +1060,15 @@ sync_makefile() {
 
 # Generates the standalone Dark Flow instructions file (.darkflow.d/claude.md).
 # CLAUDE.md itself is never rewritten — only a single @-include line is added to it.
+# No @-imports in here: Claude Code resolves them relative to THIS file, so `@docs/…`
+# pointed at `.darkflow.d/docs/…` and was silently dropped in every project. The docs
+# stay on-demand reads (always-loading them would cost ~4k tokens per session).
 generate_darkflow_md() {
   cat << 'HEREDOC'
 ## Documentation & Agent Workflow
 
-@docs/agent-workflow.md
-@docs/tasks.md
-@docs/auto-approve.md
-@.darkflow.d/constraints.md
+Workflow docs — read when a task needs the detail: `docs/agent-workflow.md`, `docs/tasks.md`,
+`docs/auto-approve.md`.
 
 ### Project constraints
 

@@ -1,8 +1,7 @@
 ## Documentation & Agent Workflow
 
-@docs/agent-workflow.md
-@docs/tasks.md
-@docs/auto-approve.md
+Workflow docs — read when a task needs the detail: `docs/agent-workflow.md`, `docs/tasks.md`,
+`docs/auto-approve.md`.
 
 **Communication language:** English — use it ONLY for human-facing text you write *about* the work: tasks, comments, commit messages, PR descriptions, and console/chat output.
 **Product language:** English — everything shipped *inside* the product is always written in English, regardless of the communication language: source code, identifiers, code comments, UI copy, user-facing strings, logs, and in-product docs. Setting the communication language to anything other than English never changes this.

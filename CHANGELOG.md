@@ -11,6 +11,15 @@ Categories:
 - **Installer** — changes to `install.sh` or `update.sh`
 - **Docs** — README, CLAUDE.md template, or other documentation
 
+## [4.46.1] — 2026-11-26
+
+### Installer — убраны мёртвые @-импорты из `.darkflow.d/claude.md`
+- **Installer** — `generate_darkflow_md()` писал `@docs/agent-workflow.md`, `@docs/tasks.md`,
+  `@docs/auto-approve.md`, `@.darkflow.d/constraints.md`. Claude Code резолвит импорт
+  относительно файла, в котором он стоит, то есть в `.darkflow.d/docs/…` — файлов там нет, и
+  импорты молча выпадали во всех проектах (нашёл `/doctor` в pageradar). Вместо них — строка-
+  указатель: доки читаются по требованию, сессии ведут себя как раньше, без лишних ~4k токенов.
+
 ## [4.46.0] — 2026-10-26
 
 ### analytics-review — правки владельца перенесены в шаблон
